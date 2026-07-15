@@ -104,3 +104,88 @@ def test_syntax_error_in_production_is_skipped_without_false_clean_scope_claim(
     repository.commit()
     candidates = scan_architecture(load_git_inventory(repository.root), AuditPolicy())
     assert candidates == ()
+
+
+def test_absolute_imports_and_excessive_relative_climbs_respect_source_roots(
+    tmp_path: Path,
+) -> None:
+    """Configured package roots resolve absolute cycles without accepting escaped imports."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("python/pkg/a.py", "from python.pkg import b\n")
+    repository.write_text("python/pkg/b.py", "from python.pkg import a\n")
+    repository.write_text("python/pkg/climb.py", "from ....outside import value\n")
+    repository.write_text("src/__init__.py", "from python.pkg import a\n")
+    repository.commit()
+
+    candidates = scan_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(source_roots=("python", "src"), test_roots=("tests",)),
+    )
+    cycles = [item for item in candidates if item.rule_id == "AR001-first-party-import-cycle"]
+    assert len(cycles) == 1
+    assert cycles[0].evidence == "python.pkg.a, python.pkg.b"
+    assert "outside" not in cycles[0].symbol
+    assert not any(item.symbol == "src" for item in candidates)
+
+
+def test_optional_import_candidates_distinguish_broad_and_narrow_handlers(
+    tmp_path: Path,
+) -> None:
+    """Bare and tuple-wide handlers are reported while expected absence remains narrow."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "src/pkg/bare.py",
+        "try:\n    import optional_dependency\nexcept:\n    optional_dependency = None\n",
+    )
+    repository.write_text(
+        "src/pkg/tupled.py",
+        "try:\n    import optional_dependency\n"
+        "except (ImportError, Exception):\n    optional_dependency = None\n",
+    )
+    repository.write_text(
+        "src/pkg/narrow.py",
+        "try:\n    import optional_dependency\n"
+        "except ImportError:\n    optional_dependency = None\n",
+    )
+    repository.write_text(
+        "src/pkg/qualified.py",
+        "import builtins\ntry:\n    import optional_dependency\n"
+        "except builtins.Exception:\n    optional_dependency = None\n",
+    )
+    repository.commit()
+
+    candidates = scan_architecture(load_git_inventory(repository.root), AuditPolicy())
+    guarded = {
+        item.path for item in candidates if item.rule_id == "AR003-broad-optional-import-boundary"
+    }
+    assert guarded == {"src/pkg/bare.py", "src/pkg/tupled.py"}
+
+
+def test_test_owner_conventions_and_unique_bodies_avoid_false_candidates(
+    tmp_path: Path,
+) -> None:
+    """Test-root and suffix ownership conventions suppress only their matching modules."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "src/pkg/core.py",
+        "def compute(value: int) -> int:\n"
+        "    first = value + 1\n    second = first * 2\n    third = second - 3\n"
+        "    fourth = third // 2\n    fifth = fourth + value\n    return fifth\n",
+    )
+    repository.write_text(
+        "src/pkg/engine.py",
+        "def transform(value: int) -> int:\n"
+        "    first = value - 1\n    second = first * 3\n    third = second + 4\n"
+        "    fourth = third // 3\n    fifth = fourth - value\n    return fifth\n",
+    )
+    repository.write_text("tests/core.py", "from pkg.core import compute\n")
+    repository.write_text("tests/engine_test.py", "from pkg.engine import transform\n")
+    repository.commit()
+
+    candidates = scan_architecture(load_git_inventory(repository.root), AuditPolicy())
+    assert not any(
+        item.rule_id == "AR005-no-module-named-test-owner"
+        and item.path in {"src/pkg/core.py", "src/pkg/engine.py"}
+        for item in candidates
+    )
+    assert not any(item.rule_id == "AR006-duplicate-python-implementation" for item in candidates)
