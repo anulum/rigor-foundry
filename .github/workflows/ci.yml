@@ -30,6 +30,19 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
+      - name: Install native audit sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
       - uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
@@ -55,7 +68,7 @@ jobs:
       - name: Run repository self-audit and native controls
         run: |
           python -m rigor_foundry scan --root . --policy rigor-foundry-policy.json --json-out self-audit-report.json --markdown-out self-audit-report.md
-          python -m rigor_foundry gate --root . --policy rigor-foundry-policy.json --mode observe --scope full --output self-audit-gate.json
+          python -m rigor_foundry gate --root . --policy rigor-foundry-policy.json --mode observe --scope full --allow-native-audits --output self-audit-gate.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: repository-self-audit
@@ -77,6 +90,19 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
+      - name: Install native audit sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: ${{ matrix.python-version }}

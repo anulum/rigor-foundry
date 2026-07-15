@@ -55,3 +55,59 @@ def test_polyglot_scanner_resolves_c_and_julia_relative_edges(tmp_path: Path) ->
     assert len(cycles) == 1
     assert "native/a.c" in cycles[0].evidence
     assert "native/b.h" in cycles[0].evidence
+
+
+def test_polyglot_scanner_resolves_real_rust_module_without_a_false_cycle(
+    tmp_path: Path,
+) -> None:
+    """A valid Rust child module resolves without inventing a reciprocal edge."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("native/lib.rs", "mod engine;\npub use engine::value;\n")
+    repository.write_text("native/engine.rs", "pub fn value() -> i32 { 1 }\n")
+    repository.commit()
+
+    candidates = scan_polyglot_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(),
+    )
+    assert not any(item.rule_id == "AR007-relative-dependency-cycle" for item in candidates)
+
+
+def test_polyglot_scanner_rejects_escaping_unresolved_and_self_edges(tmp_path: Path) -> None:
+    """Relative imports cannot escape the repository or fabricate/self-connect graph edges."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "web/a.ts",
+        "import '../../outside';\nimport './missing';\nimport './a';\nexport const value = 1;\n",
+    )
+    repository.write_text(
+        "service/main.go",
+        'package main\nimport "fmt"\nfunc main() { fmt.Println("ready") }\n',
+    )
+    repository.commit()
+
+    candidates = scan_polyglot_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(),
+    )
+    assert not any(item.rule_id == "AR007-relative-dependency-cycle" for item in candidates)
+
+
+def test_polyglot_test_suffix_owns_matching_source(tmp_path: Path) -> None:
+    """A language-native plural test suffix is recognised as the source's owner."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("native/kernel.rs", "pub fn kernel() -> i32 { 1 }\n")
+    repository.write_text(
+        "tests/kernel_tests.rs",
+        "use crate::kernel;\n#[test]\nfn kernel_returns_one() { assert_eq!(kernel(), 1); }\n",
+    )
+    repository.commit()
+
+    candidates = scan_polyglot_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(test_roots=("tests",)),
+    )
+    assert not any(
+        item.rule_id == "AR008-no-polyglot-test-owner" and item.path == "native/kernel.rs"
+        for item in candidates
+    )

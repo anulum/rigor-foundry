@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.adapters import run_adapter, run_native_audits
+from rigor_foundry.adapters import AdapterResult, run_adapter, run_native_audits
 from rigor_foundry.models import AdapterSpec
 
 
@@ -174,3 +174,94 @@ def test_native_audit_selection_is_scope_exact_and_names_are_unique(tmp_path: Pa
     assert tuple(item.name for item in staged_results) == ("staged", "both")
     with pytest.raises(ValueError, match="unique"):
         run_native_audits(repository.root, (staged, staged), "staged", trusted=True)
+
+
+def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path) -> None:
+    """Digest, Boolean, and derived pass fields cannot be altered after execution."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("controls/pass.py", "print('pass')\n")
+    repository.commit()
+    result = run_adapter(repository.root, _spec("pass", "controls/pass.py"), trusted=True)
+    assert result.passed
+
+    invalid_digest = result.to_dict()
+    invalid_digest["output_digest"] = "A" * 64
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        AdapterResult.from_dict(invalid_digest)
+
+    invalid_boolean = result.to_dict()
+    invalid_boolean["required"] = 1
+    with pytest.raises(ValueError, match="boolean fields"):
+        AdapterResult.from_dict(invalid_boolean)
+
+    inconsistent_pass = result.to_dict()
+    inconsistent_pass["passed"] = False
+    with pytest.raises(ValueError, match="passed does not match"):
+        AdapterResult.from_dict(inconsistent_pass)
+
+
+def test_adapter_resolves_repository_executables_and_rejects_unsafe_paths(
+    tmp_path: Path,
+) -> None:
+    """Repository executables run while unsafe links, modes, and directories fail closed."""
+    repository = GitRepository.create(tmp_path / "repository")
+    executable = repository.write_text(
+        "controls/direct-control",
+        "#!/usr/bin/env python3\nprint('direct-control')\n",
+    )
+    executable.chmod(0o755)
+    repository.write_text("controls/not-executable", "plain text\n")
+    outside = tmp_path / "outside-control"
+    outside.write_text("#!/usr/bin/env python3\nprint('outside')\n", encoding="utf-8")
+    outside.chmod(0o755)
+    (repository.root / "controls/escaped-control").symlink_to(outside)
+    repository.commit()
+
+    direct = replace(
+        _spec("direct", "unused.py"),
+        command=("controls/direct-control",),
+    )
+    assert run_adapter(repository.root, direct, trusted=True).passed
+
+    non_executable = replace(direct, name="non-executable", command=("controls/not-executable",))
+    with pytest.raises(ValueError, match="not executable"):
+        run_adapter(repository.root, non_executable, trusted=True)
+
+    escaped = replace(direct, name="escaped", command=("controls/escaped-control",))
+    with pytest.raises(ValueError, match="symlink escapes"):
+        run_adapter(repository.root, escaped, trusted=True)
+
+    missing_directory = replace(direct, name="missing-cwd", working_directory="missing")
+    with pytest.raises(ValueError, match="working directory escapes"):
+        run_adapter(repository.root, missing_directory, trusted=True)
+
+    file_directory = replace(
+        direct,
+        name="file-cwd",
+        working_directory="controls/direct-control",
+    )
+    with pytest.raises(ValueError, match="not a directory"):
+        run_adapter(repository.root, file_directory, trusted=True)
+
+
+def test_adapter_waits_for_process_after_output_pipes_close(tmp_path: Path) -> None:
+    """A control that closes output early is still waited for and attested at exit."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "controls/close_output.py",
+        "import os\nimport time\n"
+        "sink = os.open('/dev/null', os.O_WRONLY)\n"
+        "os.dup2(sink, 1)\nos.dup2(sink, 2)\nos.close(sink)\n"
+        "time.sleep(0.2)\n",
+    )
+    repository.commit()
+
+    result = run_adapter(
+        repository.root,
+        _spec("closed-output", "controls/close_output.py"),
+        trusted=True,
+    )
+
+    assert result.passed
+    assert result.returncode == 0
+    assert result.output_bytes == 0

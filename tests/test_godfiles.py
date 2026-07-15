@@ -35,7 +35,7 @@ def test_large_owner_is_candidate_not_automatic_godfile_verdict(tmp_path: Path) 
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "src/pkg/owner.py",
-        "import json\nimport pathlib\n\n"
+        "import json\nfrom pathlib import Path\n\n"
         "def control_value(value: int) -> int:\n"
         "    adjusted = value + 1\n    return adjusted\n",
     )
@@ -98,3 +98,136 @@ def test_non_code_and_below_threshold_files_do_not_open_size_review(tmp_path: Pa
             AuditPolicy.from_path(policy_path),
         )
     )
+
+
+def test_cross_language_metrics_bind_real_definitions_and_dependencies(tmp_path: Path) -> None:
+    """Structural evidence reflects tracked TypeScript, Rust, Go, and Julia owners."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "web/controller.ts",
+        "import { value } from './value';\n"
+        "export function parseHTTPValue(input: string): string {\n"
+        "  return input + value;\n}\n",
+    )
+    repository.write_text("web/value.ts", "export const value = 'ready';\n")
+    repository.write_text("native/lib.rs", "mod controller;\nmod value;\n")
+    repository.write_text(
+        "native/controller.rs",
+        "use crate::value::value;\n"
+        "pub fn evaluate_signal(input: i32) -> i32 {\n    input + value()\n}\n",
+    )
+    repository.write_text("native/value.rs", "pub fn value() -> i32 { 1 }\n")
+    repository.write_text(
+        "service/controller.go",
+        'package service\n\nimport "fmt"\n\ntype Engine struct{}\n\n'
+        "func (engine *Engine) ComputeSignal(value int) int {\n"
+        "    fmt.Print(value)\n    return value\n}\n",
+    )
+    repository.write_text(
+        "julia/controller.jl",
+        "using LinearAlgebra\nfunction solve_signal!(value)\n    return norm(value)\nend\n",
+    )
+    policy_path = repository.write_policy(source_threshold=1)
+    repository.commit()
+
+    candidates = scan_godfiles(
+        load_git_inventory(repository.root),
+        AuditPolicy.from_path(policy_path),
+    )
+    evidence = {
+        item.path: item.evidence
+        for item in candidates
+        if item.rule_id == "GF001-large-responsibility-owner"
+    }
+    expected_definitions = {
+        "web/controller.ts": 1,
+        "native/controller.rs": 1,
+        "service/controller.go": 2,
+        "julia/controller.jl": 1,
+    }
+    for path, definition_count in expected_definitions.items():
+        assert f"definitions={definition_count}" in evidence[path]
+        assert "import_fanout=1" in evidence[path]
+        assert "symbol_families=" in evidence[path]
+
+
+def test_empty_and_invalid_python_owners_keep_bounded_metrics(tmp_path: Path) -> None:
+    """Empty and syntactically invalid tracked owners neither crash nor invent symbols."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/empty.py", "")
+    repository.write_text("src/pkg/broken.py", "def broken(:\n    pass\n")
+    policy_path = repository.write_policy(source_threshold=1)
+    repository.commit()
+
+    candidates = scan_godfiles(
+        load_git_inventory(repository.root),
+        AuditPolicy.from_path(policy_path),
+    )
+    large = {
+        item.path: item
+        for item in candidates
+        if item.rule_id == "GF001-large-responsibility-owner"
+    }
+    assert "src/pkg/empty.py" not in large
+    assert "definitions=0" in large["src/pkg/broken.py"].evidence
+    assert "import_fanout=0" in large["src/pkg/broken.py"].evidence
+
+
+def test_registry_parser_reports_distinct_document_shape_failures(tmp_path: Path) -> None:
+    """Tracked registries fail closed for invalid roots, file arrays, and row shapes."""
+    repository = GitRepository.create(tmp_path / "repository")
+    registry_path = "tools/module_size_policy.json"
+    repository.write_text(registry_path, "{}")
+    policy_path = repository.write_policy(registries=[registry_path])
+    repository.commit()
+
+    for document, message in (
+        ([], "registry root must be an object"),
+        ({"files": "rows"}, "registry files must be an array"),
+        ({"files": [42]}, "registry row must be an object with string keys"),
+    ):
+        repository.write_text(registry_path, json.dumps(document))
+        invalid = next(
+            item
+            for item in scan_godfiles(
+                load_git_inventory(repository.root),
+                AuditPolicy.from_path(policy_path),
+            )
+            if item.rule_id == "GF003-invalid-size-registry"
+        )
+        assert invalid.evidence == message
+
+
+def test_registry_row_reports_unavailable_tracked_owner(tmp_path: Path) -> None:
+    """A complete decision for an absent owner is explicit registry drift."""
+    repository = GitRepository.create(tmp_path / "repository")
+    registry_path = "tools/module_size_policy.json"
+    repository.write_text(
+        registry_path,
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "path": "src/pkg/absent.py",
+                        "lines": 14,
+                        "responsibility": "repository control owner",
+                        "dependency_boundary": "standard library",
+                        "reassess_when": "the owner is restored",
+                    }
+                ]
+            }
+        ),
+    )
+    policy_path = repository.write_policy(registries=[registry_path])
+    repository.commit()
+
+    drift = next(
+        item
+        for item in scan_godfiles(
+            load_git_inventory(repository.root),
+            AuditPolicy.from_path(policy_path),
+        )
+        if item.rule_id == "GF005-size-decision-drift"
+    )
+    assert drift.path == "src/pkg/absent.py"
+    assert drift.evidence == "registered path unavailable; recorded_lines=14"

@@ -39,6 +39,32 @@ def _repository(path: Path) -> GitRepository:
     return repository
 
 
+def _promotion_arguments(
+    repository: GitRepository,
+    report_path: Path,
+    review_path: Path,
+    candidate_id: str,
+    *,
+    policy: Path | None = None,
+) -> list[str]:
+    """Return the public promotion command for one prepared repository report."""
+    return [
+        "promote",
+        "--root",
+        str(repository.root),
+        "--policy",
+        str(policy or Path(_POLICY)),
+        "--report",
+        str(report_path),
+        "--review",
+        str(review_path),
+        "--candidate-id",
+        candidate_id,
+        "--todo",
+        "docs/internal/work/INDEX.md",
+    ]
+
+
 def test_scan_is_read_only_deterministic_and_labels_candidates(tmp_path: Path) -> None:
     """Repeated scans produce identical reports and never change tracked state."""
     repository = _repository(tmp_path / "repository")
@@ -252,7 +278,8 @@ def test_source_sentinel_never_reaches_reports_cli_or_campaign_artifacts(
     repository.write_text("src/pkg/core.py", "VALUE = 1\n")
     repository.write_text(
         "tests/test_core.py",
-        f"{sentinel} = 'private'  # noqa: S105\n\ndef test_value() -> None:\n    assert 1 == 1\n",
+        f"{sentinel} = 'private'\n\ndef test_value() -> None:\n"
+        f"    assert {sentinel} == 'private'\n",
     )
     repository.write_policy()
     repository.commit()
@@ -475,3 +502,149 @@ def test_direct_cli_contracts_cover_every_command_handler(
     )
     assert main(["scan", "--root", str(repository.root), "--policy", "missing.json"]) == 2
     assert "repository audit error" in capsys.readouterr().err
+
+
+def test_cli_rejects_invalid_outputs_reviews_selection_and_weaker_mode(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """CLI validation rejects unsafe output, review ambiguity, and policy weakening."""
+    repository = _repository(tmp_path / "repository")
+    policy_path = repository.root / _POLICY
+    missing_output = repository.root / "missing-parent/report.json"
+    assert (
+        main(
+            [
+                "scan",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+                "--json-out",
+                str(missing_output),
+            ]
+        )
+        == 2
+    )
+    assert "output parent does not exist" in capsys.readouterr().err
+
+    report_path = repository.root / ".coordination/error-report.json"
+    review_path = repository.root / ".coordination/error-reviews.json"
+    assert (
+        main(
+            [
+                "scan",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+                "--json-out",
+                str(report_path),
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "review-template",
+                "--report",
+                str(report_path),
+                "--output",
+                str(review_path),
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "scan",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+                "--fail-on-candidates",
+            ]
+        )
+        == 1
+    )
+    capsys.readouterr()
+
+    document = json.loads(review_path.read_text(encoding="utf-8"))
+    selected = document["reviews"][0]
+    selected["decision"] = "valid"
+    invalid_path = repository.root / ".coordination/invalid-review.json"
+    invalid_path.write_text(json.dumps(document), encoding="utf-8")
+    assert (
+        main(
+            [
+                "validate-review",
+                "--report",
+                str(report_path),
+                "--review",
+                str(invalid_path),
+            ]
+        )
+        == 1
+    )
+    assert "repository audit review: FAIL" in capsys.readouterr().out
+
+    invalid_promote = _promotion_arguments(
+        repository,
+        report_path,
+        invalid_path,
+        str(selected["candidate_id"]),
+    )
+    assert main(invalid_promote) == 2
+    assert "review validation failed" in capsys.readouterr().err
+
+    assert (
+        main(_promotion_arguments(repository, report_path, review_path, "missing-candidate")) == 2
+    )
+    assert "select exactly one review" in capsys.readouterr().err
+
+    duplicate_document = json.loads(review_path.read_text(encoding="utf-8"))
+    duplicate_document["reviews"].append(dict(duplicate_document["reviews"][0]))
+    duplicate_path = repository.root / ".coordination/duplicate-reviews.json"
+    duplicate_path.write_text(json.dumps(duplicate_document), encoding="utf-8")
+    duplicate_id = str(duplicate_document["reviews"][0]["candidate_id"])
+    assert main(_promotion_arguments(repository, report_path, duplicate_path, duplicate_id)) == 2
+    assert "select exactly one review" in capsys.readouterr().err
+
+    repository.write_text(
+        "docs/internal/audit/reviews.json",
+        review_path.read_text(encoding="utf-8"),
+    )
+    assert (
+        main(
+            [
+                "gate",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["passed"] is True
+
+    policy_document = json.loads(policy_path.read_text(encoding="utf-8"))
+    policy_document["enforcement_mode"] = "zero"
+    policy_path.write_text(json.dumps(policy_document), encoding="utf-8")
+    assert (
+        main(
+            [
+                "gate",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+                "--mode",
+                "observe",
+            ]
+        )
+        == 2
+    )
+    assert "cannot weaken repository enforcement" in capsys.readouterr().err

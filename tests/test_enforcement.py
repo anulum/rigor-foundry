@@ -11,12 +11,19 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
 from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.enforcement import evaluate_enforcement
-from rigor_foundry.models import AuditPolicy, AuditReport, Candidate, ReviewRecord
+from rigor_foundry.models import (
+    AuditPolicy,
+    AuditReport,
+    Candidate,
+    EnforcementMode,
+    ReviewRecord,
+)
 
 
 def _report() -> AuditReport:
@@ -169,3 +176,67 @@ def test_gate_artifact_binds_exact_report_and_rejects_tampering() -> None:
     stale = replace(report, head="a" * 40)
     with pytest.raises(ValueError, match="different repository report"):
         recovered.assert_report(stale)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("schema_version", "2.0", "unsupported enforcement schema"),
+        ("mode", "unsupported", "unsupported enforcement mode"),
+        ("adapter_results", {}, "adapter_results must be an array"),
+        ("adapter_evidence_digest", "f" * 64, "adapter evidence digest"),
+        ("passed", False, "passed does not match blockers"),
+        ("head", "G" * 40, "lowercase hexadecimal digest"),
+    ],
+)
+def test_gate_artifact_rejects_malformed_protocol_fields(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    """Every attacker-controlled gate envelope field is validated before reuse."""
+    gate = evaluate_enforcement(_report(), (), "observe")
+    document = gate.to_dict()
+    document[field] = value
+
+    with pytest.raises(ValueError, match=message):
+        type(gate).from_dict(document)
+
+
+def test_ratchet_ignores_templates_and_optional_native_failures() -> None:
+    """Needs-evidence records do not count as reviews and optional tools do not block."""
+    report = _report()
+    template = ReviewRecord.template(report.report_digest, report.candidates[0].candidate_id)
+    decision = evaluate_enforcement(
+        report,
+        (template,),
+        "ratchet",
+        adapter_results=(replace(_adapter_result(returncode=9), required=False),),
+        now=datetime(2026, 7, 16, tzinfo=UTC),
+    )
+
+    assert decision.reviewed_count == 0
+    assert decision.valid_debt_count == 0
+    assert decision.blockers == (
+        "unreviewed current candidate "
+        f"{report.candidates[0].candidate_id} ({report.candidates[0].rule_id})",
+    )
+
+
+def test_enforcement_rejects_non_utc_expiry_and_unknown_runtime_mode() -> None:
+    """Decision time and review expiry stay UTC while runtime mode input fails closed."""
+    report = _report()
+    non_utc = replace(
+        _review(report, "invalid"),
+        expires_at="2026-08-15T12:00:00+02:00",
+    )
+    with pytest.raises(ValueError, match="review expiry must use UTC"):
+        evaluate_enforcement(
+            report,
+            (non_utc,),
+            "ratchet",
+            now=datetime(2026, 7, 16, tzinfo=UTC),
+        )
+
+    with pytest.raises(ValueError, match="unsupported enforcement mode"):
+        evaluate_enforcement(report, (), cast(EnforcementMode, "unsupported"))

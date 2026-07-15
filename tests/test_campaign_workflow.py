@@ -16,12 +16,13 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.campaign_models import AuditCampaign, AuditRunAttestation
-from rigor_foundry.campaign_store import load_campaign, load_runs
+from rigor_foundry.campaign_store import StoredAuditRun, load_campaign, load_runs
 from rigor_foundry.campaign_workflow import (
     compare_campaign_runs,
     create_campaign,
     execute_campaign,
 )
+from rigor_foundry.models import AuditReport, ReviewRecord, reviews_to_json
 
 _POLICY = Path("rigor-foundry-policy.json")
 
@@ -37,6 +38,55 @@ def _repository(path: Path) -> GitRepository:
     repository.write_policy()
     repository.commit()
     return repository
+
+
+def _campaign_with_candidate(
+    path: Path,
+) -> tuple[GitRepository, Path, StoredAuditRun]:
+    """Create one real campaign run whose report has a reviewable candidate."""
+    repository = _repository(path / "repository")
+    repository.write_text(
+        "src/pkg/optional.py",
+        "try:\n    import pkg.absent\nexcept Exception:\n    ABSENT = None\n",
+    )
+    repository.commit()
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".rigor/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="review-campaign",
+        actor="coordinator/one",
+        expected_independent_runs=1,
+    )
+    execute_campaign(
+        campaign_path,
+        run_id="review-agent",
+        agent_identity="SAMPLE-PROJECT/review-agent",
+        session_identity="terminal/review",
+    )
+    return repository, campaign_path, load_runs(campaign_path)[0]
+
+
+def _valid_review(report: AuditReport, candidate_id: str, reviewer: str) -> ReviewRecord:
+    """Return one completed evidence decision for a campaign report candidate."""
+    return ReviewRecord(
+        report_digest=report.report_digest,
+        candidate_id=candidate_id,
+        decision="valid",
+        reviewer=reviewer,
+        reviewed_at="2026-07-15T13:00:00Z",
+        rationale="the exact campaign report reproduces this candidate",
+        evidence=("reviewed the candidate against the frozen campaign tree",),
+        severity="P1",
+        owner="lane/campaign-review",
+        dependencies=(),
+        acceptance_gates=("focused regression over the frozen tree passes",),
+        title="Repair the reproduced campaign finding",
+        boundary_justification="",
+        expires_at="2026-08-15T13:00:00Z",
+        reopen_triggers=("campaign input digest changes",),
+    )
 
 
 def test_campaign_workflow_persists_two_independent_real_runs(tmp_path: Path) -> None:
@@ -223,3 +273,65 @@ def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: 
         json.loads(attestation_path.read_text(encoding="utf-8"))
     )
     assert attestation.agent_identity == "SAMPLE-PROJECT/cli-agent"
+
+
+def test_campaign_comparison_rejects_mixed_unmatched_and_invalid_reviews(
+    tmp_path: Path,
+) -> None:
+    """Persisted reviews must bind one known report and pass candidate validation."""
+    cases = ("mixed", "unmatched", "invalid")
+    for case in cases:
+        _repository, campaign_path, stored = _campaign_with_candidate(tmp_path / case)
+        candidate_id = stored.report.candidates[0].candidate_id
+        reviews_directory = campaign_path.parent / "reviews"
+        reviews_directory.mkdir()
+        reviews: tuple[ReviewRecord, ...]
+        if case == "mixed":
+            reviews = (
+                ReviewRecord.template(stored.report.report_digest, candidate_id),
+                ReviewRecord.template("0" * 64, candidate_id),
+            )
+            message = "mixes report digests"
+        elif case == "unmatched":
+            reviews = (ReviewRecord.template("0" * 64, candidate_id),)
+            message = "no matching campaign report"
+        else:
+            reviews = (ReviewRecord.template(stored.report.report_digest, "absent-candidate"),)
+            message = "review document 0 is invalid"
+        (reviews_directory / "review.json").write_text(
+            reviews_to_json(reviews),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(ValueError, match=message):
+            compare_campaign_runs(
+                campaign_path,
+                comparison_id=f"comparison-{case}",
+                actor="coordinator/one",
+            )
+
+
+def test_campaign_comparison_accepts_complete_valid_review_documents(tmp_path: Path) -> None:
+    """Completed candidate reviews produce a durable resolved comparison."""
+    _repository, campaign_path, stored = _campaign_with_candidate(tmp_path)
+    reviews = tuple(
+        _valid_review(stored.report, candidate.candidate_id, f"reviewer/{index}")
+        for index, candidate in enumerate(stored.report.candidates, start=1)
+    )
+    reviews_directory = campaign_path.parent / "reviews"
+    reviews_directory.mkdir()
+    (reviews_directory / "review.json").write_text(
+        reviews_to_json(reviews),
+        encoding="utf-8",
+    )
+
+    comparison_path, comparison = compare_campaign_runs(
+        campaign_path,
+        comparison_id="comparison-reviewed",
+        actor="coordinator/one",
+    )
+
+    assert comparison_path.is_file()
+    assert not comparison.unresolved
+    assert comparison.review_divergence == ()
+    assert comparison.diligence_gaps == ()
