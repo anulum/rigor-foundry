@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "waivers": [
+    {
+      "advisory_id": "PYSEC-2026-2132",
+      "aliases": [
+        "CVE-2026-7246",
+        "GHSA-47fr-3ffg-hgmw"
+      ],
+      "package": "click",
+      "version": "8.1.8",
+      "scope": "requirements/security.txt",
+      "introduced_by": "semgrep==1.169.0",
+      "affected_api": "click.edit",
+      "allowed_command": "semgrep scan --error --config .semgrep.yml src tools",
+      "rationale": "Semgrep 1.169.0 requires click~=8.1.8, while the advisory is fixed only in Click 8.3.3. The allowed non-interactive scan path does not invoke click.edit.",
+      "mitigations": [
+        "The waived dependency exists only in the ephemeral security-tool environment.",
+        "CI invokes one fixed Semgrep scan command with a repository-local ruleset.",
+        "The waiver expires automatically and blocks repository audit if not renewed or removed."
+      ],
+      "reviewed_on": "2026-07-15",
+      "expires_on": "2026-08-14",
+      "advisory_url": "https://github.com/advisories/GHSA-47fr-3ffg-hgmw"
+    }
+  ]
+}

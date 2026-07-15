@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Deterministic quality and test gates
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - name: Install hash-locked quality environment
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Audit repository contracts
+        run: python -m tools.audit
+      - name: Lint and format
+        run: |
+          python -m ruff check src tests tools
+          python -m ruff format --check src tests tools
+      - name: Strict typing
+        run: python -m mypy --strict src/rigor_foundry tools
+      - name: Static security
+        run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
+      - name: Licence conformance
+        run: python -m reuse lint
+      - name: Run repository self-audit and native controls
+        run: |
+          python -m rigor_foundry scan --root . --policy rigor-foundry-policy.json --json-out self-audit-report.json --markdown-out self-audit-report.md
+          python -m rigor_foundry gate --root . --policy rigor-foundry-policy.json --mode observe --scope full --output self-audit-gate.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: repository-self-audit
+          path: |
+            self-audit-report.json
+            self-audit-report.md
+            self-audit-gate.json
+          if-no-files-found: error
+          retention-days: 30
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements/test.txt
+      - name: Install hash-locked test environment
+        run: |
+          python -m pip install --require-hashes -r requirements/test.txt
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Run exhaustive CI-owned suite
+        run: >-
+          python -m pytest tests -q
+          --cov=rigor_foundry --cov-branch
+          --cov-report=term-missing --cov-report=xml
+          --cov-fail-under=95
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: matrix.python-version == '3.12'
+        with:
+          name: coverage-python-3.12
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - name: Build and check distributions
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m build --no-isolation
+          python -m twine check dist/*
+      - name: Smoke installed wheel outside checkout
+        run: |
+          python -m venv /tmp/rigor-wheel
+          /tmp/rigor-wheel/bin/python -m pip install --no-deps dist/*.whl
+          cd /tmp
+          /tmp/rigor-wheel/bin/rigor --help
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rigor-foundry-distributions
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14

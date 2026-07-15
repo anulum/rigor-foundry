@@ -1,0 +1,152 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Project configuration
+
+[build-system]
+requires = ["hatchling==1.31.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rigor-foundry"
+version = "0.1.0"
+description = "Evidence-bound codebase transformation"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Miroslav Šotek", email = "protoscience@anulum.li" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
+keywords = [
+    "architecture",
+    "audit",
+    "code-quality",
+    "remediation",
+    "repository",
+]
+dependencies = []
+
+[project.scripts]
+rigor = "rigor_foundry.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "bandit>=1.7,<2.0",
+    "build>=1.0,<2.0",
+    "cyclonedx-bom>=7.3,<8.0",
+    "editables>=0.6,<1.0",
+    "hatchling>=1.27,<2.0",
+    "mypy>=1.0,<3.0",
+    "pip-audit>=2.10,<3.0",
+    "pip-tools>=7.5,<8.0",
+    "pre-commit>=4.6,<5.0",
+    "pytest>=7.0,<10.0",
+    "pytest-cov>=4.0,<8.0",
+    "reuse>=6.2,<7.0",
+    "ruff>=0.4,<1.0",
+    "twine>=6.2,<7.0",
+]
+docs = [
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.7.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/anulum/rigor-foundry"
+Changelog = "https://github.com/anulum/rigor-foundry/blob/main/CHANGELOG.md"
+Discussions = "https://github.com/anulum/rigor-foundry/discussions"
+Documentation = "https://anulum.github.io/rigor-foundry/"
+Issues = "https://github.com/anulum/rigor-foundry/issues"
+Security = "https://github.com/anulum/rigor-foundry/security/policy"
+Source = "https://github.com/anulum/rigor-foundry"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rigor_foundry"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/ARCHITECTURE.md",
+    "/CHANGELOG.md",
+    "/CITATION.cff",
+    "/CODE_OF_CONDUCT.md",
+    "/CONTRIBUTING.md",
+    "/GOVERNANCE.md",
+    "/LICENSE",
+    "/NOTICE.md",
+    "/README.md",
+    "/SECURITY.md",
+    "/SUPPORT.md",
+    "/VALIDATION.md",
+    "/pyproject.toml",
+    "/src",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-config --strict-markers"
+xfail_strict = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "PIE", "D", "PGH", "RUF"]
+ignore = [
+    "E501",
+    "D105",
+    "SIM108",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rigor_foundry"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+warn_unreachable = true
+check_untyped_defs = true
+ignore_missing_imports = false
+enable_error_code = ["ignore-without-code"]
+mypy_path = ["src"]
+files = ["src/rigor_foundry/", "tools/"]
+
+[tool.coverage.run]
+branch = true
+source = ["rigor_foundry"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = false
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+# Direct subprocess use is intentional; Semgrep separately forbids shell=True.
+skips = ["B404", "B603"]

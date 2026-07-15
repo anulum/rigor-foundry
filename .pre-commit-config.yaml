@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Local, lock-backed Git hooks
+
+minimum_pre_commit_version: 4.6.0
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: headers
+        name: canonical MIT headers
+        entry: .venv/bin/python -m tools.check_headers
+        language: system
+        pass_filenames: false
+      - id: action-pins
+        name: immutable GitHub Action pins
+        entry: .venv/bin/python -m tools.check_action_pins
+        language: system
+        pass_filenames: false
+      - id: metadata
+        name: release metadata consistency
+        entry: .venv/bin/python -m tools.check_metadata
+        language: system
+        pass_filenames: false
+      - id: secrets
+        name: redaction-safe secret scan
+        entry: .venv/bin/python -m tools.check_secrets
+        language: system
+        pass_filenames: false
+      - id: ruff
+        name: Ruff lint
+        entry: .venv/bin/python -m ruff check
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Ruff formatting
+        entry: .venv/bin/python -m ruff format --check
+        language: system
+        types_or: [python, pyi]
+      - id: mypy
+        name: strict MyPy
+        entry: .venv/bin/python -m mypy --strict src/rigor_foundry tools
+        language: system
+        pass_filenames: false
+      - id: preflight-fast
+        name: bounded pre-push preflight
+        entry: .venv/bin/python -m tools.preflight --fast
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: commit-message
+        name: commit attribution policy
+        entry: .venv/bin/python -m tools.check_commit_message
+        language: system
+        stages: [commit-msg]

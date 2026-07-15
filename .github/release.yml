@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Generated release-note categories
+
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: Security
+      labels: [security]
+    - title: Breaking changes
+      labels: [breaking-change]
+    - title: Features and remediation
+      labels: [enhancement, remediation]
+    - title: Architecture and audit contracts
+      labels: [architecture, audit, governance]
+    - title: Dependencies and operations
+      labels: [dependencies, ci, container]
+    - title: Documentation
+      labels: [documentation]
+    - title: Other changes
+      labels: ["*"]

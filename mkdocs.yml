@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Documentation configuration
+
+site_name: RigorFoundry
+site_description: Evidence-bound codebase transformation
+site_url: https://anulum.github.io/rigor-foundry/
+repo_url: https://github.com/anulum/rigor-foundry
+exclude_docs: |
+  internal/
+
+theme:
+  name: material
+  logo: assets/anulum_logo.png
+  favicon: assets/anulum_logo_company.jpg
+  features:
+    - navigation.instant
+    - navigation.sections
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - CLI: cli.md
+  - Configuration: configuration.md
+  - Validation: validation.md
+  - Security: security.md

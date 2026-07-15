@@ -1,0 +1,200 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — repository-audit rule registry
+"""Versioned rule registry and deterministic rule-pack identity."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass
+
+RULE_PACK_VERSION = "rigor-foundry/1.0.0"
+
+
+@dataclass(frozen=True)
+class RuleDefinition:
+    """Stable metadata for one static candidate rule.
+
+    Parameters
+    ----------
+    rule_id:
+        Immutable rule identifier carried by reports and review ledgers.
+    category:
+        Candidate domain produced by the rule.
+    summary:
+        Short factual description of the signal.
+    introduced:
+        Rule-pack version that first defined the rule.
+
+    """
+
+    rule_id: str
+    category: str
+    summary: str
+    introduced: str = RULE_PACK_VERSION
+
+    def to_dict(self) -> dict[str, str]:
+        """Serialise stable rule metadata."""
+        return {
+            "rule_id": self.rule_id,
+            "category": self.category,
+            "summary": self.summary,
+            "introduced": self.introduced,
+        }
+
+
+RULES: tuple[RuleDefinition, ...] = (
+    RuleDefinition("TA001-test-double", "test-authenticity", "Test-double API or fixture signal."),
+    RuleDefinition(
+        "TA002-synthetic-fixture",
+        "test-authenticity",
+        "Synthetic fake, stub, dummy, or toy naming signal.",
+    ),
+    RuleDefinition(
+        "TA003-skip-or-xfail", "test-authenticity", "Skipped or expected-failure test signal."
+    ),
+    RuleDefinition(
+        "TA004-coverage-exclusion",
+        "test-authenticity",
+        "Coverage exclusion signal in tracked Python or JavaScript-family text.",
+    ),
+    RuleDefinition(
+        "TA005-lint-suppression", "test-authenticity", "Local lint or security suppression signal."
+    ),
+    RuleDefinition(
+        "TA006-type-suppression", "test-authenticity", "Local static-type suppression signal."
+    ),
+    RuleDefinition(
+        "TA007-module-injection", "test-authenticity", "Module-resolution injection signal."
+    ),
+    RuleDefinition(
+        "TA008-coverage-bucket-name", "test-authenticity", "Non-specific test-owner name signal."
+    ),
+    RuleDefinition(
+        "TA009-unparseable-python-test",
+        "test-authenticity",
+        "Tracked Python test cannot be parsed.",
+    ),
+    RuleDefinition(
+        "TA010-smoke-only-test",
+        "test-authenticity",
+        "Test has no local behavioural contract signal.",
+    ),
+    RuleDefinition(
+        "TA011-private-production-surface",
+        "test-authenticity",
+        "Test directly reaches an underscored first-party surface.",
+    ),
+    RuleDefinition(
+        "AR001-first-party-import-cycle",
+        "architecture",
+        "Non-trivial first-party Python import cycle.",
+    ),
+    RuleDefinition(
+        "AR002-wildcard-import-boundary", "architecture", "Wildcard Python import boundary."
+    ),
+    RuleDefinition(
+        "AR003-broad-optional-import-boundary",
+        "architecture",
+        "Import guarded by a broad exception handler.",
+    ),
+    RuleDefinition(
+        "AR004-executable-facade", "architecture", "Facade also owns executable function bodies."
+    ),
+    RuleDefinition(
+        "AR005-no-module-named-test-owner",
+        "architecture",
+        "Production module lacks an obvious module-named test owner.",
+    ),
+    RuleDefinition(
+        "AR006-duplicate-python-implementation",
+        "architecture",
+        "Exact non-trivial top-level Python implementation body has multiple owners.",
+    ),
+    RuleDefinition(
+        "AR007-relative-dependency-cycle",
+        "architecture",
+        "Non-trivial relative dependency cycle in a non-Python language surface.",
+    ),
+    RuleDefinition(
+        "AR008-no-polyglot-test-owner",
+        "architecture",
+        "Non-Python production owner lacks an obvious source-named test owner.",
+    ),
+    RuleDefinition(
+        "GF001-large-responsibility-owner",
+        "godfile",
+        "Tracked code owner exceeds its review threshold.",
+    ),
+    RuleDefinition(
+        "GF002-missing-size-registry", "godfile", "Configured module-size registry is unavailable."
+    ),
+    RuleDefinition(
+        "GF003-invalid-size-registry", "godfile", "Configured module-size registry is malformed."
+    ),
+    RuleDefinition(
+        "GF004-incomplete-size-decision",
+        "godfile",
+        "Module-size decision lacks required evidence.",
+    ),
+    RuleDefinition(
+        "GF005-size-decision-drift",
+        "godfile",
+        "Module-size decision differs from the tracked tree.",
+    ),
+    RuleDefinition(
+        "GV001-missing-repository-audit-policy",
+        "governance",
+        "Repository-specific audit policy is absent.",
+    ),
+    RuleDefinition(
+        "GV002-unscanned-tracked-code",
+        "governance",
+        "Tracked code or test content could not be parsed as bounded UTF-8 text.",
+    ),
+    RuleDefinition(
+        "GV003-undeclared-audit-domain",
+        "governance",
+        "Mandatory audit domain has no repository applicability decision.",
+    ),
+    RuleDefinition(
+        "GV004-uncontrolled-required-domain",
+        "governance",
+        "Required audit domain has no active portable rule or required native adapter.",
+    ),
+)
+
+RULES_BY_ID = {rule.rule_id: rule for rule in RULES}
+
+
+def rule_pack_digest() -> str:
+    """Return the SHA-256 identity of the ordered rule registry."""
+    payload = json.dumps(
+        [rule.to_dict() for rule in RULES],
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def validate_rule_registry() -> tuple[str, ...]:
+    """Return structural errors in the built-in rule registry."""
+    errors: list[str] = []
+    identifiers = [rule.rule_id for rule in RULES]
+    if len(identifiers) != len(set(identifiers)):
+        errors.append("rule identifiers must be unique")
+    allowed_categories = {"test-authenticity", "architecture", "godfile", "governance"}
+    for rule in RULES:
+        if rule.category not in allowed_categories:
+            errors.append(f"{rule.rule_id}: unsupported category {rule.category}")
+        if not rule.summary.strip():
+            errors.append(f"{rule.rule_id}: summary is empty")
+        if not rule.introduced.startswith("rigor-foundry/"):
+            errors.append(f"{rule.rule_id}: introduced version is invalid")
+    return tuple(errors)

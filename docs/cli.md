@@ -1,0 +1,30 @@
+# Command-line interface
+
+Install from a verified source checkout during the migration:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
+.venv/bin/python -m pip install --no-build-isolation --no-deps -e .
+.venv/bin/rigor --help
+```
+
+## Read-only inspection
+
+`rigor scan --root PATH` inventories one Git repository and emits candidate
+evidence. It does not modify the inspected repository.
+
+## Evidence review
+
+`review-template` creates explicit review records. `validate-review` verifies
+that those records match the exact report. `gate` and `promote` reject stale or
+mismatched state.
+
+## Independent campaigns
+
+`campaign-create`, `campaign-run`, and `campaign-compare` freeze independent
+inputs, retain attestations, and record disagreements rather than averaging
+them away.
+
+Run `rigor COMMAND --help` for the exact options supported by the installed
+version.

@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Dependency and policy security gates
+
+name: Security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "43 3 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/security.txt
+      - run: python -m pip install --require-hashes -r requirements/security.txt
+      - name: Validate bounded dependency waivers
+        run: python -m tools.check_dependency_waivers
+      - name: Redaction-safe repository scan
+        run: python -m tools.check_secrets
+      - name: Python security analysis
+        run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
+      - name: Dependency vulnerability audit
+        run: python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip
+      - name: Security-tool dependency audit
+        run: >-
+          python -m pip_audit -r requirements/security.txt
+          --require-hashes --disable-pip
+          --ignore-vuln PYSEC-2026-2132
+      - name: Repository Semgrep policy
+        run: semgrep scan --error --config .semgrep.yml src tools

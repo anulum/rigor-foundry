@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Capability request form
+
+name: Capability request
+description: Propose a portable audit, evidence, or remediation capability.
+title: "feat: "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Production problem
+      description: Describe the repository outcome that cannot be expressed today.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and acceptance criteria
+      description: Define observable inputs, expected records, and fail-closed behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: portability
+    attributes:
+      label: Portability constraints
+      description: Identify languages, build systems, platforms, and project variables involved.

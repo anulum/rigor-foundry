@@ -1,0 +1,268 @@
+{
+  "schema_version": "1.0",
+  "source_line_threshold": 700,
+  "test_line_threshold": 700,
+  "source_roots": [
+    "src",
+    "tools"
+  ],
+  "test_roots": [
+    "tests"
+  ],
+  "production_packages": [
+    "rigor_foundry",
+    "tools"
+  ],
+  "module_size_registries": [],
+  "canonical_todo": ".rigor/TODO.md",
+  "review_ledger": ".rigor/reviews.json",
+  "enforcement_mode": "observe",
+  "audit_domains": [
+    {
+      "name": "test-authenticity",
+      "applicability": "required",
+      "rationale": "RigorFoundry's conclusions depend on tests exercising real Git, filesystem, process, packaging, and CLI boundaries."
+    },
+    {
+      "name": "architecture-and-wiring",
+      "applicability": "required",
+      "rationale": "The scanner, evidence models, campaign protocol, CLI, and repository guards have explicit ownership and dependency boundaries."
+    },
+    {
+      "name": "godfile-responsibility",
+      "applicability": "required",
+      "rationale": "Large mixed-responsibility scanner or protocol modules would make audit conclusions harder to review and maintain."
+    },
+    {
+      "name": "application-security",
+      "applicability": "required",
+      "rationale": "RigorFoundry parses untrusted repositories and invokes explicitly configured subprocesses, so static security analysis is mandatory."
+    },
+    {
+      "name": "supply-chain",
+      "applicability": "required",
+      "rationale": "Build, CI, test, documentation, and security environments are hash locked and require vulnerability review."
+    },
+    {
+      "name": "api-abi-schema-compatibility",
+      "applicability": "required",
+      "rationale": "Versioned policies, reports, reviews, campaigns, attestations, and comparisons are public machine-readable contracts."
+    },
+    {
+      "name": "scientific-numerical-correctness",
+      "applicability": "not-applicable",
+      "rationale": "The core orchestrates repository evidence and contains no scientific model, numerical solver, statistical estimator, or floating-point acceptance claim."
+    },
+    {
+      "name": "reliability-and-concurrency",
+      "applicability": "required",
+      "rationale": "Audit evidence is immutable, content addressed, path confined, and written under create-only and lock-aware storage contracts."
+    },
+    {
+      "name": "performance-and-reproducibility",
+      "applicability": "required",
+      "rationale": "Repeated scans over identical tracked inputs must be deterministic and native adapters are bounded by explicit timeouts."
+    },
+    {
+      "name": "data-and-privacy",
+      "applicability": "required",
+      "rationale": "Repositories may contain sensitive material; the dependency-free core is local-only and must not acquire an undeclared network client."
+    },
+    {
+      "name": "operations-and-observability",
+      "applicability": "required",
+      "rationale": "CLI exit codes, bounded diagnostics, report digests, and campaign attestations are operational interfaces."
+    },
+    {
+      "name": "packaging-deployment-iac",
+      "applicability": "required",
+      "rationale": "The project ships a Python distribution, a non-root container, documentation, releases, and immutable automation."
+    },
+    {
+      "name": "documentation-claims-ip",
+      "applicability": "required",
+      "rationale": "Public claims, citation metadata, MIT licensing, copyright, action pins, and release metadata must agree."
+    },
+    {
+      "name": "ownership-and-maintenance",
+      "applicability": "required",
+      "rationale": "Module-named test owners, CODEOWNERS, contribution policy, and independent review are mandatory maintenance evidence."
+    }
+  ],
+  "native_audits": [
+    {
+      "name": "application-security-static",
+      "command": [
+        "{python}",
+        "-m",
+        "bandit",
+        "-q",
+        "-c",
+        "pyproject.toml",
+        "-r",
+        "src/rigor_foundry",
+        "tools"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "application-security"
+      ]
+    },
+    {
+      "name": "supply-chain-vulnerabilities",
+      "command": [
+        "{python}",
+        "-m",
+        "pip_audit",
+        "-r",
+        "requirements/ci.txt",
+        "--require-hashes",
+        "--disable-pip"
+      ],
+      "timeout_seconds": 300,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "supply-chain"
+      ]
+    },
+    {
+      "name": "protocol-schema-contracts",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_models.py"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "api-abi-schema-compatibility"
+      ]
+    },
+    {
+      "name": "desired-profile-resolution-contracts",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_profile_resolution.py"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "api-abi-schema-compatibility",
+        "architecture-and-wiring"
+      ]
+    },
+    {
+      "name": "immutable-storage-contracts",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_campaign_store.py"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "reliability-and-concurrency"
+      ]
+    },
+    {
+      "name": "work-lifecycle-integrity",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_work_models.py"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "reliability-and-concurrency"
+      ]
+    },
+    {
+      "name": "deterministic-cli-contracts",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_cli.py"
+      ],
+      "timeout_seconds": 240,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "performance-and-reproducibility",
+        "operations-and-observability"
+      ]
+    },
+    {
+      "name": "local-data-boundary",
+      "command": [
+        "{python}",
+        "-m",
+        "tools.check_data_boundary"
+      ],
+      "timeout_seconds": 60,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "data-and-privacy"
+      ]
+    },
+    {
+      "name": "packaging-contracts",
+      "command": [
+        "{python}",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_packaging_contract.py"
+      ],
+      "timeout_seconds": 120,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "packaging-deployment-iac"
+      ]
+    },
+    {
+      "name": "repository-conformance",
+      "command": [
+        "{python}",
+        "-m",
+        "tools.audit"
+      ],
+      "timeout_seconds": 180,
+      "scope": "full",
+      "working_directory": ".",
+      "required": true,
+      "domains": [
+        "documentation-claims-ip"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "title": "RigorFoundry",
+  "description": "Evidence-bound repository auditing and remediation planning.",
+  "upload_type": "software",
+  "license": "mit-license",
+  "access_right": "open",
+  "version": "0.1.0",
+  "creators": [
+    {
+      "name": "Šotek, Miroslav",
+      "affiliation": "ANULUM / Fortis Studio",
+      "orcid": "0009-0009-3560-0851"
+    }
+  ],
+  "keywords": [
+    "repository audit",
+    "software architecture",
+    "remediation planning",
+    "evidence governance"
+  ]
+}

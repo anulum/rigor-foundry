@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — REUSE configuration
+
+version = 1
+
+[[annotations]]
+path = [
+    "*.md",
+    "*.txt",
+    "COPYRIGHT",
+    ".github/**/*.md",
+    "docs/**/*.md",
+    "docs/assets/*",
+    "LICENSES/MIT.txt",
+    "requirements/*.txt",
+    "src/rigor_foundry/py.typed",
+]
+SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [".zenodo.json", ".github/**/*.json", "rigor-foundry-policy.json"]
+SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["**/__pycache__/*"]
+precedence = "override"
+SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "MIT"

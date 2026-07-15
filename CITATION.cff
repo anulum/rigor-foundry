@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Citation metadata
+
+cff-version: 1.2.0
+message: "If you use RigorFoundry, cite the software using this metadata."
+title: RigorFoundry
+type: software
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/anulum/rigor-foundry"
+url: "https://github.com/anulum/rigor-foundry"
+authors:
+  - family-names: "Šotek"
+    given-names: "Miroslav"
+    email: "protoscience@anulum.li"
+    orcid: "https://orcid.org/0009-0009-3560-0851"
+keywords:
+  - repository audit
+  - software architecture
+  - remediation planning
+  - evidence governance

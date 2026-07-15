@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT
+# MIT License; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Read-only audit container
+
+services:
+  rigor:
+    build:
+      context: .
+    image: rigor-foundry:local
+    command: ["scan", "--root", "/workspace"]
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - type: bind
+        source: ${AUDIT_REPOSITORY:?set AUDIT_REPOSITORY to the repository path}
+        target: /workspace
+        read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
