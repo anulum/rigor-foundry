@@ -28,8 +28,8 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     bases = re.findall(r"^FROM\s+([^\s]+)", dockerfile, re.MULTILINE)
     assert len(bases) == 2
     assert all("@sha256:" in base for base in bases)
-    assert "snapshot.debian.org/archive/debian/20260316T000000Z" in dockerfile
-    assert "snapshot.debian.org/archive/debian-security/20260316T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian/20260714T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian-security/20260714T000000Z" in dockerfile
     assert "USER rigor" in dockerfile
 
 
