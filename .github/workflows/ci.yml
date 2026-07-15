@@ -34,6 +34,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends bubblewrap
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
       - uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
@@ -85,6 +94,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends bubblewrap
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: ${{ matrix.python-version }}
