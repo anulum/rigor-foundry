@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -61,6 +61,7 @@ REQUIRED_PATHS = (
     "pyproject.toml",
     "requirements/build.txt",
     "requirements/ci.txt",
+    "requirements/runtime.txt",
     "requirements/security.txt",
     "requirements/test.txt",
     "tools/check_dependency_waivers.py",

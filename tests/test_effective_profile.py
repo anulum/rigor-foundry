@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -13,6 +13,7 @@ from dataclasses import replace
 from typing import cast
 
 import pytest
+from signing_fixtures import pack_signature, trust_store
 
 from rigor_foundry.effective_profile import (
     AdapterLock,
@@ -39,7 +40,6 @@ from rigor_foundry.project_profile import (
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
-    PackSignature,
     RemediationContract,
     StandardPack,
 )
@@ -91,7 +91,7 @@ def standard_pack(*, pack_id: str = "core") -> StandardPack:
         source_uri=f"https://standards.example/{pack_id}",
         source_digest=source_digest,
         licence="MIT",
-        signature=PackSignature("ed25519", "trusted-key", payload, "2" * 64),
+        signature=pack_signature(payload),
         controls=controls,
     )
 
@@ -153,12 +153,9 @@ def components() -> tuple[
     pack = standard_pack()
     project = profile(pack)
     verification = PackVerification.build(
-        pack_digest=pack.pack_digest,
-        key_id=pack.signature.key_id,
-        proof_digest="3" * 64,
-        tool_digest="4" * 64,
+        pack=pack,
+        trust_store=trust_store("trusted-key"),
         verified_at="2026-07-15T11:55:00Z",
-        valid=True,
     )
     adapter = AdapterLock.build(
         adapter_id="loc-adapter",
@@ -201,6 +198,7 @@ def lock() -> EffectiveProfileLock:
         variables=(variable,),
         controls=(control,),
         warnings=(warning,),
+        trust_store=trust_store("trusted-key"),
         toolchain_digest="9" * 64,
         resolved_at="2026-07-15T12:00:00Z",
     )
@@ -215,8 +213,8 @@ def test_effective_lock_binds_every_exact_input() -> None:
     assert expected.adapters[0].to_dict()["executable_digest"] == "5" * 64
     assert expected.variables[0].to_dict()["value"] == "linux"
     assert expected.controls[0].to_dict()["risk_acceptance_waiver_ids"] == []
-    _, _, verification, _, _, _ = components()
-    assert verification.to_dict()["valid"] is True
+    _, pack, verification, _, _, _ = components()
+    assert verification.valid_for(pack, trust_store("trusted-key"))
     resolution = ProfileResolution.build(
         profile_digest=expected.profile_digest,
         lock=expected,
@@ -277,17 +275,11 @@ def test_effective_records_reject_partial_or_crosswired_inputs() -> None:
             variables=(variable,),
             controls=(control,),
             warnings=(blocking,),
+            trust_store=trust_store("trusted-key"),
             toolchain_digest="9" * 64,
             resolved_at="2026-07-15T12:00:00Z",
         )
-    invalid = PackVerification.build(
-        pack_digest=pack.pack_digest,
-        key_id=pack.signature.key_id,
-        proof_digest="3" * 64,
-        tool_digest="4" * 64,
-        verified_at="2026-07-15T11:55:00Z",
-        valid=False,
-    )
+    invalid = replace(verification, trust_store_digest="0" * 64)
     with pytest.raises(ValueError, match="unique and valid"):
         EffectiveProfileLock.build(
             profile=project,
@@ -297,6 +289,7 @@ def test_effective_records_reject_partial_or_crosswired_inputs() -> None:
             variables=(variable,),
             controls=(control,),
             warnings=(),
+            trust_store=trust_store("trusted-key"),
             toolchain_digest="9" * 64,
             resolved_at="2026-07-15T12:00:00Z",
         )
@@ -397,6 +390,7 @@ def test_effective_control_and_lock_uniqueness_edges_fail_closed() -> None:
             "variables": (variable,),
             "controls": (control,),
             "warnings": (),
+            "trust_store": trust_store("trusted-key"),
             "toolchain_digest": "9" * 64,
             "resolved_at": "2026-07-15T12:00:00Z",
         }

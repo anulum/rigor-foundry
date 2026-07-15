@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -141,10 +141,7 @@ class AdapterSpec:
             raise ValueError(
                 f"native_audits[{index}].working_directory must be repository-relative"
             )
-        domains = _string_tuple(
-            data.get("domains", []),
-            f"native_audits[{index}].domains",
-        )
+        domains = _string_tuple(data.get("domains", []), f"native_audits[{index}].domains")
         unknown_domains = sorted(set(domains).difference(AUDIT_DOMAINS))
         if unknown_domains:
             raise ValueError(
@@ -277,10 +274,17 @@ class AuditPolicy:
     def from_path(cls, path: Path) -> AuditPolicy:
         """Read a policy from a UTF-8 JSON file."""
         try:
-            value = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            return cls.from_json(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as exc:
             raise ValueError(f"cannot read audit policy {path}") from exc
-        return cls.from_dict(value)
+
+    @classmethod
+    def from_json(cls, text: str) -> AuditPolicy:
+        """Parse a policy from already bounded, provenance-checked UTF-8 text."""
+        try:
+            return cls.from_dict(json.loads(text))
+        except json.JSONDecodeError as exc:
+            raise ValueError("cannot parse audit policy JSON") from exc
 
 
 @dataclass(frozen=True)

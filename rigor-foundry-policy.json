@@ -81,7 +81,7 @@
     {
       "name": "documentation-claims-ip",
       "applicability": "required",
-      "rationale": "Public claims, citation metadata, MIT licensing, copyright, action pins, and release metadata must agree."
+      "rationale": "Public claims, citation metadata, Apache-2.0 licensing, copyright, action pins, and release metadata must agree."
     },
     {
       "name": "ownership-and-maintenance",
@@ -112,15 +112,11 @@
       ]
     },
     {
-      "name": "supply-chain-vulnerabilities",
+      "name": "supply-chain-policy-integrity",
       "command": [
         "{python}",
         "-m",
-        "pip_audit",
-        "-r",
-        "requirements/ci.txt",
-        "--require-hashes",
-        "--disable-pip"
+        "tools.check_dependency_waivers"
       ],
       "timeout_seconds": 300,
       "scope": "full",

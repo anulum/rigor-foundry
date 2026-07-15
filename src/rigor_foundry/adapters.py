@@ -1,101 +1,188 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — repository-native audit adapters
-"""Run declared repository audits with argv-only, time-bounded execution."""
+"""Run consented repository audits in a read-only, credential-free sandbox."""
 
 from __future__ import annotations
 
 import hashlib
 import os
-import shutil
+import selectors
+import signal
 import subprocess  # nosec B404
 import sys
+import time
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
-from .models import AdapterSpec
+from .models import (
+    AdapterSpec,
+    canonical_digest,
+    require_integer,
+    require_mapping,
+    require_string,
+)
 
 ExecutionScope = Literal["staged", "full"]
-_OUTPUT_LIMIT = 16_384
+_OUTPUT_LIMIT = 65_536
+_READ_SIZE = 8_192
+_BWRAP = Path("/usr/bin/bwrap")
+_PACKAGE_SOURCE = Path(__file__).resolve().parents[1]
+_SANDBOX_VERSION = "rigor-foundry-bwrap-v1"
+# This path is a private tmpfs created inside the bubblewrap mount namespace.
+_SANDBOX_TMP = "/tmp"  # nosec B108
+_CHILD_ENVIRONMENT = {
+    "HOME": "/nonexistent",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "TMPDIR": _SANDBOX_TMP,
+}
+
+
+def _digest(value: object, field: str) -> str:
+    """Return one lowercase SHA-256 digest."""
+    result = require_string(value, field)
+    if len(result) != 64 or any(character not in "0123456789abcdef" for character in result):
+        raise ValueError(f"{field} must be a lowercase SHA-256 digest")
+    return result
+
+
+def _file_digest(path: Path) -> str:
+    """Return SHA-256 for one regular file without loading it at once."""
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            while chunk := handle.read(1024 * 1024):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ValueError(f"cannot hash native audit executable: {path}") from exc
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
 class AdapterResult:
-    """Observed result of one repository-native audit command.
-
-    Parameters
-    ----------
-    name:
-        Stable adapter identifier.
-    command:
-        Resolved argument vector used for execution.
-    returncode:
-        Process exit status, or 124 for a hard timeout.
-    output_digest:
-        SHA-256 of complete standard output and standard error bytes.
-    output_excerpt:
-        Bounded UTF-8 replacement-decoded output for diagnostics.
-    timed_out:
-        Whether the configured wall-clock limit expired.
-    required:
-        Whether failure blocks repository conformance.
-
-    """
+    """Content-addressed, secret-free evidence from one native audit."""
 
     name: str
-    command: tuple[str, ...]
     returncode: int
     output_digest: str
-    output_excerpt: str
+    output_bytes: int
+    output_truncated: bool
     timed_out: bool
     required: bool
+    spec_digest: str
+    executable_digest: str
+    command_digest: str
+    environment_digest: str
+    sandbox_digest: str
 
     @property
     def passed(self) -> bool:
-        """Return whether the native audit exited successfully."""
-        return self.returncode == 0 and not self.timed_out
+        """Return whether the native audit exited within every bound."""
+        return self.returncode == 0 and not self.timed_out and not self.output_truncated
 
     def to_dict(self) -> dict[str, object]:
-        """Serialise observed adapter evidence."""
+        """Serialise evidence without argv, paths, environment, or raw output."""
         return {
             "name": self.name,
-            "command": list(self.command),
             "returncode": self.returncode,
             "output_digest": self.output_digest,
-            "output_excerpt": self.output_excerpt,
+            "output_bytes": self.output_bytes,
+            "output_truncated": self.output_truncated,
             "timed_out": self.timed_out,
             "required": self.required,
+            "spec_digest": self.spec_digest,
+            "executable_digest": self.executable_digest,
+            "command_digest": self.command_digest,
+            "environment_digest": self.environment_digest,
+            "sandbox_digest": self.sandbox_digest,
             "passed": self.passed,
         }
 
+    @classmethod
+    def from_dict(cls, value: object, index: int = 0) -> AdapterResult:
+        """Parse and validate one secret-free native evidence record."""
+        field = f"adapter_results[{index}]"
+        data = require_mapping(value, field)
+        boolean_names = ("output_truncated", "timed_out", "required", "passed")
+        if not all(isinstance(data.get(name), bool) for name in boolean_names):
+            raise ValueError(f"{field} boolean fields are invalid")
+        result = cls(
+            name=require_string(data.get("name"), f"{field}.name"),
+            returncode=require_integer(data.get("returncode"), f"{field}.returncode"),
+            output_digest=_digest(data.get("output_digest"), f"{field}.output_digest"),
+            output_bytes=require_integer(
+                data.get("output_bytes"),
+                f"{field}.output_bytes",
+                minimum=0,
+            ),
+            output_truncated=cast(bool, data["output_truncated"]),
+            timed_out=cast(bool, data["timed_out"]),
+            required=cast(bool, data["required"]),
+            spec_digest=_digest(data.get("spec_digest"), f"{field}.spec_digest"),
+            executable_digest=_digest(
+                data.get("executable_digest"),
+                f"{field}.executable_digest",
+            ),
+            command_digest=_digest(data.get("command_digest"), f"{field}.command_digest"),
+            environment_digest=_digest(
+                data.get("environment_digest"),
+                f"{field}.environment_digest",
+            ),
+            sandbox_digest=_digest(data.get("sandbox_digest"), f"{field}.sandbox_digest"),
+        )
+        if result.passed is not data["passed"]:
+            raise ValueError(f"{field}.passed does not match native evidence")
+        return result
 
-def _resolved_executable(value: str) -> str:
-    """Return an absolute executable for one declared command token."""
-    if value == "{python}":
-        # Preserve the active virtual-environment launcher. Resolving this
-        # symlink to the base interpreter discards the environment's package
-        # search path and makes an adapter execute under a different toolchain.
-        executable = Path(sys.executable).absolute()
-    else:
-        if Path(value).is_absolute():
-            candidate = Path(value)
-        else:
-            located = shutil.which(value)
-            if located is None:
-                raise ValueError(f"native audit executable is unavailable: {value}")
-            candidate = Path(located)
+
+def _contained(path: Path, roots: tuple[Path, ...]) -> bool:
+    """Return whether a lexical path is within an explicitly trusted root."""
+    for root in roots:
         try:
-            executable = candidate.resolve(strict=True)
-        except (OSError, ValueError) as exc:
-            raise ValueError(f"native audit executable cannot be resolved: {value}") from exc
-    if not executable.is_file() or not os.access(executable, os.X_OK):
-        raise ValueError(f"native audit executable is not executable: {executable}")
-    return str(executable)
+            path.relative_to(root)
+        except ValueError:
+            continue
+        return True
+    return False
+
+
+def _resolved_executable(root: Path, value: str) -> Path:
+    """Resolve an executable from fixed roots, never the ambient ``PATH``."""
+    trusted_roots = (root, Path(sys.prefix).absolute(), Path("/usr"))
+    if value == "{python}":
+        candidate = Path(sys.executable).absolute()
+    elif Path(value).is_absolute():
+        candidate = Path(value)
+    elif "/" in value:
+        candidate = root / value
+    else:
+        candidates = (
+            Path(sys.prefix) / "bin" / value,
+            Path("/usr/bin") / value,
+            Path("/bin") / value,
+        )
+        candidate = next((item for item in candidates if item.exists()), candidates[0])
+    absolute = candidate.absolute()
+    if not _contained(absolute, trusted_roots):
+        raise ValueError("native audit executable is outside trusted runtime roots")
+    try:
+        resolved = absolute.resolve(strict=True)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"native audit executable is unavailable: {value}") from exc
+    if not _contained(resolved, trusted_roots):
+        raise ValueError("native audit executable symlink escapes trusted runtime roots")
+    if not resolved.is_file() or not os.access(resolved, os.X_OK):
+        raise ValueError(f"native audit executable is not executable: {value}")
+    return absolute
 
 
 def _working_directory(root: Path, relative: str) -> Path:
@@ -105,82 +192,225 @@ def _working_directory(root: Path, relative: str) -> Path:
         raise ValueError("native audit working directory escapes repository")
     try:
         candidate = (root / relative_path).resolve(strict=True)
-    except OSError as exc:
-        raise ValueError("native audit working directory is unavailable") from exc
-    try:
         candidate.relative_to(root)
-    except ValueError as exc:
+    except (OSError, ValueError) as exc:
         raise ValueError("native audit working directory escapes repository") from exc
     if not candidate.is_dir():
         raise ValueError("native audit working directory is not a directory")
     return candidate
 
 
-def _digest_output(stdout: bytes, stderr: bytes) -> tuple[str, str]:
-    """Return complete-output digest and a bounded diagnostic excerpt."""
-    combined = stdout + b"\n--- stderr ---\n" + stderr
-    digest = hashlib.sha256(combined).hexdigest()
-    if len(combined) <= _OUTPUT_LIMIT:
-        excerpt_bytes = combined
-    else:
-        half = _OUTPUT_LIMIT // 2
-        excerpt_bytes = combined[:half] + b"\n... output truncated ...\n" + combined[-half:]
-    return digest, excerpt_bytes.decode("utf-8", errors="replace")
+def _minimal_mounts(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    """Collapse read-only mount roots already covered by an ancestor."""
+    selected: list[Path] = []
+    for path in sorted(
+        {item.resolve(strict=True) for item in paths}, key=lambda item: len(item.parts)
+    ):
+        if _contained(path, (Path("/usr"),)):
+            continue
+        if not _contained(path, tuple(selected)):
+            selected.append(path)
+    return tuple(selected)
 
 
-def run_adapter(root: Path, spec: AdapterSpec) -> AdapterResult:
-    """Run one declared native audit without shell expansion.
+def _mount_parent_arguments(mounts: tuple[Path, ...]) -> tuple[str, ...]:
+    """Create empty ancestors needed for same-path read-only bind mounts."""
+    excluded = {Path("/"), Path("/usr"), Path(_SANDBOX_TMP)}
+    parents: set[Path] = set()
+    for mount in mounts:
+        parent = mount.parent
+        while parent not in excluded:
+            parents.add(parent)
+            parent = parent.parent
+    arguments: list[str] = []
+    for parent in sorted(parents, key=lambda item: (len(item.parts), str(item))):
+        arguments.extend(("--dir", str(parent)))
+    return tuple(arguments)
 
-    Parameters
-    ----------
-    root:
-        Resolved repository root.
-    spec:
-        Validated adapter specification.
 
-    Returns
-    -------
-    AdapterResult
-        Exit status and content-addressed bounded output evidence.
+def _sandbox_contract(
+    repository: Path,
+    executable: Path,
+    cwd: Path,
+) -> tuple[tuple[str, ...], dict[str, str], str]:
+    """Build a fixed bubblewrap contract and its canonical identity digest."""
+    if not _BWRAP.is_file() or not os.access(_BWRAP, os.X_OK):
+        raise RuntimeError("native audits require /usr/bin/bwrap for read-only isolation")
+    mounts = _minimal_mounts((repository, Path(sys.prefix), _PACKAGE_SOURCE))
+    child_environment = {
+        **_CHILD_ENVIRONMENT,
+        "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+    }
+    arguments: list[str] = [
+        str(_BWRAP),
+        "--die-with-parent",
+        "--new-session",
+        "--unshare-all",
+        "--uid",
+        "65534",
+        "--gid",
+        "65534",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--symlink",
+        "usr/bin",
+        "/bin",
+        "--symlink",
+        "usr/lib",
+        "/lib",
+        "--symlink",
+        "usr/lib64",
+        "/lib64",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--tmpfs",
+        _SANDBOX_TMP,
+        *_mount_parent_arguments(mounts),
+    ]
+    for mount in mounts:
+        arguments.extend(("--ro-bind", str(mount), str(mount)))
+    arguments.extend(("--chdir", str(cwd), "--clearenv"))
+    for key, value in sorted(child_environment.items()):
+        arguments.extend(("--setenv", key, value))
+    sandbox_body = {
+        "version": _SANDBOX_VERSION,
+        "bubblewrap_digest": _file_digest(_BWRAP),
+        "mounts_digest": canonical_digest([str(item) for item in mounts]),
+        "working_directory_digest": canonical_digest(str(cwd)),
+        "executable_digest": _file_digest(executable),
+        "environment_digest": canonical_digest(child_environment),
+        "network": "unshared",
+        "repository": "read-only",
+        "uid": 65534,
+        "gid": 65534,
+    }
+    launcher_environment = {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "PATH": "/usr/bin:/bin"}
+    return tuple(arguments), launcher_environment, canonical_digest(sandbox_body)
 
-    """
-    repository = root.resolve(strict=True)
-    command = (_resolved_executable(spec.command[0]), *spec.command[1:])
-    cwd = _working_directory(repository, spec.working_directory)
-    environment = os.environ.copy()
-    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+
+def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
+    """Terminate the bubblewrap process group, escalating if it does not exit."""
+    if process.poll() is not None:
+        return
     try:
-        completed = subprocess.run(  # nosec B603
-            command,
-            cwd=cwd,
-            env=environment,
-            check=False,
-            capture_output=True,
-            shell=False,
-            timeout=spec.timeout_seconds,
-        )
-    except subprocess.TimeoutExpired as exc:
-        stdout = exc.stdout if isinstance(exc.stdout, bytes) else b""
-        stderr = exc.stderr if isinstance(exc.stderr, bytes) else b""
-        digest, excerpt = _digest_output(stdout, stderr)
-        return AdapterResult(
-            name=spec.name,
-            command=command,
-            returncode=124,
-            output_digest=digest,
-            output_excerpt=excerpt,
-            timed_out=True,
-            required=spec.required,
-        )
-    digest, excerpt = _digest_output(completed.stdout, completed.stderr)
+        os.killpg(process.pid, signal.SIGTERM)
+        process.wait(timeout=0.5)
+    except (ProcessLookupError, subprocess.TimeoutExpired):
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=2)
+
+
+def _stream_process(
+    command: tuple[str, ...],
+    *,
+    environment: dict[str, str],
+    timeout_seconds: int,
+) -> tuple[int, str, int, bool, bool]:
+    """Execute one process with a streaming aggregate output hard cap."""
+    process = subprocess.Popen(  # nosec B603
+        command,
+        env=environment,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    if process.stdout is None or process.stderr is None:
+        _terminate_process_tree(process)
+        raise RuntimeError("native audit output pipes were not created")
+    stream_digests = {"stdout": hashlib.sha256(), "stderr": hashlib.sha256()}
+    stream_bytes = {"stdout": 0, "stderr": 0}
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    deadline = time.monotonic() + timeout_seconds
+    truncated = False
+    timed_out = False
+    try:
+        while selector.get_map():
+            remaining_time = deadline - time.monotonic()
+            if remaining_time <= 0:
+                timed_out = True
+                _terminate_process_tree(process)
+                break
+            for key, _mask in selector.select(timeout=min(remaining_time, 0.1)):
+                total = sum(stream_bytes.values())
+                allowed = _OUTPUT_LIMIT - total
+                chunk = os.read(key.fd, min(_READ_SIZE, allowed + 1))
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                label = str(key.data)
+                accepted = chunk[:allowed]
+                stream_digests[label].update(accepted)
+                stream_bytes[label] += len(accepted)
+                if len(chunk) > allowed:
+                    truncated = True
+                    _terminate_process_tree(process)
+                    break
+            if truncated:
+                break
+        if process.poll() is None:
+            process.wait(timeout=2)
+    finally:
+        selector.close()
+        process.stdout.close()
+        process.stderr.close()
+        if process.poll() is None:
+            _terminate_process_tree(process)
+    returncode = 124 if timed_out else 125 if truncated else int(process.returncode)
+    output_body = {
+        "stdout_digest": stream_digests["stdout"].hexdigest(),
+        "stdout_bytes": stream_bytes["stdout"],
+        "stderr_digest": stream_digests["stderr"].hexdigest(),
+        "stderr_bytes": stream_bytes["stderr"],
+        "truncated": truncated,
+        "timed_out": timed_out,
+    }
+    return (
+        returncode,
+        canonical_digest(output_body),
+        sum(stream_bytes.values()),
+        truncated,
+        timed_out,
+    )
+
+
+def run_adapter(root: Path, spec: AdapterSpec, *, trusted: bool = False) -> AdapterResult:
+    """Run one explicitly consented adapter inside a read-only sandbox."""
+    if not trusted:
+        raise ValueError("native audit execution requires explicit trusted consent")
+    repository = root.resolve(strict=True)
+    executable = _resolved_executable(repository, spec.command[0])
+    command = (str(executable), *spec.command[1:])
+    cwd = _working_directory(repository, spec.working_directory)
+    sandbox, environment, sandbox_digest = _sandbox_contract(repository, executable, cwd)
+    returncode, output_digest, output_bytes, truncated, timed_out = _stream_process(
+        (*sandbox, "--", *command),
+        environment=environment,
+        timeout_seconds=spec.timeout_seconds,
+    )
+    child_environment = {
+        **_CHILD_ENVIRONMENT,
+        "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+    }
     return AdapterResult(
         name=spec.name,
-        command=command,
-        returncode=completed.returncode,
-        output_digest=digest,
-        output_excerpt=excerpt,
-        timed_out=False,
+        returncode=returncode,
+        output_digest=output_digest,
+        output_bytes=output_bytes,
+        output_truncated=truncated,
+        timed_out=timed_out,
         required=spec.required,
+        spec_digest=canonical_digest(spec.to_dict()),
+        executable_digest=_file_digest(executable),
+        command_digest=canonical_digest(command),
+        environment_digest=canonical_digest(child_environment),
+        sandbox_digest=sandbox_digest,
     )
 
 
@@ -188,10 +418,14 @@ def run_native_audits(
     root: Path,
     specs: tuple[AdapterSpec, ...],
     scope: ExecutionScope,
+    *,
+    trusted: bool = False,
 ) -> tuple[AdapterResult, ...]:
-    """Run declared adapters applicable to one verification scope."""
+    """Run applicable adapters only after explicit trusted execution consent."""
     selected = tuple(spec for spec in specs if spec.scope in {scope, "both"})
     names = tuple(spec.name for spec in selected)
     if len(names) != len(set(names)):
         raise ValueError("native audit adapter names must be unique")
-    return tuple(run_adapter(root, spec) for spec in selected)
+    if selected and not trusted:
+        raise ValueError("native audit execution requires explicit trusted consent")
+    return tuple(run_adapter(root, spec, trusted=True) for spec in selected)

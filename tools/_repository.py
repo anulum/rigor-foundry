@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -74,7 +74,11 @@ def visible_files(root: Path = ROOT) -> tuple[Path, ...]:
     if result.returncode != 0:
         detail = result.stderr.strip() or "Git inventory failed"
         raise RepositoryError(detail)
-    paths = (Path(value) for value in result.stdout.split("\0") if value)
+    paths = (
+        Path(value)
+        for value in result.stdout.split("\0")
+        if value and ((root / value).exists() or (root / value).is_symlink())
+    )
     return tuple(sorted(paths, key=lambda path: path.as_posix()))
 
 

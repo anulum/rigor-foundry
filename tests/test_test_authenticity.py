@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from repository_audit_git_repository import GitRepository
@@ -31,7 +32,7 @@ def test_authenticity_scanner_reports_every_registered_signal(tmp_path: Path) ->
         "from pkg.core import _hidden",
         "",
         "# pragma:" + " no cover",
-        "# no" + "qa: E501",
+        "RIGOR_SENTINEL_5ab7d641 = 'private'  # no" + "qa: E501",
         "value: int = 'x'  # type:" + " ignore[assignment]",
         "sys." + "modules['pkg.optional'] = object()",
         "record = " + "fa" + "ke_record",
@@ -71,6 +72,12 @@ def test_authenticity_scanner_reports_every_registered_signal(tmp_path: Path) ->
     private = [item for item in candidates if item.rule_id == "TA011-private-production-surface"]
     assert any(item.symbol.startswith("_hidden;") for item in private)
     assert not any(item.path == "tests/test_public.py" for item in candidates)
+    serialised = json.dumps([item.to_dict() for item in candidates], sort_keys=True)
+    assert "RIGOR_SENTINEL_5ab7d641" not in serialised
+    exempt = {"TA008-coverage-bucket-name", "TA009-unparseable-python-test"}
+    assert all(
+        "line_sha256=" in item.evidence for item in candidates if item.rule_id not in exempt
+    )
 
 
 def test_authenticity_scanner_accepts_real_observable_contract_forms(tmp_path: Path) -> None:

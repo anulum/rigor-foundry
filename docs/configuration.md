@@ -6,10 +6,13 @@ missing.
 
 Policy discovery is deterministic:
 
-1. an explicit CLI path;
+1. an explicit repository-relative CLI path;
 2. `rigor-foundry-policy.json`;
-3. `.rigor/policy.json` for ignored local policy;
-4. `config/rigor-foundry/policy.json`.
+3. `config/rigor-foundry/policy.json`.
+
+The selected policy must be a tracked, non-symlink UTF-8 file inside the
+audited repository. External, parent-relative, ignored, and symlinked policy
+inputs fail closed rather than silently controlling the audit.
 
 Repository policy controls source and test roots, production packages,
 mandatory audit domains, size registries, enforcement mode, and declared native
@@ -36,17 +39,26 @@ contains only an opaque provider, reference, and version. Secret resolution is
 an authorised adapter responsibility and the resulting bytes must not enter
 reports, plans, logs, or public output.
 
+Declared native adapters are executable policy, not passive configuration.
+`gate` and `campaign-run` refuse to run them unless the operator supplies
+`--allow-native-audits`. Consent still uses a fixed credential-free
+environment, a no-network read-only bubblewrap sandbox, mandatory timeouts,
+process-tree termination, and a streaming output hard cap.
+
 Conditions use a bounded declarative expression tree. They can read declared
 context values and combine supported comparisons and boolean operations; they
 cannot import code, invoke a shell, access the network, or mutate the audited
 repository. Missing references and malformed or oversized expressions fail
 closed.
 
-Profile resolution verifies exact pack pins and detached signature evidence,
-resolves typed assignments, applies overlays and finite waivers, retains
-contradictions, and emits an `EffectiveProfileLock`. A lock is ready only when
-required inputs are complete and no blocking contradiction remains. Stronger
-targets and explicit denial win over unauthorised weakening.
+Profile resolution verifies exact pack pins and actual Ed25519 signature bytes
+against an explicit public-key trust store, resolves typed assignments, applies
+overlays and finite waivers, retains contradictions, and emits an
+`EffectiveProfileLock`. The verification record binds the key, signature, pack,
+and trust-store digests; a caller-supplied `valid` label is never accepted. A
+lock is ready only when required inputs are complete and no blocking
+contradiction remains. Stronger targets and explicit denial win over
+unauthorised weakening.
 
 Every weakening waiver is exact: control, field, previous value, new value,
 and active time window must match. Risk acceptance uses a dedicated
@@ -55,9 +67,12 @@ kept separate from applicability, target, and mode waiver identifiers. Those
 other waiver classes cannot authorise an accepted-risk assessment.
 
 Evidence names an exact `AdapterLock` digest whose declared domains include the
-control domain. Reviewer attestations bind the exact assessment body and count
-distinct reviewer identities and distinct keys. Remediation and rollback argv
-must match the exact command digest recorded in their adapter locks.
+control domain. Reviewer attestations carry an Ed25519 signature over the exact
+assessment body, identity, decision, and validity window. Clearance reverifies
+that signature against an explicit reviewer trust store and binds that store's
+digest into the assessment before counting distinct reviewer identities and
+keys. Remediation and rollback argv must match the exact command digest recorded
+in their adapter locks.
 
 Local campaign records, review ledgers, and optional TODO promotion default to
 `.rigor/`. The adopter must keep that directory Git-ignored; commands that

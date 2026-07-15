@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess  # nosec B404
 from dataclasses import dataclass
@@ -49,6 +50,17 @@ class TrackedFile:
     content_kind: ContentKind
     byte_size: int
     content_digest: str
+    git_mode: str
+    object_id: str
+
+
+@dataclass(frozen=True)
+class TrackedIndexEntry:
+    """One stage-zero Git index entry with its exact mode and object id."""
+
+    path: str
+    git_mode: str
+    object_id: str
 
 
 @dataclass(frozen=True)
@@ -129,16 +141,31 @@ def _repository_root(path: Path) -> Path:
     return root
 
 
-def _tracked_paths(root: Path) -> tuple[str, ...]:
-    """Return all tracked paths without interpreting shell characters."""
-    raw = _run_git(root, "ls-files", "-z")
-    try:
-        paths = tuple(part.decode("utf-8") for part in raw.split(b"\0") if part)
-    except UnicodeDecodeError as exc:
-        raise RuntimeError("Git index contains a non-UTF-8 path") from exc
+def _tracked_entries(root: Path) -> tuple[TrackedIndexEntry, ...]:
+    """Return stage-zero index entries without discarding modes or object ids."""
+    raw = _run_git(root, "ls-files", "--stage", "-z")
+    entries: list[TrackedIndexEntry] = []
+    for record in (part for part in raw.split(b"\0") if part):
+        metadata, separator, path_bytes = record.partition(b"\t")
+        fields = metadata.split(b" ")
+        if not separator or len(fields) != 3:
+            raise RuntimeError("Git index returned a malformed staged entry")
+        try:
+            mode, object_id, stage = (field.decode("ascii") for field in fields)
+            path = path_bytes.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise RuntimeError("Git index contains a non-UTF-8 field") from exc
+        if stage != "0":
+            raise RuntimeError(f"Git index contains an unresolved stage for {path}")
+        if mode not in {"100644", "100755", "120000", "160000"}:
+            raise RuntimeError(f"Git index contains unsupported mode {mode} for {path}")
+        if re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", object_id) is None:
+            raise RuntimeError(f"Git index contains an invalid object id for {path}")
+        entries.append(TrackedIndexEntry(path=path, git_mode=mode, object_id=object_id))
+    paths = tuple(item.path for item in entries)
     if len(paths) != len(set(paths)):
         raise RuntimeError("Git index returned duplicate tracked paths")
-    return tuple(sorted(paths))
+    return tuple(sorted(entries, key=lambda item: item.path))
 
 
 def _dirty_paths(root: Path) -> tuple[str, ...]:
@@ -168,13 +195,28 @@ def _dirty_paths(root: Path) -> tuple[str, ...]:
     return tuple(sorted(paths))
 
 
-def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
+def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
     """Read one tracked path without following it outside the worktree."""
+    relative = entry.path
     relative_path = Path(relative)
     if relative_path.is_absolute() or ".." in relative_path.parts:
         raise RuntimeError(f"tracked path escapes repository root: {relative}")
     absolute = root / relative_path
-    if absolute.is_symlink():
+    if entry.git_mode == "160000":
+        object_bytes = entry.object_id.encode("ascii")
+        return TrackedFile(
+            path=relative,
+            absolute_path=absolute,
+            text=None,
+            content_kind="gitlink",
+            byte_size=0,
+            content_digest=hashlib.sha256(object_bytes).hexdigest(),
+            git_mode=entry.git_mode,
+            object_id=entry.object_id,
+        )
+    if entry.git_mode == "120000":
+        if not absolute.is_symlink():
+            raise RuntimeError(f"tracked symlink is unavailable: {relative}")
         try:
             target = os.readlink(absolute)
         except OSError as exc:
@@ -187,6 +229,8 @@ def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
             content_kind="symlink",
             byte_size=len(target_bytes),
             content_digest=hashlib.sha256(target_bytes).hexdigest(),
+            git_mode=entry.git_mode,
+            object_id=entry.object_id,
         )
     if not absolute.exists():
         return TrackedFile(
@@ -196,15 +240,8 @@ def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
             content_kind="missing",
             byte_size=0,
             content_digest=hashlib.sha256(b"").hexdigest(),
-        )
-    if absolute.is_dir():
-        return TrackedFile(
-            path=relative,
-            absolute_path=absolute,
-            text=None,
-            content_kind="gitlink",
-            byte_size=0,
-            content_digest=hashlib.sha256(b"").hexdigest(),
+            git_mode=entry.git_mode,
+            object_id=entry.object_id,
         )
     if not absolute.is_file():
         return TrackedFile(
@@ -214,6 +251,8 @@ def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
             content_kind="missing",
             byte_size=0,
             content_digest=hashlib.sha256(b"").hexdigest(),
+            git_mode=entry.git_mode,
+            object_id=entry.object_id,
         )
     try:
         byte_size = absolute.stat().st_size
@@ -225,6 +264,8 @@ def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
                 content_kind="oversize",
                 byte_size=byte_size,
                 content_digest=_stream_digest(absolute),
+                git_mode=entry.git_mode,
+                object_id=entry.object_id,
             )
         payload = absolute.read_bytes()
     except OSError as exc:
@@ -247,6 +288,8 @@ def _read_tracked_file(root: Path, relative: str) -> TrackedFile:
         content_kind=content_kind,
         byte_size=len(payload),
         content_digest=hashlib.sha256(payload).hexdigest(),
+        git_mode=entry.git_mode,
+        object_id=entry.object_id,
     )
 
 
@@ -270,6 +313,8 @@ def _tracked_content_digest(files: tuple[TrackedFile, ...]) -> str:
             "kind": item.content_kind,
             "byte_size": item.byte_size,
             "content_digest": item.content_digest,
+            "git_mode": item.git_mode,
+            "object_id": item.object_id,
         }
         for item in files
     ]
@@ -338,8 +383,8 @@ def load_git_inventory(path: Path) -> GitInventory:
         _run_git(root, "rev-parse", "--abbrev-ref", "HEAD"),
         "branch",
     )
-    paths = _tracked_paths(root)
-    files = tuple(_read_tracked_file(root, relative) for relative in paths)
+    entries = _tracked_entries(root)
+    files = tuple(_read_tracked_file(root, entry) for entry in entries)
     return GitInventory(
         root=root,
         head=head,

@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 import pytest
+from signing_fixtures import pack_signature, sign_digest, trust_store
 
 from rigor_foundry.control_assessment import (
     ControlAssessment,
@@ -38,7 +39,6 @@ from rigor_foundry.project_profile import (
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
-    PackSignature,
     RemediationContract,
     StandardPack,
 )
@@ -88,7 +88,7 @@ def pack(*, minimum_reviewers: int = 1) -> StandardPack:
         source_uri="https://standards.example/core",
         source_digest=source_digest,
         licence="MIT",
-        signature=PackSignature("ed25519", "trusted-key", payload, "2" * 64),
+        signature=pack_signature(payload),
         controls=(control,),
     )
 
@@ -147,12 +147,9 @@ def locked_control(
         created_at=ASSESSED_AT,
     )
     verification = PackVerification.build(
-        pack_digest=standard.pack_digest,
-        key_id=standard.signature.key_id,
-        proof_digest="3" * 64,
-        tool_digest="4" * 64,
+        pack=standard,
+        trust_store=trust_store("trusted-key"),
         verified_at="2026-07-15T11:50:00Z",
-        valid=True,
     )
     adapter = adapter_lock()
     effective = EffectiveControl.build(
@@ -174,6 +171,7 @@ def locked_control(
         variables=(),
         controls=(effective,),
         warnings=(),
+        trust_store=trust_store("trusted-key"),
         toolchain_digest="9" * 64,
         resolved_at=ASSESSED_AT,
     )
@@ -218,8 +216,12 @@ def review(
     assessor: str = "assessment-agent",
     limitations: tuple[str, ...] = (),
     accepted_waiver_id: str = "",
+    trusted_key_ids: tuple[str, ...] | None = None,
 ) -> ReviewerAttestation:
     """Return one current reviewer attestation."""
+    if proof_level not in {"asserted", "cryptographically-verified"}:
+        raise ValueError("review.proof_level is unsupported")
+    review_store = trust_store(*(trusted_key_ids or (key_id,)))
     body_digest = ControlAssessment.body_digest_for_review(
         lock,
         control,
@@ -230,16 +232,29 @@ def review(
         rationale=rationale,
         limitations=limitations,
         accepted_waiver_id=accepted_waiver_id,
+        review_trust_store=review_store,
     )
-    return ReviewerAttestation.build(
+    payload_digest = ReviewerAttestation.payload_digest(
         reviewer_id=reviewer_id,
-        proof_level=cast(object, proof_level),
+        algorithm="ed25519",
         key_id=key_id,
-        proof_digest="b" * 64,
         assessment_body_digest=body_digest,
         decision=cast(object, decision),
         reviewed_at="2026-07-15T11:45:00Z",
         expires_at="2026-07-15T13:00:00Z",
+    )
+    return ReviewerAttestation.build(
+        reviewer_id=reviewer_id,
+        key_id=key_id,
+        assessment_body_digest=body_digest,
+        decision=cast(object, decision),
+        reviewed_at="2026-07-15T11:45:00Z",
+        expires_at="2026-07-15T13:00:00Z",
+        signature_hex=(
+            sign_digest(key_id, payload_digest)
+            if proof_level == "cryptographically-verified"
+            else "0" * 128
+        ),
     )
 
 
@@ -257,16 +272,43 @@ def test_pass_round_trips_only_with_fresh_covered_independent_evidence() -> None
         evidence=(run,),
         reviews=(review(lock, control, evidence_items=(run,), rationale=rationale),),
         rationale=rationale,
+        review_trust_store=trust_store("reviewer-key-1"),
     )
-    assert ControlAssessment.from_dict(assessment.to_dict(), lock) == assessment
+    assert (
+        ControlAssessment.from_dict(
+            assessment.to_dict(),
+            lock,
+            trust_store("reviewer-key-1"),
+        )
+        == assessment
+    )
     assert EvidenceReference.from_dict(assessment.evidence[0].to_dict()) == assessment.evidence[0]
     assert ReviewerAttestation.from_dict(assessment.reviews[0].to_dict()) == assessment.reviews[0]
     assert assessment.evidence[0].fresh_at(datetime(2026, 7, 15, 12, tzinfo=UTC), 3600)
+    with pytest.raises(ValueError, match="verified independent"):
+        ControlAssessment.from_dict(
+            assessment.to_dict(),
+            lock,
+            trust_store("substituted-reviewer-key"),
+        )
+    forged_identity = replace(assessment.reviews[0], reviewer_id="fabricated-reviewer")
+    with pytest.raises(ValueError, match="verified independent"):
+        ControlAssessment.build(
+            lock,
+            control,
+            status="pass",
+            assessor="assessment-agent",
+            assessed_at=ASSESSED_AT,
+            evidence=(run,),
+            reviews=(forged_identity,),
+            rationale=rationale,
+            review_trust_store=trust_store("reviewer-key-1"),
+        )
 
     tampered = deepcopy(assessment.to_dict())
     tampered["assessor"] = "other-agent"
     with pytest.raises(ValueError):
-        ControlAssessment.from_dict(tampered, lock)
+        ControlAssessment.from_dict(tampered, lock, trust_store("reviewer-key-1"))
 
 
 def test_evidence_and_reviews_bind_exact_lock_control_and_body() -> None:
@@ -291,6 +333,7 @@ def test_evidence_and_reviews_bind_exact_lock_control_and_body() -> None:
             evidence=(changed_run,),
             reviews=(bound_review,),
             rationale=rationale,
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     other_lock, other_control = locked_control(waiver_ids=("different-body",))
     with pytest.raises(ValueError, match="verified independent"):
@@ -303,6 +346,7 @@ def test_evidence_and_reviews_bind_exact_lock_control_and_body() -> None:
             evidence=(first_run,),
             reviews=(bound_review,),
             rationale=rationale,
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     with pytest.raises(ValueError, match="exact locked adapter"):
         ControlAssessment.build(
@@ -330,6 +374,7 @@ def test_review_quorum_requires_distinct_identities_and_keys() -> None:
             rationale=rationale,
             reviewer_id=reviewer_id,
             key_id=key_id,
+            trusted_key_ids=("key-1", "key-2"),
         )
 
     for reviews in (
@@ -346,6 +391,7 @@ def test_review_quorum_requires_distinct_identities_and_keys() -> None:
                 evidence=(run,),
                 reviews=reviews,
                 rationale=rationale,
+                review_trust_store=trust_store("key-1", "key-2"),
             )
     accepted = ControlAssessment.build(
         lock,
@@ -356,6 +402,7 @@ def test_review_quorum_requires_distinct_identities_and_keys() -> None:
         evidence=(run,),
         reviews=(attestation("reviewer-a", "key-1"), attestation("reviewer-b", "key-2")),
         rationale=rationale,
+        review_trust_store=trust_store("key-1", "key-2"),
     )
     assert accepted.status == "pass"
 
@@ -381,6 +428,7 @@ def test_missing_adapter_stale_evidence_and_asserted_review_cannot_pass() -> Non
                 ),
             ),
             rationale="must fail",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     lock, control = locked_control()
     stale = evidence(
@@ -397,6 +445,7 @@ def test_missing_adapter_stale_evidence_and_asserted_review_cannot_pass() -> Non
             evidence=(stale,),
             reviews=(review(lock, control, evidence_items=(stale,), rationale="must fail"),),
             rationale="must fail",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     asserted = review(
         lock,
@@ -404,7 +453,6 @@ def test_missing_adapter_stale_evidence_and_asserted_review_cannot_pass() -> Non
         evidence_items=(current,),
         rationale="must fail",
         proof_level="asserted",
-        key_id="",
     )
     with pytest.raises(ValueError, match="verified independent"):
         ControlAssessment.build(
@@ -416,6 +464,7 @@ def test_missing_adapter_stale_evidence_and_asserted_review_cannot_pass() -> Non
             evidence=(current,),
             reviews=(asserted,),
             rationale="must fail",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
 
 
@@ -488,6 +537,7 @@ def test_accepted_risk_requires_dedicated_active_waiver_evidence_and_review() ->
         rationale=rationale,
         limitations=limitations,
         accepted_waiver_id="risk-waiver",
+        review_trust_store=trust_store("reviewer-key-1"),
     )
     assert accepted.status == "accepted-risk"
     for waiver_class in ("target", "mode", "applicability"):
@@ -513,6 +563,7 @@ def test_accepted_risk_requires_dedicated_active_waiver_evidence_and_review() ->
                 reviews=(unrelated_review,),
                 rationale=unrelated_rationale,
                 accepted_waiver_id=unrelated_id,
+                review_trust_store=trust_store("reviewer-key-1"),
             )
     with pytest.raises(ValueError, match="active"):
         wrong_risk_review = review(
@@ -533,6 +584,7 @@ def test_accepted_risk_requires_dedicated_active_waiver_evidence_and_review() ->
             reviews=(wrong_risk_review,),
             rationale="wrong waiver",
             accepted_waiver_id="other-waiver",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
 
 
@@ -566,6 +618,7 @@ def test_not_applicable_control_must_remain_unassessed() -> None:
                 ),
             ),
             rationale="invalid cosmetic pass",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
 
 
@@ -639,13 +692,12 @@ def test_evidence_and_reviewer_metadata_edges_fail_closed() -> None:
     with pytest.raises(ValueError, match="later than"):
         ReviewerAttestation.build(
             reviewer_id="reviewer",
-            proof_level="asserted",
-            key_id="",
-            proof_digest="b" * 64,
+            key_id="reviewer-key-1",
             assessment_body_digest="c" * 64,
             decision="fail",
             reviewed_at="2026-07-15T12:00:00Z",
             expires_at="2026-07-15T12:00:00Z",
+            signature_hex="0" * 128,
         )
     current_review = review(
         lock,
@@ -658,6 +710,7 @@ def test_evidence_and_reviewer_metadata_edges_fail_closed() -> None:
             datetime(2026, 7, 15, 12),
             "pass",
             current_review.assessment_body_digest,
+            trust_store("reviewer-key-1"),
         )
     tampered_review = current_review.to_dict()
     tampered_review["attestation_digest"] = "0" * 64
@@ -706,6 +759,7 @@ def test_remaining_assessment_state_and_coverage_edges_are_explicit() -> None:
             ),
             rationale="verified",
             limitations=("hidden",),
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     waiver_lock, waiver_control = locked_control(risk_waiver_ids=("risk-waiver",))
     with pytest.raises(ValueError, match="factual evidence"):
@@ -726,6 +780,7 @@ def test_remaining_assessment_state_and_coverage_edges_are_explicit() -> None:
             reviews=(unsupported_review,),
             rationale="unsupported",
             accepted_waiver_id="risk-waiver",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
     with pytest.raises(ValueError, match="clearance evidence"):
         ControlAssessment.build(
@@ -755,6 +810,7 @@ def test_remaining_assessment_state_and_coverage_edges_are_explicit() -> None:
                 ),
             ),
             rationale="wrong evidence type",
+            review_trust_store=trust_store("reviewer-key-1"),
         )
 
 

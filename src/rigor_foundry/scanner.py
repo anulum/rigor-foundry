@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -21,7 +21,6 @@ from .test_authenticity import scan_test_authenticity
 
 _DEFAULT_POLICY_PATHS = (
     Path("rigor-foundry-policy.json"),
-    Path(".rigor/policy.json"),
     Path("config/rigor-foundry/policy.json"),
 )
 
@@ -77,12 +76,19 @@ def resolve_policy(
 ) -> tuple[AuditPolicy, tuple[Candidate, ...]]:
     """Resolve a repository policy and report fallback configuration."""
     if requested is not None:
-        path = requested if requested.is_absolute() else inventory.root / requested
-        return AuditPolicy.from_path(path), ()
+        if requested.is_absolute() or ".." in requested.parts:
+            raise ValueError("audit policy must be a tracked repository-relative path")
+        matches = tuple(item for item in inventory.files if item.path == requested.as_posix())
+        if len(matches) != 1 or matches[0].content_kind != "text" or matches[0].text is None:
+            raise ValueError("audit policy must be one tracked non-symlink UTF-8 file")
+        return AuditPolicy.from_json(matches[0].text), ()
     for relative in _DEFAULT_POLICY_PATHS:
-        path = inventory.root / relative
-        if path.is_file():
-            return AuditPolicy.from_path(path), ()
+        matches = tuple(item for item in inventory.files if item.path == relative.as_posix())
+        if not matches:
+            continue
+        if len(matches) != 1 or matches[0].content_kind != "text" or matches[0].text is None:
+            raise ValueError("discovered audit policy must be tracked non-symlink UTF-8 text")
+        return AuditPolicy.from_json(matches[0].text), ()
     return AuditPolicy(), (
         _governance_candidate(
             ".",
@@ -98,7 +104,10 @@ def _scope_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
     for item in inventory.files:
         if item.text is not None:
             continue
-        if PurePosixPath(item.path).suffix.lower() not in _SCANNABLE_EXTENSIONS:
+        if (
+            item.content_kind != "gitlink"
+            and PurePosixPath(item.path).suffix.lower() not in _SCANNABLE_EXTENSIONS
+        ):
             continue
         candidates.append(
             Candidate.build(

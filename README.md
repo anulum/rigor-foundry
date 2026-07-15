@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml)
 [![Documentation](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](pyproject.toml)
 
 ![RigorFoundry audit forge](docs/assets/rigor_foundry_repo_header.png)
@@ -92,6 +92,12 @@ yet.
 | `rigor campaign-run` | Execute and attest one independent run. |
 | `rigor campaign-compare` | Record disagreement and unresolved evidence. |
 
+Declared native adapters run only after `--allow-native-audits` consent. They
+execute in a no-network, read-only sandbox with a credential-free environment,
+hard output and time bounds, process-tree termination, and digest-only durable
+evidence. Native execution currently requires Linux bubblewrap at
+`/usr/bin/bwrap`; passive scans and report review do not.
+
 ## Module ownership
 
 | Surface | Modules | Responsibility |
@@ -103,8 +109,8 @@ yet.
 | Native boundaries | `adapters` | Time-bounded repository commands without a shell. |
 | Campaigns | `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare` | Independent-run provenance and divergence. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |
-| Desired state | `standard_pack`, `project_profile`, `effective_profile`, `profile_resolution` | Versioned controls, adopter intent, exact pack locks, contradiction evidence, and fail-closed resolution. |
-| Assessment and planning | `control_assessment`, `remediation_plan`, `_remediation_graph` | Fresh evidence, reviewer separation, target gaps, adapter-bound procedures, and conflict-safe batches. |
+| Desired state | `standard_pack`, `project_profile`, `effective_profile`, `profile_resolution`, `trust` | Versioned controls, explicit Ed25519 trust stores, adopter intent, exact pack locks, contradiction evidence, and fail-closed resolution. |
+| Assessment and planning | `control_assessment`, `review_attestation`, `remediation_plan`, `_remediation_graph` | Signed fresh evidence, cryptographically verified reviewer separation, target gaps, adapter-bound procedures, and conflict-safe batches. |
 | Work lifecycle | `internal_storage`, `work_models` | Ignored crash-safe storage and digest-bound task/event closure records. |
 
 ## Container use
@@ -163,7 +169,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 
-RigorFoundry is available under the [MIT License](LICENSE).
+RigorFoundry is available under the [Apache License 2.0](LICENSE). The licence
+includes an explicit contribution-scoped patent grant; it does not grant rights
+to use the RigorFoundry name or marks except as the licence permits.
 
 ---
 

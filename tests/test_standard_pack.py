@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -12,18 +12,17 @@ from __future__ import annotations
 from copy import deepcopy
 
 import pytest
+from signing_fixtures import pack_signature
 
 from rigor_foundry.condition_language import ConditionExpression
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
-    PackSignature,
     RemediationContract,
     StandardPack,
 )
 
 SOURCE_DIGEST = "1" * 64
-SIGNATURE_DIGEST = "2" * 64
 
 
 def control(*, control_id: str = "core/no-godfiles") -> ControlDefinition:
@@ -72,12 +71,7 @@ def pack(*, pack_id: str = "core") -> StandardPack:
         licence="MIT",
         controls=controls,
     )
-    signature = PackSignature(
-        algorithm="ed25519",
-        key_id="standards-key-1",
-        payload_digest=payload_digest,
-        signature_digest=SIGNATURE_DIGEST,
-    )
+    signature = pack_signature(payload_digest, "standards-key-1")
     return StandardPack.build(
         pack_id=pack_id,
         version="1.2.3",
@@ -124,12 +118,7 @@ def test_tampering_and_unbound_signature_fail_closed() -> None:
             source_uri=expected.source_uri,
             source_digest=expected.source_digest,
             licence=expected.licence,
-            signature=PackSignature(
-                algorithm="ed25519",
-                key_id="standards-key-1",
-                payload_digest="0" * 64,
-                signature_digest=SIGNATURE_DIGEST,
-            ),
+            signature=pack_signature("0" * 64, "standards-key-1"),
             controls=expected.controls,
         )
 

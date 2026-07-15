@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -13,6 +13,7 @@ from dataclasses import replace
 from typing import cast
 
 import pytest
+from signing_fixtures import pack_signature, trust_store
 
 from rigor_foundry._remediation_graph import argv_digest
 from rigor_foundry.control_assessment import ControlAssessment, EvidenceReference
@@ -39,7 +40,6 @@ from rigor_foundry.remediation_plan import (
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
-    PackSignature,
     RemediationContract,
     StandardPack,
 )
@@ -111,7 +111,7 @@ def locked_controls(
         source_uri="https://standards.example/core",
         source_digest=source_digest,
         licence="MIT",
-        signature=PackSignature("ed25519", "trusted-key", payload, "2" * 64),
+        signature=pack_signature(payload),
         controls=(first, second),
     )
     requirements = tuple(
@@ -144,12 +144,9 @@ def locked_controls(
         created_at=NOW,
     )
     verification = PackVerification.build(
-        pack_digest=standard.pack_digest,
-        key_id=standard.signature.key_id,
-        proof_digest="3" * 64,
-        tool_digest="4" * 64,
+        pack=standard,
+        trust_store=trust_store("trusted-key"),
         verified_at="2026-07-15T11:50:00Z",
-        valid=True,
     )
     adapters = (
         adapter_lock("architecture-adapter", ("rigor-adapter", "audit")),
@@ -191,6 +188,7 @@ def locked_controls(
         variables=(),
         controls=effective,
         warnings=(),
+        trust_store=trust_store("trusted-key"),
         toolchain_digest="9" * 64,
         resolved_at=NOW,
     )

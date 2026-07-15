@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -28,11 +28,11 @@ def _repository(path: Path, *, dependencies: str, source: str) -> Path:
     return path
 
 
-def test_data_boundary_accepts_dependency_free_local_core(tmp_path: Path) -> None:
-    """Standard-library computation without network clients stays inside the boundary."""
+def test_data_boundary_accepts_approved_local_runtime_dependency(tmp_path: Path) -> None:
+    """The pinned cryptographic verifier does not permit network-capable drift."""
     root = _repository(
         tmp_path / "repository",
-        dependencies="[]",
+        dependencies='["cryptography>=49,<50"]',
         source="from pathlib import Path\n\ndef read(path: Path) -> str:\n    return path.read_text()\n",
     )
     assert data_boundary_errors(root) == []
@@ -46,7 +46,7 @@ def test_data_boundary_rejects_dependencies_and_network_clients(tmp_path: Path) 
         source="import socket\nfrom urllib import request\n",
     )
     assert data_boundary_errors(root) == [
-        "project.dependencies must remain empty for the local-only core",
+        "project.dependencies must equal the approved local-only runtime dependency set",
         "network-capable import 'socket' in local-only core: src/rigor_foundry/subsystem/core.py",
         "network-capable import 'urllib' in local-only core: src/rigor_foundry/subsystem/core.py",
     ]

@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -120,6 +120,7 @@ jobs:
       - name: Smoke installed wheel outside checkout
         run: |
           python -m venv /tmp/rigor-wheel
+          /tmp/rigor-wheel/bin/python -m pip install --require-hashes -r requirements/runtime.txt
           /tmp/rigor-wheel/bin/python -m pip install --no-deps dist/*.whl
           cd /tmp
           /tmp/rigor-wheel/bin/rigor --help

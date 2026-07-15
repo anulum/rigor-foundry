@@ -20,11 +20,21 @@ evidence. It does not modify the inspected repository.
 that those records match the exact report. `gate` and `promote` reject stale or
 mismatched state.
 
+When policy declares native adapters, `gate` requires the explicit
+`--allow-native-audits` consent flag. Adapters run in the read-only sandbox and
+the resulting gate artifact binds HEAD, tree, tracked content, policy, report,
+executable, command, environment, sandbox, and output digests. Raw argv and
+output are not retained.
+
 ## Independent campaigns
 
 `campaign-create`, `campaign-run`, and `campaign-compare` freeze independent
 inputs, retain attestations, and record disagreements rather than averaging
 them away.
+
+`campaign-run` uses the same native consent flag and sandbox boundary. A run
+without declared native adapters remains passive and does not require consent.
+Native execution currently requires Linux bubblewrap at `/usr/bin/bwrap`.
 
 Run `rigor COMMAND --help` for the exact options supported by the installed
 version.

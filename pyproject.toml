@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -15,8 +15,8 @@ name = "rigor-foundry"
 version = "0.1.0"
 description = "Evidence-bound codebase transformation"
 readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 authors = [
     { name = "Miroslav Šotek", email = "protoscience@anulum.li" },
@@ -24,7 +24,7 @@ authors = [
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -39,7 +39,7 @@ keywords = [
     "remediation",
     "repository",
 ]
-dependencies = []
+dependencies = ["cryptography>=49,<50"]
 
 [project.scripts]
 rigor = "rigor_foundry.cli:main"
@@ -87,7 +87,7 @@ include = [
     "/CONTRIBUTING.md",
     "/GOVERNANCE.md",
     "/LICENSE",
-    "/NOTICE.md",
+    "/NOTICE",
     "/README.md",
     "/SECURITY.md",
     "/SUPPORT.md",

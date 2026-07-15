@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -112,6 +112,7 @@ def execute_campaign(
     run_id: str,
     agent_identity: str,
     session_identity: str,
+    trusted_native_audits: bool = False,
 ) -> tuple[Path, AuditRunAttestation]:
     """Run and persist one independent full-scope audit attestation."""
     campaign = load_campaign(campaign_path)
@@ -121,7 +122,12 @@ def execute_campaign(
     toolchain = ToolchainIdentity.current()
     report = scan_repository(repository, policy_path)
     _validate_campaign_input(campaign, report, toolchain)
-    adapter_results = run_native_audits(repository, report.policy.native_audits, "full")
+    adapter_results = run_native_audits(
+        repository,
+        report.policy.native_audits,
+        "full",
+        trusted=trusted_native_audits,
+    )
     post_inventory = load_git_inventory(repository)
     post_state = (
         post_inventory.head,
@@ -158,7 +164,17 @@ def execute_campaign(
             "campaign": campaign.contract_digest,
             "scope": "full",
             "policy_path": campaign.policy_path,
-            "adapter_names": [result.name for result in adapter_results],
+            "adapter_evidence": [
+                {
+                    "name": result.name,
+                    "spec_digest": result.spec_digest,
+                    "executable_digest": result.executable_digest,
+                    "command_digest": result.command_digest,
+                    "environment_digest": result.environment_digest,
+                    "sandbox_digest": result.sandbox_digest,
+                }
+                for result in adapter_results
+            ],
         }
     )
     report_relative_path = f"runs/{run_id}/report.json"

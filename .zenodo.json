@@ -2,7 +2,7 @@
   "title": "RigorFoundry",
   "description": "Evidence-bound repository auditing and remediation planning.",
   "upload_type": "software",
-  "license": "mit-license",
+  "license": "apache-2.0",
   "access_right": "open",
   "version": "0.1.0",
   "creators": [

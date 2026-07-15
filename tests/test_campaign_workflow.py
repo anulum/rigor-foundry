@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -116,6 +116,59 @@ def test_campaign_rejects_changed_tracked_input_and_tampered_records(tmp_path: P
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
         )
+
+
+def test_campaign_requires_native_consent_and_binds_secret_free_adapter_identity(
+    tmp_path: Path,
+) -> None:
+    """Campaign evidence binds the sandbox contract without retaining raw output."""
+    sentinel = "RIGOR_CAMPAIGN_SENTINEL_a094eed2"
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text("controls/native.py", f"print('{sentinel}')\n")
+    repository.write_policy(
+        native_audits=[
+            {
+                "name": "native-boundary",
+                "command": ["{python}", "controls/native.py"],
+                "timeout_seconds": 10,
+                "scope": "full",
+                "working_directory": ".",
+                "required": True,
+                "domains": ["application-security"],
+            }
+        ]
+    )
+    repository.commit()
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".coordination/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="native-campaign",
+        actor="coordinator/one",
+        expected_independent_runs=1,
+    )
+    with pytest.raises(ValueError, match="explicit trusted consent"):
+        execute_campaign(
+            campaign_path,
+            run_id="refused",
+            agent_identity="SAMPLE-PROJECT/agent-one",
+            session_identity="terminal/one",
+        )
+    directory, attestation = execute_campaign(
+        campaign_path,
+        run_id="consented",
+        agent_identity="SAMPLE-PROJECT/agent-one",
+        session_identity="terminal/one",
+        trusted_native_audits=True,
+    )
+    evidence = attestation.adapter_evidence[0]
+    assert len(evidence.executable_digest) == 64
+    assert len(evidence.environment_digest) == 64
+    serialised = json.dumps(attestation.to_dict(), sort_keys=True)
+    assert sentinel not in serialised
+    assert sentinel not in (directory / "attestation.json").read_text(encoding="utf-8")
 
 
 def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: Path) -> None:

@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -31,7 +31,7 @@ def test_header_guard_reads_untracked_files_on_unborn_branch(tmp_path: Path) -> 
     assert header_errors(tmp_path) == []
 
     source.write_text("\n".join(HEADER_LINES) + "\n", encoding="utf-8")
-    assert header_errors(tmp_path) == ["module.py: missing canonical MIT header"]
+    assert header_errors(tmp_path) == ["module.py: missing canonical Apache-2.0 header"]
 
     source.write_text("print('missing header')\n", encoding="utf-8")
-    assert header_errors(tmp_path) == ["module.py: missing canonical MIT header"]
+    assert header_errors(tmp_path) == ["module.py: missing canonical Apache-2.0 header"]

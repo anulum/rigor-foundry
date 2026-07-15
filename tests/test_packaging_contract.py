@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -21,6 +21,8 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     with (ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     assert project["build-system"]["requires"] == ["hatchling==1.31.0"]
+    assert project["project"]["license"] == "Apache-2.0"
+    assert project["project"]["license-files"] == ["LICENSE", "NOTICE"]
 
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     bases = re.findall(r"^FROM\s+([^\s]+)", dockerfile, re.MULTILINE)
@@ -34,7 +36,7 @@ def test_build_backend_and_base_image_are_immutable() -> None:
 def test_hash_locks_cover_each_resolved_distribution() -> None:
     """Every non-comment lock entry carries at least one SHA-256 hash."""
 
-    for name in ("build.txt", "ci.txt", "security.txt", "test.txt"):
+    for name in ("build.txt", "ci.txt", "runtime.txt", "security.txt", "test.txt"):
         text = (ROOT / "requirements" / name).read_text(encoding="utf-8")
         entries = re.split(r"\n(?=[a-zA-Z0-9])", text)
         resolved = [entry for entry in entries if "==" in entry]

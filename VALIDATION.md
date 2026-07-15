@@ -42,7 +42,8 @@ On 2026-07-15:
   branch-aware claimed-scope coverage. An independent coordinator then ran 89
   focused tests across the ten core module owners and repeated every affected
   owner after semantic hardening.
-- Adversarial tests now cover exact pack proofs, strict identifiers,
+- Adversarial tests now cover real Ed25519 pack and reviewer signatures,
+  unknown keys, tampering, explicit trust-store binding, strict identifiers,
   adapter/domain evidence, applicability weakening, exact assessment-body
   attestations with distinct reviewers and keys, parent-child path conflicts,
   command-bound remediation and rollback argv, and dedicated risk-acceptance
@@ -56,7 +57,7 @@ On 2026-07-15:
   tests or internal coordination files.
 - Fourteen focused governance and packaging tests passed across nine
   module-owned test files.
-- Hash-locked CI, build, test, and security environments installed cleanly;
+- Hash-locked CI, build, runtime, test, and security environments installed cleanly;
   pip-audit reported no known vulnerability in the CI and test locks. The
   security-tool lock has one exact, expiring upstream-constraint exception for
   `PYSEC-2026-2132`; the allowed Semgrep scan path does not call the affected
@@ -74,6 +75,26 @@ On 2026-07-15:
 The final immutable prospective-tree scan and its ten required native controls
 are recorded separately from this source document so their exact commit, tree,
 candidate, and output digests cannot be confused with remote CI evidence.
+
+## Security-boundary remediation evidence
+
+After the independent exact-SHA audit blocked the first local foundation
+commit, the six accepted boundaries were remediated and retested on
+2026-07-15. Ninety-four tests passed across nineteen explicitly invoked test
+files; no aggregate local suite was run. Strict MyPy passed all 45 source/tool
+modules, Ruff and formatting passed 87 files, Bandit reported zero findings,
+and Semgrep reported zero findings across 45 Python targets.
+
+The real native gate passed 10/10 controls inside the credential-free,
+no-network, read-only bubblewrap sandbox and produced a content-addressed gate
+artifact with no blockers. Runtime, CI, and test dependency audits reported no
+known vulnerability; the security-tool audit reported only the one exact
+machine-checked and expiring upstream Click exception. The complete preflight,
+strict docs build, Apache-2.0 REUSE audit (158/158 files), wheel/sdist build,
+Twine check, external wheel install, and rebuilt non-root container smoke also
+passed. These remain local candidate facts until a fresh immutable commit,
+third-eye clearance, independent exact-SHA audit, and public CI establish the
+landing record.
 
 The evidence is a local integration check, not the final CI or coverage record.
 The full Python matrix, aggregate coverage, CodeQL, Scorecard, Trivy, Pages,

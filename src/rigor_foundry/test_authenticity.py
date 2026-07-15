@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
@@ -163,12 +164,20 @@ def _is_test_path(path: str, policy: AuditPolicy) -> bool:
     )
 
 
-def _line_matches(text: str, expression: re.Pattern[str]) -> tuple[tuple[int, str], ...]:
-    """Return one-based lines matching a textual rule."""
+def _line_matches(text: str, expression: re.Pattern[str]) -> tuple[int, ...]:
+    """Return one-based locations matching a textual rule without source content."""
     return tuple(
-        (number, line.strip())
-        for number, line in enumerate(text.splitlines(), start=1)
-        if expression.search(line)
+        number for number, line in enumerate(text.splitlines(), start=1) if expression.search(line)
+    )
+
+
+def _line_evidence(item: TrackedFile, line: int, *, occurrences: int = 1) -> str:
+    """Return content-addressed evidence without copying repository source."""
+    lines = item.text.splitlines() if item.text is not None else []
+    content = lines[line - 1] if 0 < line <= len(lines) else ""
+    line_digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    return (
+        f"file_sha256={item.content_digest}; line_sha256={line_digest}; occurrences={occurrences}"
     )
 
 
@@ -187,7 +196,7 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
         matches = _line_matches(item.text, rule.expression)
         if not matches:
             continue
-        line, excerpt = matches[0]
+        line = matches[0]
         candidates.append(
             Candidate.build(
                 category="test-authenticity",
@@ -195,7 +204,7 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                 path=item.path,
                 line=line,
                 symbol=f"occurrences={len(matches)}",
-                evidence=excerpt[:300],
+                evidence=_line_evidence(item, line, occurrences=len(matches)),
                 confidence=rule.confidence,
                 rationale=rule.rationale,
                 verification=rule.verification,
@@ -320,14 +329,10 @@ def _python_candidates(
                 verification="Run the supported Python parser and repair or remove stale test code.",
             ),
         )
-    lines = item.text.splitlines()
     candidates: list[Candidate] = []
     for function in _test_functions(tree):
         if _has_behavioural_contract(function):
             continue
-        excerpt = (
-            lines[function.lineno - 1].strip() if function.lineno <= len(lines) else function.name
-        )
         candidates.append(
             Candidate.build(
                 category="test-authenticity",
@@ -335,7 +340,7 @@ def _python_candidates(
                 path=item.path,
                 line=function.lineno,
                 symbol=function.name,
-                evidence=excerpt,
+                evidence=_line_evidence(item, function.lineno),
                 confidence="medium",
                 rationale="The test exposes no local assertion, exception, or behavioural helper call.",
                 verification=(
@@ -347,7 +352,6 @@ def _python_candidates(
     private_nodes = _private_surface_nodes(tree, packages)
     if private_nodes:
         line, symbol = private_nodes[0]
-        excerpt = lines[line - 1].strip() if line <= len(lines) else symbol
         candidates.append(
             Candidate.build(
                 category="test-authenticity",
@@ -355,7 +359,7 @@ def _python_candidates(
                 path=item.path,
                 line=line,
                 symbol=f"{symbol}; occurrences={len(private_nodes)}",
-                evidence=excerpt[:300],
+                evidence=_line_evidence(item, line, occurrences=len(private_nodes)),
                 confidence="high",
                 rationale="The test directly reaches an underscored first-party production surface.",
                 verification=(

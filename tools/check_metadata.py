@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -19,7 +19,7 @@ from typing import Any
 from tools._repository import ROOT
 
 EXPECTED_NAME = "rigor-foundry"
-EXPECTED_LICENSE = "MIT"
+EXPECTED_LICENSE = "Apache-2.0"
 EXPECTED_PYTHON = ">=3.11"
 EXPECTED_REPOSITORY = "https://github.com/anulum/rigor-foundry"
 
@@ -80,19 +80,19 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
     if _citation_value(citation, "version") != version:
         errors.append("CITATION.cff version does not match pyproject.toml")
     if _citation_value(citation, "license") != EXPECTED_LICENSE:
-        errors.append("CITATION.cff does not declare MIT")
+        errors.append("CITATION.cff does not declare Apache-2.0")
     if _citation_value(citation, "repository-code") != EXPECTED_REPOSITORY:
         errors.append("CITATION.cff repository does not match the canonical repository")
 
     archive = json.loads((root / ".zenodo.json").read_text(encoding="utf-8"))
     if archive.get("version") != version:
         errors.append(".zenodo.json version does not match pyproject.toml")
-    if archive.get("license") != "mit-license":
-        errors.append(".zenodo.json does not declare the Zenodo MIT identifier")
+    if archive.get("license") != "apache-2.0":
+        errors.append(".zenodo.json does not declare the Zenodo Apache-2.0 identifier")
 
     licence = (root / "LICENSE").read_text(encoding="utf-8")
-    if not licence.startswith("MIT License"):
-        errors.append("LICENSE is not the canonical MIT licence text")
+    if not licence.lstrip().startswith("Apache License") or "Version 2.0" not in licence[:200]:
+        errors.append("LICENSE is not the canonical Apache-2.0 licence text")
     return errors
 
 

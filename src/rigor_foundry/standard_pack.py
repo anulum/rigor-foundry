@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Literal, cast
 
 from .condition_language import ConditionExpression
@@ -29,6 +30,7 @@ from .models import (
     require_mapping,
     require_string,
 )
+from .trust import ED25519_ALGORITHM, ED25519_SIGNATURE_HEX_LENGTH, require_lower_hex
 
 PACK_SCHEMA_VERSION = "1.0"
 
@@ -61,19 +63,38 @@ def _severity(value: object, field: str) -> Severity:
 
 @dataclass(frozen=True)
 class PackSignature:
-    """Detached signature metadata for a canonical pack payload."""
+    """Detached Ed25519 signature over a canonical pack payload digest."""
 
     algorithm: str
     key_id: str
     payload_digest: str
+    signature_hex: str
     signature_digest: str
 
-    def __post_init__(self) -> None:
-        """Reject incomplete or ambiguous signature metadata."""
-        require_identifier(self.algorithm, "signature.algorithm")
-        require_identifier(self.key_id, "signature.key_id")
-        require_digest(self.payload_digest, "signature.payload_digest")
-        require_digest(self.signature_digest, "signature.signature_digest")
+    @classmethod
+    def build(
+        cls,
+        *,
+        key_id: str,
+        payload_digest: str,
+        signature_hex: str,
+        algorithm: str = ED25519_ALGORITHM,
+    ) -> PackSignature:
+        """Build signature metadata from actual detached signature bytes."""
+        if algorithm != ED25519_ALGORITHM:
+            raise ValueError("signature.algorithm must be ed25519")
+        signature = require_lower_hex(
+            signature_hex,
+            "signature.signature_hex",
+            length=ED25519_SIGNATURE_HEX_LENGTH,
+        )
+        return cls(
+            algorithm=algorithm,
+            key_id=require_identifier(key_id, "signature.key_id"),
+            payload_digest=require_digest(payload_digest, "signature.payload_digest"),
+            signature_hex=signature,
+            signature_digest=sha256(bytes.fromhex(signature)).hexdigest(),
+        )
 
     def to_dict(self) -> dict[str, str]:
         """Serialise detached signature metadata."""
@@ -81,6 +102,7 @@ class PackSignature:
             "algorithm": self.algorithm,
             "key_id": self.key_id,
             "payload_digest": self.payload_digest,
+            "signature_hex": self.signature_hex,
             "signature_digest": self.signature_digest,
         }
 
@@ -88,18 +110,21 @@ class PackSignature:
     def from_dict(cls, value: object) -> PackSignature:
         """Parse detached signature metadata."""
         data = require_mapping(value, "signature")
-        return cls(
+        signature = cls.build(
             algorithm=require_identifier(data.get("algorithm"), "signature.algorithm"),
             key_id=require_identifier(data.get("key_id"), "signature.key_id"),
             payload_digest=require_digest(
                 data.get("payload_digest"),
                 "signature.payload_digest",
             ),
-            signature_digest=require_digest(
-                data.get("signature_digest"),
-                "signature.signature_digest",
+            signature_hex=require_string(
+                data.get("signature_hex"),
+                "signature.signature_hex",
             ),
         )
+        if data.get("signature_digest") != signature.signature_digest:
+            raise ValueError("signature digest does not match detached signature bytes")
+        return signature
 
 
 @dataclass(frozen=True)

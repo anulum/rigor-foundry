@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -78,21 +78,31 @@ def _review(report: AuditReport, decision: str) -> ReviewRecord:
     return base
 
 
+def _adapter_result(*, returncode: int = 0) -> AdapterResult:
+    """Return secret-free content-addressed native evidence."""
+    return AdapterResult(
+        name="security",
+        returncode=returncode,
+        output_digest="0" * 64,
+        output_bytes=6,
+        output_truncated=False,
+        timed_out=False,
+        required=True,
+        spec_digest="4" * 64,
+        executable_digest="5" * 64,
+        command_digest="6" * 64,
+        environment_digest="7" * 64,
+        sandbox_digest="8" * 64,
+    )
+
+
 def test_observe_records_candidates_but_native_required_failure_blocks() -> None:
     """Observe does not verdict candidates, while execution failures remain fail-closed."""
     report = _report()
     observed = evaluate_enforcement(report, (), "observe")
     assert observed.passed
     assert observed.candidate_count == 1
-    failed_adapter = AdapterResult(
-        name="security",
-        command=("/usr/bin/false",),
-        returncode=1,
-        output_digest="0" * 64,
-        output_excerpt="failed",
-        timed_out=False,
-        required=True,
-    )
+    failed_adapter = _adapter_result(returncode=1)
     blocked = evaluate_enforcement(
         report,
         (),
@@ -135,3 +145,27 @@ def test_zero_rejects_verified_valid_debt_until_remediated() -> None:
     assert any("valid remediation debt" in blocker for blocker in zero.blockers)
     with pytest.raises(ValueError, match="UTC"):
         evaluate_enforcement(report, (), "observe", now=datetime(2026, 7, 16))
+
+
+def test_gate_artifact_binds_exact_report_and_rejects_tampering() -> None:
+    """A saved verdict is content-addressed and cannot be reused for stale input."""
+    report = _report()
+    gate = evaluate_enforcement(
+        report,
+        (),
+        "observe",
+        adapter_results=(_adapter_result(),),
+    )
+    recovered = type(gate).from_dict(gate.to_dict())
+    recovered.assert_report(report)
+    assert recovered.gate_digest == gate.gate_digest
+    assert recovered.adapter_evidence_digest == gate.adapter_evidence_digest
+
+    tampered = gate.to_dict()
+    tampered["tracked_content_digest"] = "9" * 64
+    with pytest.raises(ValueError, match="gate digest"):
+        type(gate).from_dict(tampered)
+
+    stale = replace(report, head="a" * 40)
+    with pytest.raises(ValueError, match="different repository report"):
+        recovered.assert_report(stale)

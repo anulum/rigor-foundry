@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -18,6 +18,7 @@ install:
 lock:
 	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/build.txt requirements/build.in
 	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/ci.txt requirements/ci.in
+	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/runtime.txt requirements/runtime.in
 	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/security.txt requirements/security.in
 	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/test.txt requirements/test.in
 

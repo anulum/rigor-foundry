@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -34,6 +34,7 @@ from .standard_pack import (
     StandardPack,
     TargetLevel,
 )
+from .trust import VerificationTrustStore
 
 LOCK_SCHEMA_VERSION = "1.0"
 RESOLVER_VERSION = "0.1.0"
@@ -113,47 +114,91 @@ class AdapterLock:
 
 @dataclass(frozen=True)
 class PackVerification:
-    """External cryptographic-verification evidence for one exact pack."""
+    """Result of verifying one exact pack against an explicit trust store."""
 
     pack_digest: str
     key_id: str
-    proof_digest: str
-    tool_digest: str
+    signature_digest: str
+    trust_store_digest: str
     verified_at: str
-    valid: bool
     verification_digest: str
 
     @classmethod
     def build(
         cls,
         *,
-        pack_digest: str,
-        key_id: str,
-        proof_digest: str,
-        tool_digest: str,
+        pack: StandardPack,
+        trust_store: VerificationTrustStore,
         verified_at: str,
-        valid: bool,
     ) -> PackVerification:
-        """Build one evidence record; validity remains an observed external result."""
+        """Verify the actual detached signature before producing evidence."""
+        rebuilt = StandardPack.build(
+            pack_id=pack.pack_id,
+            version=pack.version,
+            source_uri=pack.source_uri,
+            source_digest=pack.source_digest,
+            licence=pack.licence,
+            signature=pack.signature,
+            controls=pack.controls,
+        )
+        if rebuilt != pack:
+            raise ValueError("pack content or digest is internally inconsistent")
+        if not trust_store.verify(
+            key_id=pack.signature.key_id,
+            algorithm=pack.signature.algorithm,
+            payload_digest=pack.signature.payload_digest,
+            signature_hex=pack.signature.signature_hex,
+        ):
+            raise ValueError("pack signature is not valid under the supplied trust store")
         fields: dict[str, object] = {
-            "pack_digest": require_digest(pack_digest, "verification.pack_digest"),
-            "key_id": require_identifier(key_id, "verification.key_id"),
-            "proof_digest": require_digest(proof_digest, "verification.proof_digest"),
-            "tool_digest": require_digest(tool_digest, "verification.tool_digest"),
+            "pack_digest": pack.pack_digest,
+            "key_id": pack.signature.key_id,
+            "signature_digest": pack.signature.signature_digest,
+            "trust_store_digest": trust_store.trust_store_digest,
             "verified_at": require_utc_timestamp(
                 verified_at,
                 "verification.verified_at",
             ),
-            "valid": require_boolean(valid, "verification.valid"),
         }
         return cls(
             pack_digest=cast(str, fields["pack_digest"]),
             key_id=cast(str, fields["key_id"]),
-            proof_digest=cast(str, fields["proof_digest"]),
-            tool_digest=cast(str, fields["tool_digest"]),
+            signature_digest=cast(str, fields["signature_digest"]),
+            trust_store_digest=cast(str, fields["trust_store_digest"]),
             verified_at=cast(str, fields["verified_at"]),
-            valid=cast(bool, fields["valid"]),
             verification_digest=canonical_digest(fields),
+        )
+
+    def valid_for(
+        self,
+        pack: StandardPack,
+        trust_store: VerificationTrustStore,
+    ) -> bool:
+        """Reverify every binding and the detached signature itself."""
+        try:
+            rebuilt = StandardPack.build(
+                pack_id=pack.pack_id,
+                version=pack.version,
+                source_uri=pack.source_uri,
+                source_digest=pack.source_digest,
+                licence=pack.licence,
+                signature=pack.signature,
+                controls=pack.controls,
+            )
+        except ValueError:
+            return False
+        return (
+            rebuilt == pack
+            and self.pack_digest == pack.pack_digest
+            and self.key_id == pack.signature.key_id
+            and self.signature_digest == pack.signature.signature_digest
+            and self.trust_store_digest == trust_store.trust_store_digest
+            and trust_store.verify(
+                key_id=pack.signature.key_id,
+                algorithm=pack.signature.algorithm,
+                payload_digest=pack.signature.payload_digest,
+                signature_hex=pack.signature.signature_hex,
+            )
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -161,10 +206,9 @@ class PackVerification:
         return {
             "pack_digest": self.pack_digest,
             "key_id": self.key_id,
-            "proof_digest": self.proof_digest,
-            "tool_digest": self.tool_digest,
+            "signature_digest": self.signature_digest,
+            "trust_store_digest": self.trust_store_digest,
             "verified_at": self.verified_at,
-            "valid": self.valid,
             "verification_digest": self.verification_digest,
         }
 
@@ -424,6 +468,7 @@ class EffectiveProfileLock:
         variables: tuple[ResolvedVariable, ...],
         controls: tuple[EffectiveControl, ...],
         warnings: tuple[PolicyContradiction, ...],
+        trust_store: VerificationTrustStore,
         toolchain_digest: str,
         resolved_at: str,
     ) -> EffectiveProfileLock:
@@ -436,8 +481,12 @@ class EffectiveProfileLock:
             raise ValueError("effective profile packs must have unique ids")
         if set(verification_packs) != {item.pack_digest for item in packs}:
             raise ValueError("effective profile requires one verification per pack")
-        if len(verification_packs) != len(set(verification_packs)) or any(
-            not item.valid for item in verifications
+        if len(verification_packs) != len(set(verification_packs)):
+            raise ValueError("effective profile pack verifications must be unique and valid")
+        pack_by_digest = {item.pack_digest: item for item in packs}
+        if any(
+            not item.valid_for(pack_by_digest[item.pack_digest], trust_store)
+            for item in verifications
         ):
             raise ValueError("effective profile pack verifications must be unique and valid")
         for values, label in (

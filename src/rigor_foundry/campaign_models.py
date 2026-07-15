@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -324,6 +324,13 @@ class AdapterEvidence:
     returncode: int
     timed_out: bool
     output_digest: str
+    output_bytes: int
+    output_truncated: bool
+    spec_digest: str
+    executable_digest: str
+    command_digest: str
+    environment_digest: str
+    sandbox_digest: str
     passed: bool
 
     @classmethod
@@ -335,6 +342,13 @@ class AdapterEvidence:
             returncode=result.returncode,
             timed_out=result.timed_out,
             output_digest=result.output_digest,
+            output_bytes=result.output_bytes,
+            output_truncated=result.output_truncated,
+            spec_digest=result.spec_digest,
+            executable_digest=result.executable_digest,
+            command_digest=result.command_digest,
+            environment_digest=result.environment_digest,
+            sandbox_digest=result.sandbox_digest,
             passed=result.passed,
         )
 
@@ -346,32 +360,21 @@ class AdapterEvidence:
             "returncode": self.returncode,
             "timed_out": self.timed_out,
             "output_digest": self.output_digest,
+            "output_bytes": self.output_bytes,
+            "output_truncated": self.output_truncated,
+            "spec_digest": self.spec_digest,
+            "executable_digest": self.executable_digest,
+            "command_digest": self.command_digest,
+            "environment_digest": self.environment_digest,
+            "sandbox_digest": self.sandbox_digest,
             "passed": self.passed,
         }
 
     @classmethod
     def from_dict(cls, value: object, index: int) -> AdapterEvidence:
         """Parse one native-adapter evidence record."""
-        data = require_mapping(value, f"adapter_evidence[{index}]")
-        required = data.get("required")
-        timed_out = data.get("timed_out")
-        passed = data.get("passed")
-        if not all(isinstance(item, bool) for item in (required, timed_out, passed)):
-            raise ValueError(f"adapter_evidence[{index}] boolean fields are invalid")
-        return cls(
-            name=require_string(data.get("name"), f"adapter_evidence[{index}].name"),
-            required=cast(bool, required),
-            returncode=require_integer(
-                data.get("returncode"),
-                f"adapter_evidence[{index}].returncode",
-            ),
-            timed_out=cast(bool, timed_out),
-            output_digest=require_string(
-                data.get("output_digest"),
-                f"adapter_evidence[{index}].output_digest",
-            ),
-            passed=cast(bool, passed),
-        )
+        result = AdapterResult.from_dict(value, index)
+        return cls.from_result(result)
 
 
 @dataclass(frozen=True)

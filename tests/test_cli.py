@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -182,14 +182,14 @@ def test_observe_gate_emits_evidence_without_blocking(tmp_path: Path) -> None:
     """Observe mode records current evidence without claiming zero-candidate conformance."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/core.py", "VALUE = 1\n")
-    repository.commit()
     policy = repository.write_policy()
+    repository.commit()
     gate = repository.run_audit(
         "gate",
         "--root",
         ".",
         "--policy",
-        str(policy),
+        policy.name,
         "--mode",
         "observe",
     )
@@ -199,13 +199,110 @@ def test_observe_gate_emits_evidence_without_blocking(tmp_path: Path) -> None:
     assert gate_value["passed"] is True
 
 
+def test_native_gate_requires_consent_and_never_serialises_command_output(
+    tmp_path: Path,
+) -> None:
+    """CLI consent is explicit and native output remains digest-only evidence."""
+    sentinel = "RIGOR_NATIVE_SENTINEL_891fcd6a"
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text("controls/native.py", f"print('{sentinel}')\n")
+    repository.write_policy(
+        native_audits=[
+            {
+                "name": "native-boundary",
+                "command": ["{python}", "controls/native.py"],
+                "timeout_seconds": 10,
+                "scope": "full",
+                "working_directory": ".",
+                "required": True,
+                "domains": ["application-security"],
+            }
+        ]
+    )
+    repository.commit()
+    arguments = (
+        "gate",
+        "--root",
+        ".",
+        "--policy",
+        _POLICY,
+        "--mode",
+        "observe",
+    )
+    refused = repository.run_audit(*arguments)
+    assert refused.returncode == 2
+    assert "explicit trusted consent" in refused.stderr
+    allowed = repository.run_audit(*arguments, "--allow-native-audits")
+    assert allowed.returncode == 0, allowed.stderr
+    assert sentinel not in allowed.stdout
+    assert sentinel not in allowed.stderr
+    evidence = json.loads(allowed.stdout)["adapter_results"][0]
+    assert "command" not in evidence
+    assert "output" not in evidence
+    assert len(evidence["command_digest"]) == 64
+
+
+def test_source_sentinel_never_reaches_reports_cli_or_campaign_artifacts(
+    tmp_path: Path,
+) -> None:
+    """Source-derived evidence is location and digest metadata, never raw content."""
+    sentinel = "RIGOR_SOURCE_SENTINEL_2ac61b30"
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text(
+        "tests/test_core.py",
+        f"{sentinel} = 'private'  # noqa: S105\n\ndef test_value() -> None:\n    assert 1 == 1\n",
+    )
+    repository.write_policy()
+    repository.commit()
+    scanned = repository.run_audit("scan", "--root", ".", "--policy", _POLICY)
+    assert scanned.returncode == 0
+    assert sentinel not in scanned.stdout
+    assert sentinel not in scanned.stderr
+    created = repository.run_audit(
+        "campaign-create",
+        "--root",
+        ".",
+        "--policy",
+        _POLICY,
+        "--project",
+        "SAMPLE-PROJECT",
+        "--campaign-id",
+        "sentinel-campaign",
+        "--actor",
+        "coordinator/cli",
+        "--expected-runs",
+        "1",
+    )
+    assert created.returncode == 0, created.stderr
+    campaign = repository.root / (
+        ".rigor/audits/SAMPLE-PROJECT/campaigns/sentinel-campaign/campaign.json"
+    )
+    run = repository.run_audit(
+        "campaign-run",
+        "--campaign",
+        str(campaign),
+        "--run-id",
+        "sentinel-agent",
+        "--agent",
+        "SAMPLE-PROJECT/sentinel-agent",
+        "--session",
+        "terminal/sentinel",
+    )
+    assert run.returncode == 0, run.stderr
+    assert sentinel not in created.stdout + created.stderr + run.stdout + run.stderr
+    for artifact in campaign.parent.rglob("*.json"):
+        assert sentinel not in artifact.read_text(encoding="utf-8")
+
+
 def test_direct_cli_contracts_cover_every_command_handler(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """In-process CLI calls retain real Git, filesystem, and process behaviour."""
     repository = _repository(tmp_path / "repository")
-    policy = repository.root / _POLICY
+    policy = _POLICY
     report_path = repository.root / ".coordination/direct-report.json"
     markdown_path = repository.root / ".coordination/direct-report.md"
     review_path = repository.root / ".coordination/direct-reviews.json"

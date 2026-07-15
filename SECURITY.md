@@ -32,6 +32,8 @@ reviews prioritise:
   promotion;
 - secret leakage in reports, logs, profiles, pack variables, and remediation
   output;
+- forged or replayed pack and reviewer signatures, unknown signing keys, and
+  trust-store substitution;
 - action, package, base-image, and release supply-chain integrity.
 
 ## Security invariants
@@ -39,9 +41,15 @@ reviews prioritise:
 - Scanner input is the fail-closed Git-tracked inventory.
 - Git's container ownership exception is process-local and narrows to the exact
   audited root; no persistent or normal-operation wildcard is configured.
-- Audit commands are argv-only with `shell=False`, canonical external
-  executables, the active virtual-environment Python launcher, bounded output,
-  and mandatory timeouts.
+- Native audits require explicit operator consent and run argv-only with
+  `shell=False` inside a no-network bubblewrap sandbox. The repository and
+  runtime are read-only, the child runs as an unprivileged user, and only a
+  fixed credential-free environment reaches it.
+- Native output is streamed into a hard aggregate byte cap; raw command text,
+  environment values, and output are never serialized. Timeout or output-cap
+  breaches terminate the process tree and fail closed.
+- Native evidence binds specification, executable, command, environment, and
+  sandbox digests to the exact report and gate digest.
 - Missing evidence cannot become pass.
 - Writes require an explicit command and stay within validated ignored paths.
 - Secret profile variables store provider references, never secret values.

@@ -60,6 +60,11 @@ In the GOTM shared worktree, the author does not push their own commit. A peer
 audits the exact SHA in isolation and records the gate outcome before any push.
 External contributions follow the ordinary fork and pull-request review flow.
 
+Unless a contributor explicitly marks a submission as “Not a Contribution,”
+contributions intentionally submitted for inclusion are licensed under
+Apache-2.0 as described by section 5 of [LICENSE](LICENSE). No contributor
+licence agreement is currently required.
+
 ## Internal material
 
 For GOTM operators, coordination logs and handovers live only in the monorepo

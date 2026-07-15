@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -32,6 +32,7 @@ from .project_profile import (
     ProjectProfile,
 )
 from .standard_pack import TARGET_LEVEL_ORDER, ControlDefinition, StandardPack
+from .trust import VerificationTrustStore
 
 
 def _active_waiver(
@@ -86,6 +87,7 @@ def resolve_effective_profile(
     packs: tuple[StandardPack, ...],
     verifications: tuple[PackVerification, ...],
     adapters: tuple[AdapterLock, ...],
+    trust_store: VerificationTrustStore,
     allowed_licences: tuple[str, ...],
     toolchain_digest: str,
     resolved_at: str,
@@ -149,9 +151,8 @@ def resolve_effective_profile(
             for item in verifications
             if item.pack_digest == pack.pack_digest
             and item.key_id == pack.signature.key_id
-            and item.proof_digest == pack.signature.signature_digest
             and item.key_id in selection.trusted_key_ids
-            and item.valid
+            and item.valid_for(pack, trust_store)
         )
         if len(verification_matches) != 1:
             contradictions.append(
@@ -393,6 +394,7 @@ def resolve_effective_profile(
         variables=resolved_variables,
         controls=tuple(effective_controls),
         warnings=warnings,
+        trust_store=trust_store,
         toolchain_digest=toolchain_digest,
         resolved_at=now_text,
     )

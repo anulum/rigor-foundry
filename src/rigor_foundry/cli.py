@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -195,6 +195,7 @@ def _gate_command(args: argparse.Namespace) -> int:
         inventory.root,
         policy.native_audits,
         args.scope,
+        trusted=args.allow_native_audits,
     )
     result = evaluate_enforcement(
         report,
@@ -232,6 +233,7 @@ def _campaign_run_command(args: argparse.Namespace) -> int:
         run_id=args.run_id,
         agent_identity=args.agent,
         session_identity=args.session,
+        trusted_native_audits=args.allow_native_audits,
     )
     print(f"stored audit run {attestation.attestation_digest} at {path}")
     return 1 if attestation.limitations or attestation.omitted_domains else 0
@@ -299,6 +301,11 @@ def _parser() -> argparse.ArgumentParser:
     gate.add_argument("--review", type=Path)
     gate.add_argument("--mode", choices=("observe", "ratchet", "zero"))
     gate.add_argument("--scope", choices=("staged", "full"), default="full")
+    gate.add_argument(
+        "--allow-native-audits",
+        action="store_true",
+        help="Consent to run declared commands in the read-only native sandbox.",
+    )
     gate.add_argument("--output", type=Path)
     gate.set_defaults(handler=_gate_command)
 
@@ -327,6 +334,11 @@ def _parser() -> argparse.ArgumentParser:
     campaign_run.add_argument("--run-id", required=True)
     campaign_run.add_argument("--agent", required=True)
     campaign_run.add_argument("--session", required=True)
+    campaign_run.add_argument(
+        "--allow-native-audits",
+        action="store_true",
+        help="Consent to run declared commands in the read-only native sandbox.",
+    )
     campaign_run.set_defaults(handler=_campaign_run_command)
 
     campaign_compare = subparsers.add_parser(

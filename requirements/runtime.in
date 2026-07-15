@@ -4,11 +4,6 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — Review ownership
+# RigorFoundry — Runtime dependency lock inputs
 
-* @anulum
-/.github/ @anulum
-/src/rigor_foundry/ @anulum
-/tools/ @anulum
-/pyproject.toml @anulum
-/requirements/ @anulum
+cryptography==49.0.0

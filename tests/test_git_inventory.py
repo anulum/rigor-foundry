@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -47,8 +47,10 @@ def test_inventory_classifies_real_tracked_content_and_dirty_state(tmp_path: Pat
     assert by_path["src/pkg/binary.bin"].content_kind == "binary"
     assert by_path["src/pkg/non_utf8.py"].content_kind == "non-utf8"
     assert by_path["src/pkg/link.py"].content_kind == "symlink"
+    assert by_path["src/pkg/link.py"].git_mode == "120000"
     assert by_path["src/pkg/large.py"].content_kind == "oversize"
     assert all(len(item.content_digest) == 64 for item in inventory.files)
+    assert all(len(item.object_id) in {40, 64} for item in inventory.files)
     assert not any(item.path == "src/pkg/text.py" for item in inventory.text_files())
 
 
@@ -84,3 +86,21 @@ def test_inventory_rejects_non_repository(tmp_path: Path) -> None:
     path.mkdir()
     with pytest.raises(RuntimeError, match=r"git .* failed"):
         load_git_inventory(path)
+
+
+def test_inventory_binds_uninitialised_gitlink_mode_and_object(tmp_path: Path) -> None:
+    """A stage-160000 entry remains an explicit gitlink without a worktree directory."""
+    child = GitRepository.create(tmp_path / "child")
+    child.write_text("README.md", "child\n")
+    child_head = child.commit()
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.git_command("update-index", "--add", "--cacheinfo", "160000", child_head, "vendor")
+    repository.git_command("commit", "-m", "test: add uninitialised gitlink")
+
+    inventory = load_git_inventory(repository.root)
+    gitlink = next(item for item in inventory.files if item.path == "vendor")
+
+    assert gitlink.content_kind == "gitlink"
+    assert gitlink.git_mode == "160000"
+    assert gitlink.object_id == child_head
+    assert not gitlink.absolute_path.exists()

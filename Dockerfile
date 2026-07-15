@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -12,7 +12,7 @@ WORKDIR /build
 COPY requirements/build.txt requirements/build.txt
 RUN python -m pip install --no-cache-dir --require-hashes -r requirements/build.txt
 
-COPY LICENSE README.md pyproject.toml ./
+COPY LICENSE NOTICE README.md pyproject.toml ./
 COPY src/ src/
 RUN python -m build --wheel --no-isolation
 
@@ -21,7 +21,7 @@ FROM python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dc
 LABEL org.opencontainers.image.title="RigorFoundry"
 LABEL org.opencontainers.image.description="Evidence-bound repository auditing and remediation planning"
 LABEL org.opencontainers.image.source="https://github.com/anulum/rigor-foundry"
-LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 
 # Keep this snapshot date aligned with the pinned base image's debian.sources.
@@ -36,7 +36,10 @@ RUN sed -i \
     && useradd --create-home --uid 10001 rigor
 
 COPY --from=builder /build/dist/*.whl /tmp/
-RUN python -m pip install --no-cache-dir --no-deps /tmp/*.whl \
+COPY requirements/runtime.txt /tmp/runtime.txt
+RUN python -m pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
+    && python -m pip install --no-cache-dir --no-deps /tmp/*.whl \
+    && rm -f /tmp/runtime.txt \
     && rm -f /tmp/*.whl
 
 WORKDIR /workspace

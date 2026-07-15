@@ -4,7 +4,7 @@ Roadmap items are acceptance-gated; dates and versions are not release promises.
 
 ## 0.1 — Repository foundation
 
-- Validate the completed local MIT repository governance, reproducible
+- Validate the completed local Apache-2.0 repository governance, reproducible
   dependencies, CI, security, documentation, packaging, and container surfaces
   through remote gates.
 - Complete independent review of the internal-storage and work-lifecycle

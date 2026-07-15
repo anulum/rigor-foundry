@@ -7,7 +7,7 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Standalone MIT-licensed repository, package, CLI, documentation, tests, and
+- Standalone Apache-2.0-licensed repository, package, CLI, documentation, tests, and
   build configuration recovered from the originating audit lane.
 - Evidence-bound candidate, review, enforcement, promotion, and independent
   campaign records.

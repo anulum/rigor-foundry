@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -11,11 +11,7 @@ __version__ = "0.1.0"
 
 from .cli import report_markdown
 from .condition_language import ConditionExpression
-from .control_assessment import (
-    ControlAssessment,
-    EvidenceReference,
-    ReviewerAttestation,
-)
+from .control_assessment import ControlAssessment, EvidenceReference
 from .effective_profile import (
     AdapterLock,
     EffectiveControl,
@@ -51,6 +47,7 @@ from .remediation_plan import (
     TargetGap,
 )
 from .review import render_todo_entry, review_errors, review_templates, validate_reviews
+from .review_attestation import ReviewerAttestation
 from .scanner import scan_repository
 from .standard_pack import (
     ControlDefinition,
@@ -59,6 +56,7 @@ from .standard_pack import (
     RemediationContract,
     StandardPack,
 )
+from .trust import TrustedPublicKey, VerificationTrustStore
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
@@ -95,9 +93,11 @@ __all__ = [
     "SecretReference",
     "StandardPack",
     "TargetGap",
+    "TrustedPublicKey",
     "VariableAssignment",
     "VariableConstraints",
     "VariableDefinition",
+    "VerificationTrustStore",
     "WorkEvent",
     "WorkEvidence",
     "WorkRecord",

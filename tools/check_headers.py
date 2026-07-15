@@ -1,11 +1,11 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — SPDX header guard
-"""Require the seven-line MIT identity header on comment-capable files."""
+"""Require the seven-line Apache-2.0 identity header on comment-capable files."""
 
 from __future__ import annotations
 
@@ -13,10 +13,10 @@ from pathlib import Path
 
 from tools._repository import ROOT, read_text, visible_files
 
-SPDX_HEADER = "".join(("# SPDX-License-", "Identifier: MIT"))
+SPDX_HEADER = "".join(("# SPDX-License-", "Identifier: Apache-2.0"))
 HEADER_LINES = (
     SPDX_HEADER,
-    "# MIT License; see LICENSE.",
+    "# Apache License 2.0; see LICENSE.",
     "# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.",
     "# © Code 2020–2026 Miroslav Šotek. All rights reserved.",
     "# ORCID: 0009-0009-3560-0851",
@@ -59,7 +59,7 @@ def header_errors(root: Path = ROOT) -> list[str]:
             or not title.startswith(HEADER_TITLE_PREFIX)
             or not title.removeprefix(HEADER_TITLE_PREFIX).strip()
         ):
-            errors.append(f"{path.as_posix()}: missing canonical MIT header")
+            errors.append(f"{path.as_posix()}: missing canonical Apache-2.0 header")
     return errors
 
 

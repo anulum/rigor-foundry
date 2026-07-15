@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -9,9 +9,11 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import cast
 
 import pytest
+from signing_fixtures import pack_signature, trust_store
 
 from rigor_foundry.condition_language import ConditionExpression
 from rigor_foundry.effective_profile import AdapterLock, PackVerification
@@ -31,7 +33,6 @@ from rigor_foundry.project_profile import (
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
-    PackSignature,
     RemediationContract,
     StandardPack,
 )
@@ -97,7 +98,7 @@ def pack(
         source_uri=f"https://standards.example/{pack_id}",
         source_digest=source_digest,
         licence=licence,
-        signature=PackSignature("ed25519", "trusted-key", payload, "2" * 64),
+        signature=pack_signature(payload),
         controls=selected_controls,
     )
 
@@ -153,15 +154,12 @@ def profile(
     )
 
 
-def verification(standard: StandardPack, *, valid: bool = True) -> PackVerification:
+def verification(standard: StandardPack) -> PackVerification:
     """Return external cryptographic-verification evidence for the exact pack."""
     return PackVerification.build(
-        pack_digest=standard.pack_digest,
-        key_id=standard.signature.key_id,
-        proof_digest=standard.signature.signature_digest,
-        tool_digest="4" * 64,
+        pack=standard,
+        trust_store=trust_store("trusted-key"),
         verified_at="2026-07-15T11:55:00Z",
-        valid=valid,
     )
 
 
@@ -192,6 +190,7 @@ def resolve(
         packs=(standard,),
         verifications=(verification(standard),) if verifications is None else verifications,
         adapters=(adapter(),) if adapters is None else adapters,
+        trust_store=trust_store("trusted-key"),
         allowed_licences=allowed_licences,
         toolchain_digest="9" * 64,
         resolved_at="2026-07-15T12:00:00Z",
@@ -255,14 +254,7 @@ def test_stricter_overlay_wins_and_missing_adapter_remains_explicit() -> None:
 def test_signature_proof_and_adapter_domain_are_exactly_bound() -> None:
     """A verification binds detached proof bytes and adapters cover the control domain."""
     standard = pack()
-    wrong_proof = PackVerification.build(
-        pack_digest=standard.pack_digest,
-        key_id=standard.signature.key_id,
-        proof_digest="0" * 64,
-        tool_digest="4" * 64,
-        verified_at="2026-07-15T11:55:00Z",
-        valid=True,
-    )
+    wrong_proof = replace(verification(standard), signature_digest="0" * 64)
     rejected = resolve(profile(standard), standard, verifications=(wrong_proof,))
     assert not rejected.ready
     assert "unverified-pack" in {item.code for item in rejected.contradictions}
@@ -279,6 +271,37 @@ def test_signature_proof_and_adapter_domain_are_exactly_bound() -> None:
     resolved = resolve(profile(standard), standard, adapters=(wrong_domain,))
     assert resolved.ready and resolved.lock is not None
     assert resolved.lock.controls[0].missing_adapter_ids == ("loc-adapter",)
+
+
+def test_fabricated_pack_signature_cannot_create_verification_evidence() -> None:
+    """Digest-shaped signature bytes and an approved key label establish no trust."""
+    standard = pack()
+    forged_signature = standard.signature.build(
+        key_id=standard.signature.key_id,
+        payload_digest=standard.signature.payload_digest,
+        signature_hex="0" * 128,
+    )
+    forged_pack = StandardPack.build(
+        pack_id=standard.pack_id,
+        version=standard.version,
+        source_uri=standard.source_uri,
+        source_digest=standard.source_digest,
+        licence=standard.licence,
+        signature=forged_signature,
+        controls=standard.controls,
+    )
+    with pytest.raises(ValueError, match="not valid"):
+        PackVerification.build(
+            pack=forged_pack,
+            trust_store=trust_store("trusted-key"),
+            verified_at="2026-07-15T11:55:00Z",
+        )
+    with pytest.raises(ValueError, match="signature"):
+        PackVerification.build(
+            pack=replace(standard, licence="Apache-2.0"),
+            trust_store=trust_store("trusted-key"),
+            verified_at="2026-07-15T11:55:00Z",
+        )
 
 
 def test_weakening_requires_one_active_exact_waiver() -> None:
@@ -395,6 +418,7 @@ def test_pack_and_adapter_inventory_crosswiring_is_reported() -> None:
         "profile": project,
         "verifications": (verification(standard),),
         "adapters": (adapter(),),
+        "trust_store": trust_store("trusted-key"),
         "allowed_licences": ("MIT",),
         "toolchain_digest": "9" * 64,
         "resolved_at": "2026-07-15T12:00:00Z",
@@ -418,6 +442,7 @@ def test_pack_and_adapter_inventory_crosswiring_is_reported() -> None:
         packs=(standard, foreign),
         verifications=(verification(standard), verification(foreign)),
         adapters=(adapter(),),
+        trust_store=trust_store("trusted-key"),
         allowed_licences=("MIT",),
         toolchain_digest="9" * 64,
         resolved_at="2026-07-15T12:00:00Z",
@@ -428,6 +453,7 @@ def test_pack_and_adapter_inventory_crosswiring_is_reported() -> None:
         packs=(standard,),
         verifications=(verification(standard),),
         adapters=(adapter(), adapter()),
+        trust_store=trust_store("trusted-key"),
         allowed_licences=("MIT",),
         toolchain_digest="9" * 64,
         resolved_at="2026-07-15T12:00:00Z",

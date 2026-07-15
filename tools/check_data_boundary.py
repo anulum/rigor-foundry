@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -29,6 +29,7 @@ _NETWORK_MODULES = frozenset(
         "websockets",
     }
 )
+_ALLOWED_RUNTIME_DEPENDENCIES = ("cryptography>=49,<50",)
 
 
 def _imported_network_modules(path: Path) -> tuple[str, ...]:
@@ -50,14 +51,16 @@ def _imported_network_modules(path: Path) -> tuple[str, ...]:
 
 
 def data_boundary_errors(root: Path = ROOT) -> list[str]:
-    """Return violations of the dependency-free, local-only core contract."""
+    """Return violations of the fixed-dependency, local-only core contract."""
     errors: list[str] = []
     with (root / "pyproject.toml").open("rb") as stream:
         configuration = tomllib.load(stream)
     project = configuration.get("project")
     dependencies = project.get("dependencies") if isinstance(project, dict) else None
-    if dependencies != []:
-        errors.append("project.dependencies must remain empty for the local-only core")
+    if dependencies != list(_ALLOWED_RUNTIME_DEPENDENCIES):
+        errors.append(
+            "project.dependencies must equal the approved local-only runtime dependency set"
+        )
 
     package = root / "src" / "rigor_foundry"
     for path in sorted(package.rglob("*.py")):

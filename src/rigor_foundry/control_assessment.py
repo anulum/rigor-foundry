@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MIT
-# MIT License; see LICENSE.
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
 # © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
@@ -23,6 +23,8 @@ from .model_primitives import (
     validate_unique_strings,
 )
 from .models import canonical_digest, require_integer, require_mapping, require_string
+from .review_attestation import ReviewerAttestation
+from .trust import VerificationTrustStore
 
 ASSESSMENT_SCHEMA_VERSION = "1.1"
 
@@ -34,7 +36,6 @@ AssessmentStatus = Literal[
     "pass",
     "accepted-risk",
 ]
-ProofLevel = Literal["asserted", "transport-authenticated", "cryptographically-verified"]
 Classification = Literal["public", "internal", "confidential", "secret"]
 
 _STATUSES = {
@@ -45,7 +46,6 @@ _STATUSES = {
     "pass",
     "accepted-risk",
 }
-_PROOF_LEVELS = {"asserted", "transport-authenticated", "cryptographically-verified"}
 _CLASSIFICATIONS = {"public", "internal", "confidential", "secret"}
 
 
@@ -199,130 +199,6 @@ class EvidenceReference:
 
 
 @dataclass(frozen=True)
-class ReviewerAttestation:
-    """Independent review evidence with an explicit identity-proof level."""
-
-    reviewer_id: str
-    proof_level: ProofLevel
-    key_id: str
-    proof_digest: str
-    assessment_body_digest: str
-    decision: AssessmentStatus
-    reviewed_at: str
-    expires_at: str
-    attestation_digest: str
-
-    @classmethod
-    def build(
-        cls,
-        *,
-        reviewer_id: str,
-        proof_level: ProofLevel,
-        key_id: str,
-        proof_digest: str,
-        assessment_body_digest: str,
-        decision: AssessmentStatus,
-        reviewed_at: str,
-        expires_at: str,
-    ) -> ReviewerAttestation:
-        """Build a reviewer attestation without treating assertion as verification."""
-        if proof_level not in _PROOF_LEVELS:
-            raise ValueError("review.proof_level is unsupported")
-        if decision not in _STATUSES:
-            raise ValueError("review.decision is unsupported")
-        if proof_level == "cryptographically-verified":
-            validated_key = require_identifier(key_id, "review.key_id")
-        else:
-            validated_key = require_optional_string(key_id, "review.key_id")
-        reviewed = require_utc_timestamp(reviewed_at, "review.reviewed_at")
-        expires = require_utc_timestamp(expires_at, "review.expires_at")
-        if parse_utc_timestamp(expires, "review.expires_at") <= parse_utc_timestamp(
-            reviewed,
-            "review.reviewed_at",
-        ):
-            raise ValueError("review.expires_at must be later than reviewed_at")
-        fields: dict[str, object] = {
-            "reviewer_id": require_string(reviewer_id, "review.reviewer_id"),
-            "proof_level": proof_level,
-            "key_id": validated_key,
-            "proof_digest": require_digest(proof_digest, "review.proof_digest"),
-            "assessment_body_digest": require_digest(
-                assessment_body_digest,
-                "review.assessment_body_digest",
-            ),
-            "decision": decision,
-            "reviewed_at": reviewed,
-            "expires_at": expires,
-        }
-        return cls(
-            reviewer_id=cast(str, fields["reviewer_id"]),
-            proof_level=proof_level,
-            key_id=validated_key,
-            proof_digest=cast(str, fields["proof_digest"]),
-            assessment_body_digest=cast(str, fields["assessment_body_digest"]),
-            decision=decision,
-            reviewed_at=reviewed,
-            expires_at=expires,
-            attestation_digest=canonical_digest(fields),
-        )
-
-    def verified_at(
-        self,
-        instant: datetime,
-        decision: AssessmentStatus,
-        assessment_body_digest: str,
-    ) -> bool:
-        """Return whether this is a current cryptographic review of the decision."""
-        if instant.tzinfo is None or instant.utcoffset() is None:
-            raise ValueError("review evaluation time must be timezone-aware")
-        return (
-            self.proof_level == "cryptographically-verified"
-            and bool(self.key_id)
-            and self.decision == decision
-            and self.assessment_body_digest == assessment_body_digest
-            and parse_utc_timestamp(self.reviewed_at, "review.reviewed_at") <= instant
-            and instant < parse_utc_timestamp(self.expires_at, "review.expires_at")
-        )
-
-    def to_dict(self) -> dict[str, object]:
-        """Serialise one identity-proof-bound review."""
-        return {
-            "reviewer_id": self.reviewer_id,
-            "proof_level": self.proof_level,
-            "key_id": self.key_id,
-            "proof_digest": self.proof_digest,
-            "assessment_body_digest": self.assessment_body_digest,
-            "decision": self.decision,
-            "reviewed_at": self.reviewed_at,
-            "expires_at": self.expires_at,
-            "attestation_digest": self.attestation_digest,
-        }
-
-    @classmethod
-    def from_dict(cls, value: object) -> ReviewerAttestation:
-        """Parse and integrity-check one reviewer attestation."""
-        data = require_mapping(value, "review")
-        proof_level = require_string(data.get("proof_level"), "review.proof_level")
-        decision = require_string(data.get("decision"), "review.decision")
-        attestation = cls.build(
-            reviewer_id=require_string(data.get("reviewer_id"), "review.reviewer_id"),
-            proof_level=cast(ProofLevel, proof_level),
-            key_id=require_optional_string(data.get("key_id", ""), "review.key_id"),
-            proof_digest=require_digest(data.get("proof_digest"), "review.proof_digest"),
-            assessment_body_digest=require_digest(
-                data.get("assessment_body_digest"),
-                "review.assessment_body_digest",
-            ),
-            decision=cast(AssessmentStatus, decision),
-            reviewed_at=require_utc_timestamp(data.get("reviewed_at"), "review.reviewed_at"),
-            expires_at=require_utc_timestamp(data.get("expires_at"), "review.expires_at"),
-        )
-        if data.get("attestation_digest") != attestation.attestation_digest:
-            raise ValueError("review-attestation digest does not match its content")
-        return attestation
-
-
-@dataclass(frozen=True)
 class ControlAssessment:
     """Evidence state for one exact effective control; never an aggregate score."""
 
@@ -337,6 +213,7 @@ class ControlAssessment:
     rationale: str
     limitations: tuple[str, ...]
     accepted_waiver_id: str
+    review_trust_store_digest: str | None
     review_body_digest: str
     assessment_digest: str
 
@@ -353,6 +230,7 @@ class ControlAssessment:
         rationale: str,
         limitations: tuple[str, ...] = (),
         accepted_waiver_id: str = "",
+        review_trust_store: VerificationTrustStore | None = None,
     ) -> str:
         """Digest the exact assessment body that external reviewers must attest."""
         return canonical_digest(
@@ -366,6 +244,7 @@ class ControlAssessment:
                 rationale=rationale,
                 limitations=limitations,
                 accepted_waiver_id=accepted_waiver_id,
+                review_trust_store=review_trust_store,
             )
         )
 
@@ -381,6 +260,7 @@ class ControlAssessment:
         rationale: str,
         limitations: tuple[str, ...],
         accepted_waiver_id: str,
+        review_trust_store: VerificationTrustStore | None,
     ) -> dict[str, object]:
         """Validate and return the non-circular body covered by review proofs."""
         if status not in _STATUSES:
@@ -420,6 +300,9 @@ class ControlAssessment:
                 accepted_waiver_id,
                 "assessment.accepted_waiver_id",
             ),
+            "review_trust_store_digest": (
+                review_trust_store.trust_store_digest if review_trust_store else None
+            ),
         }
 
     @staticmethod
@@ -452,6 +335,7 @@ class ControlAssessment:
         rationale: str,
         limitations: tuple[str, ...] = (),
         accepted_waiver_id: str = "",
+        review_trust_store: VerificationTrustStore | None = None,
     ) -> ControlAssessment:
         """Build and rederive every pass or accepted-risk precondition."""
         subject = cls._subject_fields(
@@ -464,6 +348,7 @@ class ControlAssessment:
             rationale=rationale,
             limitations=limitations,
             accepted_waiver_id=accepted_waiver_id,
+            review_trust_store=review_trust_store,
         )
         instant_text = cast(str, subject["assessed_at"])
         instant = parse_utc_timestamp(instant_text, "assessment.assessed_at")
@@ -475,6 +360,8 @@ class ControlAssessment:
             tuple(item.attestation_digest for item in reviews),
             "assessment.review_digests",
         )
+        if reviews and review_trust_store is None:
+            raise ValueError("review attestations require an explicit trust store")
         if not control.applicable:
             if status != "unassessed" or evidence or reviews or waiver_id:
                 raise ValueError("not-applicable controls must remain explicitly unassessed")
@@ -486,6 +373,7 @@ class ControlAssessment:
                 reviews,
                 cast(str, subject["assessor"]),
                 review_body_digest,
+                review_trust_store,
             )
             if validated_limitations or waiver_id:
                 raise ValueError("pass cannot hide limitations or accepted risk")
@@ -503,6 +391,7 @@ class ControlAssessment:
                 cast(str, subject["assessor"]),
                 status,
                 review_body_digest,
+                review_trust_store,
             )
         elif status == "fail":
             if not evidence:
@@ -529,6 +418,10 @@ class ControlAssessment:
             rationale=validated_rationale,
             limitations=validated_limitations,
             accepted_waiver_id=waiver_id,
+            review_trust_store_digest=cast(
+                str | None,
+                subject["review_trust_store_digest"],
+            ),
             review_body_digest=review_body_digest,
             assessment_digest=canonical_digest(fields),
         )
@@ -541,6 +434,7 @@ class ControlAssessment:
         reviews: tuple[ReviewerAttestation, ...],
         assessor: str,
         review_body_digest: str,
+        review_trust_store: VerificationTrustStore | None,
     ) -> None:
         """Validate evidence and review contracts for a pass."""
         if control.missing_adapter_ids:
@@ -566,6 +460,7 @@ class ControlAssessment:
             assessor,
             "pass",
             review_body_digest,
+            review_trust_store,
         )
 
     @staticmethod
@@ -576,13 +471,21 @@ class ControlAssessment:
         assessor: str,
         decision: AssessmentStatus,
         review_body_digest: str,
+        review_trust_store: VerificationTrustStore | None,
     ) -> None:
         """Count distinct identities and keys bound to the exact assessment body."""
+        if review_trust_store is None:
+            raise ValueError("verified independent reviewers require an explicit trust store")
         verified = tuple(
             item
             for item in reviews
             if item.reviewer_id != assessor
-            and item.verified_at(instant, decision, review_body_digest)
+            and item.verified_at(
+                instant,
+                decision,
+                review_body_digest,
+                review_trust_store,
+            )
         )
         key_ids = {item.key_id for item in verified}
         reviewer_ids = {item.reviewer_id for item in verified}
@@ -605,6 +508,7 @@ class ControlAssessment:
             "rationale": self.rationale,
             "limitations": list(self.limitations),
             "accepted_waiver_id": self.accepted_waiver_id,
+            "review_trust_store_digest": self.review_trust_store_digest,
             "review_body_digest": self.review_body_digest,
             "assessment_digest": self.assessment_digest,
         }
@@ -614,6 +518,7 @@ class ControlAssessment:
         cls,
         value: object,
         lock: EffectiveProfileLock,
+        review_trust_store: VerificationTrustStore | None = None,
     ) -> ControlAssessment:
         """Parse an assessment and rederive all clearance predicates."""
         data = require_mapping(value, "assessment")
@@ -662,6 +567,7 @@ class ControlAssessment:
                 data.get("accepted_waiver_id", ""),
                 "assessment.accepted_waiver_id",
             ),
+            review_trust_store=review_trust_store,
         )
         if data.get("lock_digest") != lock.lock_digest:
             raise ValueError("assessment lock digest does not match")
@@ -669,6 +575,8 @@ class ControlAssessment:
             raise ValueError("assessment control id does not match")
         if data.get("review_body_digest") != assessment.review_body_digest:
             raise ValueError("assessment review body digest does not match")
+        if data.get("review_trust_store_digest") != assessment.review_trust_store_digest:
+            raise ValueError("assessment review trust-store digest does not match")
         recorded = require_digest(data.get("assessment_digest"), "assessment.assessment_digest")
         if recorded != assessment.assessment_digest:
             raise ValueError("assessment digest does not match its content")
