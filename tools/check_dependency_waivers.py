@@ -24,6 +24,9 @@ ADVISORY_ID = "PYSEC-2026-2132"
 EXPECTED_PACKAGE = "click"
 EXPECTED_AFFECTED_API = "click.edit"
 EXPECTED_COMMAND = "semgrep scan --error --config .semgrep.yml src tools"
+EXPECTED_ADVISORY_URL = (
+    "https://github.com/tsigouris007/security-advisories/security/advisories/GHSA-47fr-3ffg-hgmw"
+)
 MAX_WAIVER_LIFETIME = timedelta(days=30)
 REQUIRED_FIELDS = frozenset(
     {
@@ -94,6 +97,7 @@ def dependency_waiver_errors(root: Path = ROOT, *, today: date | None = None) ->
         "scope": SECURITY_LOCK.as_posix(),
         "affected_api": EXPECTED_AFFECTED_API,
         "allowed_command": EXPECTED_COMMAND,
+        "advisory_url": EXPECTED_ADVISORY_URL,
     }
     for field, required in expected.items():
         if waiver.get(field) != required:
@@ -119,10 +123,9 @@ def dependency_waiver_errors(root: Path = ROOT, *, today: date | None = None) ->
         if lifetime <= timedelta(0) or lifetime > MAX_WAIVER_LIFETIME:
             errors.append("dependency waiver lifetime must be between 1 and 30 days")
 
-    for field in ("rationale", "advisory_url"):
-        value = waiver.get(field)
-        if not isinstance(value, str) or not value.strip():
-            errors.append(f"dependency waiver {field} must be non-empty")
+    rationale = waiver.get("rationale")
+    if not isinstance(rationale, str) or not rationale.strip():
+        errors.append("dependency waiver rationale must be non-empty")
     mitigations = waiver.get("mitigations")
     if (
         not isinstance(mitigations, list)
