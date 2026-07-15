@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -280,3 +281,29 @@ def test_todo_append_rejects_lock_symlink_without_touching_its_target(
 
     assert lock.is_symlink()
     assert victim.read_text(encoding="utf-8") == "unchanged\n"
+
+
+def test_todo_append_rejects_hard_link_without_mutating_outside_alias(
+    tmp_path: Path,
+) -> None:
+    """An ignored TODO hard link cannot grant writes to an outside alias."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.commit()
+    outside = tmp_path / "outside.md"
+    outside.write_text("outside remains unchanged\n", encoding="utf-8")
+    todo = repository.root / "docs/internal/work/INDEX.md"
+    todo.parent.mkdir(parents=True, exist_ok=True)
+    os.link(outside, todo)
+    report = _report(repository.root)
+    review = _valid_review(report)
+
+    with pytest.raises(ValueError, match="exactly one link"):
+        append_todo_entry(
+            repository.root,
+            Path("docs/internal/work/INDEX.md"),
+            render_todo_entry(report, review),
+            review.candidate_id,
+        )
+
+    assert outside.read_text(encoding="utf-8") == "outside remains unchanged\n"
+    assert todo.read_text(encoding="utf-8") == "outside remains unchanged\n"

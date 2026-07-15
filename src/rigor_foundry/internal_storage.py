@@ -163,14 +163,28 @@ def atomic_replace_text(path: Path, text: str) -> None:
 
 
 def regular_file_identity(path: Path, *, label: str) -> tuple[int, int]:
-    """Return the device and inode of one existing non-symlink regular file."""
+    """Return the device and inode of one existing single-link regular file."""
     try:
         metadata = path.stat(follow_symlinks=False)
     except FileNotFoundError as exc:
-        raise ValueError(f"{label} must be an existing regular non-symlink file") from exc
-    if not stat.S_ISREG(metadata.st_mode):
-        raise ValueError(f"{label} must be an existing regular non-symlink file")
+        raise ValueError(
+            f"{label} must be an existing regular non-symlink file with exactly one link"
+        ) from exc
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        raise ValueError(
+            f"{label} must be an existing regular non-symlink file with exactly one link"
+        )
     return metadata.st_dev, metadata.st_ino
+
+
+def _acquire_flock(descriptor: int, path: Path) -> None:
+    """Acquire one non-blocking exclusive advisory lock or fail closed."""
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as exc:
+        if exc.errno in {errno.EACCES, errno.EAGAIN}:
+            raise RuntimeError(f"another process holds the internal record lock: {path}") from exc
+        raise
 
 
 @contextmanager
@@ -192,12 +206,20 @@ def open_verified_text_for_append(
             raise
         metadata = os.fstat(descriptor)
         descriptor_identity = (metadata.st_dev, metadata.st_ino)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise ValueError(f"{label} must be an existing regular non-symlink file")
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            raise ValueError(
+                f"{label} must be an existing regular non-symlink file with exactly one link"
+            )
         if descriptor_identity != expected_identity:
             raise ValueError(f"{label} changed after path validation")
         if regular_file_identity(path, label=label) != descriptor_identity:
             raise ValueError(f"{label} changed while it was opened")
+        _acquire_flock(descriptor, path)
+        metadata = os.fstat(descriptor)
+        if metadata.st_nlink != 1:
+            raise ValueError(f"{label} gained another link before append locking")
+        if regular_file_identity(path, label=label) != descriptor_identity:
+            raise ValueError(f"{label} changed while append locking")
         with os.fdopen(descriptor, "r+", encoding="utf-8", newline="") as handle:
             descriptor = None
             yield handle
@@ -212,10 +234,28 @@ def open_verified_text_for_append(
 
 @contextmanager
 def exclusive_lock(path: Path) -> Iterator[None]:
-    """Hold a non-blocking advisory lock on one persistent regular file."""
+    """Hold a path-stable lock without mutating pre-existing file metadata."""
+    parent_descriptor: int | None = None
+    parent_locked = False
     descriptor: int | None = None
     locked = False
     try:
+        parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        parent_flags |= getattr(os, "O_NOFOLLOW", 0)
+        try:
+            parent_descriptor = os.open(path.parent, parent_flags)
+        except OSError as exc:
+            if exc.errno == errno.ELOOP:
+                raise ValueError(
+                    f"internal record lock parent must not be a symbolic link: {path.parent}"
+                ) from exc
+            raise
+        parent_metadata = os.fstat(parent_descriptor)
+        if not stat.S_ISDIR(parent_metadata.st_mode):
+            raise ValueError(f"internal record lock parent must be a directory: {path.parent}")
+        _acquire_flock(parent_descriptor, path.parent)
+        parent_locked = True
+
         flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
         try:
             descriptor = os.open(path, flags, 0o600)
@@ -226,21 +266,29 @@ def exclusive_lock(path: Path) -> Iterator[None]:
                 ) from exc
             raise
         metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise ValueError(f"internal record lock must be a regular file: {path}")
-        os.fchmod(descriptor, 0o600)
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as exc:
-            if exc.errno in {errno.EACCES, errno.EAGAIN}:
-                raise RuntimeError(
-                    f"another process holds the internal record lock: {path}"
-                ) from exc
-            raise
+        lock_identity = (metadata.st_dev, metadata.st_ino)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+            raise ValueError(
+                f"internal record lock must be a regular file, not a symlink, "
+                f"with exactly one link: {path}"
+            )
+        _acquire_flock(descriptor, path)
         locked = True
+        if regular_file_identity(path, label="internal record lock") != lock_identity:
+            raise ValueError(f"internal record lock path changed before entry: {path}")
         yield
+        try:
+            current_identity = regular_file_identity(path, label="internal record lock")
+        except ValueError as exc:
+            raise ValueError(f"internal record lock path changed while held: {path}") from exc
+        if current_identity != lock_identity:
+            raise ValueError(f"internal record lock path changed while held: {path}")
     finally:
         if descriptor is not None:
             if locked:
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
             os.close(descriptor)
+        if parent_descriptor is not None:
+            if parent_locked:
+                fcntl.flock(parent_descriptor, fcntl.LOCK_UN)
+            os.close(parent_descriptor)

@@ -200,6 +200,20 @@ def test_verified_append_detects_replacement_while_descriptor_is_open(
     assert target.read_text(encoding="utf-8") == "attacker replacement\n"
 
 
+def test_verified_append_serializes_on_the_validated_target_inode(tmp_path: Path) -> None:
+    """A second append descriptor cannot enter while the exact target inode is held."""
+    target = tmp_path / "TODO.md"
+    target.write_text("original\n", encoding="utf-8")
+    identity = regular_file_identity(target, label="TODO path")
+
+    with (
+        open_verified_text_for_append(target, identity, label="TODO path"),
+        pytest.raises(RuntimeError, match="another process"),
+        open_verified_text_for_append(target, identity, label="TODO path"),
+    ):
+        raise AssertionError("second target descriptor unexpectedly entered")
+
+
 def test_exclusive_lock_never_unlinks_replacement_on_exit(tmp_path: Path) -> None:
     """Releasing an opened lock descriptor leaves a replacement path untouched."""
     lock = tmp_path / "records.lock"
@@ -207,9 +221,42 @@ def test_exclusive_lock_never_unlinks_replacement_on_exit(tmp_path: Path) -> Non
     victim = tmp_path / "victim.txt"
     victim.write_text("unchanged\n", encoding="utf-8")
 
-    with exclusive_lock(lock):
+    with (
+        pytest.raises(ValueError, match="changed while held"),
+        exclusive_lock(lock),
+    ):
         lock.unlink()
         lock.symlink_to(victim)
 
     assert lock.is_symlink()
     assert victim.read_text(encoding="utf-8") == "unchanged\n"
+
+
+def test_exclusive_lock_replacement_cannot_split_serialization(tmp_path: Path) -> None:
+    """A second contender cannot lock a recreated pathname in the held directory."""
+    lock = tmp_path / "records.lock"
+    with (
+        pytest.raises(ValueError, match="changed while held"),
+        exclusive_lock(lock),
+    ):
+        lock.unlink()
+        lock.write_text("replacement\n", encoding="utf-8")
+        with pytest.raises(RuntimeError, match="another process"), exclusive_lock(lock):
+            raise AssertionError("replacement inode unexpectedly split serialization")
+
+    assert lock.read_text(encoding="utf-8") == "replacement\n"
+
+
+def test_exclusive_lock_rejects_hard_link_without_mutating_victim(tmp_path: Path) -> None:
+    """A multi-link lock cannot change an aliased file's mode or content."""
+    victim = tmp_path / "victim.txt"
+    victim.write_text("unchanged\n", encoding="utf-8")
+    victim.chmod(0o644)
+    lock = tmp_path / "records.lock"
+    os.link(victim, lock)
+
+    with pytest.raises(ValueError, match="exactly one link"), exclusive_lock(lock):
+        raise AssertionError("hard-linked lock unexpectedly entered")
+
+    assert victim.read_text(encoding="utf-8") == "unchanged\n"
+    assert os.stat(victim).st_mode & 0o777 == 0o644
