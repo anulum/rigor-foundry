@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -78,6 +79,8 @@ def test_git_ignore_check_uses_real_repository_rules(tmp_path: Path) -> None:
     assert not is_git_ignored(repository.root, Path("public-report.json"))
     with pytest.raises(ValueError, match="repository-relative"):
         is_git_ignored(repository.root, Path("../outside"))
+    with pytest.raises(ValueError, match="repository-relative"):
+        is_git_ignored(repository.root, tmp_path / "absolute")
 
 
 def test_inventory_rejects_non_repository(tmp_path: Path) -> None:
@@ -104,3 +107,82 @@ def test_inventory_binds_uninitialised_gitlink_mode_and_object(tmp_path: Path) -
     assert gitlink.git_mode == "160000"
     assert gitlink.object_id == child_head
     assert not gitlink.absolute_path.exists()
+
+
+def test_inventory_rejects_real_non_utf8_tracked_path(tmp_path: Path) -> None:
+    """A Git-valid path that cannot enter the UTF-8 report schema fails closed."""
+    repository = GitRepository.create(tmp_path / "repository")
+    raw_root = os.fsencode(repository.root)
+    raw_directory = raw_root + b"/src/pkg"
+    os.makedirs(raw_directory)
+    raw_path = raw_directory + b"/invalid-\xff.py"
+    descriptor = os.open(raw_path, os.O_CREAT | os.O_WRONLY, 0o644)
+    try:
+        os.write(descriptor, b"VALUE = 1\n")
+    finally:
+        os.close(descriptor)
+    repository.commit()
+
+    with pytest.raises(RuntimeError, match="non-UTF-8 field"):
+        load_git_inventory(repository.root)
+
+
+def test_inventory_rejects_real_unmerged_index_stages(tmp_path: Path) -> None:
+    """A real merge conflict cannot be mistaken for a stage-zero tracked tree."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/value.py", "VALUE = 'base'\n")
+    base = repository.commit()
+    repository.write_text("src/pkg/value.py", "VALUE = 'ours'\n")
+    ours = repository.commit()
+    repository.write_text("src/pkg/value.py", "VALUE = 'theirs'\n")
+    theirs = repository.commit()
+    repository.git_command("read-tree", "--empty")
+    repository.git_command("read-tree", "-i", "-m", base, ours, theirs)
+
+    with pytest.raises(RuntimeError, match="unresolved stage"):
+        load_git_inventory(repository.root)
+
+
+def test_inventory_rejects_tracked_symlink_replaced_by_regular_file(tmp_path: Path) -> None:
+    """Worktree type drift cannot substitute regular content for a tracked symlink."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/target.py", "VALUE = 1\n")
+    link = repository.symlink("src/pkg/link.py", "target.py")
+    repository.commit()
+    link.unlink()
+    link.write_text("VALUE = 2\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="tracked symlink is unavailable"):
+        load_git_inventory(repository.root)
+
+
+def test_inventory_classifies_tracked_file_replaced_by_directory(tmp_path: Path) -> None:
+    """A tracked regular-file path replaced by a directory remains explicit missing content."""
+    repository = GitRepository.create(tmp_path / "repository")
+    owner = repository.write_text("src/pkg/owner.py", "VALUE = 1\n")
+    repository.commit()
+    owner.unlink()
+    owner.mkdir()
+
+    inventory = load_git_inventory(repository.root)
+    tracked = next(item for item in inventory.files if item.path == "src/pkg/owner.py")
+    assert tracked.content_kind == "missing"
+    assert tracked.byte_size == 0
+
+
+def test_inventory_fails_when_git_is_unavailable(
+    tmp_path: Path,
+) -> None:
+    """Repository inventory refuses to proceed without a resolved Git executable."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.commit()
+    previous_path = os.environ.get("PATH")
+    os.environ["PATH"] = ""
+    try:
+        with pytest.raises(RuntimeError, match="git executable is unavailable"):
+            load_git_inventory(repository.root)
+    finally:
+        if previous_path is None:
+            del os.environ["PATH"]
+        else:
+            os.environ["PATH"] = previous_path

@@ -163,3 +163,89 @@ def test_todo_append_is_ignored_unique_locked_and_symlink_safe(tmp_path: Path) -
             entry,
             review.candidate_id,
         )
+
+
+def test_review_validation_rejects_stale_identity_and_time_boundaries(tmp_path: Path) -> None:
+    """Review bindings, UTC timestamps, expiry ordering, and triggers fail precisely."""
+    report = _report(tmp_path)
+    valid = _valid_review(report)
+
+    stale = replace(valid, report_digest="0" * 64, candidate_id="missing-candidate")
+    stale_errors = review_errors(report, stale)
+    assert "review report_digest does not match the report" in stale_errors
+    assert "review candidate_id is absent from the report" in stale_errors
+
+    non_utc = replace(valid, reviewed_at="2026-07-15T12:00:00+02:00")
+    assert "reviewed_at must use UTC" in review_errors(report, non_utc)
+
+    invalid_expiry = replace(valid, expires_at="not-a-timestamp")
+    assert "expires_at must be an ISO-8601 UTC timestamp" in review_errors(
+        report,
+        invalid_expiry,
+    )
+
+    reversed_expiry = replace(valid, expires_at=valid.reviewed_at)
+    assert "expires_at must be later than reviewed_at" in review_errors(report, reversed_expiry)
+
+    empty_trigger = replace(valid, reopen_triggers=("",))
+    assert "reopen triggers must be non-empty strings" in review_errors(report, empty_trigger)
+
+    accepted_boundary = replace(
+        valid,
+        decision="accepted-boundary",
+        severity=None,
+        owner="",
+        acceptance_gates=(),
+        title="",
+        boundary_justification="hardware protocol fixes the register width",
+    )
+    assert review_errors(report, accepted_boundary) == ()
+
+    with pytest.raises(ValueError, match="review is not promotable"):
+        render_todo_entry(report, replace(valid, owner=""))
+
+    duplicated_report = replace(
+        report,
+        candidates=(report.candidates[0], report.candidates[0]),
+    )
+    with pytest.raises(ValueError, match="exactly once"):
+        render_todo_entry(duplicated_report, valid)
+
+
+def test_todo_append_rejects_unsafe_targets_and_serialises_writers(tmp_path: Path) -> None:
+    """Traversal, absent targets, lock contention, and missing final newlines stay safe."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.commit()
+    todo = repository.write_text("docs/internal/work/INDEX.md", "# Active work")
+    report = _report(repository.root)
+    review = _valid_review(report)
+    entry = render_todo_entry(report, review)
+    relative = Path("docs/internal/work/INDEX.md")
+
+    for unsafe in (tmp_path / "outside.md", Path("../outside.md")):
+        with pytest.raises(ValueError, match="repository-relative"):
+            append_todo_entry(repository.root, unsafe, entry, review.candidate_id)
+
+    with pytest.raises(ValueError, match="existing regular"):
+        append_todo_entry(
+            repository.root,
+            Path("docs/internal/work/missing.md"),
+            entry,
+            review.candidate_id,
+        )
+    with pytest.raises(ValueError, match="existing regular"):
+        append_todo_entry(
+            repository.root,
+            Path("docs/internal/work"),
+            entry,
+            review.candidate_id,
+        )
+
+    lock = todo.with_name(todo.name + ".repository-audit.lock")
+    lock.write_text("held", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="another audit promotion"):
+        append_todo_entry(repository.root, relative, entry, review.candidate_id)
+    lock.unlink()
+
+    append_todo_entry(repository.root, relative, entry, review.candidate_id)
+    assert todo.read_text(encoding="utf-8").startswith("# Active work\n\n###")

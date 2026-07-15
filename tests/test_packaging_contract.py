@@ -28,8 +28,8 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     bases = re.findall(r"^FROM\s+([^\s]+)", dockerfile, re.MULTILINE)
     assert len(bases) == 2
     assert all("@sha256:" in base for base in bases)
-    assert "snapshot.debian.org/archive/debian/20260316T000000Z" in dockerfile
-    assert "snapshot.debian.org/archive/debian-security/20260316T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian/20260714T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian-security/20260714T000000Z" in dockerfile
     assert "USER rigor" in dockerfile
 
 
@@ -42,3 +42,13 @@ def test_hash_locks_cover_each_resolved_distribution() -> None:
         resolved = [entry for entry in entries if "==" in entry]
         assert resolved, name
         assert all("--hash=sha256:" in entry for entry in resolved), name
+
+
+def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
+    """Ubuntu CI keeps its global restriction and profiles only Bubblewrap."""
+
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert workflow.count("profile bwrap /usr/bin/bwrap flags=(unconfined)") == 2
+    assert workflow.count("sudo apparmor_parser --replace /etc/apparmor.d/bwrap") == 2
+    assert workflow.count("    userns,") == 2
+    assert "apparmor_restrict_unprivileged_userns=0" not in workflow

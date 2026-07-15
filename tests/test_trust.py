@@ -98,3 +98,46 @@ def test_trust_store_rejects_duplicate_ids_tampering_and_unsupported_keys() -> N
         payload_digest="a" * 64,
         signature_hex=sign_digest("release-key", "a" * 64),
     )
+
+
+def test_trust_store_rejects_malformed_key_and_store_protocol_records() -> None:
+    """Malformed key bytes, integrity fields, and store envelopes fail closed."""
+    key = TrustedPublicKey.build(
+        key_id="release-key",
+        public_key_hex=public_key_hex("release-key"),
+    )
+    for invalid_hex in ("A" * 64, "a" * 62):
+        with pytest.raises(ValueError, match="lowercase hexadecimal"):
+            TrustedPublicKey.build(
+                key_id="release-key",
+                public_key_hex=invalid_hex,
+            )
+
+    tampered_key = key.to_dict()
+    tampered_key["key_digest"] = "0" * 64
+    with pytest.raises(ValueError, match="trusted-key digest"):
+        TrustedPublicKey.from_dict(tampered_key)
+
+    inconsistent_key = replace(key, key_digest="0" * 64)
+    with pytest.raises(ValueError, match="inconsistent public-key record"):
+        VerificationTrustStore.build((inconsistent_key,))
+
+    store = trust_store("release-key")
+    unsupported_key = replace(key, algorithm="rsa")
+    malformed_store = replace(store, keys=(unsupported_key,))
+    assert not malformed_store.verify(
+        key_id="release-key",
+        algorithm="ed25519",
+        payload_digest="a" * 64,
+        signature_hex=sign_digest("release-key", "a" * 64),
+    )
+
+    unsupported_schema = store.to_dict()
+    unsupported_schema["schema_version"] = "2.0"
+    with pytest.raises(ValueError, match="unsupported trust-store schema"):
+        VerificationTrustStore.from_dict(unsupported_schema)
+
+    non_array_keys = store.to_dict()
+    non_array_keys["keys"] = {}
+    with pytest.raises(ValueError, match="keys must be an array"):
+        VerificationTrustStore.from_dict(non_array_keys)

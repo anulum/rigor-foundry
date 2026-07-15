@@ -95,6 +95,7 @@ def test_policy_round_trip_and_digest_are_deterministic(tmp_path: Path) -> None:
         ({"enforcement_mode": "weaker"}, "unsupported"),
         ({"canonical_todo": "../TODO.md"}, "repository-relative"),
         ({"audit_domains": "all"}, "array"),
+        ({"native_audits": "all"}, "array"),
     ],
 )
 def test_policy_rejects_invalid_top_level_contracts(
@@ -124,6 +125,15 @@ def test_policy_rejects_duplicate_and_unknown_domains() -> None:
     ]
     with pytest.raises(ValueError, match="unsupported"):
         AuditPolicy.from_dict(value)
+    value["audit_domains"] = [
+        {
+            "name": "test-authenticity",
+            "applicability": "optional",
+            "rationale": "invalid",
+        }
+    ]
+    with pytest.raises(ValueError, match="applicability"):
+        AuditPolicy.from_dict(value)
 
 
 def test_adapter_rejects_shell_shape_escape_and_unknown_domain() -> None:
@@ -143,10 +153,23 @@ def test_adapter_rejects_shell_shape_escape_and_unknown_domain() -> None:
         ("scope", "partial"),
         ("working_directory", "../outside"),
         ("domains", ["invented"]),
+        ("domains", ["application-security", "application-security"]),
+        ("required", "yes"),
     ):
         changed = {**base, key: value}
         with pytest.raises(ValueError):
             AdapterSpec.from_dict(changed, 0)
+
+
+def test_policy_file_loading_rejects_missing_and_malformed_documents(tmp_path: Path) -> None:
+    """Policy loading distinguishes unavailable files from invalid JSON."""
+    with pytest.raises(ValueError, match="cannot read audit policy"):
+        AuditPolicy.from_path(tmp_path / "missing.json")
+
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot parse audit policy JSON"):
+        AuditPolicy.from_path(malformed)
 
 
 def test_candidate_and_report_reject_content_tampering() -> None:
@@ -195,6 +218,59 @@ def test_candidate_rejects_unregistered_or_wrong_category_rule() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("category", "performance", "category"),
+        ("confidence", "certain", "confidence"),
+    ],
+)
+def test_candidate_parsing_rejects_unsupported_protocol_enums(
+    field: str,
+    value: str,
+    message: str,
+) -> None:
+    """Candidate records reject unregistered enum values before digest acceptance."""
+    encoded = candidate().to_dict()
+    encoded[field] = value
+    with pytest.raises(ValueError, match=message):
+        Candidate.from_dict(encoded)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("schema_version", "9", "schema"),
+        ("scanner_version", "9", "scanner"),
+        ("rule_pack_version", "9", "rule-pack version"),
+        ("rule_pack_digest", "0" * 64, "rule-pack digest"),
+        ("candidates", {}, "array"),
+        ("report_digest", "0" * 64, "report digest"),
+    ],
+)
+def test_report_parsing_rejects_protocol_and_integrity_drift(
+    field: str,
+    value: object,
+    message: str,
+) -> None:
+    """Reports fail closed for protocol drift and a mismatched report digest."""
+    encoded = report().to_dict()
+    encoded[field] = value
+    with pytest.raises(ValueError, match=message):
+        AuditReport.from_dict(encoded)
+
+
+def test_report_file_loading_rejects_missing_and_malformed_documents(tmp_path: Path) -> None:
+    """Report loading rejects unavailable files and malformed JSON at its public boundary."""
+    with pytest.raises(ValueError, match="cannot read audit report"):
+        AuditReport.from_path(tmp_path / "missing.json")
+
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot read audit report"):
+        AuditReport.from_path(malformed)
+
+
 def test_review_documents_round_trip_and_reject_schema_drift(tmp_path: Path) -> None:
     """Review ledgers retain needs-evidence records without silently promoting them."""
     current = report()
@@ -206,4 +282,39 @@ def test_review_documents_round_trip_and_reject_schema_drift(tmp_path: Path) -> 
     value["schema_version"] = "older"
     path.write_text(json.dumps(value), encoding="utf-8")
     with pytest.raises(ValueError, match="schema"):
+        reviews_from_path(path)
+
+
+def test_review_parsing_rejects_invalid_decision_and_severity() -> None:
+    """Review records admit only registered decisions and severities."""
+    current = report()
+    encoded = ReviewRecord.template(
+        current.report_digest,
+        current.candidates[0].candidate_id,
+    ).to_dict()
+    encoded["decision"] = "approved"
+    with pytest.raises(ValueError, match="decision"):
+        ReviewRecord.from_dict(encoded)
+
+    encoded["decision"] = "needs-evidence"
+    encoded["severity"] = "P9"
+    with pytest.raises(ValueError, match="severity"):
+        ReviewRecord.from_dict(encoded)
+
+
+def test_review_file_loading_rejects_invalid_document_shapes(tmp_path: Path) -> None:
+    """Review loading rejects missing, malformed, and non-array documents."""
+    with pytest.raises(ValueError, match="cannot read audit reviews"):
+        reviews_from_path(tmp_path / "missing.json")
+
+    path = tmp_path / "reviews.json"
+    path.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="cannot read audit reviews"):
+        reviews_from_path(path)
+
+    path.write_text(
+        json.dumps({"schema_version": "1.0", "reviews": {}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="array"):
         reviews_from_path(path)
