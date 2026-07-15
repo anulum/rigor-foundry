@@ -60,3 +60,19 @@ def test_dependency_waiver_requires_explicit_ci_binding(tmp_path: Path) -> None:
     )
     errors = dependency_waiver_errors(root, today=date(2026, 7, 15))
     assert any("--ignore-vuln PYSEC-2026-2132" in error for error in errors)
+
+
+def test_dependency_waiver_requires_canonical_advisory_url(tmp_path: Path) -> None:
+    """A dead advisory alias cannot remain accepted as source evidence."""
+    root = _waiver_root(tmp_path)
+    waiver = root / ".github/dependency-waivers.json"
+    waiver.write_text(
+        waiver.read_text(encoding="utf-8").replace(
+            "https://github.com/tsigouris007/security-advisories/security/advisories/"
+            "GHSA-47fr-3ffg-hgmw",
+            "https://github.com/advisories/GHSA-47fr-3ffg-hgmw",
+        ),
+        encoding="utf-8",
+    )
+    errors = dependency_waiver_errors(root, today=date(2026, 7, 15))
+    assert any("dependency waiver advisory_url must be" in error for error in errors)

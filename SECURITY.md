@@ -67,7 +67,7 @@ reviews prioritise:
 
 ## Current toolchain exception
 
-`PYSEC-2026-2132` affects `click.edit`. Semgrep 1.169.0 requires Click 8.1.8,
+`PYSEC-2026-2132` affects `click.edit`. Semgrep 1.170.0 requires Click 8.1.8,
 while the advisory is fixed in a version outside Semgrep's declared range.
 RigorFoundry permits only the fixed, non-interactive repository scan command;
 the ephemeral security environment does not call `click.edit`. The exact
