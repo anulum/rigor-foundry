@@ -15,8 +15,10 @@ and archive members as adversarial input.
 - Writes require an explicit command and a validated ignored destination.
 - Missing evidence never becomes pass.
 - Pack and reviewer clearance requires real Ed25519 verification against an
-  explicit integrity-bound public-key trust store; labels and digest-shaped
-  strings do not establish trust.
+  explicit integrity-bound public-key trust store. Key identifiers and raw
+  public keys must both be unique, so aliases for one underlying key cannot
+  satisfy independent-review quorum; labels and digest-shaped strings do not
+  establish trust.
 - CI actions, Python dependencies, and the base image are immutably pinned.
 - Package publication uses a protected OIDC environment rather than a stored
   package credential.

@@ -59,15 +59,28 @@ def test_unknown_key_tampering_and_fabricated_signature_never_verify(
 
 
 def test_trust_store_rejects_duplicate_ids_tampering_and_unsupported_keys() -> None:
-    """The trust boundary is non-empty, unique, supported, and integrity-bound."""
+    """The trust boundary rejects duplicate identities and key-material aliases."""
     key = TrustedPublicKey.build(
         key_id="release-key",
         public_key_hex=public_key_hex("release-key"),
+    )
+    alias = TrustedPublicKey.build(
+        key_id="release-key-alias",
+        public_key_hex=key.public_key_hex,
     )
     with pytest.raises(ValueError, match="at least one"):
         VerificationTrustStore.build(())
     with pytest.raises(ValueError, match="unique"):
         VerificationTrustStore.build((key, key))
+    with pytest.raises(ValueError, match="public keys must be unique"):
+        VerificationTrustStore.build((key, alias))
+    alias_payload = {
+        "schema_version": "1.0",
+        "keys": [key.to_dict(), alias.to_dict()],
+        "trust_store_digest": "0" * 64,
+    }
+    with pytest.raises(ValueError, match="public keys must be unique"):
+        VerificationTrustStore.from_dict(alias_payload)
     with pytest.raises(ValueError, match="ed25519"):
         TrustedPublicKey.build(
             key_id="release-key",

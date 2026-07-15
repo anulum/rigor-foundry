@@ -361,7 +361,7 @@ def test_evidence_and_reviews_bind_exact_lock_control_and_body() -> None:
 
 
 def test_review_quorum_requires_distinct_identities_and_keys() -> None:
-    """Neither one reviewer with many keys nor many names sharing one key form quorum."""
+    """Reviewer, key-id, and public-key identities must all be independent."""
     lock, control = locked_control(minimum_reviewers=2)
     run = evidence()
     rationale = "two-party exact review"

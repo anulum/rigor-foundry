@@ -489,9 +489,13 @@ class ControlAssessment:
         )
         key_ids = {item.key_id for item in verified}
         reviewer_ids = {item.reviewer_id for item in verified}
+        public_key_by_id = {item.key_id: item.public_key_hex for item in review_trust_store.keys}
+        public_keys = {public_key_by_id[item.key_id] for item in verified}
         required = control.control.evidence.minimum_independent_reviewers
-        if len(key_ids) < required or len(reviewer_ids) < required:
-            raise ValueError("assessment lacks enough distinct verified independent reviewers")
+        if len(key_ids) < required or len(reviewer_ids) < required or len(public_keys) < required:
+            raise ValueError(
+                "assessment lacks enough distinct verified independent reviewers and keys"
+            )
 
     def to_dict(self) -> dict[str, object]:
         """Serialise one per-control assessment."""

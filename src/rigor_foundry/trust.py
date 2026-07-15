@@ -118,6 +118,9 @@ class VerificationTrustStore:
         key_ids = tuple(item.key_id for item in keys)
         if len(key_ids) != len(set(key_ids)):
             raise ValueError("trust store key ids must be unique")
+        public_keys = tuple(item.public_key_hex for item in keys)
+        if len(public_keys) != len(set(public_keys)):
+            raise ValueError("trust store public keys must be unique")
         ordered = tuple(sorted(keys, key=lambda item: item.key_id))
         fields: dict[str, object] = {
             "schema_version": TRUST_STORE_SCHEMA_VERSION,
