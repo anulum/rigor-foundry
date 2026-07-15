@@ -12,9 +12,7 @@ from __future__ import annotations
 import errno
 import fcntl
 import os
-import shutil
 import stat
-import subprocess  # nosec B404
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -22,35 +20,23 @@ from pathlib import Path
 from typing import TextIO
 
 from .git_inventory import is_git_ignored
+from .git_provenance import GitRunner, GitTrustPolicy
 
 
-def _git_executable() -> str:
-    """Return an absolute Git executable for tracked-path checks."""
-    executable = shutil.which("git")
-    if executable is None:
-        raise RuntimeError("git is required for internal record storage")
-    return str(Path(executable).resolve(strict=True))
-
-
-def _is_git_tracked(repository: Path, relative: Path) -> bool:
+def _is_git_tracked(repository: Path, relative: Path, runner: GitRunner) -> bool:
     """Return whether ``relative`` is present in the real Git index."""
     try:
-        completed = subprocess.run(  # nosec B603
-            [
-                _git_executable(),
-                "-c",
-                f"safe.directory={repository}",
-                "ls-files",
-                "--error-unmatch",
-                "--",
-                relative.as_posix(),
-            ],
-            cwd=repository,
+        completed = runner.run(
+            repository,
+            "-c",
+            f"safe.directory={repository}",
+            "ls-files",
+            "--error-unmatch",
+            "--",
+            relative.as_posix(),
             check=False,
-            capture_output=True,
-            shell=False,
         )
-    except OSError as exc:
+    except (OSError, RuntimeError) as exc:
         raise RuntimeError(f"git tracked-path check failed for {relative}") from exc
     if completed.returncode == 0:
         return True
@@ -64,6 +50,7 @@ def resolve_ignored_path(
     relative: Path,
     *,
     label: str,
+    git_trust_policy: GitTrustPolicy | None = None,
 ) -> Path:
     """Resolve one repository-relative, Git-ignored, symlink-free path.
 
@@ -75,6 +62,8 @@ def resolve_ignored_path(
         Repository-relative internal path.
     label:
         Human-readable record type used in validation errors.
+    git_trust_policy:
+        Optional runtime trust contract shared by tracked and ignored checks.
 
     Returns
     -------
@@ -89,6 +78,7 @@ def resolve_ignored_path(
 
     """
     repository = repository_root.resolve(strict=True)
+    runner = GitRunner(git_trust_policy)
     if relative.is_absolute() or not relative.parts or ".." in relative.parts:
         raise ValueError(f"{label} path must be repository-relative")
     cursor = repository
@@ -96,9 +86,9 @@ def resolve_ignored_path(
         cursor /= part
         if cursor.is_symlink():
             raise ValueError(f"{label} path must not contain symbolic links")
-    if _is_git_tracked(repository, relative):
+    if _is_git_tracked(repository, relative, runner):
         raise ValueError(f"{label} path must not be tracked by Git")
-    if not is_git_ignored(repository, relative):
+    if not is_git_ignored(repository, relative, git_runner=runner):
         raise ValueError(f"{label} path must be covered by repository Git ignore rules")
     resolved = (repository / relative).resolve(strict=False)
     try:

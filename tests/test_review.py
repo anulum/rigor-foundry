@@ -14,7 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from repository_audit_git_repository import GitRepository
+from repository_audit_git_repository import GitRepository, sample_git_provenance
 
 from rigor_foundry.internal_storage import exclusive_lock
 from rigor_foundry.models import AuditPolicy, AuditReport, Candidate, ReviewRecord
@@ -48,6 +48,7 @@ def _report(repository: Path) -> AuditReport:
         tracked_content_digest="3" * 64,
         dirty_paths=(),
         tracked_file_count=1,
+        git_provenance=sample_git_provenance(),
         policy=AuditPolicy(),
         candidates=(item,),
     )

@@ -15,6 +15,7 @@ from rigor_foundry import models
 from rigor_foundry.audit_primitives import (
     AUDIT_DOMAINS,
     POLICY_SCHEMA_VERSION,
+    REVIEW_SCHEMA_VERSION,
     SCANNER_VERSION,
     SCHEMA_VERSION,
     canonical_digest,
@@ -48,7 +49,9 @@ def test_models_facade_preserves_protocol_primitive_exports() -> None:
     """The module split keeps the original public import surface intact."""
     assert AUDIT_DOMAINS
     assert len(AUDIT_DOMAINS) == len(set(AUDIT_DOMAINS))
-    assert SCHEMA_VERSION == POLICY_SCHEMA_VERSION == "1.0"
+    assert SCHEMA_VERSION == "1.1"
+    assert POLICY_SCHEMA_VERSION == "1.0"
+    assert REVIEW_SCHEMA_VERSION == "1.0"
     assert SCANNER_VERSION == "0.1.0"
     assert models.AUDIT_DOMAINS is AUDIT_DOMAINS
     assert models.canonical_digest is canonical_digest

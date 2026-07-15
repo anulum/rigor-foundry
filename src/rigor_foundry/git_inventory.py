@@ -13,11 +13,11 @@ import hashlib
 import json
 import os
 import re
-import shutil
-import subprocess  # nosec B404
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+
+from .git_provenance import GitExecutableProvenance, GitRunner, GitTrustPolicy
 
 ContentKind = Literal["text", "binary", "non-utf8", "symlink", "missing", "gitlink", "oversize"]
 MAX_TEXT_BYTES = 8 * 1024 * 1024
@@ -74,44 +74,34 @@ class GitInventory:
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
     files: tuple[TrackedFile, ...]
+    git_provenance: GitExecutableProvenance
 
     def text_files(self) -> tuple[TrackedFile, ...]:
         """Return tracked UTF-8 text files in repository order."""
         return tuple(item for item in self.files if item.text is not None)
 
 
-def _git_executable() -> str:
-    """Return a verified absolute Git executable path."""
-    located = shutil.which("git")
-    if located is None:
-        raise RuntimeError("git executable is unavailable")
-    try:
-        resolved = Path(located).resolve(strict=True)
-    except (OSError, ValueError) as exc:
-        raise RuntimeError("git executable cannot be resolved") from exc
-    if not resolved.is_file() or not os.access(resolved, os.X_OK):
-        raise RuntimeError("resolved git path is not executable")
-    return str(resolved)
-
-
-def _run_git(root: Path, *args: str, safe_directory: str | None = None) -> bytes:
+def _run_git(
+    runner: GitRunner,
+    root: Path,
+    *args: str,
+    safe_directory: str | None = None,
+) -> bytes:
     """Run one fixed-argument Git command and return raw standard output.
 
     ``safe.directory`` is process-local and restricted to the resolved audit
     root after discovery. Root discovery alone uses Git's wildcard because the
     enclosing worktree is not yet known; no persistent configuration changes.
     """
-    executable = _git_executable()
     safe_value = str(root.resolve()) if safe_directory is None else safe_directory
     try:
-        completed = subprocess.run(  # nosec B603
-            [executable, "-c", f"safe.directory={safe_value}", *args],
-            cwd=root,
-            check=True,
-            capture_output=True,
-            shell=False,
+        completed = runner.run(
+            root,
+            "-c",
+            f"safe.directory={safe_value}",
+            *args,
         )
-    except (OSError, subprocess.CalledProcessError) as exc:
+    except (OSError, RuntimeError) as exc:
         raise RuntimeError(f"git {' '.join(args)} failed for {root}") from exc
     return completed.stdout
 
@@ -127,12 +117,12 @@ def _decode_git_field(value: bytes, field: str) -> str:
     return decoded
 
 
-def _repository_root(path: Path) -> Path:
+def _repository_root(path: Path, runner: GitRunner) -> Path:
     """Resolve the containing Git worktree root."""
     candidate = path.resolve()
     working = candidate if candidate.is_dir() else candidate.parent
     root_text = _decode_git_field(
-        _run_git(working, "rev-parse", "--show-toplevel", safe_directory="*"),
+        _run_git(runner, working, "rev-parse", "--show-toplevel", safe_directory="*"),
         "repository root",
     )
     root = Path(root_text).resolve(strict=True)
@@ -141,9 +131,9 @@ def _repository_root(path: Path) -> Path:
     return root
 
 
-def _tracked_entries(root: Path) -> tuple[TrackedIndexEntry, ...]:
+def _tracked_entries(root: Path, runner: GitRunner) -> tuple[TrackedIndexEntry, ...]:
     """Return stage-zero index entries without discarding modes or object ids."""
-    raw = _run_git(root, "ls-files", "--stage", "-z")
+    raw = _run_git(runner, root, "ls-files", "--stage", "-z")
     entries: list[TrackedIndexEntry] = []
     for record in (part for part in raw.split(b"\0") if part):
         metadata, separator, path_bytes = record.partition(b"\t")
@@ -168,9 +158,9 @@ def _tracked_entries(root: Path) -> tuple[TrackedIndexEntry, ...]:
     return tuple(sorted(entries, key=lambda item: item.path))
 
 
-def _dirty_paths(root: Path) -> tuple[str, ...]:
+def _dirty_paths(root: Path, runner: GitRunner) -> tuple[str, ...]:
     """Return tracked paths changed in the index or worktree."""
-    raw = _run_git(root, "status", "--porcelain=v1", "-z", "--untracked-files=no")
+    raw = _run_git(runner, root, "status", "--porcelain=v1", "-z", "--untracked-files=no")
     fields = [field for field in raw.split(b"\0") if field]
     paths: set[str] = set()
     index = 0
@@ -322,30 +312,43 @@ def _tracked_content_digest(files: tuple[TrackedFile, ...]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def is_git_ignored(root: Path, path: Path) -> bool:
-    """Return whether one repository-relative path is covered by Git ignore rules."""
-    repository = _repository_root(root)
+def is_git_ignored(
+    root: Path,
+    path: Path,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
+    git_runner: GitRunner | None = None,
+    expected_git_provenance: GitExecutableProvenance | None = None,
+) -> bool:
+    """Return whether one repository-relative path is covered by Git ignore rules.
+
+    A caller may supply either a trust policy or an already initialised runner
+    so tracked-path and ignore checks share one executable identity.
+    """
+    if git_trust_policy is not None and git_runner is not None:
+        raise ValueError("supply either a Git trust policy or an existing runner, not both")
+    runner = git_runner or GitRunner(git_trust_policy)
+    if (
+        expected_git_provenance is not None
+        and runner.provenance.identity_digest != expected_git_provenance.identity_digest
+    ):
+        raise RuntimeError("Git executable provenance does not match expected identity")
+    repository = _repository_root(root, runner)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError("ignore-check path must be repository-relative")
-    executable = _git_executable()
     try:
-        completed = subprocess.run(  # nosec B603
-            [
-                executable,
-                "-c",
-                f"safe.directory={repository}",
-                "check-ignore",
-                "--quiet",
-                "--no-index",
-                "--",
-                path.as_posix(),
-            ],
-            cwd=repository,
+        completed = runner.run(
+            repository,
+            "-c",
+            f"safe.directory={repository}",
+            "check-ignore",
+            "--quiet",
+            "--no-index",
+            "--",
+            path.as_posix(),
             check=False,
-            capture_output=True,
-            shell=False,
         )
-    except OSError as exc:
+    except (OSError, RuntimeError) as exc:
         raise RuntimeError(f"git check-ignore failed for {path}") from exc
     if completed.returncode == 0:
         return True
@@ -354,13 +357,22 @@ def is_git_ignored(root: Path, path: Path) -> bool:
     raise RuntimeError(f"git check-ignore returned {completed.returncode} for {path}")
 
 
-def load_git_inventory(path: Path) -> GitInventory:
+def load_git_inventory(
+    path: Path,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
+    git_runner: GitRunner | None = None,
+) -> GitInventory:
     """Load one exact read-only repository inventory.
 
     Parameters
     ----------
     path:
         Repository root or any path inside its Git worktree.
+    git_trust_policy:
+        Optional operator trust contract used to create one runner.
+    git_runner:
+        Optional existing runner. Supplying both runner and policy is invalid.
 
     Returns
     -------
@@ -371,19 +383,24 @@ def load_git_inventory(path: Path) -> GitInventory:
     ------
     RuntimeError
         If Git state or tracked paths cannot be read safely.
+    ValueError
+        If both trust inputs are supplied.
 
     """
-    root = _repository_root(path)
-    head = _decode_git_field(_run_git(root, "rev-parse", "HEAD"), "HEAD")
+    if git_trust_policy is not None and git_runner is not None:
+        raise ValueError("supply either a Git trust policy or an existing runner, not both")
+    runner = git_runner or GitRunner(git_trust_policy)
+    root = _repository_root(path, runner)
+    head = _decode_git_field(_run_git(runner, root, "rev-parse", "HEAD"), "HEAD")
     head_tree = _decode_git_field(
-        _run_git(root, "rev-parse", "HEAD^{tree}"),
+        _run_git(runner, root, "rev-parse", "HEAD^{tree}"),
         "HEAD tree",
     )
     branch = _decode_git_field(
-        _run_git(root, "rev-parse", "--abbrev-ref", "HEAD"),
+        _run_git(runner, root, "rev-parse", "--abbrev-ref", "HEAD"),
         "branch",
     )
-    entries = _tracked_entries(root)
+    entries = _tracked_entries(root, runner)
     files = tuple(_read_tracked_file(root, entry) for entry in entries)
     return GitInventory(
         root=root,
@@ -391,6 +408,7 @@ def load_git_inventory(path: Path) -> GitInventory:
         head_tree=head_tree,
         branch=branch,
         tracked_content_digest=_tracked_content_digest(files),
-        dirty_paths=_dirty_paths(root),
+        dirty_paths=_dirty_paths(root, runner),
         files=files,
+        git_provenance=runner.provenance,
     )

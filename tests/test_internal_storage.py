@@ -10,11 +10,13 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.internal_storage import (
     atomic_replace_text,
     exclusive_lock,
@@ -74,6 +76,37 @@ def test_resolve_ignored_path_accepts_only_untracked_safe_paths(tmp_path: Path) 
     linked.symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ValueError, match="symbolic links"):
         resolve_ignored_path(root, Path(".rigor-internal/linked/file"), label="record")
+
+
+def test_resolve_ignored_path_uses_explicit_git_trust_policy(tmp_path: Path) -> None:
+    """Tracked and ignored checks share the caller-selected trusted executable."""
+    root = repository(tmp_path)
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    executable = tools / "git"
+    real_git = shutil.which("git")
+    if real_git is None:
+        raise RuntimeError("git is required for internal storage tests")
+    executable.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "--version" ]; then\n'
+        "  printf '%s\\n' 'git version 2.43.0'\n"
+        "  exit 0\n"
+        "fi\n"
+        f"exec '{Path(real_git).resolve(strict=True)}' \"$@\"\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    policy = GitTrustPolicy(trusted_roots=(str(tools),))
+
+    resolved = resolve_ignored_path(
+        root,
+        Path(".rigor-internal/evidence.json"),
+        label="record",
+        git_trust_policy=policy,
+    )
+
+    assert resolved == root / ".rigor-internal/evidence.json"
 
 
 def test_immutable_and_atomic_writes_use_real_files(tmp_path: Path) -> None:

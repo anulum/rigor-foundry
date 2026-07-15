@@ -27,6 +27,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dedicated risk-acceptance waiver identities, exact assessment-body reviewer
   attestations, adapter-domain evidence binding, and command-bound remediation
   and rollback plans.
+- Fixed-root Git executable trust policy, version and replacement enforcement,
+  and content-addressed Git provenance with its complete verifiable policy in
+  reports and campaign contracts.
 
 ### Changed
 
@@ -38,8 +41,19 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Shared audit primitives and remediation-graph validation were separated from
   their record facades so every production source module remains below the
   repository's 700-line authoring threshold.
+- Report and campaign schemas advance to 1.1 so executable provenance is a
+  required, integrity-bound input rather than optional metadata. The unchanged
+  review-ledger schema remains at 1.0.
+- Campaign persistence and TODO promotion require ignored-path checks to
+  reproduce the evidence-bound Git identity.
 
 ### Security
+
+- Git plumbing ignores ambient `PATH` and `GIT_*` state, rejects symlinked
+  executable roots and paths, enforces a supported version interval, and
+  revalidates executable identity and SHA-256 before and after every command.
+  Repository-local filesystem monitors and hooks are disabled for plumbing
+  calls.
 
 - Native repository commands execute validated argv with the active locked
   Python environment, mandatory timeouts, bounded output, and no shell.

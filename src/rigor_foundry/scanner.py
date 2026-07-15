@@ -14,6 +14,7 @@ from pathlib import Path, PurePosixPath
 from .architecture import scan_architecture
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
+from .git_provenance import GitTrustPolicy
 from .godfiles import scan_godfiles
 from .models import AuditPolicy, AuditReport, Candidate
 from .polyglot_architecture import scan_polyglot_architecture
@@ -132,9 +133,26 @@ def _scope_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
 def scan_repository(
     root: Path,
     policy_path: Path | None = None,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
 ) -> AuditReport:
-    """Read-only scan one Git repository and bind candidates to exact content."""
-    inventory = load_git_inventory(root)
+    """Read-only scan one Git repository and bind candidates to exact content.
+
+    Parameters
+    ----------
+    root:
+        Repository root or contained path used for worktree discovery.
+    policy_path:
+        Optional tracked repository-relative audit policy.
+    git_trust_policy:
+        Optional runtime Git executable trust contract.
+
+    Returns
+    -------
+    AuditReport
+        Content-addressed report including exact Git executable provenance.
+    """
+    inventory = load_git_inventory(root, git_trust_policy=git_trust_policy)
     policy, governance = resolve_policy(inventory, policy_path)
     candidates = (
         *governance,
@@ -153,6 +171,7 @@ def scan_repository(
         tracked_content_digest=inventory.tracked_content_digest,
         dirty_paths=inventory.dirty_paths,
         tracked_file_count=len(inventory.files),
+        git_provenance=inventory.git_provenance,
         policy=policy,
         candidates=candidates,
     )

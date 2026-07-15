@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
+from repository_audit_git_repository import sample_git_provenance
 
 from rigor_foundry.models import (
     AUDIT_DOMAINS,
@@ -59,6 +60,7 @@ def report() -> AuditReport:
         tracked_content_digest="3" * 64,
         dirty_paths=("src/pkg/a.py",),
         tracked_file_count=2,
+        git_provenance=sample_git_provenance(),
         policy=policy,
         candidates=(candidate(),),
     )
@@ -189,6 +191,16 @@ def test_candidate_and_report_reject_content_tampering() -> None:
     with pytest.raises(ValueError, match="policy digest"):
         AuditReport.from_dict(changed_policy)
 
+    changed_provenance = current.git_provenance.to_dict()
+    changed_provenance["executable_digest"] = "6" * 64
+    with pytest.raises(ValueError, match="identity digest"):
+        AuditReport.from_dict(
+            {
+                **current.to_dict(),
+                "git_provenance": changed_provenance,
+            }
+        )
+
 
 def test_candidate_rejects_unregistered_or_wrong_category_rule() -> None:
     """A candidate cannot invent a rule or mislabel its registered category."""
@@ -244,6 +256,7 @@ def test_candidate_parsing_rejects_unsupported_protocol_enums(
         ("scanner_version", "9", "scanner"),
         ("rule_pack_version", "9", "rule-pack version"),
         ("rule_pack_digest", "0" * 64, "rule-pack digest"),
+        ("git_provenance", {}, "provenance schema"),
         ("candidates", {}, "array"),
         ("report_digest", "0" * 64, "report digest"),
     ],
@@ -279,6 +292,7 @@ def test_review_documents_round_trip_and_reject_schema_drift(tmp_path: Path) -> 
     path.write_text(reviews_to_json((review,)), encoding="utf-8")
     assert reviews_from_path(path) == (review,)
     value = json.loads(path.read_text(encoding="utf-8"))
+    assert value["schema_version"] == "1.0"
     value["schema_version"] = "older"
     path.write_text(json.dumps(value), encoding="utf-8")
     with pytest.raises(ValueError, match="schema"):

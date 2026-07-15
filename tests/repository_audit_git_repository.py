@@ -17,7 +17,19 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
 from rigor_foundry.models import AUDIT_DOMAINS
+
+
+def sample_git_provenance() -> GitExecutableProvenance:
+    """Return deterministic well-formed executable evidence for model tests."""
+    return GitExecutableProvenance.build(
+        resolved_path="/usr/bin/git",
+        trusted_root="/usr/bin",
+        version="2.43.0",
+        executable_digest="4" * 64,
+        trust_policy=GitTrustPolicy(trusted_roots=("/usr/bin",)),
+    )
 
 
 @dataclass(frozen=True)

@@ -20,6 +20,7 @@ from rigor_foundry.git_inventory import (
     is_git_ignored,
     load_git_inventory,
 )
+from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
 
 
 def test_inventory_classifies_real_tracked_content_and_dirty_state(tmp_path: Path) -> None:
@@ -81,6 +82,21 @@ def test_git_ignore_check_uses_real_repository_rules(tmp_path: Path) -> None:
         is_git_ignored(repository.root, Path("../outside"))
     with pytest.raises(ValueError, match="repository-relative"):
         is_git_ignored(repository.root, tmp_path / "absolute")
+
+    observed = load_git_inventory(repository.root).git_provenance
+    different = GitExecutableProvenance.build(
+        resolved_path=observed.resolved_path,
+        trusted_root=observed.trusted_root,
+        version=observed.version,
+        executable_digest="0" * 64,
+        trust_policy=observed.trust_policy,
+    )
+    with pytest.raises(RuntimeError, match="does not match expected identity"):
+        is_git_ignored(
+            repository.root,
+            Path("docs/internal/work/INDEX.md"),
+            expected_git_provenance=different,
+        )
 
 
 def test_inventory_rejects_non_repository(tmp_path: Path) -> None:
@@ -176,13 +192,6 @@ def test_inventory_fails_when_git_is_unavailable(
     """Repository inventory refuses to proceed without a resolved Git executable."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.commit()
-    previous_path = os.environ.get("PATH")
-    os.environ["PATH"] = ""
-    try:
-        with pytest.raises(RuntimeError, match="git executable is unavailable"):
-            load_git_inventory(repository.root)
-    finally:
-        if previous_path is None:
-            del os.environ["PATH"]
-        else:
-            os.environ["PATH"] = previous_path
+    policy = GitTrustPolicy(trusted_roots=(str(tmp_path / "missing-tools"),))
+    with pytest.raises(RuntimeError, match="unavailable below configured trusted roots"):
+        load_git_inventory(repository.root, git_trust_policy=policy)

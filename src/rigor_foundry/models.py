@@ -17,6 +17,7 @@ from typing import cast
 from .audit_primitives import (
     AUDIT_DOMAINS,
     POLICY_SCHEMA_VERSION,
+    REVIEW_SCHEMA_VERSION,
     SCANNER_VERSION,
     SCHEMA_VERSION,
     AdapterScope,
@@ -37,11 +38,13 @@ from .audit_primitives import (
     require_string,
     require_string_tuple,
 )
+from .git_provenance import GitExecutableProvenance
 from .rules import RULE_PACK_VERSION, RULES_BY_ID, rule_pack_digest
 
 __all__ = (
     "AUDIT_DOMAINS",
     "POLICY_SCHEMA_VERSION",
+    "REVIEW_SCHEMA_VERSION",
     "SCANNER_VERSION",
     "SCHEMA_VERSION",
     "AdapterScope",
@@ -291,29 +294,9 @@ class AuditPolicy:
 class Candidate:
     """One static signal that requires evidence review.
 
-    Parameters
-    ----------
-    candidate_id:
-        Stable SHA-256 identifier derived from the remaining fields.
-    category:
-        Audit domain containing the signal.
-    rule_id:
-        Versioned scanner rule identifier.
-    path:
-        Repository-relative tracked path.
-    line:
-        One-based source line for the first signal.
-    symbol:
-        Optional source symbol or graph label.
-    evidence:
-        Bounded factual excerpt or graph observation.
-    confidence:
-        Scanner confidence hint, never a validity verdict.
-    rationale:
-        Reason the signal warrants manual verification.
-    verification:
-        Concrete verification procedure for a reviewer.
-
+    The identifier binds the category, versioned rule, repository-relative
+    location, optional symbol, bounded evidence, non-verdict confidence hint,
+    rationale, and concrete reviewer procedure.
     """
 
     candidate_id: str
@@ -424,6 +407,7 @@ class AuditReport:
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
     tracked_file_count: int
+    git_provenance: GitExecutableProvenance
     policy: AuditPolicy
     candidates: tuple[Candidate, ...]
     rule_pack_version: str
@@ -442,6 +426,7 @@ class AuditReport:
         tracked_content_digest: str,
         dirty_paths: tuple[str, ...],
         tracked_file_count: int,
+        git_provenance: GitExecutableProvenance,
         policy: AuditPolicy,
         candidates: tuple[Candidate, ...],
     ) -> AuditReport:
@@ -464,6 +449,7 @@ class AuditReport:
             "tracked_content_digest": tracked_content_digest,
             "dirty_paths": sorted(dirty_paths),
             "tracked_file_count": tracked_file_count,
+            "git_provenance": git_provenance.to_dict(),
             "policy": policy.to_dict(),
             "policy_digest": _sha256(policy.to_dict()),
             "candidates": [item.to_dict() for item in ordered],
@@ -476,6 +462,7 @@ class AuditReport:
             tracked_content_digest=tracked_content_digest,
             dirty_paths=tuple(sorted(dirty_paths)),
             tracked_file_count=tracked_file_count,
+            git_provenance=git_provenance,
             policy=policy,
             candidates=ordered,
             rule_pack_version=RULE_PACK_VERSION,
@@ -498,6 +485,7 @@ class AuditReport:
             "tracked_content_digest": self.tracked_content_digest,
             "dirty_paths": list(self.dirty_paths),
             "tracked_file_count": self.tracked_file_count,
+            "git_provenance": self.git_provenance.to_dict(),
             "policy": self.policy.to_dict(),
             "policy_digest": self.policy_digest,
             "candidates": [item.to_dict() for item in self.candidates],
@@ -537,6 +525,7 @@ class AuditReport:
                 data.get("tracked_file_count"),
                 "report.tracked_file_count",
             ),
+            git_provenance=GitExecutableProvenance.from_dict(data.get("git_provenance")),
             policy=AuditPolicy.from_dict(data.get("policy")),
             candidates=tuple(Candidate.from_dict(item) for item in raw_candidates),
         )
@@ -678,7 +667,7 @@ class ReviewRecord:
 def reviews_to_json(reviews: tuple[ReviewRecord, ...]) -> str:
     """Render deterministic review JSON."""
     value = {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": REVIEW_SCHEMA_VERSION,
         "reviews": [review.to_dict() for review in reviews],
     }
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -691,7 +680,7 @@ def reviews_from_path(path: Path) -> tuple[ReviewRecord, ...]:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot read audit reviews {path}") from exc
     data = _mapping(value, "review document")
-    if data.get("schema_version") != SCHEMA_VERSION:
+    if data.get("schema_version") != REVIEW_SCHEMA_VERSION:
         raise ValueError("unsupported review schema version")
     raw_reviews = data.get("reviews")
     if not isinstance(raw_reviews, list):

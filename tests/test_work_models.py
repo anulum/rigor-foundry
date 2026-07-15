@@ -14,6 +14,7 @@ from dataclasses import replace
 from typing import cast
 
 import pytest
+from repository_audit_git_repository import sample_git_provenance
 
 from rigor_foundry.model_primitives import WorkEvidence
 from rigor_foundry.models import (
@@ -61,6 +62,7 @@ def source_records() -> tuple[AuditReport, ReviewRecord]:
         tracked_content_digest=CONTENT,
         dirty_paths=("src/rigor_foundry/a.py",),
         tracked_file_count=12,
+        git_provenance=sample_git_provenance(),
         policy=policy,
         candidates=(candidate,),
     )

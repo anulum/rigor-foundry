@@ -22,6 +22,7 @@ from rigor_foundry.campaign_workflow import (
     create_campaign,
     execute_campaign,
 )
+from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import AuditReport, ReviewRecord, reviews_to_json
 
 _POLICY = Path("rigor-foundry-policy.json")
@@ -165,6 +166,43 @@ def test_campaign_rejects_changed_tracked_input_and_tampered_records(tmp_path: P
             run_id="changed-input",
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
+        )
+
+
+def test_campaign_rejects_git_executable_provenance_divergence(tmp_path: Path) -> None:
+    """A run cannot substitute another trusted Git path for the frozen executable."""
+    repository = _repository(tmp_path / "repository")
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".coordination/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="git-provenance",
+        actor="coordinator/one",
+        expected_independent_runs=1,
+    )
+    tools = tmp_path / "trusted-tools"
+    tools.mkdir()
+    executable = tools / "git"
+    executable.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "--version" ]; then\n'
+        "  printf '%s\\n' 'git version 2.43.0'\n"
+        "  exit 0\n"
+        "fi\n"
+        f"exec '{repository.git}' \"$@\"\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    policy = GitTrustPolicy(trusted_roots=(str(tools),))
+
+    with pytest.raises(ValueError, match="git_provenance"):
+        execute_campaign(
+            campaign_path,
+            run_id="different-git",
+            agent_identity="SAMPLE-PROJECT/agent-one",
+            session_identity="terminal/one",
+            git_trust_policy=policy,
         )
 
 

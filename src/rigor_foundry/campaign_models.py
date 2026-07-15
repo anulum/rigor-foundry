@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .adapters import AdapterResult
+from .git_provenance import GitExecutableProvenance
 from .models import (
     AuditReport,
     canonical_digest,
@@ -28,7 +29,7 @@ from .models import (
     require_string_tuple,
 )
 
-CAMPAIGN_SCHEMA_VERSION = "1.0"
+CAMPAIGN_SCHEMA_VERSION = "1.1"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 
@@ -160,6 +161,7 @@ class AuditCampaign:
     rule_pack_digest: str
     scanner_version: str
     required_domains: tuple[str, ...]
+    git_provenance: GitExecutableProvenance
     toolchain: ToolchainIdentity
     created_by: str
     created_at: str
@@ -200,6 +202,7 @@ class AuditCampaign:
                 for domain in report.policy.audit_domains
                 if domain.applicability == "required"
             ),
+            "git_provenance": report.git_provenance.to_dict(),
             "toolchain": toolchain.to_dict(),
             "created_by": require_string(created_by, "created_by"),
             "created_at": _utc_timestamp(created_at, "created_at"),
@@ -229,6 +232,7 @@ class AuditCampaign:
             rule_pack_digest=cast(str, fields["rule_pack_digest"]),
             scanner_version=cast(str, fields["scanner_version"]),
             required_domains=tuple(cast(list[str], fields["required_domains"])),
+            git_provenance=GitExecutableProvenance.from_dict(fields["git_provenance"]),
             toolchain=ToolchainIdentity.from_dict(fields["toolchain"]),
             created_by=cast(str, fields["created_by"]),
             created_at=cast(str, fields["created_at"]),
@@ -254,6 +258,7 @@ class AuditCampaign:
             "rule_pack_digest": self.rule_pack_digest,
             "scanner_version": self.scanner_version,
             "required_domains": list(self.required_domains),
+            "git_provenance": self.git_provenance.to_dict(),
             "toolchain": self.toolchain.to_dict(),
             "created_by": self.created_by,
             "created_at": self.created_at,
@@ -300,6 +305,9 @@ class AuditCampaign:
             "required_domains": list(
                 require_string_tuple(data.get("required_domains"), "required_domains")
             ),
+            "git_provenance": GitExecutableProvenance.from_dict(
+                data.get("git_provenance")
+            ).to_dict(),
             "toolchain": ToolchainIdentity.from_dict(data.get("toolchain")).to_dict(),
             "created_by": require_string(data.get("created_by"), "created_by"),
             "created_at": _utc_timestamp(data.get("created_at"), "created_at"),

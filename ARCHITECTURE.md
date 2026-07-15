@@ -24,12 +24,37 @@ append-only ignored storage, and disagreement comparison.
 
 ### Inventory
 
-`git_inventory.py` resolves the Git executable, repository root, HEAD, tree,
+`git_provenance.py` owns a separate bootstrap trust boundary for Git. It never
+uses the ambient `PATH`: a basename is searched only below ordered, explicit
+trust roots, while an absolute executable must already be contained by a
+declared root. Roots, path components, and the executable must not be
+symlinks. Multi-link executables are rejected; POSIX mode checks also reject
+group/world-write, set-user-ID, and set-group-ID bits. The runner binds the
+resolved path, selected root, semantic version,
+SHA-256 executable digest, complete versioned trust policy, and derived policy
+digest, then revalidates file
+identity and bytes before and after every command. Unsupported versions and
+replacement fail closed. POSIX hosts with `/proc/self/fd` or `/dev/fd` execute
+the already validated open descriptor, preventing a concurrent pathname swap
+from selecting replacement bytes; platforms without a descriptor execution
+path fail closed. Every repository-facing invocation overrides
+`core.fsmonitor` to `false` and redirects `core.hooksPath` to a reserved absent
+path below the protected trust root, so repository-local configuration cannot
+execute a monitor or hook during inventory. If that reserved path exists, the
+runner fails closed.
+
+Every snapshot and execution descriptor is opened by walking absolute path
+components relative to already opened directories with no-follow semantics.
+
+`git_inventory.py` uses that runner to resolve the repository root, HEAD, tree,
 branch, tracked paths, dirty tracked paths, symlinks, gitlinks, binary content,
 and content digests. Container ownership mismatch is handled with a
 process-local `safe.directory` limited to the explicit audited root after
-discovery; Git configuration is never changed persistently. Missing Git state
-and unsafe path states fail closed.
+discovery. Global and system Git configuration, credentials, terminal prompts,
+replacement objects, optional locks, and ambient `GIT_*` variables are excluded
+from the plumbing environment. Repository-local filesystem monitors and hooks
+are disabled per invocation; Git configuration is never changed persistently.
+Missing Git state and unsafe path states fail closed.
 
 ### Candidate collection
 
@@ -60,13 +85,15 @@ failure verdict.
 validators, and shared type contracts. `models.py` defines policy, candidate,
 report, adapter, and review records while preserving the original public
 primitive imports. Callers must verify digests during load; silent repair is
-not permitted.
+not permitted. Report schema 1.1 includes `GitExecutableProvenance`; changing
+the executable, version, path, root, or embedded trust policy changes the
+report digest. Review-ledger schema 1.0 is independent and remains unchanged.
 
 ### Review, enforcement, and promotion
 
 `review.py` validates reviewer identity, decision state, evidence, timestamps,
 report binding, and duplicate prevention. Promotion rescans the repository and
-rejects changed HEAD, content, policy, or candidate identity.
+rejects changed HEAD, content, policy, Git provenance, or candidate identity.
 
 `enforcement.py` supports observe, ratchet, and zero modes. A command-line mode
 may strengthen but cannot weaken the repository policy.
@@ -82,9 +109,13 @@ include executable and input identity.
 ### Independent campaigns
 
 `campaign_models.py`, `campaign_store.py`, `campaign_workflow.py`, and
-`campaign_compare.py` freeze campaign inputs, record independent toolchains and
-limitations, and preserve disagreement. Majority agreement is not converted
-into truth.
+`campaign_compare.py` freeze campaign inputs, Git provenance, independent
+toolchains, and limitations, and preserve disagreement. Campaign schema 1.1
+requires every run to reproduce the frozen Git identity; a different trusted
+binary is input divergence, not an equivalent unrecorded substitution. The
+ignored-storage check that persists a campaign, run, or comparison must also
+reproduce that frozen identity.
+Majority agreement is not converted into truth.
 
 Distinct session or agent labels do not prove independent inference. Promotion
 campaigns must record model/provider identity, treat correlated same-model runs
@@ -158,7 +189,8 @@ process supervisor or permission grant.
 
 - Invalid or stale external records raise typed validation errors at load or
   command boundaries.
-- Git and adapter process failures retain return code and bounded diagnostics.
+- Git executable discovery, version, replacement, and command failures remain
+  explicit runtime errors without falling back to ambient `PATH`.
 - Timeouts, missing executables, symlink escapes, digest mismatches, and
   unsupported schemas fail closed.
 - Filesystem operations do not use retry loops blindly. Atomic replace and

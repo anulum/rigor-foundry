@@ -77,6 +77,7 @@ def _report_with(
         tracked_content_digest=report.tracked_content_digest,
         dirty_paths=report.dirty_paths,
         tracked_file_count=report.tracked_file_count,
+        git_provenance=report.git_provenance,
         policy=report.policy,
         candidates=report.candidates if candidates is None else candidates,
     )

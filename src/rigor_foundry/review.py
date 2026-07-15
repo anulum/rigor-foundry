@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .git_inventory import is_git_ignored
+from .git_provenance import GitExecutableProvenance, GitTrustPolicy
 from .internal_storage import (
     exclusive_lock,
     open_verified_text_for_append,
@@ -216,6 +217,9 @@ def append_todo_entry(
     todo_path: Path,
     entry: str,
     candidate_id: str,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
+    expected_git_provenance: GitExecutableProvenance | None = None,
 ) -> None:
     """Append one unique entry to an existing canonical internal TODO.
 
@@ -229,6 +233,10 @@ def append_todo_entry(
         Validated Markdown entry.
     candidate_id:
         Stable identifier used for duplicate prevention.
+    git_trust_policy:
+        Optional runtime trust contract for the ignored-path check.
+    expected_git_provenance:
+        Optional executable identity that the ignored-path check must reproduce.
 
     Raises
     ------
@@ -242,7 +250,12 @@ def append_todo_entry(
     root = repository_root.resolve(strict=True)
     if todo_path.is_absolute() or ".." in todo_path.parts:
         raise ValueError("TODO path must be repository-relative")
-    if not is_git_ignored(root, todo_path):
+    if not is_git_ignored(
+        root,
+        todo_path,
+        git_trust_policy=git_trust_policy,
+        expected_git_provenance=expected_git_provenance,
+    ):
         raise ValueError("TODO path must be covered by repository Git ignore rules")
     unresolved = root / todo_path
     cursor = root

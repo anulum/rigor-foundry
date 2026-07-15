@@ -92,6 +92,8 @@ def test_scan_is_read_only_deterministic_and_labels_candidates(tmp_path: Path) -
     assert first.returncode == second.returncode == 0
     assert first_path.read_bytes() == second_path.read_bytes()
     report = AuditReport.from_path(first_path)
+    assert Path(report.git_provenance.resolved_path).is_absolute()
+    assert tuple(int(part) for part in report.git_provenance.version.split(".")) >= (2, 35, 2)
     assert any(
         item.rule_id == "AR003-broad-optional-import-boundary" for item in report.candidates
     )
@@ -105,6 +107,41 @@ def test_scan_is_read_only_deterministic_and_labels_candidates(tmp_path: Path) -
         "--fail-on-candidates",
     )
     assert failed.returncode == 1
+
+    explicit_path = repository.root / ".coordination/report-explicit-git.json"
+    explicit = repository.run_audit(
+        "scan",
+        "--root",
+        ".",
+        "--policy",
+        _POLICY,
+        "--git-executable",
+        repository.git,
+        "--git-trust-root",
+        str(Path(repository.git).parent),
+        "--json-out",
+        str(explicit_path),
+    )
+    assert explicit.returncode == 0, explicit.stderr
+    assert AuditReport.from_path(explicit_path).git_provenance.resolved_path == repository.git
+
+
+def test_scan_cli_rejects_implicit_root_for_absolute_git(tmp_path: Path) -> None:
+    """An absolute executable cannot silently make its parent trusted."""
+    repository = _repository(tmp_path / "repository")
+
+    result = repository.run_audit(
+        "scan",
+        "--root",
+        ".",
+        "--policy",
+        _POLICY,
+        "--git-executable",
+        repository.git,
+    )
+
+    assert result.returncode == 2
+    assert "requires --git-trust-root" in result.stderr
 
 
 def test_review_validation_and_explicit_promotion_use_current_tree(tmp_path: Path) -> None:
@@ -187,6 +224,15 @@ def test_review_validation_and_explicit_promotion_use_current_tree(tmp_path: Pat
         "--todo",
         "docs/internal/work/INDEX.md",
     )
+    provenance_drift = repository.run_audit(
+        *arguments,
+        "--git-executable",
+        repository.git,
+        "--git-trust-root",
+        str(Path(repository.git).parent),
+    )
+    assert provenance_drift.returncode == 2
+    assert "Git executable provenance is stale" in provenance_drift.stderr
     preview = repository.run_audit(*arguments)
     assert preview.returncode == 0
     assert todo.read_text(encoding="utf-8") == before

@@ -23,7 +23,11 @@ from .campaign_workflow import (
     execute_campaign,
 )
 from .enforcement import evaluate_enforcement
-from .git_inventory import load_git_inventory
+from .git_provenance import (
+    DEFAULT_MAXIMUM_GIT_VERSION_EXCLUSIVE,
+    DEFAULT_MINIMUM_GIT_VERSION,
+    GitTrustPolicy,
+)
 from .models import (
     AuditReport,
     ReviewRecord,
@@ -36,7 +40,7 @@ from .review import (
     review_templates,
     validate_reviews,
 )
-from .scanner import resolve_policy, scan_repository
+from .scanner import scan_repository
 
 
 def report_markdown(report: AuditReport) -> str:
@@ -66,6 +70,9 @@ def report_markdown(report: AuditReport) -> str:
         f"- HEAD tree: `{report.head_tree}`",
         f"- Branch: `{report.branch}`",
         f"- Tracked-content digest: `{report.tracked_content_digest}`",
+        f"- Git version: `{report.git_provenance.version}`",
+        f"- Git executable digest: `{report.git_provenance.executable_digest}`",
+        f"- Git trust-policy digest: `{report.git_provenance.trust_policy_digest}`",
         f"- Policy digest: `{report.policy_digest}`",
         f"- Report digest: `{report.report_digest}`",
         f"- Tracked files: {report.tracked_file_count}",
@@ -103,9 +110,48 @@ def _write_explicit(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def _git_trust_policy(args: argparse.Namespace) -> GitTrustPolicy:
+    """Build the explicit runtime trust policy shared by Git-using commands."""
+    roots = tuple(str(path) for path in args.git_trust_root)
+    executable = str(args.git_executable)
+    if Path(executable).is_absolute() and not roots:
+        raise ValueError("an absolute --git-executable requires --git-trust-root")
+    return GitTrustPolicy(
+        executable=executable,
+        trusted_roots=roots,
+        minimum_version=str(args.git_min_version),
+        maximum_version_exclusive=str(args.git_max_version_exclusive),
+    )
+
+
+def _add_git_trust_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add portable, fail-closed Git provenance controls to one command."""
+    parser.add_argument(
+        "--git-executable",
+        default="git",
+        help="Absolute executable or basename searched only below trusted roots.",
+    )
+    parser.add_argument(
+        "--git-trust-root",
+        action="append",
+        type=Path,
+        default=[],
+        help="Normalised absolute executable root; repeat to declare ordered roots.",
+    )
+    parser.add_argument("--git-min-version", default=DEFAULT_MINIMUM_GIT_VERSION)
+    parser.add_argument(
+        "--git-max-version-exclusive",
+        default=DEFAULT_MAXIMUM_GIT_VERSION_EXCLUSIVE,
+    )
+
+
 def _scan_command(args: argparse.Namespace) -> int:
     """Execute the read-only scan command."""
-    report = scan_repository(args.root, args.policy)
+    report = scan_repository(
+        args.root,
+        args.policy,
+        git_trust_policy=_git_trust_policy(args),
+    )
     wrote_output = False
     if args.json_out is not None:
         _write_explicit(args.json_out, report.to_json())
@@ -157,7 +203,12 @@ def _promote_command(args: argparse.Namespace) -> int:
     errors = validate_reviews(report, (review,))
     if errors:
         raise ValueError("review validation failed: " + "; ".join(errors))
-    current = scan_repository(args.root, args.policy)
+    git_trust_policy = _git_trust_policy(args)
+    current = scan_repository(
+        args.root,
+        args.policy,
+        git_trust_policy=git_trust_policy,
+    )
     if Path(report.repository_root).resolve() != Path(current.repository_root).resolve():
         raise ValueError("report belongs to a different repository root")
     if current.head != report.head:
@@ -166,33 +217,47 @@ def _promote_command(args: argparse.Namespace) -> int:
         raise ValueError("report tracked content is stale; rescan and re-review before promotion")
     if current.policy_digest != report.policy_digest:
         raise ValueError("report policy is stale; rescan and re-review before promotion")
+    if current.git_provenance.identity_digest != report.git_provenance.identity_digest:
+        raise ValueError("report Git executable provenance is stale; rescan before promotion")
     if review.candidate_id not in {candidate.candidate_id for candidate in current.candidates}:
         raise ValueError("candidate is absent or changed in the current tracked tree")
     entry = render_todo_entry(report, review)
     if not args.apply:
         print(entry, end="")
         return 0
-    append_todo_entry(Path(current.repository_root), args.todo, entry, review.candidate_id)
+    append_todo_entry(
+        Path(current.repository_root),
+        args.todo,
+        entry,
+        review.candidate_id,
+        git_trust_policy=git_trust_policy,
+        expected_git_provenance=current.git_provenance,
+    )
     print(f"promoted verified finding {review.candidate_id} to {args.todo}")
     return 0
 
 
 def _gate_command(args: argparse.Namespace) -> int:
     """Evaluate the current report, review ledger, and native audits."""
-    report = scan_repository(args.root, args.policy)
-    inventory = load_git_inventory(args.root)
-    policy, _governance = resolve_policy(inventory, args.policy)
+    git_trust_policy = _git_trust_policy(args)
+    report = scan_repository(
+        args.root,
+        args.policy,
+        git_trust_policy=git_trust_policy,
+    )
+    policy = report.policy
+    repository = Path(report.repository_root)
     requested_mode = args.mode or policy.enforcement_mode
     ranks = {"observe": 0, "ratchet": 1, "zero": 2}
     if ranks[requested_mode] < ranks[policy.enforcement_mode]:
         raise ValueError("command-line mode cannot weaken repository enforcement")
-    ledger_path = args.review or inventory.root / policy.review_ledger
+    ledger_path = args.review or repository / policy.review_ledger
     if ledger_path.is_file():
         reviews = reviews_from_path(ledger_path)
     else:
         reviews = ()
     adapter_results = run_native_audits(
-        inventory.root,
+        repository,
         policy.native_audits,
         args.scope,
         trusted=args.allow_native_audits,
@@ -221,6 +286,7 @@ def _campaign_create_command(args: argparse.Namespace) -> int:
         campaign_id=args.campaign_id,
         actor=args.actor,
         expected_independent_runs=args.expected_runs,
+        git_trust_policy=_git_trust_policy(args),
     )
     print(f"created audit campaign {campaign.contract_digest} at {path}")
     return 0
@@ -234,6 +300,7 @@ def _campaign_run_command(args: argparse.Namespace) -> int:
         agent_identity=args.agent,
         session_identity=args.session,
         trusted_native_audits=args.allow_native_audits,
+        git_trust_policy=_git_trust_policy(args),
     )
     print(f"stored audit run {attestation.attestation_digest} at {path}")
     return 1 if attestation.limitations or attestation.omitted_domains else 0
@@ -245,6 +312,7 @@ def _campaign_compare_command(args: argparse.Namespace) -> int:
         args.campaign,
         comparison_id=args.comparison_id,
         actor=args.actor,
+        git_trust_policy=_git_trust_policy(args),
     )
     print(f"stored audit comparison {comparison.comparison_digest} at {path}")
     return 1 if comparison.unresolved else 0
@@ -261,6 +329,7 @@ def _parser() -> argparse.ArgumentParser:
     scan.add_argument("--json-out", type=Path)
     scan.add_argument("--markdown-out", type=Path)
     scan.add_argument("--fail-on-candidates", action="store_true")
+    _add_git_trust_arguments(scan)
     scan.set_defaults(handler=_scan_command)
 
     template = subparsers.add_parser(
@@ -290,6 +359,7 @@ def _parser() -> argparse.ArgumentParser:
     promote.add_argument("--candidate-id", required=True)
     promote.add_argument("--todo", type=Path, required=True)
     promote.add_argument("--apply", action="store_true")
+    _add_git_trust_arguments(promote)
     promote.set_defaults(handler=_promote_command)
 
     gate = subparsers.add_parser(
@@ -307,6 +377,7 @@ def _parser() -> argparse.ArgumentParser:
         help="Consent to run declared commands in the read-only native sandbox.",
     )
     gate.add_argument("--output", type=Path)
+    _add_git_trust_arguments(gate)
     gate.set_defaults(handler=_gate_command)
 
     campaign_create = subparsers.add_parser(
@@ -324,6 +395,7 @@ def _parser() -> argparse.ArgumentParser:
     campaign_create.add_argument("--campaign-id", required=True)
     campaign_create.add_argument("--actor", required=True)
     campaign_create.add_argument("--expected-runs", type=int, default=2)
+    _add_git_trust_arguments(campaign_create)
     campaign_create.set_defaults(handler=_campaign_create_command)
 
     campaign_run = subparsers.add_parser(
@@ -339,6 +411,7 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Consent to run declared commands in the read-only native sandbox.",
     )
+    _add_git_trust_arguments(campaign_run)
     campaign_run.set_defaults(handler=_campaign_run_command)
 
     campaign_compare = subparsers.add_parser(
@@ -348,6 +421,7 @@ def _parser() -> argparse.ArgumentParser:
     campaign_compare.add_argument("--campaign", type=Path, required=True)
     campaign_compare.add_argument("--comparison-id", required=True)
     campaign_compare.add_argument("--actor", required=True)
+    _add_git_trust_arguments(campaign_compare)
     campaign_compare.set_defaults(handler=_campaign_compare_command)
     return parser
 

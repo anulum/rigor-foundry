@@ -13,7 +13,9 @@ import hashlib
 import json
 from typing import Literal, cast
 
-SCHEMA_VERSION = "1.0"
+REPORT_SCHEMA_VERSION = "1.1"
+REVIEW_SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = REPORT_SCHEMA_VERSION
 POLICY_SCHEMA_VERSION = "1.0"
 SCANNER_VERSION = "0.1.0"
 

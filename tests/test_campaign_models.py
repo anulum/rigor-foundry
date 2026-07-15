@@ -99,6 +99,20 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
         raise AssertionError("altered toolchain evidence was accepted")
 
 
+def test_campaign_contract_binds_git_executable_provenance(tmp_path: Path) -> None:
+    """Campaign identity changes or fails parsing when Git evidence is altered."""
+    campaign, _attestation, report = _protocol_records(tmp_path)
+
+    assert campaign.git_provenance == report.git_provenance
+    assert AuditCampaign.from_dict(campaign.to_dict()) == campaign
+    changed = campaign.to_dict()
+    provenance = dict(cast(dict[str, object], changed["git_provenance"]))
+    provenance["version"] = "2.42.0"
+    changed["git_provenance"] = provenance
+    with pytest.raises(ValueError, match="identity digest"):
+        AuditCampaign.from_dict(changed)
+
+
 def test_campaign_contract_rejects_unsafe_identifiers_paths_and_times(tmp_path: Path) -> None:
     """A persisted input contract fails closed on unsafe or ambiguous identity fields."""
     campaign, _attestation, _report = _protocol_records(tmp_path)

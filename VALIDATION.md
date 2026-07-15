@@ -28,6 +28,7 @@ execution, or production promotion.
 | Container | Local build/smoke when resources permit | Non-root CLI smoke and vulnerability scan |
 | Security | Bandit and dependency audit | CodeQL, pip-audit, Scorecard, secret scan |
 | Repository self-audit | Immutable temporary-commit scan for authoring evidence | Full policy scan, native-control gate, and 30-day evidence artifact |
+| Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
 
 ## Local integration evidence
 
@@ -75,6 +76,27 @@ On 2026-07-15:
 The final immutable prospective-tree scan and its ten required native controls
 are recorded separately from this source document so their exact commit, tree,
 candidate, and output digests cannot be confused with remote CI evidence.
+
+Git executable provenance has a dedicated real-process contract. Verification
+must exercise ambient `PATH` shadowing, executable and root symlinks,
+post-capture replacement before attacker-byte execution, both version-interval
+boundaries, POSIX and Windows record parsing, CLI trust-root configuration,
+repository-configured filesystem-monitor suppression, occupied reserved hook
+path rejection, report digest tampering, and campaign input divergence. Test
+fixtures may use a real delegating executable, but acceptance also requires
+inventory and campaign tests against actual temporary Git repositories.
+
+On 2026-07-16, the Git-provenance owner files passed 21 tests with 100% statement
+and branch coverage for `git_provenance.py`. The complete affected surface
+passed 137 focused tests across 17 explicitly named files; the prohibited
+aggregate local suite was not run. Ruff lint and format passed all 90 source,
+test, and tool files; strict MyPy passed 46 source/tool modules; Bandit reported
+no finding; Semgrep reported no finding across 46 Python targets; and the
+repository audit and strict documentation build passed. Both hash-locked
+dependency audits passed with only the existing machine-checked
+`PYSEC-2026-2132` security-tool exception. Three packaging-contract tests, a
+fresh wheel and source distribution, Twine checks, and an external wheel import
+smoke also passed. Hosted CI remains required after an authorised push.
 
 ## Security-boundary remediation evidence
 

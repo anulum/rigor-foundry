@@ -23,6 +23,13 @@ mode, and retains the report, Markdown rendering, and gate record for 30 days.
 Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
+The Git provenance owner tests use real executable files and temporary Git
+repositories. They cover fixed-root selection under hostile `PATH`, symlinked
+roots and executables, post-capture replacement, unsupported versions, durable
+report/campaign binding, filesystem-monitor suppression, reserved hook-path
+rejection, CLI configuration, and campaign divergence. These focused tests do
+not replace the hosted Python-version matrix.
+
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. See the repository

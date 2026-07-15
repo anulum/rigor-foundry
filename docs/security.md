@@ -3,7 +3,22 @@
 Treat repository names, paths, file content, configuration, native-tool output,
 and archive members as adversarial input.
 
-- Inventory fails closed when Git objects or tracked paths cannot be read.
+- Inventory resolves Git only from fixed or operator-declared trust roots,
+  rejects symlinked roots/components, enforces a half-open version interval,
+  hashes the executable, pins the validated descriptor where the platform
+  exposes descriptor execution, and detects replacement before and after every
+  command. Platforms without a descriptor execution path fail closed.
+  Multi-link executables are rejected; POSIX mode checks also reject
+  group/world-writable and elevated-ID executables at validation and hashing.
+  Snapshot and execution opens walk every absolute component through no-follow
+  directory descriptors, so a post-validation intermediate symlink cannot
+  become the trusted baseline.
+- Git plumbing receives a minimal environment without ambient configuration,
+  credentials, prompts, replacement objects, or optional index locks. The
+  runner disables repository-local filesystem monitors and redirects hooks to
+  a reserved absent path under the trust root. The declared trust root must
+  itself be protected from untrusted writers; an occupied reserved hook path
+  fails closed.
 - Native processes require explicit consent and use fixed-root executable
   resolution, argv-only invocation, a credential-free environment, a
   no-network read-only bubblewrap sandbox, mandatory timeouts, process-tree
@@ -13,6 +28,8 @@ and archive members as adversarial input.
 - Repository policies must be tracked, non-symlink UTF-8 files inside the
   audited root, and Git index modes and object ids bind every tracked entry.
 - Writes require an explicit command and a validated ignored destination.
+  Campaign persistence and TODO promotion require the ignored-path check to
+  reproduce the executable provenance already bound to the durable evidence.
 - Missing evidence never becomes pass.
 - Pack and reviewer clearance requires real Ed25519 verification against an
   explicit integrity-bound public-key trust store. Key identifiers and raw

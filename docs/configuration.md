@@ -20,6 +20,51 @@ adapters. The desired-state API adds typed adopter variables, namespaced custom
 controls, applicability decisions, exact standard-pack selections, and
 secret-provider references.
 
+## Git executable trust
+
+Git bootstrap trust is runtime configuration, not repository-controlled policy:
+the audited repository cannot choose which executable reads its own index. By
+default, RigorFoundry searches the basename `git` only in fixed platform roots,
+never in ambient `PATH`. The default supported interval is Git 2.35.2 or newer
+and lower than 3.0.0.
+
+Every Git-using CLI command accepts the same controls:
+
+```bash
+rigor scan --root /workspace \
+  --git-executable /opt/toolchain/bin/git \
+  --git-trust-root /opt/toolchain/bin \
+  --git-min-version 2.43.0 \
+  --git-max-version-exclusive 3.0.0
+```
+
+`--git-trust-root` is repeatable and ordered. Roots must be normalised absolute
+directories. An absolute executable requires at least one explicit root; a
+relative executable must be one basename and is searched only below the roots.
+The root, intervening components, and executable must not be symlinks.
+The executable must be a single-link regular file; POSIX mode checks also
+reject group/world-write, set-user-ID, and set-group-ID bits.
+Each Git invocation overrides repository-local `core.fsmonitor` and
+`core.hooksPath`. Hooks are redirected to a reserved absent directory below the
+selected trust root; if that reserved path exists, execution fails closed.
+Execution also fails closed on platforms that cannot execute the already
+validated open descriptor.
+`campaign-run` must receive the same explicit options used by
+`campaign-create`; otherwise frozen Git provenance diverges and the run is
+rejected.
+
+Python callers pass `GitTrustPolicy` through the keyword-only
+`git_trust_policy` argument of `scan_repository`, `load_git_inventory`, campaign
+workflow functions, ignored-path storage, or TODO promotion. The durable report
+records `GitExecutableProvenance`: resolved path, selected root, parsed version,
+executable SHA-256, complete versioned trust policy, derived policy SHA-256,
+and its own identity digest. Portable policy JSON uses canonical forward-slash
+POSIX or Windows absolute paths and can be verified on another host. The trust
+root is an operator assertion and must be protected from untrusted writers.
+Campaign storage and TODO promotion reproduce the report or campaign identity
+before using Git ignore rules; a different policy-compliant binary is still
+treated as input divergence.
+
 ## Desired-state inputs
 
 A `StandardPack` defines versioned controls, evidence contracts, remediation

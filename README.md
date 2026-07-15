@@ -22,10 +22,10 @@ remediation inputs without treating static heuristics as defect verdicts.
 - `scan` is read-only and inspects only the exact Git-tracked inventory.
 - Findings remain candidates until reviewed against the production surface.
 - Missing evidence is explicit; it never resolves to pass.
-- Reports bind repository HEAD, tree, tracked-content, policy, and rule-pack
-  digests.
-- Promotion rejects stale reports, stale policies, duplicate findings, and
-  mismatched repositories.
+- Reports bind repository HEAD, tree, tracked-content, policy, rule-pack, and
+  exact Git executable/version provenance.
+- Promotion rejects stale reports, stale policies, changed Git provenance,
+  duplicate findings, and mismatched repositories.
 - Native audit adapters use validated argv, bounded execution time, and
   `shell=False`.
 - Internal campaign records are written only below Git-ignored paths.
@@ -102,7 +102,8 @@ evidence. Native execution currently requires Linux bubblewrap at
 
 | Surface | Modules | Responsibility |
 | --- | --- | --- |
-| Inventory | `git_inventory` | Exact tracked paths, content kinds, and digests. |
+| Git trust | `git_provenance` | Fixed-root executable selection, supported versions, replacement detection, and content-addressed provenance. |
+| Inventory | `git_inventory` | Exact tracked paths, content kinds, and digests through the trusted Git runner. |
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |

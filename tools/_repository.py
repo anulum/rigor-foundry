@@ -12,6 +12,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from rigor_foundry.git_provenance import GitRunner
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -34,7 +36,15 @@ def run(*argv: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
     subprocess.CompletedProcess[str]
         Captured process result. Callers decide which exit codes are valid.
     """
-    return subprocess.run(
+    if argv and argv[0] == "git":
+        completed = GitRunner().run(cwd, *argv[1:], check=False)
+        return subprocess.CompletedProcess(
+            args=completed.args,
+            returncode=completed.returncode,
+            stdout=completed.stdout.decode("utf-8"),
+            stderr=completed.stderr.decode("utf-8"),
+        )
+    return subprocess.run(  # nosec B603
         argv,
         cwd=cwd,
         check=False,

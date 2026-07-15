@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 import pytest
+from repository_audit_git_repository import sample_git_provenance
 
 from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.enforcement import evaluate_enforcement
@@ -47,6 +48,7 @@ def _report() -> AuditReport:
         tracked_content_digest="3" * 64,
         dirty_paths=(),
         tracked_file_count=1,
+        git_provenance=sample_git_provenance(),
         policy=AuditPolicy(),
         candidates=(candidate,),
     )

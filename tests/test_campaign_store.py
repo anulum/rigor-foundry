@@ -29,6 +29,7 @@ from rigor_foundry.campaign_store import (
     store_run,
 )
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
+from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import ReviewRecord, canonical_digest, reviews_to_json
 
 
@@ -129,6 +130,23 @@ def test_campaign_and_comparison_records_reject_malformed_or_replayed_input(
         store_comparison_record(campaign_path, "comparison-one", value)
     with pytest.raises(ValueError, match="portable identifier"):
         store_comparison_record(campaign_path, "../comparison", value)
+
+
+def test_campaign_storage_reproduces_frozen_git_provenance(tmp_path: Path) -> None:
+    """Ignored-path validation cannot substitute another trusted Git binary."""
+    repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path)
+    tools = tmp_path / "alternate-tools"
+    tools.mkdir()
+    shutil.copy2(repository.git, tools / "git")
+    policy = GitTrustPolicy(trusted_roots=(str(tools),))
+
+    with pytest.raises(RuntimeError, match="does not match expected identity"):
+        store_comparison_record(
+            campaign_path,
+            "different-git",
+            {"comparison_id": "different-git"},
+            git_trust_policy=policy,
+        )
 
 
 def test_store_run_rejects_cross_campaign_and_noncanonical_bundles(tmp_path: Path) -> None:

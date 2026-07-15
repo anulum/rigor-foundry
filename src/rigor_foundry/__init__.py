@@ -21,6 +21,7 @@ from .effective_profile import (
     ProfileResolution,
     ResolvedVariable,
 )
+from .git_provenance import GitExecutableProvenance, GitTrustPolicy
 from .model_primitives import (
     SecretReference,
     VariableAssignment,
@@ -74,6 +75,8 @@ __all__ = [
     "EvidenceContract",
     "EvidenceReference",
     "ExceptionWaiver",
+    "GitExecutableProvenance",
+    "GitTrustPolicy",
     "PackSelection",
     "PackSignature",
     "PackVerification",

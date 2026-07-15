@@ -17,6 +17,7 @@ from pathlib import Path
 
 from .campaign_models import AuditCampaign, AuditRunAttestation
 from .git_inventory import is_git_ignored
+from .git_provenance import GitExecutableProvenance, GitTrustPolicy
 from .models import AuditReport, ReviewRecord, reviews_from_path
 
 _RECORD_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
@@ -35,12 +36,22 @@ def _json_text(value: dict[str, object]) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
-def _internal_path(root: Path, relative: Path) -> Path:
+def _internal_path(
+    root: Path,
+    relative: Path,
+    git_trust_policy: GitTrustPolicy | None = None,
+    expected_git_provenance: GitExecutableProvenance | None = None,
+) -> Path:
     """Resolve one safe ignored repository-relative internal path."""
     repository = root.resolve(strict=True)
     if relative.is_absolute() or ".." in relative.parts:
         raise ValueError("audit storage path must be repository-relative")
-    if not is_git_ignored(repository, relative):
+    if not is_git_ignored(
+        repository,
+        relative,
+        git_trust_policy=git_trust_policy,
+        expected_git_provenance=expected_git_provenance,
+    ):
         raise ValueError("audit storage path must be covered by repository Git ignore rules")
     cursor = repository
     for part in relative.parts:
@@ -85,10 +96,17 @@ def store_campaign(
     repository_root: Path,
     audit_root: Path,
     campaign: AuditCampaign,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
 ) -> Path:
     """Persist one new campaign contract below ignored internal storage."""
     relative = campaign_relative_path(audit_root, campaign.project, campaign.campaign_id)
-    target = _internal_path(repository_root, relative)
+    target = _internal_path(
+        repository_root,
+        relative,
+        git_trust_policy,
+        campaign.git_provenance,
+    )
     target.parent.mkdir(parents=True, exist_ok=False)
     _write_new(target, _json_text(campaign.to_dict()))
     return target
@@ -107,6 +125,8 @@ def store_run(
     campaign_path: Path,
     report: AuditReport,
     attestation: AuditRunAttestation,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
 ) -> Path:
     """Persist one new per-agent report and attestation bundle."""
     campaign = load_campaign(campaign_path)
@@ -126,7 +146,12 @@ def store_run(
     expected_report_path = (run_relative / "report.json").relative_to(campaign_relative)
     if attestation.report_relative_path != expected_report_path.as_posix():
         raise ValueError("attestation report path is not canonical")
-    run_directory = _internal_path(repository, run_relative)
+    run_directory = _internal_path(
+        repository,
+        run_relative,
+        git_trust_policy,
+        campaign.git_provenance,
+    )
     run_directory.parent.mkdir(parents=True, exist_ok=True)
     run_directory.mkdir(exist_ok=False)
     _write_new(run_directory / "report.json", report.to_json())
@@ -187,6 +212,8 @@ def store_comparison_record(
     campaign_path: Path,
     comparison_id: str,
     value: dict[str, object],
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
 ) -> Path:
     """Persist one immutable comparison below the campaign's ignored storage."""
     if _RECORD_IDENTIFIER.fullmatch(comparison_id) is None:
@@ -199,7 +226,12 @@ def store_comparison_record(
     except ValueError as exc:
         raise ValueError("campaign storage is outside its repository") from exc
     relative = campaign_relative / "comparisons" / f"{comparison_id}.json"
-    target = _internal_path(repository, relative)
+    target = _internal_path(
+        repository,
+        relative,
+        git_trust_policy,
+        campaign.git_provenance,
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     _write_new(target, _json_text(value))
     return target
