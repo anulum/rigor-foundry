@@ -19,7 +19,7 @@ signature rather than trusting serialized booleans or proof labels.
 The records stay separate so that missing evidence, accepted risk, failed
 controls, and completed remediation cannot be collapsed into a misleading
 boolean. The normative design and module map are maintained in
-[ARCHITECTURE.md](https://github.com/anulum/rigor-foundry/blob/main/ARCHITECTURE.md).
+[ARCHITECTURE.md](https://github.com/anulum/RIGOR-FOUNDRY/blob/main/ARCHITECTURE.md).
 
 ## Isolation boundary
 

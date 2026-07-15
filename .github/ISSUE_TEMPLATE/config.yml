@@ -9,8 +9,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/anulum/rigor-foundry/security/advisories/new
+    url: https://github.com/anulum/RIGOR-FOUNDRY/security/advisories/new
     about: Report vulnerabilities privately.
   - name: Support and design discussion
-    url: https://github.com/anulum/rigor-foundry/discussions
+    url: https://github.com/anulum/RIGOR-FOUNDRY/discussions
     about: Ask usage questions or discuss designs before filing an issue.

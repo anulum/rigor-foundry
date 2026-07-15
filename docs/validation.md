@@ -26,4 +26,4 @@ signals as reviewed defect verdicts.
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. See the repository
-[validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
+[validation matrix](https://github.com/anulum/RIGOR-FOUNDRY/blob/main/VALIDATION.md).

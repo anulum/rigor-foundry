@@ -5,7 +5,7 @@
 Do not disclose suspected vulnerabilities in a public issue. Email
 [protoscience@anulum.li](mailto:protoscience@anulum.li). When GitHub private
 vulnerability reporting is enabled for the repository, its
-[advisory form](https://github.com/anulum/rigor-foundry/security/advisories/new)
+[advisory form](https://github.com/anulum/RIGOR-FOUNDRY/security/advisories/new)
 is also accepted.
 
 Include the affected command or API, repository state, expected safety

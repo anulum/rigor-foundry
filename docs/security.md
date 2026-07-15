@@ -24,5 +24,5 @@ and archive members as adversarial input.
   package credential.
 
 Do not disclose a suspected vulnerability in a public issue. Follow the
-[security policy](https://github.com/anulum/rigor-foundry/security/policy) and
+[security policy](https://github.com/anulum/RIGOR-FOUNDRY/security/policy) and
 use private vulnerability reporting.

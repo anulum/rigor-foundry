@@ -12,8 +12,8 @@ title: RigorFoundry
 type: software
 version: 0.1.0
 license: Apache-2.0
-repository-code: "https://github.com/anulum/rigor-foundry"
-url: "https://github.com/anulum/rigor-foundry"
+repository-code: "https://github.com/anulum/RIGOR-FOUNDRY"
+url: "https://github.com/anulum/RIGOR-FOUNDRY"
 authors:
   - family-names: "Šotek"
     given-names: "Miroslav"

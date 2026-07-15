@@ -20,7 +20,7 @@ becomes an implicit pass.
 - [Security](security.md) defines the adversarial repository boundary.
 
 **Contact:** [protoscience@anulum.li](mailto:protoscience@anulum.li) |
-[GitHub Discussions](https://github.com/anulum/rigor-foundry/discussions) |
+[GitHub Discussions](https://github.com/anulum/RIGOR-FOUNDRY/discussions) |
 [www.anulum.li](https://www.anulum.li)
 
 ---
