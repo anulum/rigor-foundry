@@ -10,10 +10,10 @@
       "package": "click",
       "version": "8.1.8",
       "scope": "requirements/security.txt",
-      "introduced_by": "semgrep==1.169.0",
+      "introduced_by": "semgrep==1.170.0",
       "affected_api": "click.edit",
       "allowed_command": "semgrep scan --error --config .semgrep.yml src tools",
-      "rationale": "Semgrep 1.169.0 requires click~=8.1.8, while the advisory is fixed only in Click 8.3.3. The allowed non-interactive scan path does not invoke click.edit.",
+      "rationale": "Semgrep 1.170.0 requires click~=8.1.8, while the advisory is fixed only in Click 8.3.3. The allowed non-interactive scan path does not invoke click.edit.",
       "mitigations": [
         "The waived dependency exists only in the ephemeral security-tool environment.",
         "CI invokes one fixed Semgrep scan command with a repository-local ruleset.",
