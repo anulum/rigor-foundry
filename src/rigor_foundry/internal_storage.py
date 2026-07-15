@@ -19,6 +19,7 @@ import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import TextIO
 
 from .git_inventory import is_git_ignored
 
@@ -161,6 +162,54 @@ def atomic_replace_text(path: Path, text: str) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def regular_file_identity(path: Path, *, label: str) -> tuple[int, int]:
+    """Return the device and inode of one existing non-symlink regular file."""
+    try:
+        metadata = path.stat(follow_symlinks=False)
+    except FileNotFoundError as exc:
+        raise ValueError(f"{label} must be an existing regular non-symlink file") from exc
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"{label} must be an existing regular non-symlink file")
+    return metadata.st_dev, metadata.st_ino
+
+
+@contextmanager
+def open_verified_text_for_append(
+    path: Path,
+    expected_identity: tuple[int, int],
+    *,
+    label: str,
+) -> Iterator[TextIO]:
+    """Open an inode-bound UTF-8 append stream and synchronise successful writes."""
+    descriptor: int | None = None
+    try:
+        flags = os.O_RDWR | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(path, flags)
+        except OSError as exc:
+            if exc.errno in {errno.ENOENT, errno.ELOOP}:
+                raise ValueError(f"{label} must be an existing regular non-symlink file") from exc
+            raise
+        metadata = os.fstat(descriptor)
+        descriptor_identity = (metadata.st_dev, metadata.st_ino)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(f"{label} must be an existing regular non-symlink file")
+        if descriptor_identity != expected_identity:
+            raise ValueError(f"{label} changed after path validation")
+        if regular_file_identity(path, label=label) != descriptor_identity:
+            raise ValueError(f"{label} changed while it was opened")
+        with os.fdopen(descriptor, "r+", encoding="utf-8", newline="") as handle:
+            descriptor = None
+            yield handle
+            handle.flush()
+            os.fsync(handle.fileno())
+            if regular_file_identity(path, label=label) != descriptor_identity:
+                raise ValueError(f"{label} changed while it was open")
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 @contextmanager
 def exclusive_lock(path: Path) -> Iterator[None]:
     """Hold a non-blocking advisory lock on one persistent regular file."""
@@ -168,7 +217,14 @@ def exclusive_lock(path: Path) -> Iterator[None]:
     locked = False
     try:
         flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
-        descriptor = os.open(path, flags, 0o600)
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except OSError as exc:
+            if exc.errno == errno.ELOOP:
+                raise ValueError(
+                    f"internal record lock must not be a symbolic link: {path}"
+                ) from exc
+            raise
         metadata = os.fstat(descriptor)
         if not stat.S_ISREG(metadata.st_mode):
             raise ValueError(f"internal record lock must be a regular file: {path}")

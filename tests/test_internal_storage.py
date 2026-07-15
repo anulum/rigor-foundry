@@ -18,6 +18,8 @@ import pytest
 from rigor_foundry.internal_storage import (
     atomic_replace_text,
     exclusive_lock,
+    open_verified_text_for_append,
+    regular_file_identity,
     resolve_ignored_path,
     write_new_text,
 )
@@ -119,3 +121,95 @@ def test_real_git_errors_and_nonregular_locks_fail_closed(tmp_path: Path) -> Non
         resolve_ignored_path(repository(tmp_path), Path("/absolute/record"), label="record")
     with pytest.raises(ValueError, match="regular file"), exclusive_lock(Path("/dev/null")):
         raise AssertionError("character device unexpectedly accepted as a lock")
+
+
+def test_verified_append_rejects_post_validation_regular_file_swap(tmp_path: Path) -> None:
+    """An inode captured before a regular-file replacement cannot authorise the new file."""
+    target = tmp_path / "TODO.md"
+    target.write_text("original\n", encoding="utf-8")
+    identity = regular_file_identity(target, label="TODO path")
+    replacement = tmp_path / "replacement.md"
+    replacement.write_text("attacker replacement\n", encoding="utf-8")
+    os.replace(replacement, target)
+
+    with (
+        pytest.raises(ValueError, match="changed after path validation"),
+        open_verified_text_for_append(target, identity, label="TODO path") as handle,
+    ):
+        handle.write("must not be written\n")
+
+    assert target.read_text(encoding="utf-8") == "attacker replacement\n"
+
+
+def test_verified_append_rejects_missing_linked_and_nonregular_paths(tmp_path: Path) -> None:
+    """The append descriptor never follows links or accepts non-regular files."""
+    missing = tmp_path / "missing.md"
+    with (
+        pytest.raises(ValueError, match="existing regular"),
+        open_verified_text_for_append(
+            missing,
+            (0, 0),
+            label="TODO path",
+        ),
+    ):
+        raise AssertionError("missing path unexpectedly opened")
+
+    victim = tmp_path / "victim.md"
+    victim.write_text("unchanged\n", encoding="utf-8")
+    linked = tmp_path / "linked.md"
+    linked.symlink_to(victim)
+    with (
+        pytest.raises(ValueError, match="existing regular"),
+        open_verified_text_for_append(
+            linked,
+            regular_file_identity(victim, label="TODO path"),
+            label="TODO path",
+        ),
+    ):
+        raise AssertionError("linked path unexpectedly opened")
+
+    device_metadata = os.stat("/dev/null")
+    with (
+        pytest.raises(ValueError, match="existing regular"),
+        open_verified_text_for_append(
+            Path("/dev/null"),
+            (device_metadata.st_dev, device_metadata.st_ino),
+            label="TODO path",
+        ),
+    ):
+        raise AssertionError("non-regular path unexpectedly opened")
+
+
+def test_verified_append_detects_replacement_while_descriptor_is_open(
+    tmp_path: Path,
+) -> None:
+    """An opened inode receives no authority to mutate a replacement path."""
+    target = tmp_path / "TODO.md"
+    target.write_text("original\n", encoding="utf-8")
+    identity = regular_file_identity(target, label="TODO path")
+    replacement = tmp_path / "replacement.md"
+    replacement.write_text("attacker replacement\n", encoding="utf-8")
+
+    with (
+        pytest.raises(ValueError, match="changed while it was open"),
+        open_verified_text_for_append(target, identity, label="TODO path") as handle,
+    ):
+        os.replace(replacement, target)
+        handle.write("write reaches only the validated inode\n")
+
+    assert target.read_text(encoding="utf-8") == "attacker replacement\n"
+
+
+def test_exclusive_lock_never_unlinks_replacement_on_exit(tmp_path: Path) -> None:
+    """Releasing an opened lock descriptor leaves a replacement path untouched."""
+    lock = tmp_path / "records.lock"
+    lock.write_text("original lock\n", encoding="utf-8")
+    victim = tmp_path / "victim.txt"
+    victim.write_text("unchanged\n", encoding="utf-8")
+
+    with exclusive_lock(lock):
+        lock.unlink()
+        lock.symlink_to(victim)
+
+    assert lock.is_symlink()
+    assert victim.read_text(encoding="utf-8") == "unchanged\n"

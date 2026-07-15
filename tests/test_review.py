@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.internal_storage import exclusive_lock
 from rigor_foundry.models import AuditPolicy, AuditReport, Candidate, ReviewRecord
 from rigor_foundry.review import (
     append_todo_entry,
@@ -242,10 +243,40 @@ def test_todo_append_rejects_unsafe_targets_and_serialises_writers(tmp_path: Pat
         )
 
     lock = todo.with_name(todo.name + ".repository-audit.lock")
-    lock.write_text("held", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="another audit promotion"):
+    with (
+        exclusive_lock(lock),
+        pytest.raises(
+            RuntimeError,
+            match="another audit promotion",
+        ),
+    ):
         append_todo_entry(repository.root, relative, entry, review.candidate_id)
-    lock.unlink()
 
     append_todo_entry(repository.root, relative, entry, review.candidate_id)
     assert todo.read_text(encoding="utf-8").startswith("# Active work\n\n###")
+
+
+def test_todo_append_rejects_lock_symlink_without_touching_its_target(
+    tmp_path: Path,
+) -> None:
+    """A pre-existing lock symlink remains intact and its target is never opened."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.commit()
+    todo = repository.write_text("docs/internal/work/INDEX.md", "# Active work\n")
+    victim = repository.write_text("victim.txt", "unchanged\n")
+    report = _report(repository.root)
+    review = _valid_review(report)
+    relative = Path("docs/internal/work/INDEX.md")
+    lock = todo.with_name(todo.name + ".repository-audit.lock")
+    lock.symlink_to(victim)
+
+    with pytest.raises(ValueError, match="must not be a symbolic link"):
+        append_todo_entry(
+            repository.root,
+            relative,
+            render_todo_entry(report, review),
+            review.candidate_id,
+        )
+
+    assert lock.is_symlink()
+    assert victim.read_text(encoding="utf-8") == "unchanged\n"

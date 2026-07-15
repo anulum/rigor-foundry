@@ -9,11 +9,15 @@
 
 from __future__ import annotations
 
-import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 from .git_inventory import is_git_ignored
+from .internal_storage import (
+    exclusive_lock,
+    open_verified_text_for_append,
+    regular_file_identity,
+)
 from .models import AuditReport, Candidate, ReviewRecord
 
 
@@ -251,23 +255,22 @@ def append_todo_entry(
         absolute.relative_to(root)
     except ValueError as exc:
         raise ValueError("TODO path must remain inside the repository") from exc
-    if not absolute.exists() or not absolute.is_file():
-        raise ValueError("TODO path must be an existing regular non-symlink file")
+    todo_identity = regular_file_identity(absolute, label="TODO path")
     lock_path = absolute.with_name(absolute.name + ".repository-audit.lock")
     try:
-        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError as exc:
-        raise RuntimeError("another audit promotion holds the TODO lock") from exc
-    try:
-        os.close(descriptor)
-        current = absolute.read_text(encoding="utf-8")
-        if candidate_id in current:
-            raise ValueError("TODO already contains this candidate identifier")
-        with absolute.open("a", encoding="utf-8", newline="") as handle:
+        with (
+            exclusive_lock(lock_path),
+            open_verified_text_for_append(
+                absolute,
+                todo_identity,
+                label="TODO path",
+            ) as handle,
+        ):
+            current = handle.read()
+            if candidate_id in current:
+                raise ValueError("TODO already contains this candidate identifier")
             if current and not current.endswith("\n"):
                 handle.write("\n")
             handle.write(entry)
-            handle.flush()
-            os.fsync(handle.fileno())
-    finally:
-        lock_path.unlink(missing_ok=True)
+    except RuntimeError as exc:
+        raise RuntimeError("another audit promotion holds the TODO lock") from exc
