@@ -20,9 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Public status and installation documentation now distinguish the immutable
   GitHub/GHCR-only `v0.1.0` release from registry-verified Python packages.
 - CI-facing repository guards and the composed self-audit now emit only fixed
-  pass/fail status. Secret findings retain full SHA-256 path identifiers for
-  trusted in-process consumers without exposing candidate values or
-  adversarial filenames through guard output.
+  pass/fail status, including when validation raises. Secret findings retain
+  full SHA-256 path identifiers for trusted in-process consumers without
+  exposing candidate values, adversarial filenames, or tracebacks through
+  guard output.
 
 ## [0.1.0] - 2026-07-16
 

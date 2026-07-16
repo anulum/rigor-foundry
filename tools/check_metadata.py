@@ -98,8 +98,7 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
 
 def main() -> int:
     """Validate distribution metadata and return a process exit code."""
-    errors = metadata_errors()
-    return redacted_guard_exit_code("Metadata guard", errors)
+    return redacted_guard_exit_code("Metadata guard", metadata_errors)
 
 
 if __name__ == "__main__":

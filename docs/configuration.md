@@ -94,10 +94,11 @@ run the same validator. Residuals never count as covered lines and do not lower
 the aggregate branch-coverage threshold.
 
 Repository guard CLIs print only fixed pass/fail status. Precise diagnostic
-strings remain available to trusted in-process callers and are not written to
-shared logs, because repository paths and metadata can be attacker-controlled.
-The secret guard additionally replaces every programmatic path with its full
-SHA-256 identifier.
+strings remain available to trusted in-process callers, while validation
+exceptions also fail closed without a traceback. Neither enters shared logs,
+because repository paths and metadata can be attacker-controlled. The secret
+guard additionally replaces every programmatic path with its full SHA-256
+identifier.
 
 ## Desired-state inputs
 

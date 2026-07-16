@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from pathlib import Path
 
 from rigor_foundry.git_provenance import GitRunner
@@ -22,22 +22,29 @@ class RepositoryError(RuntimeError):
     """Report an inability to establish repository state."""
 
 
-def redacted_guard_exit_code(label: str, errors: Collection[object]) -> int:
-    """Render a fixed guard status without disclosing finding content.
+def redacted_guard_exit_code(
+    label: str,
+    validator: Callable[[], Collection[object]],
+) -> int:
+    """Run a validator and render fixed status without disclosing details.
 
     Parameters
     ----------
     label:
         Fixed human-readable guard name supplied by the caller.
-    errors:
-        Findings whose content must remain inside the current process.
+    validator:
+        In-process validator whose findings and exceptions remain private.
 
     Returns
     -------
     int
         Zero when no findings exist; otherwise one.
     """
-    if errors:
+    try:
+        failed = bool(validator())
+    except Exception:
+        failed = True
+    if failed:
         print(f"{label} failed; finding details are redacted from process output.")
         return 1
     print(f"{label} passed")

@@ -72,8 +72,7 @@ def data_boundary_errors(root: Path = ROOT) -> list[str]:
 
 def main() -> int:
     """Validate the local-only core data boundary and return a process exit code."""
-    errors = data_boundary_errors()
-    return redacted_guard_exit_code("Data-boundary guard", errors)
+    return redacted_guard_exit_code("Data-boundary guard", data_boundary_errors)
 
 
 if __name__ == "__main__":

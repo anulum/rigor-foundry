@@ -213,8 +213,9 @@ remain separate gates.
 The repository secret guard never emits candidate values or raw repository
 paths. Its programmatic findings identify paths only by full SHA-256. Every
 CI-facing repository guard, including the composed self-audit, emits only a
-fixed pass/fail status and keeps precise diagnostics inside the process. This
-prevents those guard CLIs from disclosing credential-bearing filenames or
+fixed pass/fail status and keeps precise diagnostics and validation exceptions
+inside the process. This prevents those guard CLIs from disclosing
+credential-bearing filenames, exposing broken-link paths through tracebacks, or
 accepting newline-bearing paths as forged log records. Third-party analyser
 output remains governed by each analyser's own reporting contract.
 

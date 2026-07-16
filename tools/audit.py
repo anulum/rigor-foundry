@@ -164,8 +164,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--strict-authoring", action="store_true")
     arguments = parser.parse_args()
-    errors = audit_errors(strict_authoring=arguments.strict_authoring)
-    return redacted_guard_exit_code("Repository audit", errors)
+    return redacted_guard_exit_code(
+        "Repository audit",
+        lambda: audit_errors(strict_authoring=arguments.strict_authoring),
+    )
 
 
 if __name__ == "__main__":

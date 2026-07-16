@@ -58,6 +58,7 @@ See the repository
 
 CI-facing repository guards and the composed self-audit print only fixed
 pass/fail status, so their diagnostics cannot disclose credential-bearing
-filenames or inject forged log lines. Trusted in-process secret findings retain
-full SHA-256 path identifiers without candidate values. Third-party analyser
-output follows the analyser's own reporting contract.
+filenames, expose broken-link paths through tracebacks, or inject forged log
+lines. Trusted in-process secret findings retain full SHA-256 path identifiers
+without candidate values. Third-party analyser output follows the analyser's
+own reporting contract.

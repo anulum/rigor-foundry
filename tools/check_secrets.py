@@ -55,7 +55,7 @@ def secret_errors(root: Path = ROOT) -> list[str]:
 
 def main(root: Path = ROOT) -> int:
     """Scan visible files without emitting repository-derived finding data."""
-    return redacted_guard_exit_code("Secret guard", secret_errors(root))
+    return redacted_guard_exit_code("Secret guard", lambda: secret_errors(root))
 
 
 if __name__ == "__main__":

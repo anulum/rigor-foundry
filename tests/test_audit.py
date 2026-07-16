@@ -13,11 +13,20 @@ import json
 import shutil
 import subprocess
 import sys
+from collections.abc import Collection
 from pathlib import Path
 
+import pytest
 from repository_audit_git_repository import GitRepository
 
-from tools._repository import ROOT, visible_files
+from tools._repository import (
+    ROOT,
+    RepositoryError,
+    read_text,
+    redacted_guard_exit_code,
+    run,
+    visible_files,
+)
 from tools.audit import EXPECTED_ORIGIN, audit_errors
 from tools.check_action_pins import action_pin_errors
 from tools.check_data_boundary import data_boundary_errors
@@ -53,6 +62,49 @@ def test_visible_inventory_omits_tracked_paths_deleted_during_authoring(tmp_path
     repository.commit()
     obsolete.unlink()
     assert Path("obsolete.txt") not in visible_files(repository.root)
+
+
+def test_repository_runner_executes_bounded_non_git_commands(tmp_path: Path) -> None:
+    """The shared runner captures a direct process without invoking a shell."""
+    completed = run(
+        sys.executable,
+        "-c",
+        "print('bounded-command')",
+        cwd=tmp_path,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout == "bounded-command\n"
+    assert completed.stderr == ""
+
+
+def test_visible_inventory_fails_closed_outside_git(tmp_path: Path) -> None:
+    """Inventory failure is a typed repository error, not an empty result."""
+    with pytest.raises(RepositoryError):
+        visible_files(tmp_path)
+
+
+def test_repository_text_reader_rejects_invalid_utf8(tmp_path: Path) -> None:
+    """An invalid UTF-8 file is classified as non-text."""
+    (tmp_path / "invalid.txt").write_bytes(b"\xff")
+
+    assert read_text(Path("invalid.txt"), tmp_path) is None
+
+
+def test_redacted_guard_exit_code_keeps_validator_exceptions_private(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An unexpected validator exception remains behind the fixed CLI boundary."""
+
+    def raise_repository_error() -> Collection[object]:
+        raise RepositoryError("credential-bearing\nFORGED-LOG-LINE.py")
+
+    assert redacted_guard_exit_code("Repository audit", raise_repository_error) == 1
+    output = capsys.readouterr()
+    assert output.out == (
+        "Repository audit failed; finding details are redacted from process output.\n"
+    )
+    assert output.err == ""
 
 
 def test_repository_guard_clis_redact_adversarial_repository_details(
@@ -96,6 +148,7 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
     assert adversarial_leaf in "\n".join(data_boundary_errors(repository.root))
     assert "rationale must be non-empty" in "\n".join(dependency_waiver_errors(repository.root))
     assert adversarial_leaf in "\n".join(audit_errors(repository.root))
+    repository.symlink(f"broken-{adversarial_leaf}.py", "missing-target")
 
     guards = (
         ("tools.check_headers", "Header guard"),

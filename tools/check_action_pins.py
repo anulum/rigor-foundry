@@ -67,8 +67,7 @@ def action_pin_errors(root: Path = ROOT) -> list[str]:
 
 def main() -> int:
     """Validate workflows and return a process exit code."""
-    errors = action_pin_errors()
-    return redacted_guard_exit_code("Action pin guard", errors)
+    return redacted_guard_exit_code("Action pin guard", action_pin_errors)
 
 
 if __name__ == "__main__":

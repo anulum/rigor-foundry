@@ -148,8 +148,7 @@ def dependency_waiver_errors(root: Path = ROOT, *, today: date | None = None) ->
 
 def main() -> int:
     """Validate the dependency waiver and return a process exit code."""
-    errors = dependency_waiver_errors()
-    return redacted_guard_exit_code("Dependency-waiver guard", errors)
+    return redacted_guard_exit_code("Dependency-waiver guard", dependency_waiver_errors)
 
 
 if __name__ == "__main__":

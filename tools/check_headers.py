@@ -65,8 +65,7 @@ def header_errors(root: Path = ROOT) -> list[str]:
 
 def main() -> int:
     """Validate direct headers and return a process exit code."""
-    errors = header_errors()
-    return redacted_guard_exit_code("Header guard", errors)
+    return redacted_guard_exit_code("Header guard", header_errors)
 
 
 if __name__ == "__main__":
