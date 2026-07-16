@@ -24,6 +24,7 @@ execution, or production promotion.
 | Tests | Focused single test files only | Full matrix on 3.11, 3.12, 3.13 |
 | Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 95% |
 | Packaging | Wheel and sdist build; wheel smoke outside checkout | Build, Twine check, wheel smoke |
+| Release tag | Isolated `python -S` CLI proves exact-version validation without site packages | Exact tag validation runs before build, container publication, and package publication |
 | Documentation | Strict MkDocs build | Strict build and Pages artifact |
 | Container | Local build/smoke when resources permit | Non-root CLI smoke and vulnerability scan |
 | Security | Bandit and dependency audit | CodeQL, pip-audit, Scorecard, secret scan |
@@ -205,12 +206,15 @@ landing record.
 
 The evidence is a local integration check, not the final CI or coverage record.
 The full Python matrix, aggregate coverage, CodeQL, Scorecard, Trivy, Pages,
-release, and publication workflows remain remote-only gates until an authorised
-first push creates `main`.
+release, and publication workflows remain remote-only gates. Green `main`
+workflows establish landing evidence; tag-triggered release and publication
+remain separate gates.
 
-The repository is public but unreleased. Container and PyPI publication remain
-fail closed until the release environment has required-reviewer protection;
-that configuration is a promotion gate before the first public release.
+The repository is public but unreleased. Release-tag validation is implemented
+as a standard-library-only CLI and a real `python -S` regression proves that it
+runs before the project package or site packages are installed. Container and
+PyPI environments accept only `v*` tag deployments and retain required owner
+review before publication.
 
 ## Required promotion evidence
 

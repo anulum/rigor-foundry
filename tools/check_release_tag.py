@@ -13,10 +13,10 @@ import sys
 import tomllib
 from pathlib import Path
 
-from tools._repository import ROOT
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
-def release_tag_errors(tag: str, root: Path = ROOT) -> list[str]:
+def release_tag_errors(tag: str, root: Path = _REPOSITORY_ROOT) -> list[str]:
     """Return an error unless ``tag`` is exactly ``v<project.version>``."""
     with (root / "pyproject.toml").open("rb") as stream:
         version = tomllib.load(stream)["project"]["version"]
@@ -24,13 +24,12 @@ def release_tag_errors(tag: str, root: Path = ROOT) -> list[str]:
     return [] if tag == expected else [f"release tag {tag!r} does not match {expected!r}"]
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str]) -> int:
     """Validate one tag supplied by the release workflow."""
-    arguments = sys.argv[1:] if argv is None else argv
-    if len(arguments) != 1:
+    if len(argv) != 1:
         print("usage: python -m tools.check_release_tag <tag>")
         return 2
-    errors = release_tag_errors(arguments[0])
+    errors = release_tag_errors(argv[0])
     if errors:
         print(errors[0])
         return 1
@@ -39,4 +38,4 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

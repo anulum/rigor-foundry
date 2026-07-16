@@ -77,6 +77,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   explicit schema and pack-version envelope in addition to every ordered rule
   definition; older report identities must be regenerated without fallback.
 
+### Fixed
+
+- Release-tag validation now uses only the Python standard library, allowing
+  release, container, and package-publication jobs to validate exact version
+  metadata before the project package is installed.
+
 ### Security
 
 - Git plumbing ignores ambient `PATH` and `GIT_*` state, rejects symlinked

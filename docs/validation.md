@@ -40,5 +40,9 @@ no coverage credit.
 
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
-independent audit, and explicit owner authorisation. See the repository
+independent audit, and explicit owner authorisation. The exact-tag guard uses
+only the Python standard library and is tested through an isolated `python -S`
+process, so release, container, and package-publication jobs can execute it
+before installing the project package. The protected publication environments
+admit only `v*` tags and retain required owner review. See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
