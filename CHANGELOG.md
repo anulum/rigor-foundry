@@ -5,6 +5,15 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Package publication now grants release-asset write access only to the
+  protected publication job so Sigstore bundles can be attached. Owner-confirmed
+  recovery may run from the named tag or the repository default branch, but
+  always validates and builds the named published tag with checkout credential
+  persistence disabled and uploads exactly the two generated package bundles
+  before publication.
+
 ## [0.1.1] - 2026-07-16
 
 ### Fixed

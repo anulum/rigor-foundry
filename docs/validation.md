@@ -50,10 +50,13 @@ publication. It checks the real wheel's name and version, requires a
 version-matched installation command plus the public registry link, and rejects
 status text that publication would contradict. Automated package publication
 uses the repository owner actor; an explicitly confirmed owner-only dispatch is
-available for recovery, requires its dispatch ref to equal the requested tag,
-and first verifies an existing published GitHub Release. The protected
-publication environments admit only `v*` tags and retain required owner review.
-See the repository
+available for recovery from the named tag or the repository default branch,
+always checks out the named tag, and first verifies an existing published
+GitHub Release. The publication job's write permission is limited to attaching
+Sigstore bundles to that release. A manual recovery requires exactly two
+generated package bundles and uploads them before publication; checkout
+credentials are not persisted. The protected publication environments admit
+only `v*` tags and retain required owner review. See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
 
 CI-facing repository guards and the composed self-audit print only fixed

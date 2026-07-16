@@ -41,9 +41,13 @@ jobs:
         (github.event_name == 'release' &&
          github.event.action == 'published') ||
         (github.event_name == 'workflow_dispatch' &&
-         github.ref_type == 'tag' &&
-         github.ref_name == inputs.release_tag &&
-         inputs.confirm_public_pypi == 'publish')
+         inputs.confirm_public_pypi == 'publish' &&
+         (
+           (github.ref_type == 'tag' &&
+            github.ref_name == inputs.release_tag) ||
+           (github.ref_type == 'branch' &&
+            github.ref_name == github.event.repository.default_branch)
+         ))
       )
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -51,7 +55,7 @@ jobs:
       name: pypi
       url: https://pypi.org/project/rigor-foundry/
     permissions:
-      contents: read
+      contents: write
       id-token: write
       attestations: write
     steps:
@@ -100,6 +104,19 @@ jobs:
           inputs: >-
             ./dist/*.tar.gz
             ./dist/*.whl
+          release-signing-artifacts: true
+      - name: Attach recovery signing bundles
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          bundle_count=$(find dist -maxdepth 1 -type f -name '*.sigstore.json' | wc -l)
+          test "$bundle_count" -eq 2
+          gh release upload "$RELEASE_TAG" dist/*.sigstore.json \
+            --clobber \
+            --repo "$GITHUB_REPOSITORY"
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
         with:
           subject-path: dist/*

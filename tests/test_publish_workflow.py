@@ -22,7 +22,7 @@ def _workflow_text() -> str:
 
 
 def test_publish_workflow_has_owner_confirmed_manual_recovery() -> None:
-    """The recovery path requires the owner, a public repo, and explicit consent."""
+    """Recovery runs only from a release ref or the protected default branch."""
     workflow = _workflow_text()
 
     assert "workflow_dispatch:\n    inputs:\n      release_tag:" in workflow
@@ -32,6 +32,8 @@ def test_publish_workflow_has_owner_confirmed_manual_recovery() -> None:
     assert "github.event.action == 'published'" in workflow
     assert "github.ref_type == 'tag'" in workflow
     assert "github.ref_name == inputs.release_tag" in workflow
+    assert "github.ref_type == 'branch'" in workflow
+    assert "github.ref_name == github.event.repository.default_branch" in workflow
     assert "inputs.confirm_public_pypi == 'publish'" in workflow
     assert "github.event.release.author.login" not in workflow
     assert workflow.count(RELEASE_TAG_EXPRESSION) == 3
@@ -48,6 +50,19 @@ def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
     assert "select(.isDraft == false and .publishedAt != null)" in workflow
     assert 'test "$published_tag" = "$RELEASE_TAG"' in workflow
     assert "name: pypi" in workflow
-    assert "id-token: write" in workflow
+    assert (
+        "    permissions:\n"
+        "      contents: write\n"
+        "      id-token: write\n"
+        "      attestations: write\n"
+    ) in workflow
+    assert f"          ref: {RELEASE_TAG_EXPRESSION}" in workflow
+    assert "          persist-credentials: false" in workflow
+    assert "release-signing-artifacts: true" in workflow
+    assert "name: Attach recovery signing bundles" in workflow
+    assert "if: github.event_name == 'workflow_dispatch'" in workflow
+    assert 'test "$bundle_count" -eq 2' in workflow
+    assert 'gh release upload "$RELEASE_TAG" dist/*.sigstore.json' in workflow
+    assert "--clobber" in workflow
     assert "pypa/gh-action-pypi-publish@" in workflow
     assert "password:" not in workflow

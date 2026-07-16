@@ -236,8 +236,15 @@ PyPI publication all run that guard before accepting the distribution.
 Automated PyPI publication gates on the repository owner as the event actor,
 not on the workflow-created draft release's original author. An owner-only
 manual dispatch remains a recovery path; it requires explicit public-index
-confirmation, must run from the same tag ref named by its input, and verifies
-that the requested tag already has a published GitHub Release. Container and
+confirmation, runs from either the named tag or the repository default branch,
+always checks out the named tag, and verifies that the tag already has a
+published GitHub Release. The default-branch route permits a workflow-only
+recovery after an immutable release tag exists; it never builds package content
+from the branch. The publication job grants `contents: write` only so Sigstore
+can attach signing bundles to that release. Release events use the pinned
+Sigstore action's native attachment path; manual recovery verifies that exactly
+two package bundles were generated and uploads them to the named release before
+publication. Checkout credential persistence remains disabled. Container and
 PyPI environments accept only `v*` tag deployments and retain required owner
 review before publication.
 
