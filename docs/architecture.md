@@ -26,6 +26,9 @@ The records stay separate so that missing evidence, accepted risk, failed
 controls, and completed remediation cannot be collapsed into a misleading
 boolean. The normative design and module map are maintained in
 [ARCHITECTURE.md](https://github.com/anulum/rigor-foundry/blob/main/ARCHITECTURE.md).
+The [digest-dependency graph](digest-dependencies.md) defines every
+unconditional identity edge, its stable non-edges, and the production mutation
+proofs required for a schema change.
 
 ## Isolation boundary
 

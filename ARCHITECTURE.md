@@ -88,6 +88,12 @@ primitive imports. Callers must verify digests during load; silent repair is
 not permitted. Report schema 1.1 includes `GitExecutableProvenance`; changing
 the executable, version, path, root, or embedded trust policy changes the
 report digest. Review-ledger schema 1.0 is independent and remains unchanged.
+`digest_dependencies.py` publishes the versioned machine-readable graph of
+unconditional identity bindings and its own canonical digest. Policy and
+review records expose one canonical identity each. Rule-pack version 1.1.0
+binds its schema, registry version, ordered definitions, and definition fields
+into the pack digest. Conditional comparison inputs and deliberate stable
+non-edges are documented explicitly rather than presented as full bindings.
 
 ### Review, enforcement, and promotion
 
@@ -210,9 +216,12 @@ execute those batches autonomously.
 `internal_storage.py` supplies path-confined, Git-ignored, symlink-safe,
 crash-durable create and replace operations plus exclusive locks.
 `work_models.py` defines digest-bound tasks, append-only state events, evidence,
-ownership, and closure records. This protocol is the durable coordination
-boundary for future worktree and agent-fleet execution; it is not itself a
-process supervisor or permission grant.
+and ownership. `work_closure.py` binds one immutable task definition to the
+exact independently verified closed-event chain; a later archive retains the
+original closure identity. Proposal and revalidation events must also reproduce
+the task baseline, candidate, and source-report bindings. This protocol is the
+durable coordination boundary for future worktree and agent-fleet execution;
+it is not itself a process supervisor or permission grant.
 
 ## Error boundaries
 

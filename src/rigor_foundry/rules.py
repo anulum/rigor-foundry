@@ -9,11 +9,13 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
 
-RULE_PACK_VERSION = "rigor-foundry/1.0.0"
+from .audit_primitives import canonical_digest
+
+RULE_PACK_SCHEMA_VERSION = "1.0"
+RULE_PACK_VERSION = "rigor-foundry/1.1.0"
+INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 
 
 @dataclass(frozen=True)
@@ -36,7 +38,7 @@ class RuleDefinition:
     rule_id: str
     category: str
     summary: str
-    introduced: str = RULE_PACK_VERSION
+    introduced: str = INITIAL_RULE_PACK_VERSION
 
     def to_dict(self) -> dict[str, str]:
         """Serialise stable rule metadata."""
@@ -173,14 +175,14 @@ RULES_BY_ID = {rule.rule_id: rule for rule in RULES}
 
 
 def rule_pack_digest() -> str:
-    """Return the SHA-256 identity of the ordered rule registry."""
-    payload = json.dumps(
-        [rule.to_dict() for rule in RULES],
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
+    """Return the canonical identity of the versioned ordered rule registry."""
+    return canonical_digest(
+        {
+            "schema_version": RULE_PACK_SCHEMA_VERSION,
+            "rule_pack_version": RULE_PACK_VERSION,
+            "rules": [rule.to_dict() for rule in RULES],
+        }
     )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def validate_rule_registry() -> tuple[str, ...]:

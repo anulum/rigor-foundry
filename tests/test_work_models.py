@@ -493,6 +493,26 @@ def test_event_parser_and_record_chain_edges_are_revalidated() -> None:
         WorkRecord.build(definition, ())
     with pytest.raises(ValueError, match="task or sequence"):
         WorkRecord.build(definition, (replace(first, task_id="other-task"),))
+    with pytest.raises(ValueError, match="task baseline"):
+        WorkRecord.build(definition, (replace(first, head="9" * 40),))
+    second = events[1]
+    crosswired = WorkEvent.build(
+        sequence=second.sequence,
+        task_id=second.task_id,
+        previous_state=second.previous_state,
+        state=second.state,
+        actor=second.actor,
+        occurred_at=second.occurred_at,
+        head=second.head,
+        head_tree=second.head_tree,
+        tracked_content_digest=second.tracked_content_digest,
+        candidate_id="0" * 64,
+        report_digest="0" * 64,
+        evidence=second.evidence,
+        previous_event_digest=second.previous_event_digest,
+    )
+    with pytest.raises(ValueError, match="task source"):
+        WorkRecord.build(definition, (first, crosswired))
     with pytest.raises(ValueError, match="discontinuous"):
         WorkRecord.build(
             definition,

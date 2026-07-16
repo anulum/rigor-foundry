@@ -32,6 +32,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - Digest dependencies: digest-dependencies.md
   - CLI: cli.md
   - Configuration: configuration.md
   - Validation: validation.md

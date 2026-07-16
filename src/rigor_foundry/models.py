@@ -201,6 +201,11 @@ class AuditPolicy:
             "native_audits": [adapter.to_dict() for adapter in self.native_audits],
         }
 
+    @property
+    def policy_digest(self) -> str:
+        """Return the canonical identity of this complete policy."""
+        return canonical_digest(self.to_dict())
+
     @classmethod
     def from_dict(cls, value: object) -> AuditPolicy:
         """Parse and validate a policy mapping."""
@@ -451,7 +456,7 @@ class AuditReport:
             "tracked_file_count": tracked_file_count,
             "git_provenance": git_provenance.to_dict(),
             "policy": policy.to_dict(),
-            "policy_digest": _sha256(policy.to_dict()),
+            "policy_digest": policy.policy_digest,
             "candidates": [item.to_dict() for item in ordered],
         }
         return cls(
@@ -467,7 +472,7 @@ class AuditReport:
             candidates=ordered,
             rule_pack_version=RULE_PACK_VERSION,
             rule_pack_digest=rule_pack_digest(),
-            policy_digest=_sha256(policy.to_dict()),
+            policy_digest=policy.policy_digest,
             report_digest=_sha256(body),
         )
 
@@ -610,6 +615,11 @@ class ReviewRecord:
             "expires_at": self.expires_at,
             "reopen_triggers": list(self.reopen_triggers),
         }
+
+    @property
+    def review_digest(self) -> str:
+        """Return the canonical identity of this complete review record."""
+        return canonical_digest(self.to_dict())
 
     @classmethod
     def from_dict(cls, value: object) -> ReviewRecord:

@@ -12,6 +12,18 @@ __version__ = "0.1.0"
 from .cli import report_markdown
 from .condition_language import ConditionExpression
 from .control_assessment import ControlAssessment, EvidenceReference
+from .digest_dependencies import (
+    DIGEST_DEPENDENCIES,
+    DIGEST_DEPENDENCY_SCHEMA_VERSION,
+    DIGEST_NODES,
+    DigestDependency,
+    DigestNodeSpec,
+    digest_dependency_graph,
+    digest_dependency_graph_digest,
+    direct_dependents,
+    transitive_dependents,
+    validate_digest_dependency_graph,
+)
 from .effective_profile import (
     AdapterLock,
     EffectiveControl,
@@ -66,9 +78,13 @@ from .trust import (
     VerificationTrustStore,
     ed25519_signature_message,
 )
+from .work_closure import WorkClosure
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
+    "DIGEST_DEPENDENCIES",
+    "DIGEST_DEPENDENCY_SCHEMA_VERSION",
+    "DIGEST_NODES",
     "ED25519_SIGNATURE_MESSAGE_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
@@ -83,6 +99,8 @@ __all__ = [
     "ControlAssessment",
     "ControlDefinition",
     "ControlOverlay",
+    "DigestDependency",
+    "DigestNodeSpec",
     "EffectiveControl",
     "EffectiveProfileLock",
     "EvidenceContract",
@@ -114,11 +132,15 @@ __all__ = [
     "VariableConstraints",
     "VariableDefinition",
     "VerificationTrustStore",
+    "WorkClosure",
     "WorkEvent",
     "WorkEvidence",
     "WorkRecord",
     "WorkTask",
     "__version__",
+    "digest_dependency_graph",
+    "digest_dependency_graph_digest",
+    "direct_dependents",
     "ed25519_signature_message",
     "render_todo_entry",
     "report_markdown",
@@ -126,5 +148,7 @@ __all__ = [
     "review_errors",
     "review_templates",
     "scan_repository",
+    "transitive_dependents",
+    "validate_digest_dependency_graph",
     "validate_reviews",
 ]

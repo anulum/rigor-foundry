@@ -31,6 +31,7 @@ execution, or production promotion.
 | Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
 | Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
+| Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |
 
 ## Local integration evidence
 
@@ -147,6 +148,20 @@ only the existing exact `PYSEC-2026-2132` security-tool exception. Strict
 documentation, wheel and source-distribution builds, Twine checks, and an
 external installed-wheel same-key cross-domain round trip passed. Hosted CI
 remains required after an authorised push.
+
+The digest-dependency lane ran 105 affected tests across 12 explicit owner and
+consumer files without invoking the prohibited aggregate local suite. Its
+51-test owner coverage run reached 99.03% branch-aware coverage across the five
+changed protocol modules; the new graph, closure, and versioned-rule modules
+each reached 100%. The graph mutation tests compare all 12 identities for every
+declared upstream class, require every reachable digest to change, and require
+every unrelated digest to remain stable. Ruff, strict MyPy, Bandit, Semgrep,
+strict repository and documentation audits, Actionlint, typos, REUSE 171/171,
+secret and dependency-waiver guards, and both dependency audits passed. A
+fresh wheel and source distribution passed Twine checks; a clean external
+environment installed the hash-locked runtime dependencies and wheel, then
+reproduced the normative graph and rule-pack digest vectors through the public
+API. Hosted CI remains required after an authorised push.
 
 ## Security-boundary remediation evidence
 

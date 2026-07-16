@@ -164,7 +164,7 @@ class WorkTask:
                 )
             ),
             "required_verifier": require_string(required_verifier, "required_verifier"),
-            "review_digest": canonical_digest(review.to_dict()),
+            "review_digest": review.review_digest,
             "created_by": require_string(created_by, "created_by"),
             "created_at": require_utc_timestamp(created_at, "created_at"),
         }
@@ -611,11 +611,22 @@ class WorkRecord:
             if previous is None:
                 if event.state != "proposed-task" or event.previous_state is not None:
                     raise ValueError("work record must begin at proposed-task")
+                if (
+                    event.head != task.baseline_head
+                    or event.head_tree != task.baseline_head_tree
+                    or event.tracked_content_digest != task.baseline_tracked_content_digest
+                ):
+                    raise ValueError("work proposal does not bind the task baseline")
             elif (
                 event.previous_state != previous.state
                 or event.previous_event_digest != previous.event_digest
             ):
                 raise ValueError("work event chain is discontinuous")
+            if event.state == "revalidated" and (
+                event.candidate_id != task.candidate.candidate_id
+                or event.report_digest != task.source_report_digest
+            ):
+                raise ValueError("work revalidation does not bind the task source")
             if event.owner:
                 active_owner = event.owner
             if event.state == "resolved-pending-verification":

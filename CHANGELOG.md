@@ -37,6 +37,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   streaming aggregate output limits, deadlines, and process-group termination.
 - A public versioned Ed25519 message encoder with distinct standard-pack and
   reviewer-attestation domains and cross-protocol replay regressions.
+- A versioned machine-readable digest-dependency graph, first-class policy and
+  review identities, and a strict task-definition-bound work-closure record.
 
 ### Changed
 
@@ -62,6 +64,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Standard packs advance to schema 1.1; pack signatures and verification
   evidence gain schema 1.0 domain envelopes; reviewer attestations advance to
   schema 2.0. Unchanged nested pack components remain at schema 1.0.
+- The built-in rule pack advances to version 1.1.0. Its digest now binds an
+  explicit schema and pack-version envelope in addition to every ordered rule
+  definition; older report identities must be regenerated without fallback.
 
 ### Security
 
