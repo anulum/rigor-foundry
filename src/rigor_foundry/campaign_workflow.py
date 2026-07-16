@@ -121,6 +121,7 @@ def execute_campaign(
     post_state = (
         post_inventory.head,
         post_inventory.head_tree,
+        post_inventory.object_format,
         post_inventory.branch,
         post_inventory.tracked_content_digest,
         post_inventory.dirty_paths,
@@ -129,6 +130,7 @@ def execute_campaign(
     report_state = (
         report.head,
         report.head_tree,
+        report.git_object_format,
         report.branch,
         report.tracked_content_digest,
         report.dirty_paths,

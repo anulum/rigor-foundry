@@ -12,6 +12,12 @@ from __future__ import annotations
 from pathlib import Path, PurePosixPath
 
 from .architecture import scan_architecture
+from .candidate_anchor import (
+    CandidateAnchor,
+    RepositoryTreeAnchor,
+    TrackedBlobAnchor,
+    candidate_anchor_errors,
+)
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitTrustPolicy
@@ -52,13 +58,17 @@ _SCANNABLE_EXTENSIONS = frozenset(
 )
 
 
-def _governance_candidate(path: str, rule_id: str, evidence: str) -> Candidate:
+def _governance_candidate(
+    inventory: GitInventory,
+    path: str,
+    rule_id: str,
+    evidence: str,
+) -> Candidate:
     """Return one repository-governance review candidate."""
     return Candidate.build(
         category="governance",
         rule_id=rule_id,
-        path=path,
-        line=1,
+        anchor=RepositoryTreeAnchor.build(inventory, path=path),
         symbol="",
         evidence=evidence,
         confidence="high",
@@ -74,7 +84,7 @@ def _governance_candidate(path: str, rule_id: str, evidence: str) -> Candidate:
 def resolve_policy(
     inventory: GitInventory,
     requested: Path | None,
-) -> tuple[AuditPolicy, tuple[Candidate, ...]]:
+) -> tuple[AuditPolicy, CandidateAnchor, tuple[Candidate, ...]]:
     """Resolve a repository policy and report fallback configuration."""
     if requested is not None:
         if requested.is_absolute() or ".." in requested.parts:
@@ -82,19 +92,36 @@ def resolve_policy(
         matches = tuple(item for item in inventory.files if item.path == requested.as_posix())
         if len(matches) != 1 or matches[0].content_kind != "text" or matches[0].text is None:
             raise ValueError("audit policy must be one tracked non-symlink UTF-8 file")
-        return AuditPolicy.from_json(matches[0].text), ()
+        return (
+            AuditPolicy.from_json(matches[0].text),
+            TrackedBlobAnchor.build(matches[0], line_start=1),
+            (),
+        )
     for relative in _DEFAULT_POLICY_PATHS:
         matches = tuple(item for item in inventory.files if item.path == relative.as_posix())
         if not matches:
             continue
         if len(matches) != 1 or matches[0].content_kind != "text" or matches[0].text is None:
             raise ValueError("discovered audit policy must be tracked non-symlink UTF-8 text")
-        return AuditPolicy.from_json(matches[0].text), ()
-    return AuditPolicy(), (
-        _governance_candidate(
-            ".",
-            "GV001-missing-repository-audit-policy",
-            "no RigorFoundry policy found; scanner used portable defaults",
+        return (
+            AuditPolicy.from_json(matches[0].text),
+            TrackedBlobAnchor.build(matches[0], line_start=1),
+            (),
+        )
+    fallback_anchor = RepositoryTreeAnchor.build(
+        inventory,
+        path=_DEFAULT_POLICY_PATHS[0].as_posix(),
+    )
+    return (
+        AuditPolicy(),
+        fallback_anchor,
+        (
+            _governance_candidate(
+                inventory,
+                _DEFAULT_POLICY_PATHS[0].as_posix(),
+                "GV001-missing-repository-audit-policy",
+                "no RigorFoundry policy found; scanner used portable defaults",
+            ),
         ),
     )
 
@@ -114,8 +141,11 @@ def _scope_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
             Candidate.build(
                 category="governance",
                 rule_id="GV002-unscanned-tracked-code",
-                path=item.path,
-                line=1,
+                anchor=(
+                    RepositoryTreeAnchor.build(inventory, path=item.path)
+                    if item.scanned_blob_id is None
+                    else TrackedBlobAnchor.build(item, line_start=1)
+                ),
                 symbol=item.content_kind,
                 evidence=f"content_kind={item.content_kind}; byte_size={item.byte_size}",
                 confidence="high",
@@ -153,20 +183,24 @@ def scan_repository(
         Content-addressed report including exact Git executable provenance.
     """
     inventory = load_git_inventory(root, git_trust_policy=git_trust_policy)
-    policy, governance = resolve_policy(inventory, policy_path)
+    policy, policy_anchor, governance = resolve_policy(inventory, policy_path)
     candidates = (
         *governance,
-        *domain_governance_candidates(policy),
+        *domain_governance_candidates(policy, policy_anchor),
         *_scope_candidates(inventory),
         *scan_test_authenticity(inventory, policy),
         *scan_architecture(inventory, policy),
         *scan_polyglot_architecture(inventory, policy),
         *scan_godfiles(inventory, policy),
     )
+    anchor_errors = candidate_anchor_errors(inventory, candidates)
+    if anchor_errors:
+        raise RuntimeError("candidate anchor verification failed: " + "; ".join(anchor_errors))
     return AuditReport.build(
         repository_root=str(inventory.root),
         head=inventory.head,
         head_tree=inventory.head_tree,
+        git_object_format=inventory.object_format,
         branch=inventory.branch,
         tracked_content_digest=inventory.tracked_content_digest,
         dirty_paths=inventory.dirty_paths,

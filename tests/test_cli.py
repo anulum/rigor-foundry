@@ -355,6 +355,8 @@ def test_direct_cli_contracts_cover_every_command_handler(
     rendered = report_markdown(report)
     assert rendered == markdown_path.read_text(encoding="utf-8")
     assert "Static candidates are not defect verdicts" in rendered
+    assert f"Git object format: `{report.git_object_format}`" in rendered
+    assert "- Anchor: blob `" in rendered
     assert main(["scan", "--root", str(repository.root), "--policy", str(policy)]) == 0
     assert json.loads(capsys.readouterr().out)["report_digest"] == report.report_digest
     assert (

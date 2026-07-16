@@ -10,6 +10,14 @@
 __version__ = "0.1.1"
 
 from .campaign_inputs import campaign_input_divergence, validate_campaign_input
+from .candidate_anchor import (
+    ANCHOR_SCHEMA_VERSION,
+    CandidateAnchor,
+    RepositoryTreeAnchor,
+    TrackedBlobAnchor,
+    bounded_candidate_evidence,
+    candidate_anchor_errors,
+)
 from .cli import report_markdown
 from .condition_language import ConditionExpression
 from .control_assessment import ControlAssessment, EvidenceReference
@@ -90,6 +98,7 @@ from .work_closure import WorkClosure
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
+    "ANCHOR_SCHEMA_VERSION",
     "COVERAGE_RESIDUAL_SCHEMA_VERSION",
     "DIGEST_DEPENDENCIES",
     "DIGEST_DEPENDENCY_SCHEMA_VERSION",
@@ -104,6 +113,7 @@ __all__ = [
     "BubblewrapCompatibilityPolicy",
     "BubblewrapProvenance",
     "Candidate",
+    "CandidateAnchor",
     "ConditionExpression",
     "ControlAssessment",
     "ControlDefinition",
@@ -132,6 +142,7 @@ __all__ = [
     "RemediationContract",
     "RemediationLane",
     "RemediationPlan",
+    "RepositoryTreeAnchor",
     "RequirementBinding",
     "ResolvedVariable",
     "ReviewRecord",
@@ -139,6 +150,7 @@ __all__ = [
     "SecretReference",
     "StandardPack",
     "TargetGap",
+    "TrackedBlobAnchor",
     "TrustedPublicKey",
     "VariableAssignment",
     "VariableConstraints",
@@ -150,7 +162,9 @@ __all__ = [
     "WorkRecord",
     "WorkTask",
     "__version__",
+    "bounded_candidate_evidence",
     "campaign_input_divergence",
+    "candidate_anchor_errors",
     "coverage_residual_errors",
     "digest_dependency_graph",
     "digest_dependency_graph_digest",

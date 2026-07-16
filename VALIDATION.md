@@ -30,6 +30,7 @@ execution, or production promotion.
 | Security | Bandit and dependency audit | CodeQL, pip-audit, Scorecard, secret scan |
 | Repository self-audit | Immutable temporary-commit scan for authoring evidence | Full policy scan, native-control gate, and 30-day evidence artifact |
 | Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
+| Candidate anchors | Real clean/dirty blob identity, line spans, tree-state absence, SHA-1/SHA-256, strict parsing, and report/CLI/TODO wiring | Same contracts plus aggregate branch-aware coverage |
 | Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
 | Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |

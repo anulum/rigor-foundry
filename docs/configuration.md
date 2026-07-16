@@ -14,6 +14,22 @@ The selected policy must be a tracked, non-symlink UTF-8 file inside the
 audited repository. External, parent-relative, ignored, and symlinked policy
 inputs fail closed rather than silently controlling the audit.
 
+## Candidate anchor schemas
+
+Candidate-anchor schema 1.0 is a strict discriminated union:
+
+- `tracked-blob` binds a canonical path, inclusive line span, scanned Git blob
+  identity, and content SHA-256;
+- `repository-tree` binds a path locus, fixed state span `1:1`, HEAD tree
+  identity, and complete tracked-content SHA-256.
+
+Report schema 1.2 requires one anchor on every candidate and records
+`git_object_format`. Scanner version 0.2.0 verifies all anchors against the
+inventory that produced the report. Campaign schema 1.4 carries the object
+format into independent-run input comparison. Earlier report or campaign
+records must be regenerated; unknown or mixed anchor fields have no
+compatibility fallback.
+
 Repository policy controls source and test roots, production packages,
 mandatory audit domains, size registries, enforcement mode, and declared native
 adapters. The desired-state API adds typed adopter variables, namespaced custom

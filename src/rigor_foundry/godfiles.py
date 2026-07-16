@@ -16,6 +16,7 @@ from collections import Counter
 from pathlib import PurePosixPath
 from typing import cast
 
+from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate
 
@@ -186,8 +187,11 @@ def _large_file_candidates(
             Candidate.build(
                 category="godfile",
                 rule_id="GF001-large-responsibility-owner",
-                path=item.path,
-                line=1,
+                anchor=TrackedBlobAnchor.build(
+                    item,
+                    line_start=1,
+                    line_end=max(1, _physical_lines(item.text)),
+                ),
                 symbol="test" if is_test else "source",
                 evidence=evidence,
                 confidence="medium",
@@ -236,8 +240,10 @@ def _registry_candidates(
                 Candidate.build(
                     category="godfile",
                     rule_id="GF002-missing-size-registry",
-                    path=registry_path,
-                    line=1,
+                    anchor=RepositoryTreeAnchor.build(
+                        inventory,
+                        path=registry_path,
+                    ),
                     symbol="",
                     evidence="configured registry is missing or not UTF-8 text",
                     confidence="high",
@@ -253,8 +259,11 @@ def _registry_candidates(
                 Candidate.build(
                     category="godfile",
                     rule_id="GF003-invalid-size-registry",
-                    path=registry_path,
-                    line=1,
+                    anchor=TrackedBlobAnchor.build(
+                        registry,
+                        line_start=1,
+                        line_end=max(1, _physical_lines(registry.text)),
+                    ),
                     symbol="",
                     evidence=str(exc),
                     confidence="high",
@@ -276,8 +285,11 @@ def _registry_candidates(
                     Candidate.build(
                         category="godfile",
                         rule_id="GF004-incomplete-size-decision",
-                        path=registry_path,
-                        line=index + 1,
+                        anchor=TrackedBlobAnchor.build(
+                            registry,
+                            line_start=1,
+                            line_end=max(1, _physical_lines(registry.text)),
+                        ),
                         symbol=str(path_value or f"row-{index}"),
                         evidence=f"missing_or_invalid={','.join(missing)}",
                         confidence="high",
@@ -307,8 +319,18 @@ def _registry_candidates(
                 Candidate.build(
                     category="godfile",
                     rule_id="GF005-size-decision-drift",
-                    path=path_value,
-                    line=1,
+                    anchor=(
+                        RepositoryTreeAnchor.build(inventory, path=path_value)
+                        if owner is None
+                        else TrackedBlobAnchor.build(
+                            owner,
+                            line_start=1,
+                            line_end=max(
+                                1,
+                                _physical_lines(owner.text) if owner.text is not None else 1,
+                            ),
+                        )
+                    ),
                     symbol=registry_path,
                     evidence=evidence,
                     confidence="high",

@@ -38,8 +38,13 @@ from .audit_primitives import (
     require_string,
     require_string_tuple,
 )
+from .candidate_anchor import (
+    Candidate,
+    CandidateAnchor,
+    candidate_object_format_errors,
+)
 from .git_provenance import GitExecutableProvenance
-from .rules import RULE_PACK_VERSION, RULES_BY_ID, rule_pack_digest
+from .rules import RULE_PACK_VERSION, rule_pack_digest
 
 __all__ = (
     "AUDIT_DOMAINS",
@@ -48,6 +53,8 @@ __all__ = (
     "SCANNER_VERSION",
     "SCHEMA_VERSION",
     "AdapterScope",
+    "Candidate",
+    "CandidateAnchor",
     "Category",
     "Confidence",
     "Decision",
@@ -59,6 +66,28 @@ __all__ = (
     "require_mapping",
     "require_string",
     "require_string_tuple",
+)
+
+_REPORT_FIELDS = frozenset(
+    {
+        "schema_version",
+        "scanner_version",
+        "rule_pack_version",
+        "rule_pack_digest",
+        "repository_root",
+        "head",
+        "head_tree",
+        "git_object_format",
+        "branch",
+        "tracked_content_digest",
+        "dirty_paths",
+        "tracked_file_count",
+        "git_provenance",
+        "policy",
+        "policy_digest",
+        "candidates",
+        "report_digest",
+    }
 )
 
 
@@ -296,112 +325,6 @@ class AuditPolicy:
 
 
 @dataclass(frozen=True)
-class Candidate:
-    """One static signal that requires evidence review.
-
-    The identifier binds the category, versioned rule, repository-relative
-    location, optional symbol, bounded evidence, non-verdict confidence hint,
-    rationale, and concrete reviewer procedure.
-    """
-
-    candidate_id: str
-    category: Category
-    rule_id: str
-    path: str
-    line: int
-    symbol: str
-    evidence: str
-    confidence: Confidence
-    rationale: str
-    verification: str
-
-    @classmethod
-    def build(
-        cls,
-        *,
-        category: Category,
-        rule_id: str,
-        path: str,
-        line: int,
-        symbol: str,
-        evidence: str,
-        confidence: Confidence,
-        rationale: str,
-        verification: str,
-    ) -> Candidate:
-        """Build a candidate with a content-derived identifier."""
-        fields = {
-            "category": category,
-            "rule_id": rule_id,
-            "path": path,
-            "line": line,
-            "symbol": symbol,
-            "evidence": evidence.strip(),
-            "confidence": confidence,
-            "rationale": rationale,
-            "verification": verification,
-        }
-        definition = RULES_BY_ID.get(rule_id)
-        if definition is None:
-            raise ValueError(f"unregistered audit rule: {rule_id}")
-        if definition.category != category:
-            raise ValueError(f"audit rule {rule_id} does not belong to {category}")
-        return cls(
-            candidate_id=_sha256(fields),
-            category=category,
-            rule_id=rule_id,
-            path=path,
-            line=line,
-            symbol=symbol,
-            evidence=evidence.strip(),
-            confidence=confidence,
-            rationale=rationale,
-            verification=verification,
-        )
-
-    def to_dict(self) -> dict[str, object]:
-        """Serialise the candidate."""
-        return {
-            "candidate_id": self.candidate_id,
-            "category": self.category,
-            "rule_id": self.rule_id,
-            "path": self.path,
-            "line": self.line,
-            "symbol": self.symbol,
-            "evidence": self.evidence,
-            "confidence": self.confidence,
-            "rationale": self.rationale,
-            "verification": self.verification,
-        }
-
-    @classmethod
-    def from_dict(cls, value: object) -> Candidate:
-        """Parse a candidate and verify its content-derived identifier."""
-        data = _mapping(value, "candidate")
-        category = _string(data.get("category"), "candidate.category")
-        confidence = _string(data.get("confidence"), "candidate.confidence")
-        if category not in {"test-authenticity", "architecture", "godfile", "governance"}:
-            raise ValueError("candidate.category is unsupported")
-        if confidence not in {"low", "medium", "high"}:
-            raise ValueError("candidate.confidence is unsupported")
-        candidate = cls.build(
-            category=cast(Category, category),
-            rule_id=_string(data.get("rule_id"), "candidate.rule_id"),
-            path=_string(data.get("path"), "candidate.path"),
-            line=_integer(data.get("line"), "candidate.line", minimum=1),
-            symbol=_string(data.get("symbol", ""), "candidate.symbol", allow_empty=True),
-            evidence=_string(data.get("evidence"), "candidate.evidence"),
-            confidence=cast(Confidence, confidence),
-            rationale=_string(data.get("rationale"), "candidate.rationale"),
-            verification=_string(data.get("verification"), "candidate.verification"),
-        )
-        recorded_id = _string(data.get("candidate_id"), "candidate.candidate_id")
-        if candidate.candidate_id != recorded_id:
-            raise ValueError("candidate identifier does not match its content")
-        return candidate
-
-
-@dataclass(frozen=True)
 class AuditReport:
     """Deterministic candidate report for one exact Git tree."""
 
@@ -409,6 +332,7 @@ class AuditReport:
     repository_root: str
     head: str
     head_tree: str
+    git_object_format: str
     branch: str
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
@@ -428,6 +352,7 @@ class AuditReport:
         repository_root: str,
         head: str,
         head_tree: str,
+        git_object_format: str,
         branch: str,
         tracked_content_digest: str,
         dirty_paths: tuple[str, ...],
@@ -437,10 +362,26 @@ class AuditReport:
         candidates: tuple[Candidate, ...],
     ) -> AuditReport:
         """Build a sorted report and compute its integrity digest."""
+        if git_object_format not in {"sha1", "sha256"}:
+            raise ValueError("report.git_object_format is unsupported")
+        object_length = 40 if git_object_format == "sha1" else 64
+        if len(head) != object_length or len(head_tree) != object_length:
+            raise ValueError("report Git identities contradict git_object_format")
+        anchor_errors = candidate_object_format_errors(git_object_format, candidates)
+        if anchor_errors:
+            raise ValueError("; ".join(anchor_errors))
         ordered = tuple(
             sorted(
                 candidates,
-                key=lambda item: (item.category, item.path, item.line, item.rule_id),
+                key=lambda item: (
+                    item.category,
+                    item.path,
+                    item.anchor.line_start,
+                    item.anchor.line_end,
+                    item.anchor.kind,
+                    item.rule_id,
+                    item.candidate_id,
+                ),
             )
         )
         body = {
@@ -451,6 +392,7 @@ class AuditReport:
             "repository_root": repository_root,
             "head": head,
             "head_tree": head_tree,
+            "git_object_format": git_object_format,
             "branch": branch,
             "tracked_content_digest": tracked_content_digest,
             "dirty_paths": sorted(dirty_paths),
@@ -465,6 +407,7 @@ class AuditReport:
             repository_root=repository_root,
             head=head,
             head_tree=head_tree,
+            git_object_format=git_object_format,
             branch=branch,
             tracked_content_digest=tracked_content_digest,
             dirty_paths=tuple(sorted(dirty_paths)),
@@ -488,6 +431,7 @@ class AuditReport:
             "repository_root": self.repository_root,
             "head": self.head,
             "head_tree": self.head_tree,
+            "git_object_format": self.git_object_format,
             "branch": self.branch,
             "tracked_content_digest": self.tracked_content_digest,
             "dirty_paths": list(self.dirty_paths),
@@ -507,6 +451,8 @@ class AuditReport:
     def from_dict(cls, value: object) -> AuditReport:
         """Parse a report and verify its digest and record identifiers."""
         data = _mapping(value, "report")
+        if frozenset(data) != _REPORT_FIELDS:
+            raise ValueError("report fields do not match the schema")
         if data.get("schema_version") != SCHEMA_VERSION:
             raise ValueError("unsupported report schema version")
         if data.get("scanner_version") != SCANNER_VERSION:
@@ -522,6 +468,10 @@ class AuditReport:
             repository_root=_string(data.get("repository_root"), "report.repository_root"),
             head=_string(data.get("head"), "report.head"),
             head_tree=_string(data.get("head_tree"), "report.head_tree"),
+            git_object_format=_string(
+                data.get("git_object_format"),
+                "report.git_object_format",
+            ),
             branch=_string(data.get("branch"), "report.branch"),
             tracked_content_digest=_string(
                 data.get("tracked_content_digest"),

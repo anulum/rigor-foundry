@@ -13,11 +13,11 @@ import hashlib
 import json
 from typing import Literal, cast
 
-REPORT_SCHEMA_VERSION = "1.1"
+REPORT_SCHEMA_VERSION = "1.2"
 REVIEW_SCHEMA_VERSION = "1.0"
 SCHEMA_VERSION = REPORT_SCHEMA_VERSION
 POLICY_SCHEMA_VERSION = "1.0"
-SCANNER_VERSION = "0.1.0"
+SCANNER_VERSION = "0.2.0"
 
 Category = Literal["test-authenticity", "architecture", "godfile", "governance"]
 Confidence = Literal["low", "medium", "high"]

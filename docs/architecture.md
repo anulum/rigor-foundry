@@ -5,9 +5,10 @@ generator.
 
 1. A fixed-root Git trust policy selects one non-symlink executable and binds
    its path, root, version, executable digest, and policy digest.
-2. Git inventory freezes the exact tracked paths, objects, tree, and dirty
-   state with that continuously revalidated executable.
-3. Portable scanners and declared native adapters emit review candidates.
+2. Git inventory freezes the exact tracked paths, objects, tree, object format,
+   and dirty state with that continuously revalidated executable.
+3. Portable scanners emit candidates anchored to the exact scanned blob or
+   repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
 5. Desired-state profiles resolve adopter rules and typed project variables.
 6. Gap records become dependency-ordered remediation plans only after evidence
@@ -37,6 +38,27 @@ guard, owner, public regressions, revisit triggers, and a maximum 90-day review
 window. Preregistered negative searches prevent those residuals from becoming
 an excuse to restore private-helper tests or monkeypatched production
 internals. Repository audit and CI enforce the contract.
+
+## Candidate evidence boundary
+
+Tracked-blob anchors contain the repository-relative path, inclusive line span,
+exact Git blob identity of the bytes inspected, and their SHA-256. For dirty
+tracked files, Git's canonical blob framing is computed over the worktree bytes
+without writing an object; the stage-zero index identity is not substituted.
+This applies to text, binary, non-UTF-8, symlink, and oversized tracked content.
+
+Repository-tree anchors contain a repository-relative locus, fixed state span
+`1:1`, exact HEAD tree identity, and the complete tracked-content SHA-256. They
+are used for missing policy, missing registries, missing test owners, gitlinks,
+and other absence or repository-wide findings. They never claim that an absent
+path has a blob.
+
+Candidate identifiers bind the complete anchor. Report schema 1.2 also records
+the Git object format, so SHA-1 and SHA-256 repositories cannot be
+reinterpreted. Every anchor is checked against the same inventory before report
+construction. Human-readable excerpts remain separate, whitespace-normalised,
+and limited to 512 UTF-8 bytes; large member sets carry a full count and
+SHA-256 with a bounded deterministic prefix.
 
 ## Isolation boundary
 

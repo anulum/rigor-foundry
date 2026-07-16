@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .candidate_anchor import RepositoryTreeAnchor
 from .git_inventory import is_git_ignored
 from .git_provenance import GitExecutableProvenance, GitTrustPolicy
 from .internal_storage import (
@@ -186,6 +187,17 @@ def render_todo_entry(report: AuditReport, review: ReviewRecord) -> str:
     if review.decision != "valid":
         raise ValueError("only reviewed valid findings may be promoted")
     candidate = _candidate(report, review.candidate_id)
+    anchor = candidate.anchor
+    location = (
+        f"{anchor.path}:{anchor.line_start}"
+        if anchor.line_start == anchor.line_end
+        else f"{anchor.path}:{anchor.line_start}-{anchor.line_end}"
+    )
+    anchor_identity = (
+        f"tree `{anchor.tree_oid}`; tracked content SHA-256 `{anchor.tracked_content_sha256}`"
+        if isinstance(anchor, RepositoryTreeAnchor)
+        else f"blob `{anchor.blob_oid}`; content SHA-256 `{anchor.content_sha256}`"
+    )
     dependencies = ", ".join(f"`{_markdown_text(item)}`" for item in review.dependencies)
     if not dependencies:
         dependencies = "none recorded"
@@ -198,8 +210,9 @@ def render_todo_entry(report: AuditReport, review: ReviewRecord) -> str:
         f"- [ ] Verified audit finding `{review.candidate_id}` from report "
         f"`{report.report_digest}` at HEAD `{report.head}`.\n"
         f"  - Rule/category: `{candidate.rule_id}` / `{candidate.category}`.\n"
-        f"  - Location: `{candidate.path}:{candidate.line}`"
+        f"  - Location: `{location}` ({anchor.kind})"
         f"{f' (`{_markdown_text(candidate.symbol)}`)' if candidate.symbol else ''}.\n"
+        f"  - Machine anchor: {anchor_identity}.\n"
         f"  - Scanner evidence: {_markdown_text(candidate.evidence)}\n"
         f"  - Reviewer: `{_markdown_text(review.reviewer)}` at "
         f"`{_markdown_text(review.reviewed_at)}`.\n"

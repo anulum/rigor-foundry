@@ -14,7 +14,7 @@ from dataclasses import replace
 from typing import cast
 
 import pytest
-from repository_audit_git_repository import sample_git_provenance
+from repository_audit_git_repository import sample_git_provenance, sample_tree_anchor
 
 from rigor_foundry.model_primitives import WorkEvidence
 from rigor_foundry.models import (
@@ -40,8 +40,7 @@ def source_records() -> tuple[AuditReport, ReviewRecord]:
     candidate = Candidate.build(
         category="architecture",
         rule_id="AR001-first-party-import-cycle",
-        path="src/rigor_foundry/a.py",
-        line=10,
+        anchor=sample_tree_anchor("src/rigor_foundry/a.py"),
         symbol="a -> b -> a",
         evidence="first-party import graph contains a cycle",
         confidence="high",
@@ -58,6 +57,7 @@ def source_records() -> tuple[AuditReport, ReviewRecord]:
         repository_root="/workspace/rigor-foundry",
         head=HEAD,
         head_tree=TREE,
+        git_object_format="sha1",
         branch="main",
         tracked_content_digest=CONTENT,
         dirty_paths=("src/rigor_foundry/a.py",),

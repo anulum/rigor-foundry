@@ -25,9 +25,10 @@ Roadmap items are acceptance-gated; dates and versions are not release promises.
   semantics depend on ignored or untracked reality must remain
   `needs-evidence` when that extension is absent; tracked-only absence must
   never become a failure verdict.
-- Replace prose-only candidate evidence with machine-verifiable anchors that
-  bind repository path, line span, and blob digest while retaining a bounded
-  human-readable excerpt.
+- Completed: replace prose-only candidate evidence with machine-verifiable
+  tracked-blob or repository-tree anchors that bind repository path, inclusive
+  line span, exact object identity, and content digest while retaining a
+  bounded human-readable excerpt.
 - Represent classified coverage residuals explicitly: structurally unreachable
   branches, retained fail-closed guards, and preregistered negative searches
   require different evidence and must not incentivise guard deletion.

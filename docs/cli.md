@@ -21,6 +21,14 @@ requires an explicit containing root. Reports expose the selected Git version,
 executable digest, and trust-policy digest; JSON reports additionally retain
 the resolved path, selected root, and provenance identity digest.
 
+JSON report schema 1.2 records `git_object_format` and a strict discriminated
+anchor for every candidate. `tracked-blob` anchors include path, inclusive
+`line_start`/`line_end`, exact scanned `blob_oid`, and `content_sha256`.
+`repository-tree` anchors include the path locus, fixed `1:1` state span,
+`tree_oid`, and `tracked_content_sha256`. Markdown output renders the same
+location, anchor kind, object identity, and digest beside the bounded evidence
+excerpt.
+
 ## Evidence review
 
 `review-template` creates explicit review records. `validate-review` verifies
@@ -41,6 +49,10 @@ option-surface digest, and derived provenance identity.
 `campaign-create`, `campaign-run`, and `campaign-compare` freeze independent
 inputs, retain attestations, and record disagreements rather than averaging
 them away.
+
+Campaign schema 1.4 freezes the repository Git object format in addition to the
+report input projection. Runs from a different object format fail as input
+divergence.
 
 `campaign-run` uses the same native consent flag and sandbox boundary. A run
 without declared native adapters remains passive and does not require consent.

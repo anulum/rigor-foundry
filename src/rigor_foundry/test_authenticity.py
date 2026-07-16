@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
 
@@ -201,8 +202,7 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
             Candidate.build(
                 category="test-authenticity",
                 rule_id=rule.rule_id,
-                path=item.path,
-                line=line,
+                anchor=TrackedBlobAnchor.build(item, line_start=line),
                 symbol=f"occurrences={len(matches)}",
                 evidence=_line_evidence(item, line, occurrences=len(matches)),
                 confidence=rule.confidence,
@@ -215,8 +215,7 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
             Candidate.build(
                 category="test-authenticity",
                 rule_id="TA008-coverage-bucket-name",
-                path=item.path,
-                line=1,
+                anchor=TrackedBlobAnchor.build(item, line_start=1),
                 symbol=PurePosixPath(item.path).stem,
                 evidence=PurePosixPath(item.path).name,
                 confidence="high",
@@ -320,8 +319,7 @@ def _python_candidates(
             Candidate.build(
                 category="test-authenticity",
                 rule_id="TA009-unparseable-python-test",
-                path=item.path,
-                line=line,
+                anchor=TrackedBlobAnchor.build(item, line_start=line),
                 symbol="",
                 evidence=str(exc.msg),
                 confidence="high",
@@ -337,8 +335,11 @@ def _python_candidates(
             Candidate.build(
                 category="test-authenticity",
                 rule_id="TA010-smoke-only-test",
-                path=item.path,
-                line=function.lineno,
+                anchor=TrackedBlobAnchor.build(
+                    item,
+                    line_start=function.lineno,
+                    line_end=function.end_lineno or function.lineno,
+                ),
                 symbol=function.name,
                 evidence=_line_evidence(item, function.lineno),
                 confidence="medium",
@@ -356,8 +357,7 @@ def _python_candidates(
             Candidate.build(
                 category="test-authenticity",
                 rule_id="TA011-private-production-surface",
-                path=item.path,
-                line=line,
+                anchor=TrackedBlobAnchor.build(item, line_start=line),
                 symbol=f"{symbol}; occurrences={len(private_nodes)}",
                 evidence=_line_evidence(item, line, occurrences=len(private_nodes)),
                 confidence="high",

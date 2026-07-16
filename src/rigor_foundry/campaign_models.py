@@ -31,7 +31,7 @@ from .models import (
 )
 from .sandbox_provenance import BubblewrapProvenance
 
-CAMPAIGN_SCHEMA_VERSION = "1.3"
+CAMPAIGN_SCHEMA_VERSION = "1.4"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 _TOOLCHAIN_FIELDS = frozenset(
@@ -52,6 +52,7 @@ _CAMPAIGN_FIELDS = frozenset(
         "policy_path",
         "head",
         "head_tree",
+        "git_object_format",
         "branch",
         "tracked_content_digest",
         "dirty_paths",
@@ -99,6 +100,23 @@ def _identifier(value: object, field: str) -> str:
     result = require_string(value, field)
     if _IDENTIFIER.fullmatch(result) is None:
         raise ValueError(f"{field} must be a portable identifier")
+    return result
+
+
+def _git_object_format(value: object) -> str:
+    """Return one supported Git object format."""
+    result = require_string(value, "git_object_format")
+    if result not in {"sha1", "sha256"}:
+        raise ValueError("git_object_format is unsupported")
+    return result
+
+
+def _git_identity(value: object, field: str, object_format: str) -> str:
+    """Return one Git identity matching the declared object format."""
+    result = require_string(value, field)
+    expected_length = 40 if object_format == "sha1" else 64
+    if len(result) != expected_length or re.fullmatch(r"[0-9a-f]+", result) is None:
+        raise ValueError(f"{field} contradicts git_object_format")
     return result
 
 
@@ -215,6 +233,7 @@ class AuditCampaign:
     policy_path: str
     head: str
     head_tree: str
+    git_object_format: str
     branch: str
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
@@ -253,6 +272,7 @@ class AuditCampaign:
             "policy_path": _relative_path(policy_path, "policy_path"),
             "head": report.head,
             "head_tree": report.head_tree,
+            "git_object_format": report.git_object_format,
             "branch": report.branch,
             "tracked_content_digest": report.tracked_content_digest,
             "dirty_paths": list(report.dirty_paths),
@@ -288,6 +308,7 @@ class AuditCampaign:
             policy_path=cast(str, fields["policy_path"]),
             head=cast(str, fields["head"]),
             head_tree=cast(str, fields["head_tree"]),
+            git_object_format=cast(str, fields["git_object_format"]),
             branch=cast(str, fields["branch"]),
             tracked_content_digest=cast(str, fields["tracked_content_digest"]),
             dirty_paths=tuple(cast(list[str], fields["dirty_paths"])),
@@ -315,6 +336,7 @@ class AuditCampaign:
             "policy_path": self.policy_path,
             "head": self.head,
             "head_tree": self.head_tree,
+            "git_object_format": self.git_object_format,
             "branch": self.branch,
             "tracked_content_digest": self.tracked_content_digest,
             "dirty_paths": list(self.dirty_paths),
@@ -340,6 +362,7 @@ class AuditCampaign:
             raise ValueError("audit campaign fields do not match schema")
         if data.get("schema_version") != CAMPAIGN_SCHEMA_VERSION:
             raise ValueError("unsupported audit campaign schema version")
+        object_format = _git_object_format(data.get("git_object_format"))
         fields: dict[str, object] = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "campaign_id": _identifier(data.get("campaign_id"), "campaign_id"),
@@ -349,8 +372,9 @@ class AuditCampaign:
                 "repository_root",
             ),
             "policy_path": _relative_path(data.get("policy_path"), "policy_path"),
-            "head": require_string(data.get("head"), "head"),
-            "head_tree": require_string(data.get("head_tree"), "head_tree"),
+            "head": _git_identity(data.get("head"), "head", object_format),
+            "head_tree": _git_identity(data.get("head_tree"), "head_tree", object_format),
+            "git_object_format": object_format,
             "branch": require_string(data.get("branch"), "branch"),
             "tracked_content_digest": require_string(
                 data.get("tracked_content_digest"),

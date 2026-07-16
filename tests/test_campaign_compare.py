@@ -24,6 +24,7 @@ from rigor_foundry.campaign_models import (
 )
 from rigor_foundry.campaign_store import StoredAuditRun, load_runs
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
+from rigor_foundry.candidate_anchor import RepositoryTreeAnchor
 from rigor_foundry.models import (
     AdapterSpec,
     AuditReport,
@@ -80,6 +81,7 @@ def _report_with(
         repository_root=report.repository_root,
         head=head or report.head,
         head_tree=report.head_tree,
+        git_object_format=report.git_object_format,
         branch=report.branch,
         tracked_content_digest=report.tracked_content_digest,
         dirty_paths=report.dirty_paths,
@@ -91,6 +93,17 @@ def _report_with(
             else replace(report.policy, native_audits=native_audits)
         ),
         candidates=report.candidates if candidates is None else candidates,
+    )
+
+
+def _tree_anchor(report: AuditReport, path: str) -> RepositoryTreeAnchor:
+    """Return an exact state anchor for a rebuilt campaign report."""
+    return RepositoryTreeAnchor(
+        path=path,
+        line_start=1,
+        line_end=1,
+        tree_oid=report.head_tree,
+        tracked_content_sha256=report.tracked_content_digest,
     )
 
 
@@ -283,8 +296,7 @@ def test_comparison_distinguishes_candidate_and_report_digest_changes(tmp_path: 
     added = Candidate.build(
         category="architecture",
         rule_id="AR003-broad-optional-import-boundary",
-        path="src/pkg/optional.py",
-        line=2,
+        anchor=_tree_anchor(baseline.report, "src/pkg/optional.py"),
         symbol="pkg.optional",
         evidence="optional import catches a broad exception",
         confidence="high",
@@ -459,8 +471,7 @@ def test_comparison_reports_review_decision_and_priority_divergence(tmp_path: Pa
     candidate = Candidate.build(
         category="architecture",
         rule_id="AR003-broad-optional-import-boundary",
-        path="src/pkg/optional.py",
-        line=2,
+        anchor=_tree_anchor(runs[0].report, "src/pkg/optional.py"),
         symbol="pkg.optional",
         evidence="optional import catches a broad exception",
         confidence="high",

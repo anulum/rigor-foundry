@@ -52,6 +52,7 @@ class TrackedFile:
     content_digest: str
     git_mode: str
     object_id: str
+    scanned_blob_id: str | None
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,7 @@ class GitInventory:
     root: Path
     head: str
     head_tree: str
+    object_format: str
     branch: str
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
@@ -185,7 +187,32 @@ def _dirty_paths(root: Path, runner: GitRunner) -> tuple[str, ...]:
     return tuple(sorted(paths))
 
 
-def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
+def _blob_id(payload: bytes, object_format: str) -> str:
+    """Return the Git blob identity for exact bytes without writing an object."""
+    digest = hashlib.new(object_format)
+    digest.update(f"blob {len(payload)}\0".encode())
+    digest.update(payload)
+    return digest.hexdigest()
+
+
+def _stream_blob_id(path: Path, byte_size: int, object_format: str) -> str:
+    """Return the Git blob identity for a large file without loading it."""
+    digest = hashlib.new(object_format)
+    digest.update(f"blob {byte_size}\0".encode())
+    try:
+        with path.open("rb") as handle:
+            while chunk := handle.read(1024 * 1024):
+                digest.update(chunk)
+    except OSError as exc:
+        raise RuntimeError(f"cannot hash tracked path as a Git blob: {path}") from exc
+    return digest.hexdigest()
+
+
+def _read_tracked_file(
+    root: Path,
+    entry: TrackedIndexEntry,
+    object_format: str,
+) -> TrackedFile:
     """Read one tracked path without following it outside the worktree."""
     relative = entry.path
     relative_path = Path(relative)
@@ -203,6 +230,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
             content_digest=hashlib.sha256(object_bytes).hexdigest(),
             git_mode=entry.git_mode,
             object_id=entry.object_id,
+            scanned_blob_id=None,
         )
     if entry.git_mode == "120000":
         if not absolute.is_symlink():
@@ -221,6 +249,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
             content_digest=hashlib.sha256(target_bytes).hexdigest(),
             git_mode=entry.git_mode,
             object_id=entry.object_id,
+            scanned_blob_id=_blob_id(target_bytes, object_format),
         )
     if not absolute.exists():
         return TrackedFile(
@@ -232,6 +261,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
             content_digest=hashlib.sha256(b"").hexdigest(),
             git_mode=entry.git_mode,
             object_id=entry.object_id,
+            scanned_blob_id=None,
         )
     if not absolute.is_file():
         return TrackedFile(
@@ -243,6 +273,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
             content_digest=hashlib.sha256(b"").hexdigest(),
             git_mode=entry.git_mode,
             object_id=entry.object_id,
+            scanned_blob_id=None,
         )
     try:
         byte_size = absolute.stat().st_size
@@ -256,6 +287,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
                 content_digest=_stream_digest(absolute),
                 git_mode=entry.git_mode,
                 object_id=entry.object_id,
+                scanned_blob_id=_stream_blob_id(absolute, byte_size, object_format),
             )
         payload = absolute.read_bytes()
     except OSError as exc:
@@ -280,6 +312,7 @@ def _read_tracked_file(root: Path, entry: TrackedIndexEntry) -> TrackedFile:
         content_digest=hashlib.sha256(payload).hexdigest(),
         git_mode=entry.git_mode,
         object_id=entry.object_id,
+        scanned_blob_id=_blob_id(payload, object_format),
     )
 
 
@@ -305,6 +338,7 @@ def _tracked_content_digest(files: tuple[TrackedFile, ...]) -> str:
             "content_digest": item.content_digest,
             "git_mode": item.git_mode,
             "object_id": item.object_id,
+            "scanned_blob_id": item.scanned_blob_id,
         }
         for item in files
     ]
@@ -396,16 +430,23 @@ def load_git_inventory(
         _run_git(runner, root, "rev-parse", "HEAD^{tree}"),
         "HEAD tree",
     )
+    object_format = _decode_git_field(
+        _run_git(runner, root, "rev-parse", "--show-object-format"),
+        "object format",
+    )
+    if object_format not in {"sha1", "sha256"}:
+        raise RuntimeError(f"Git repository uses unsupported object format: {object_format}")
     branch = _decode_git_field(
         _run_git(runner, root, "rev-parse", "--abbrev-ref", "HEAD"),
         "branch",
     )
     entries = _tracked_entries(root, runner)
-    files = tuple(_read_tracked_file(root, entry) for entry in entries)
+    files = tuple(_read_tracked_file(root, entry, object_format) for entry in entries)
     return GitInventory(
         root=root,
         head=head,
         head_tree=head_tree,
+        object_format=object_format,
         branch=branch,
         tracked_content_digest=_tracked_content_digest(files),
         dirty_paths=_dirty_paths(root, runner),

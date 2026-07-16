@@ -13,6 +13,11 @@ import posixpath
 import re
 from pathlib import PurePosixPath
 
+from .candidate_anchor import (
+    RepositoryTreeAnchor,
+    TrackedBlobAnchor,
+    bounded_candidate_evidence,
+)
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate
 
@@ -160,15 +165,16 @@ def _components(graph: dict[str, tuple[str, ...]]) -> tuple[tuple[str, ...], ...
 def _cycle_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
     """Return non-Python relative dependency cycle candidates."""
     candidates: list[Candidate] = []
+    by_path = {item.path: item for item in inventory.files}
     for component in _components(_dependency_graph(inventory)):
+        owner = by_path[component[0]]
         candidates.append(
             Candidate.build(
                 category="architecture",
                 rule_id="AR007-relative-dependency-cycle",
-                path=component[0],
-                line=1,
+                anchor=TrackedBlobAnchor.build(owner, line_start=1),
                 symbol=" -> ".join((*component, component[0])),
-                evidence=", ".join(component),
+                evidence=bounded_candidate_evidence("cycle members", component),
                 confidence="medium",
                 rationale="Relative dependencies form a non-trivial cross-file cycle.",
                 verification=(
@@ -218,8 +224,7 @@ def _ownership_candidates(
             Candidate.build(
                 category="architecture",
                 rule_id="AR008-no-polyglot-test-owner",
-                path=item.path,
-                line=1,
+                anchor=RepositoryTreeAnchor.build(inventory, path=item.path),
                 symbol=pure.stem,
                 evidence=f"no tracked non-Python test stem matches {pure.stem}",
                 confidence="low",

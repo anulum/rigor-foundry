@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from repository_audit_git_repository import sample_git_provenance
+from repository_audit_git_repository import sample_git_provenance, sample_tree_anchor
 from signing_fixtures import trust_store
 from test_effective_profile import profile as project_profile
 from test_effective_profile import standard_pack
@@ -83,6 +83,7 @@ def _report(
         repository_root=str(root),
         head=source.head,
         head_tree=source.head_tree,
+        git_object_format=source.git_object_format,
         branch=source.branch,
         tracked_content_digest=tracked_content_digest,
         dirty_paths=source.dirty_paths,
@@ -546,8 +547,7 @@ def test_report_review_campaign_and_task_mutations_respect_stable_nonedges(
     added = Candidate.build(
         category="architecture",
         rule_id="AR002-wildcard-import-boundary",
-        path="src/rigor_foundry/public.py",
-        line=2,
+        anchor=sample_tree_anchor("src/rigor_foundry/public.py"),
         symbol="rigor_foundry.public",
         evidence="wildcard import crosses the public boundary",
         confidence="high",

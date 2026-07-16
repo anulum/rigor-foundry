@@ -27,8 +27,11 @@ remediation inputs without treating static heuristics as defect verdicts.
 - `scan` is read-only and inspects only the exact Git-tracked inventory.
 - Findings remain candidates until reviewed against the production surface.
 - Missing evidence is explicit; it never resolves to pass.
-- Reports bind repository HEAD, tree, tracked-content, policy, rule-pack, and
-  exact Git executable/version provenance.
+- Reports bind repository HEAD, tree, Git object format, tracked-content,
+  policy, rule-pack, and exact Git executable/version provenance.
+- Every candidate binds either the exact scanned blob and inclusive line span
+  or the exact repository tree and tracked-content digest for an absence or
+  repository-wide search. Human-readable evidence is bounded.
 - Promotion rejects stale reports, stale policies, changed Git provenance,
   duplicate findings, and mismatched repositories.
 - Pack and reviewer signatures use distinct versioned Ed25519 message domains;
@@ -118,8 +121,9 @@ these native surfaces.
 | Surface | Modules | Responsibility |
 | --- | --- | --- |
 | Git trust | `git_provenance` | Fixed-root executable selection, supported versions, replacement detection, and content-addressed provenance. |
-| Inventory | `git_inventory` | Exact tracked paths, content kinds, and digests through the trusted Git runner. |
-| Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review. |
+| Inventory | `git_inventory` | Exact tracked paths, content kinds, scanned blob identities, and digests through the trusted Git runner. |
+| Candidate anchors | `candidate_anchor` | Strict blob/tree anchor schemas, inclusive line spans, bounded excerpts, and anchor verification. |
+| Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review, each bound to a verified anchor. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |

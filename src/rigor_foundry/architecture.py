@@ -15,6 +15,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+from .candidate_anchor import (
+    RepositoryTreeAnchor,
+    TrackedBlobAnchor,
+    bounded_candidate_evidence,
+)
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate
 
@@ -25,6 +30,7 @@ class _Definition:
 
     name: str
     line: int
+    end_line: int
     body_digest: str | None
 
 
@@ -206,6 +212,7 @@ def _python_modules(
                     _Definition(
                         name=node.name,
                         line=node.lineno,
+                        end_line=node.end_lineno or node.lineno,
                         body_digest=_definition_digest(node),
                     )
                     for node in tree.body
@@ -272,10 +279,9 @@ def _cycle_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate, ..
             Candidate.build(
                 category="architecture",
                 rule_id="AR001-first-party-import-cycle",
-                path=owner.file.path,
-                line=1,
+                anchor=TrackedBlobAnchor.build(owner.file, line_start=1),
                 symbol=" -> ".join((*component, component[0])),
-                evidence=", ".join(component),
+                evidence=bounded_candidate_evidence("cycle members", component),
                 confidence="high",
                 rationale="A first-party import cycle can invert ownership and obscure initialisation.",
                 verification=(
@@ -296,8 +302,7 @@ def _wildcard_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate,
                 Candidate.build(
                     category="architecture",
                     rule_id="AR002-wildcard-import-boundary",
-                    path=module.file.path,
-                    line=line,
+                    anchor=TrackedBlobAnchor.build(module.file, line_start=line),
                     symbol=module.name,
                     evidence=evidence,
                     confidence="medium",
@@ -321,8 +326,7 @@ def _broad_import_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candid
                 Candidate.build(
                     category="architecture",
                     rule_id="AR003-broad-optional-import-boundary",
-                    path=module.file.path,
-                    line=line,
+                    anchor=TrackedBlobAnchor.build(module.file, line_start=line),
                     symbol=module.name,
                     evidence="import guarded by bare Exception/BaseException handler",
                     confidence="high",
@@ -351,8 +355,11 @@ def _facade_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate, .
             Candidate.build(
                 category="architecture",
                 rule_id="AR004-executable-facade",
-                path=module.file.path,
-                line=first.line,
+                anchor=TrackedBlobAnchor.build(
+                    module.file,
+                    line_start=first.line,
+                    line_end=first.end_line,
+                ),
                 symbol=f"{module.name}; functions={len(module.definitions)}",
                 evidence=first.name,
                 confidence="medium",
@@ -408,8 +415,7 @@ def _ownership_candidates(
             Candidate.build(
                 category="architecture",
                 rule_id="AR005-no-module-named-test-owner",
-                path=module.file.path,
-                line=1,
+                anchor=RepositoryTreeAnchor.build(inventory, path=module.file.path),
                 symbol=module.name,
                 evidence=f"no tracked test stem matches {pure.stem}",
                 confidence="low",
@@ -447,10 +453,16 @@ def _duplicate_definition_candidates(
             Candidate.build(
                 category="architecture",
                 rule_id="AR006-duplicate-python-implementation",
-                path=module.file.path,
-                line=definition.line,
+                anchor=TrackedBlobAnchor.build(
+                    module.file,
+                    line_start=definition.line,
+                    line_end=definition.end_line,
+                ),
                 symbol=definition.name,
-                evidence=f"body={digest[:16]}; owners={', '.join(locations)}",
+                evidence=bounded_candidate_evidence(
+                    f"duplicate body {digest[:16]} owners",
+                    locations,
+                ),
                 confidence="medium",
                 rationale="Multiple first-party functions own an exact non-trivial implementation body.",
                 verification=(

@@ -23,6 +23,14 @@ mode, and retains the report, Markdown rendering, and gate record for 30 days.
 Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
+Candidate anchors have a dedicated real-repository contract. The focused owner
+tests cover clean, unstaged, and staged-plus-unstaged bytes; text, binary,
+non-UTF-8, symlink, oversized, missing, and gitlink paths; SHA-1 and SHA-256
+repositories; alternate policy discovery; inclusive AST spans; negative-search
+tree anchors; bounded large-member evidence; strict schema parsing; report
+round trips; and anchor drift rejection. The candidate-anchor module must
+retain at least 95% branch-aware isolated coverage.
+
 The Git provenance owner tests use real executable files and temporary Git
 repositories. They cover fixed-root selection under hostile `PATH`, symlinked
 roots and executables, post-capture replacement, unsupported versions, durable

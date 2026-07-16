@@ -14,7 +14,11 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from repository_audit_git_repository import GitRepository, sample_git_provenance
+from repository_audit_git_repository import (
+    GitRepository,
+    sample_git_provenance,
+    sample_tree_anchor,
+)
 
 from rigor_foundry.internal_storage import exclusive_lock
 from rigor_foundry.models import AuditPolicy, AuditReport, Candidate, ReviewRecord
@@ -32,8 +36,7 @@ def _report(repository: Path) -> AuditReport:
     item = Candidate.build(
         category="architecture",
         rule_id="AR003-broad-optional-import-boundary",
-        path="src/pkg/optional.py",
-        line=2,
+        anchor=sample_tree_anchor("src/pkg/optional.py"),
         symbol="pkg.optional",
         evidence="import guarded by broad exception",
         confidence="high",
@@ -44,6 +47,7 @@ def _report(repository: Path) -> AuditReport:
         repository_root=str(repository),
         head="1" * 40,
         head_tree="2" * 40,
+        git_object_format="sha1",
         branch="main",
         tracked_content_digest="3" * 64,
         dirty_paths=(),
@@ -92,6 +96,9 @@ def test_templates_are_non_promotable_and_valid_review_renders_bounded_todo(
     entry = render_todo_entry(report, review)
     assert review.candidate_id in entry
     assert report.head in entry
+    assert "Machine anchor: tree" in entry
+    assert report.head_tree in entry
+    assert report.tracked_content_digest in entry
     assert "real present/absent/broken import subprocesses pass" in entry
     assert "Narrow optional dependency exception boundary" in entry
 

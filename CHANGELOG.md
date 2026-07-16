@@ -5,6 +5,25 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Every audit candidate now carries a strict machine-verifiable anchor. A
+  tracked-blob anchor binds the exact scanned Git blob, content SHA-256, and
+  inclusive line span; a repository-tree anchor binds absence and
+  repository-wide searches without fabricating a blob identity.
+- Candidate excerpts are limited to 512 UTF-8 bytes. Large deterministic
+  member sets retain their complete count and SHA-256 identity plus a bounded
+  prefix.
+
+### Changed
+
+- Report schema 1.2 and scanner version 0.2.0 require anchored candidates and
+  record the repository Git object format. Campaign schema 1.4 binds that
+  object format into every independent-run input contract.
+- Dirty tracked files are anchored to the exact worktree bytes inspected by
+  the scanner, including binary, non-UTF-8, symlink, and oversized content,
+  rather than to a stale stage-zero index object.
+
 ### Fixed
 
 - Package publication now grants release-asset write access only to the

@@ -17,6 +17,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from rigor_foundry.candidate_anchor import RepositoryTreeAnchor
 from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
 from rigor_foundry.models import AUDIT_DOMAINS
 
@@ -29,6 +30,17 @@ def sample_git_provenance() -> GitExecutableProvenance:
         version="2.43.0",
         executable_digest="4" * 64,
         trust_policy=GitTrustPolicy(trusted_roots=("/usr/bin",)),
+    )
+
+
+def sample_tree_anchor(path: str) -> RepositoryTreeAnchor:
+    """Return a deterministic repository-tree anchor for model tests."""
+    return RepositoryTreeAnchor(
+        path=path,
+        line_start=1,
+        line_end=1,
+        tree_oid="2" * 40,
+        tracked_content_sha256="3" * 64,
     )
 
 
@@ -49,14 +61,19 @@ class GitRepository:
     git: str
 
     @classmethod
-    def create(cls, root: Path) -> GitRepository:
+    def create(cls, root: Path, *, object_format: str = "sha1") -> GitRepository:
         """Initialise a real repository with internal paths ignored."""
         git = shutil.which("git")
         if git is None:
             raise RuntimeError("git is required for repository-audit tests")
         root.mkdir(parents=True)
         repository = cls(root=root, git=str(Path(git).resolve(strict=True)))
-        repository.git_command("init", "--initial-branch=main")
+        arguments = ["init", "--initial-branch=main"]
+        if object_format == "sha256":
+            arguments.append("--object-format=sha256")
+        elif object_format != "sha1":
+            raise ValueError("unsupported test repository object format")
+        repository.git_command(*arguments)
         repository.git_command("config", "user.name", "Repository Audit Tests")
         repository.git_command("config", "user.email", "audit-tests@example.invalid")
         repository.write_text(".gitignore", ".coordination/\n.rigor/\ndocs/internal/\n")

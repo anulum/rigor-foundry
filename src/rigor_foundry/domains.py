@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .candidate_anchor import CandidateAnchor
 from .models import AUDIT_DOMAINS, AuditPolicy, Candidate
 
 _POLICY_PATH = "rigor-foundry-policy.json"
@@ -80,7 +81,10 @@ def audit_domain_coverage(
     return tuple(coverage)
 
 
-def domain_governance_candidates(policy: AuditPolicy) -> tuple[Candidate, ...]:
+def domain_governance_candidates(
+    policy: AuditPolicy,
+    policy_anchor: CandidateAnchor,
+) -> tuple[Candidate, ...]:
     """Return candidates for missing applicability or evidence controls."""
     candidates: list[Candidate] = []
     for coverage in audit_domain_coverage(policy):
@@ -89,8 +93,7 @@ def domain_governance_candidates(policy: AuditPolicy) -> tuple[Candidate, ...]:
                 Candidate.build(
                     category="governance",
                     rule_id="GV003-undeclared-audit-domain",
-                    path=_POLICY_PATH,
-                    line=1,
+                    anchor=policy_anchor,
                     symbol=coverage.domain,
                     evidence=f"mandatory audit domain is undeclared: {coverage.domain}",
                     confidence="high",
@@ -106,8 +109,7 @@ def domain_governance_candidates(policy: AuditPolicy) -> tuple[Candidate, ...]:
                 Candidate.build(
                     category="governance",
                     rule_id="GV004-uncontrolled-required-domain",
-                    path=_POLICY_PATH,
-                    line=1,
+                    anchor=policy_anchor,
                     symbol=coverage.domain,
                     evidence=(
                         f"required domain has no active evidence control: {coverage.domain}"

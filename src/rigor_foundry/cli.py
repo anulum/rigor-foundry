@@ -22,6 +22,7 @@ from .campaign_workflow import (
     create_campaign,
     execute_campaign,
 )
+from .candidate_anchor import RepositoryTreeAnchor
 from .coverage_residuals import (
     DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
     coverage_residual_errors,
@@ -72,6 +73,7 @@ def report_markdown(report: AuditReport) -> str:
         f"- Repository: `{report.repository_root}`",
         f"- HEAD: `{report.head}`",
         f"- HEAD tree: `{report.head_tree}`",
+        f"- Git object format: `{report.git_object_format}`",
         f"- Branch: `{report.branch}`",
         f"- Tracked-content digest: `{report.tracked_content_digest}`",
         f"- Git version: `{report.git_provenance.version}`",
@@ -91,13 +93,25 @@ def report_markdown(report: AuditReport) -> str:
     lines.extend(f"- `{rule}`: {rules[rule]}" for rule in sorted(rules))
     lines.extend(("", "## Candidates", ""))
     for candidate in report.candidates:
+        anchor = candidate.anchor
+        location = (
+            f"{anchor.path}:{anchor.line_start}"
+            if anchor.line_start == anchor.line_end
+            else f"{anchor.path}:{anchor.line_start}-{anchor.line_end}"
+        )
+        anchor_identity = (
+            f"tree `{anchor.tree_oid}`; tracked content SHA-256 `{anchor.tracked_content_sha256}`"
+            if isinstance(anchor, RepositoryTreeAnchor)
+            else f"blob `{anchor.blob_oid}`; content SHA-256 `{anchor.content_sha256}`"
+        )
         lines.extend(
             (
                 f"### `{candidate.candidate_id}`",
                 "",
                 f"- Rule: `{candidate.rule_id}` (`{candidate.category}`, "
                 f"confidence hint `{candidate.confidence}`)",
-                f"- Location: `{candidate.path}:{candidate.line}`",
+                f"- Location: `{location}` ({anchor.kind})",
+                f"- Anchor: {anchor_identity}",
                 f"- Evidence: {candidate.evidence}",
                 f"- Why review: {candidate.rationale}",
                 f"- Verification: {candidate.verification}",

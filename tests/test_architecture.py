@@ -14,6 +14,7 @@ from pathlib import Path
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.architecture import scan_architecture
+from rigor_foundry.candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.models import AuditPolicy
 
@@ -75,6 +76,15 @@ def test_python_architecture_rules_use_real_parsed_modules(tmp_path: Path) -> No
     )
     assert "pkg.a.compute" in duplicate.evidence
     assert "pkg.b.compute_other" in duplicate.evidence
+    assert isinstance(duplicate.anchor, TrackedBlobAnchor)
+    assert duplicate.anchor.line_end > duplicate.anchor.line_start
+    facade = next(item for item in candidates if item.rule_id == "AR004-executable-facade")
+    assert isinstance(facade.anchor, TrackedBlobAnchor)
+    assert facade.anchor.line_end > facade.anchor.line_start
+    missing_owner = next(
+        item for item in candidates if item.rule_id == "AR005-no-module-named-test-owner"
+    )
+    assert isinstance(missing_owner.anchor, RepositoryTreeAnchor)
 
 
 def test_nested_src_root_resolves_package_names_and_test_owners(tmp_path: Path) -> None:
@@ -123,7 +133,7 @@ def test_absolute_imports_and_excessive_relative_climbs_respect_source_roots(
     )
     cycles = [item for item in candidates if item.rule_id == "AR001-first-party-import-cycle"]
     assert len(cycles) == 1
-    assert cycles[0].evidence == "python.pkg.a, python.pkg.b"
+    assert cycles[0].evidence.endswith("values=python.pkg.a, python.pkg.b")
     assert "outside" not in cycles[0].symbol
     assert not any(item.symbol == "src" for item in candidates)
 
@@ -189,3 +199,22 @@ def test_test_owner_conventions_and_unique_bodies_avoid_false_candidates(
         for item in candidates
     )
     assert not any(item.rule_id == "AR006-duplicate-python-implementation" for item in candidates)
+
+
+def test_large_python_cycle_keeps_bounded_identity_evidence(tmp_path: Path) -> None:
+    """A large real import cycle emits one bounded, set-identified candidate."""
+    repository = GitRepository.create(tmp_path / "repository")
+    names = tuple(f"component_with_a_long_name_{index:02d}" for index in range(20))
+    for index, name in enumerate(names):
+        target = names[(index + 1) % len(names)]
+        repository.write_text(
+            f"src/pkg/{name}.py",
+            f"from pkg import {target}\n",
+        )
+    repository.commit()
+
+    candidates = scan_architecture(load_git_inventory(repository.root), AuditPolicy())
+    cycle = next(item for item in candidates if item.rule_id == "AR001-first-party-import-cycle")
+    assert len(cycle.evidence.encode("utf-8")) <= 512
+    assert "count=20" in cycle.evidence
+    assert "truncated=true" in cycle.evidence

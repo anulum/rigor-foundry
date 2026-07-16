@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 import pytest
-from repository_audit_git_repository import sample_git_provenance
+from repository_audit_git_repository import sample_git_provenance, sample_tree_anchor
 
 from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.enforcement import ENFORCEMENT_SCHEMA_VERSION, evaluate_enforcement
@@ -36,8 +36,7 @@ def _report() -> AuditReport:
     candidate = Candidate.build(
         category="governance",
         rule_id="GV004-uncontrolled-required-domain",
-        path="docs/internal/audit/policy.json",
-        line=1,
+        anchor=sample_tree_anchor("docs/internal/audit/policy.json"),
         symbol="application-security",
         evidence="required domain has no control",
         confidence="high",
@@ -48,6 +47,7 @@ def _report() -> AuditReport:
         repository_root="/tmp/repository",
         head="1" * 40,
         head_tree="2" * 40,
+        git_object_format="sha1",
         branch="main",
         tracked_content_digest="3" * 64,
         dirty_paths=(),

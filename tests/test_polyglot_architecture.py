@@ -13,6 +13,7 @@ from pathlib import Path
 
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.candidate_anchor import RepositoryTreeAnchor
 from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.models import AuditPolicy
 from rigor_foundry.polyglot_architecture import scan_polyglot_architecture
@@ -36,6 +37,7 @@ def test_polyglot_scanner_finds_real_relative_cycle_and_missing_owner(tmp_path: 
     assert any(item.rule_id == "AR007-relative-dependency-cycle" for item in candidates)
     missing = [item for item in candidates if item.rule_id == "AR008-no-polyglot-test-owner"]
     assert any(item.path == "native/src/kernel.rs" for item in missing)
+    assert all(isinstance(item.anchor, RepositoryTreeAnchor) for item in missing)
     assert not any(item.path == "studio/src/a.ts" for item in missing)
 
 
@@ -111,3 +113,25 @@ def test_polyglot_test_suffix_owns_matching_source(tmp_path: Path) -> None:
         item.rule_id == "AR008-no-polyglot-test-owner" and item.path == "native/kernel.rs"
         for item in candidates
     )
+
+
+def test_large_typescript_cycle_keeps_bounded_identity_evidence(tmp_path: Path) -> None:
+    """A large real TypeScript cycle emits one bounded, set-identified candidate."""
+    repository = GitRepository.create(tmp_path / "repository")
+    names = tuple(f"component_with_a_long_name_{index:02d}" for index in range(20))
+    for index, name in enumerate(names):
+        target = names[(index + 1) % len(names)]
+        repository.write_text(
+            f"studio/{name}.ts",
+            f"import {{ value }} from './{target}';\nexport const current = value;\n",
+        )
+    repository.commit()
+
+    candidates = scan_polyglot_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(),
+    )
+    cycle = next(item for item in candidates if item.rule_id == "AR007-relative-dependency-cycle")
+    assert len(cycle.evidence.encode("utf-8")) <= 512
+    assert "count=20" in cycle.evidence
+    assert "truncated=true" in cycle.evidence

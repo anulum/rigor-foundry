@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
-from repository_audit_git_repository import sample_git_provenance
+from repository_audit_git_repository import sample_git_provenance, sample_tree_anchor
 
 from rigor_foundry.models import (
     AUDIT_DOMAINS,
@@ -34,8 +34,7 @@ def candidate() -> Candidate:
     return Candidate.build(
         category="architecture",
         rule_id="AR001-first-party-import-cycle",
-        path="src/pkg/a.py",
-        line=3,
+        anchor=sample_tree_anchor("src/pkg/a.py"),
         symbol="pkg.a -> pkg.b -> pkg.a",
         evidence="pkg.a, pkg.b",
         confidence="high",
@@ -56,6 +55,7 @@ def report() -> AuditReport:
         repository_root="/tmp/repository",
         head="1" * 40,
         head_tree="2" * 40,
+        git_object_format="sha1",
         branch="main",
         tracked_content_digest="3" * 64,
         dirty_paths=("src/pkg/a.py",),
@@ -208,8 +208,7 @@ def test_candidate_rejects_unregistered_or_wrong_category_rule() -> None:
         Candidate.build(
             category="architecture",
             rule_id="AR999-invented",
-            path="src/pkg/a.py",
-            line=1,
+            anchor=sample_tree_anchor("src/pkg/a.py"),
             symbol="",
             evidence="invented rule",
             confidence="high",
@@ -220,8 +219,7 @@ def test_candidate_rejects_unregistered_or_wrong_category_rule() -> None:
         Candidate.build(
             category="architecture",
             rule_id="GF001-large-responsibility-owner",
-            path="src/pkg/a.py",
-            line=1,
+            anchor=sample_tree_anchor("src/pkg/a.py"),
             symbol="",
             evidence="wrong category",
             confidence="high",

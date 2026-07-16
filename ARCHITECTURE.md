@@ -47,8 +47,11 @@ Every snapshot and execution descriptor is opened by walking absolute path
 components relative to already opened directories with no-follow semantics.
 
 `git_inventory.py` uses that runner to resolve the repository root, HEAD, tree,
-branch, tracked paths, dirty tracked paths, symlinks, gitlinks, binary content,
-and content digests. Container ownership mismatch is handled with a
+Git object format, branch, tracked paths, dirty tracked paths, symlinks,
+gitlinks, binary content, content digests, and the Git blob identity of the
+exact bytes scanned. A dirty worktree file is hashed with Git's canonical
+`blob <size>\0<payload>` framing without writing an object, so candidate
+evidence cannot attest a stale index blob. Container ownership mismatch is handled with a
 process-local `safe.directory` limited to the explicit audited root after
 discovery. Global and system Git configuration, credentials, terminal prompts,
 replacement objects, optional locks, and ambient `GIT_*` variables are excluded
@@ -71,6 +74,25 @@ Missing Git state and unsafe path states fail closed.
 
 Every signal is a candidate. None is permission to edit code.
 
+`candidate_anchor.py` owns the strict candidate-evidence boundary:
+
+- `TrackedBlobAnchor` binds one canonical repository path, an inclusive line
+  span, the Git blob identity of the exact scanned bytes, and their SHA-256.
+- `RepositoryTreeAnchor` binds one repository-relative locus to the exact HEAD
+  tree plus the complete tracked-content SHA-256. It represents missing policy,
+  missing registries, missing test ownership, gitlinks, and other
+  repository-wide or negative-search state without inventing a blob.
+- Candidate identifiers bind the complete anchor. The scanner verifies every
+  anchor against the same inventory before building report schema 1.2.
+- Human-readable evidence is whitespace-normalised and capped at 512 UTF-8
+  bytes. Large cycle and duplicate-owner sets retain their count, full set
+  SHA-256, and a deterministic bounded prefix.
+
+Cross-file findings use a deterministic primary blob anchor while the report's
+tracked-content digest binds the complete inventory participating in the
+finding. Negative searches use repository-tree anchors because their evidence
+depends on the absence of a matching tracked owner, not only on source bytes.
+
 The portable inventory is deliberately Git-tracked-only. A rule may reason
 about the tracked tree, but it must not infer that an ignored or untracked
 artefact does not exist. Any control whose meaning depends on that wider local
@@ -82,12 +104,13 @@ failure verdict.
 
 `rules.py` defines the versioned portable rule registry.
 `audit_primitives.py` owns protocol versions, canonical digests, strict field
-validators, and shared type contracts. `models.py` defines policy, candidate,
-report, adapter, and review records while preserving the original public
-primitive imports. Callers must verify digests during load; silent repair is
-not permitted. Report schema 1.1 includes `GitExecutableProvenance`; changing
-the executable, version, path, root, or embedded trust policy changes the
-report digest. Review-ledger schema 1.0 is independent and remains unchanged.
+validators, and shared type contracts. `candidate_anchor.py` defines candidate
+and anchor records. `models.py` defines policy, report, adapter, and review
+records while preserving the original public primitive imports. Callers must
+verify digests during load; silent repair is not permitted. Report schema 1.2
+includes `GitExecutableProvenance`, the Git object format, and strict anchored
+candidates; changing any bound input changes the report digest. Review-ledger
+schema 1.0 is independent and remains unchanged.
 `digest_dependencies.py` publishes schema 1.1 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
 includes Git provenance and toolchain identities in addition to the inventory,
@@ -123,10 +146,10 @@ execution, streaming output bounds, deadlines, and process-group termination.
 `campaign_models.py`, `campaign_inputs.py`, `campaign_store.py`,
 `campaign_workflow.py`, and `campaign_compare.py` freeze campaign inputs, Git
 and sandbox provenance, independent toolchains, and limitations, and preserve
-disagreement. Campaign schema 1.3 requires every run to reproduce the complete
+disagreement. Campaign schema 1.4 requires every run to reproduce the complete
 frozen input projection: repository root, HEAD, tree, branch, tracked-content
-identity, dirty paths, tracked-file count, policy, rule pack, scanner, required
-domains, Git provenance, and toolchain. One canonical validator is called by
+identity, Git object format, dirty paths, tracked-file count, policy, rule pack,
+scanner, required domains, Git provenance, and toolchain. One canonical validator is called by
 attestation construction, storage, durable reload, and comparison; a different
 trusted binary or omitted adapter is divergence, not an equivalent unrecorded
 substitution. The ignored-storage check that persists a campaign, run, or
