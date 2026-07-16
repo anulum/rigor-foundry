@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PUBLISH_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
 RELEASE_TAG_EXPRESSION = "${{ github.event.release.tag_name || inputs.release_tag }}"
+QUALIFIED_TAG_EXPRESSION = f"refs/tags/{RELEASE_TAG_EXPRESSION}"
 
 
 def _workflow_text() -> str:
@@ -56,13 +57,28 @@ def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
         "      id-token: write\n"
         "      attestations: write\n"
     ) in workflow
-    assert f"          ref: {RELEASE_TAG_EXPRESSION}" in workflow
+    assert f"          ref: {QUALIFIED_TAG_EXPRESSION}" in workflow
+    assert f"          ref: {RELEASE_TAG_EXPRESSION}" not in workflow
     assert "          persist-credentials: false" in workflow
     assert "release-signing-artifacts: true" in workflow
+    assert "pypa/gh-action-pypi-publish@" in workflow
+    assert "password:" not in workflow
+
+
+def test_publish_workflow_keeps_signatures_out_of_distribution_uploads() -> None:
+    """Sigstore bundles leave ``dist`` before attestation and publication."""
+    workflow = _workflow_text()
+
+    isolate_step = workflow.index("name: Isolate signing bundles")
+    attest_step = workflow.index("actions/attest-build-provenance@")
+    publish_step = workflow.index("pypa/gh-action-pypi-publish@")
+
+    assert isolate_step < attest_step < publish_step
+    assert "mkdir --mode=0700 signing-bundles" in workflow
+    assert "mv dist/*.sigstore.json signing-bundles/" in workflow
+    assert 'test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2' in workflow
     assert "name: Attach recovery signing bundles" in workflow
     assert "if: github.event_name == 'workflow_dispatch'" in workflow
     assert 'test "$bundle_count" -eq 2' in workflow
-    assert 'gh release upload "$RELEASE_TAG" dist/*.sigstore.json' in workflow
+    assert 'gh release upload "$RELEASE_TAG" signing-bundles/*.sigstore.json' in workflow
     assert "--clobber" in workflow
-    assert "pypa/gh-action-pypi-publish@" in workflow
-    assert "password:" not in workflow

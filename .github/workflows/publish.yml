@@ -73,7 +73,7 @@ jobs:
           test "$published_tag" = "$RELEASE_TAG"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
-          ref: ${{ github.event.release.tag_name || inputs.release_tag }}
+          ref: refs/tags/${{ github.event.release.tag_name || inputs.release_tag }}
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
@@ -105,6 +105,14 @@ jobs:
             ./dist/*.tar.gz
             ./dist/*.whl
           release-signing-artifacts: true
+      - name: Isolate signing bundles
+        run: |
+          set -euo pipefail
+          mkdir --mode=0700 signing-bundles
+          bundle_count=$(find dist -maxdepth 1 -type f -name '*.sigstore.json' | wc -l)
+          test "$bundle_count" -eq 2
+          mv dist/*.sigstore.json signing-bundles/
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
       - name: Attach recovery signing bundles
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -112,9 +120,11 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
-          bundle_count=$(find dist -maxdepth 1 -type f -name '*.sigstore.json' | wc -l)
+          bundle_count=$(
+            find signing-bundles -maxdepth 1 -type f -name '*.sigstore.json' | wc -l
+          )
           test "$bundle_count" -eq 2
-          gh release upload "$RELEASE_TAG" dist/*.sigstore.json \
+          gh release upload "$RELEASE_TAG" signing-bundles/*.sigstore.json \
             --clobber \
             --repo "$GITHUB_REPOSITORY"
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
