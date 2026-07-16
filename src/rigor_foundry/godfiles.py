@@ -321,7 +321,7 @@ def _registry_candidates(
                     rule_id="GF005-size-decision-drift",
                     anchor=(
                         RepositoryTreeAnchor.build(inventory, path=path_value)
-                        if owner is None
+                        if owner is None or owner.scanned_blob_id is None
                         else TrackedBlobAnchor.build(
                             owner,
                             line_start=1,

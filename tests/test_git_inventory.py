@@ -87,50 +87,80 @@ def test_inventory_and_scan_reject_concurrent_oversize_mutation(tmp_path: Path) 
     writer = tmp_path / "mutate.py"
     writer.write_text(
         """
+import ctypes
 import os
 import sys
-import time
 from pathlib import Path
 
 target = Path(sys.argv[1])
-marker = Path(sys.argv[2])
-payloads = (b"b" * 1048576, b"c" * 1048576)
-with target.open("r+b", buffering=0) as handle:
-    marker.write_text("ready", encoding="utf-8")
-    deadline = time.monotonic() + 10.0
-    index = 0
-    while time.monotonic() < deadline:
-        handle.seek((index % 16) * 1048576)
-        handle.write(payloads[index % 2])
-        os.fsync(handle.fileno())
+ready = Path(sys.argv[2])
+mutated = Path(sys.argv[3])
+stop = Path(sys.argv[4])
+libc = ctypes.CDLL(None, use_errno=True)
+notify_fd = libc.inotify_init1(os.O_CLOEXEC)
+if notify_fd < 0:
+    raise OSError(ctypes.get_errno(), "inotify_init1 failed")
+target_fd = os.open(target, os.O_RDWR | os.O_CLOEXEC)
+try:
+    watch = libc.inotify_add_watch(notify_fd, os.fsencode(target), 0x00000020)
+    if watch < 0:
+        raise OSError(ctypes.get_errno(), "inotify_add_watch failed")
+    original_size = os.fstat(target_fd).st_size
+    ready_temporary = ready.with_suffix(".tmp")
+    ready_temporary.write_text("watching", encoding="utf-8")
+    os.replace(ready_temporary, ready)
+    os.read(notify_fd, 4096)
+    os.ftruncate(target_fd, original_size - 1)
+    os.pwrite(target_fd, b"b", 0)
+    mutated_temporary = mutated.with_suffix(".tmp")
+    mutated_temporary.write_text("changed", encoding="utf-8")
+    os.replace(mutated_temporary, mutated)
+    index = 1
+    while not stop.exists():
+        os.ftruncate(target_fd, original_size - (index % 2))
+        os.pwrite(target_fd, b"b" if index % 2 else b"c", 0)
         index += 1
+finally:
+    os.close(target_fd)
+    os.close(notify_fd)
 """.strip()
         + "\n",
         encoding="utf-8",
     )
 
-    def assert_mutation_rejected(scan: bool) -> None:
-        marker = tmp_path / f"ready-{scan}"
+    def assert_mutation_rejected(scan: bool, attempt: int) -> None:
+        large.write_bytes(b"a" * (MAX_TEXT_BYTES * 4))
+        ready = tmp_path / f"ready-{scan}-{attempt}"
+        mutated = tmp_path / f"mutated-{scan}-{attempt}"
+        stop = tmp_path / f"stop-{scan}-{attempt}"
         process = subprocess.Popen(  # nosec B603
-            [sys.executable, str(writer), str(large), str(marker)],
+            [sys.executable, str(writer), str(large), str(ready), str(mutated), str(stop)],
             shell=False,
         )
         try:
             deadline = time.monotonic() + 5.0
-            while not marker.exists() and time.monotonic() < deadline:
+            while not ready.exists() and time.monotonic() < deadline:
                 time.sleep(0.01)
-            assert marker.exists()
+            assert ready.read_text(encoding="utf-8") == "watching"
             with pytest.raises(RuntimeError, match="changed while being read"):
                 if scan:
                     scan_repository(repository.root)
                 else:
                     load_git_inventory(repository.root)
+            assert mutated.read_text(encoding="utf-8") == "changed"
         finally:
-            process.terminate()
-            process.wait(timeout=5)
+            stop.write_text("stop", encoding="utf-8")
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.terminate()
+                process.wait(timeout=5)
+                raise
+            assert process.returncode == 0
 
-    assert_mutation_rejected(scan=False)
-    assert_mutation_rejected(scan=True)
+    for attempt in range(3):
+        assert_mutation_rejected(scan=False, attempt=attempt)
+        assert_mutation_rejected(scan=True, attempt=attempt)
 
 
 def test_git_ignore_check_uses_real_repository_rules(tmp_path: Path) -> None:
@@ -243,8 +273,25 @@ def test_inventory_rejects_tracked_regular_file_replaced_by_symlink(tmp_path: Pa
     owner.unlink()
     os.symlink(os.path.relpath(target, owner.parent), owner)
 
-    with pytest.raises(RuntimeError, match="cannot open tracked path"):
+    with pytest.raises(RuntimeError, match="tracked regular file is a symlink"):
         load_git_inventory(repository.root)
+
+
+def test_inventory_and_scan_reject_dangling_symlink_for_regular_file(tmp_path: Path) -> None:
+    """A dangling symlink cannot be laundered into missing regular content."""
+    repository = GitRepository.create(tmp_path / "repository")
+    owner = repository.write_text("src/pkg/owner.py", "VALUE = 1\n")
+    repository.write_policy()
+    repository.commit()
+    owner.unlink()
+    os.symlink("absent.py", owner)
+
+    for operation in (
+        lambda: load_git_inventory(repository.root),
+        lambda: scan_repository(repository.root),
+    ):
+        with pytest.raises(RuntimeError, match="tracked regular file is a symlink"):
+            operation()
 
 
 def test_inventory_classifies_tracked_file_replaced_by_directory(tmp_path: Path) -> None:

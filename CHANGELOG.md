@@ -26,6 +26,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Regular files are read through one no-follow descriptor. SHA-256 and Git
   blob identities are derived in the same pass, and concurrent content,
   pathname, identity, or size changes abort the scan.
+- Tracked regular files replaced by dangling symlinks now fail closed, and a
+  deleted size-registry owner emits repository-tree GF005 evidence rather than
+  attempting to construct an unavailable blob anchor.
 
 ### Fixed
 

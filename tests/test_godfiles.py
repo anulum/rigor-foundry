@@ -14,9 +14,11 @@ from pathlib import Path
 
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.candidate_anchor import RepositoryTreeAnchor
 from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.godfiles import scan_godfiles
 from rigor_foundry.models import AuditPolicy
+from rigor_foundry.scanner import scan_repository
 
 
 def _rules(repository: GitRepository, policy_path: Path) -> set[str]:
@@ -231,3 +233,40 @@ def test_registry_row_reports_unavailable_tracked_owner(tmp_path: Path) -> None:
     )
     assert drift.path == "src/pkg/absent.py"
     assert drift.evidence == "registered path unavailable; recorded_lines=14"
+
+
+def test_deleted_registered_owner_is_tree_anchored_in_public_scan(tmp_path: Path) -> None:
+    """A deleted tracked owner emits GF005 state evidence instead of crashing."""
+    repository = GitRepository.create(tmp_path / "repository")
+    owner = repository.write_text("src/pkg/owner.py", "VALUE = 1\nVALUE_2 = 2\n")
+    registry_path = "tools/module_size_policy.json"
+    repository.write_text(
+        registry_path,
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "path": "src/pkg/owner.py",
+                        "lines": 2,
+                        "responsibility": "constant owner",
+                        "dependency_boundary": "no dependencies",
+                        "reassess_when": "the owner is restored",
+                    }
+                ]
+            }
+        ),
+    )
+    policy_path = repository.write_policy(registries=[registry_path])
+    repository.commit()
+    owner.unlink()
+
+    report = scan_repository(repository.root, policy_path.relative_to(repository.root))
+    drift = next(
+        item
+        for item in report.candidates
+        if item.rule_id == "GF005-size-decision-drift" and item.path == "src/pkg/owner.py"
+    )
+    assert isinstance(drift.anchor, RepositoryTreeAnchor)
+    assert drift.anchor.tree_oid == report.head_tree
+    assert drift.anchor.tracked_content_sha256 == report.tracked_content_digest
+    assert drift.evidence == "registered path unavailable; recorded_lines=2"

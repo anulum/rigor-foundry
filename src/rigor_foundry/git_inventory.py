@@ -311,6 +311,8 @@ def _read_tracked_file(
             object_id=entry.object_id,
             scanned_blob_id=_blob_id(target_bytes, object_format),
         )
+    if absolute.is_symlink():
+        raise RuntimeError(f"tracked regular file is a symlink: {relative}")
     if not absolute.exists():
         return TrackedFile(
             path=relative,
