@@ -244,9 +244,11 @@ from the branch. The publication job grants `contents: write` only so Sigstore
 can attach signing bundles to that release. Release events use the pinned
 Sigstore action's native attachment path; manual recovery verifies that exactly
 two package bundles were generated and uploads them to the named release before
-publication. Checkout credential persistence remains disabled. Container and
-PyPI environments accept only `v*` tag deployments and retain required owner
-review before publication.
+publication. Checkout credential persistence remains disabled. The container
+environment accepts only `v*` tags. The PyPI environment normally applies the
+same policy; default-branch recovery requires a time-bounded `main` deployment
+policy that is added after snapshotting the tag-only configuration and removed
+immediately after the run. Both environments retain required owner review.
 
 ## Required promotion evidence
 

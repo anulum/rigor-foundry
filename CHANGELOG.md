@@ -12,7 +12,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   recovery may run from the named tag or the repository default branch, but
   always validates and builds the named published tag with checkout credential
   persistence disabled and uploads exactly the two generated package bundles
-  before publication.
+  before publication. Default-branch recovery uses a time-bounded PyPI
+  environment policy that is removed after the run.
 
 ## [0.1.1] - 2026-07-16
 

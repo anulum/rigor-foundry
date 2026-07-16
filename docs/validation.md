@@ -55,8 +55,10 @@ always checks out the named tag, and first verifies an existing published
 GitHub Release. The publication job's write permission is limited to attaching
 Sigstore bundles to that release. A manual recovery requires exactly two
 generated package bundles and uploads them before publication; checkout
-credentials are not persisted. The protected publication environments admit
-only `v*` tags and retain required owner review. See the repository
+credentials are not persisted. The PyPI environment normally admits only `v*`
+tags; default-branch recovery uses a time-bounded `main` deployment policy that
+is removed after the run. Required owner review remains active. See the
+repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
 
 CI-facing repository guards and the composed self-audit print only fixed
