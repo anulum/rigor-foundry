@@ -50,7 +50,8 @@ publication. It checks the real wheel's name and version, requires a
 version-matched installation command plus the public registry link, and rejects
 status text that publication would contradict. Automated package publication
 uses the repository owner actor; an explicitly confirmed owner-only dispatch is
-available for recovery and first verifies an existing published GitHub Release.
-The protected publication environments admit only `v*` tags and retain required
-owner review. See the repository
+available for recovery, requires its dispatch ref to equal the requested tag,
+and first verifies an existing published GitHub Release. The protected
+publication environments admit only `v*` tags and retain required owner review.
+See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).

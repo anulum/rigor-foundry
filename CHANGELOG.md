@@ -11,8 +11,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Package publication now gates automated release events on the repository
   owner actor rather than the workflow-created draft author. An owner-only,
-  explicitly confirmed recovery dispatch verifies the published release tag
-  before entering the protected PyPI environment.
+  explicitly confirmed recovery dispatch binds its Git ref to the requested
+  tag and verifies the published release before entering the protected PyPI
+  environment.
 - CI, release assembly, and PyPI publication now inspect the real built wheel
   and reject package identity drift, missing registry/install guidance, and
   pre-publication status text.

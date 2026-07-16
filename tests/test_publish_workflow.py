@@ -30,6 +30,8 @@ def test_publish_workflow_has_owner_confirmed_manual_recovery() -> None:
     assert "github.actor == github.repository_owner" in workflow
     assert "github.event.repository.private == false" in workflow
     assert "github.event.action == 'published'" in workflow
+    assert "github.ref_type == 'tag'" in workflow
+    assert "github.ref_name == inputs.release_tag" in workflow
     assert "inputs.confirm_public_pypi == 'publish'" in workflow
     assert "github.event.release.author.login" not in workflow
     assert workflow.count(RELEASE_TAG_EXPRESSION) == 3

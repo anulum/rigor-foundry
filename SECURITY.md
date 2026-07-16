@@ -14,9 +14,11 @@ or private repository content.
 
 ## Supported versions
 
-No public version has been released. Security reports against the public
-development branch are accepted, but there is no published support guarantee.
-Support policy will be versioned before the first release.
+Security reports are accepted for the latest published `0.1.x` patch and the
+public `main` development branch. Superseded `0.1.x` patches are assessed when
+the reported issue also affects the latest patch; they do not receive a
+separate backport guarantee. RigorFoundry is pre-alpha and has no long-term
+support release.
 
 ## Threat model
 
@@ -70,8 +72,10 @@ reviews prioritise:
   the pinned base-image digest; vulnerability findings block rather than
   silently selecting newer mutable packages.
 - Release publication requires an exact version tag and owner-published
-  release, and uses OIDC rather than a stored package credential.
-  Required-reviewer environment protection remains a separate promotion gate.
+  release, and uses OIDC rather than a stored package credential. The manual
+  recovery path must be dispatched from the same tag ref it validates and
+  builds. Required-reviewer environment protection remains a separate
+  promotion gate.
 
 ## Current toolchain exception
 

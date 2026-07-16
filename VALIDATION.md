@@ -227,9 +227,10 @@ PyPI publication all run that guard before accepting the distribution.
 Automated PyPI publication gates on the repository owner as the event actor,
 not on the workflow-created draft release's original author. An owner-only
 manual dispatch remains a recovery path; it requires explicit public-index
-confirmation and verifies that the requested tag already has a published
-GitHub Release. Container and PyPI environments accept only `v*` tag
-deployments and retain required owner review before publication.
+confirmation, must run from the same tag ref named by its input, and verifies
+that the requested tag already has a published GitHub Release. Container and
+PyPI environments accept only `v*` tag deployments and retain required owner
+review before publication.
 
 ## Required promotion evidence
 
