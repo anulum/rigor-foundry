@@ -23,6 +23,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dirty tracked files are anchored to the exact worktree bytes inspected by
   the scanner, including binary, non-UTF-8, symlink, and oversized content,
   rather than to a stale stage-zero index object.
+- Regular files are read through one no-follow descriptor. SHA-256 and Git
+  blob identities are derived in the same pass, and concurrent content,
+  pathname, identity, or size changes abort the scan.
 
 ### Fixed
 

@@ -51,10 +51,14 @@ Git object format, branch, tracked paths, dirty tracked paths, symlinks,
 gitlinks, binary content, content digests, and the Git blob identity of the
 exact bytes scanned. A dirty worktree file is hashed with Git's canonical
 `blob <size>\0<payload>` framing without writing an object, so candidate
-evidence cannot attest a stale index blob. Container ownership mismatch is handled with a
-process-local `safe.directory` limited to the explicit audited root after
-discovery. Global and system Git configuration, credentials, terminal prompts,
-replacement objects, optional locks, and ambient `GIT_*` variables are excluded
+evidence cannot attest a stale index blob. Regular content is opened without
+following symlinks; one descriptor and one pass derive both SHA-256 and Git
+object identity. Exact byte count, descriptor metadata, and pathname identity
+must remain stable through the read or inventory construction fails. Container
+ownership mismatch is handled with a process-local `safe.directory` limited to
+the explicit audited root after discovery. Global and system Git configuration,
+credentials, terminal prompts, replacement objects, optional locks, and
+ambient `GIT_*` variables are excluded
 from the plumbing environment. Repository-local filesystem monitors and hooks
 are disabled per invocation; Git configuration is never changed persistently.
 Missing Git state and unsafe path states fail closed.

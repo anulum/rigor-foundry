@@ -46,6 +46,9 @@ exact Git blob identity of the bytes inspected, and their SHA-256. For dirty
 tracked files, Git's canonical blob framing is computed over the worktree bytes
 without writing an object; the stage-zero index identity is not substituted.
 This applies to text, binary, non-UTF-8, symlink, and oversized tracked content.
+Regular files use one no-follow descriptor and one pass for SHA-256 and Git
+blob hashing. A changed byte count, descriptor snapshot, or pathname identity
+aborts inventory construction rather than emitting a mixed anchor.
 
 Repository-tree anchors contain a repository-relative locus, fixed state span
 `1:1`, exact HEAD tree identity, and the complete tracked-content SHA-256. They

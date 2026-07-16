@@ -10,6 +10,9 @@
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -21,6 +24,7 @@ from rigor_foundry.git_inventory import (
     load_git_inventory,
 )
 from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
+from rigor_foundry.scanner import scan_repository
 
 
 def test_inventory_classifies_real_tracked_content_and_dirty_state(tmp_path: Path) -> None:
@@ -69,6 +73,64 @@ def test_inventory_digest_tracks_worktree_bytes_and_rename_records(tmp_path: Pat
     repository.git_command("mv", "src/pkg/a.py", "src/pkg/b.py")
     renamed = load_git_inventory(repository.root)
     assert renamed.dirty_paths == ("src/pkg/a.py", "src/pkg/b.py")
+
+
+def test_inventory_and_scan_reject_concurrent_oversize_mutation(tmp_path: Path) -> None:
+    """Public inventory and scan never combine identities from different bytes."""
+    repository = GitRepository.create(tmp_path / "repository")
+    large = repository.write_bytes(
+        "native/large.rs",
+        b"a" * (MAX_TEXT_BYTES * 4),
+    )
+    repository.write_policy()
+    repository.commit()
+    writer = tmp_path / "mutate.py"
+    writer.write_text(
+        """
+import os
+import sys
+import time
+from pathlib import Path
+
+target = Path(sys.argv[1])
+marker = Path(sys.argv[2])
+payloads = (b"b" * 1048576, b"c" * 1048576)
+with target.open("r+b", buffering=0) as handle:
+    marker.write_text("ready", encoding="utf-8")
+    deadline = time.monotonic() + 10.0
+    index = 0
+    while time.monotonic() < deadline:
+        handle.seek((index % 16) * 1048576)
+        handle.write(payloads[index % 2])
+        os.fsync(handle.fileno())
+        index += 1
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def assert_mutation_rejected(scan: bool) -> None:
+        marker = tmp_path / f"ready-{scan}"
+        process = subprocess.Popen(  # nosec B603
+            [sys.executable, str(writer), str(large), str(marker)],
+            shell=False,
+        )
+        try:
+            deadline = time.monotonic() + 5.0
+            while not marker.exists() and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert marker.exists()
+            with pytest.raises(RuntimeError, match="changed while being read"):
+                if scan:
+                    scan_repository(repository.root)
+                else:
+                    load_git_inventory(repository.root)
+        finally:
+            process.terminate()
+            process.wait(timeout=5)
+
+    assert_mutation_rejected(scan=False)
+    assert_mutation_rejected(scan=True)
 
 
 def test_git_ignore_check_uses_real_repository_rules(tmp_path: Path) -> None:
@@ -169,6 +231,19 @@ def test_inventory_rejects_tracked_symlink_replaced_by_regular_file(tmp_path: Pa
     link.write_text("VALUE = 2\n", encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="tracked symlink is unavailable"):
+        load_git_inventory(repository.root)
+
+
+def test_inventory_rejects_tracked_regular_file_replaced_by_symlink(tmp_path: Path) -> None:
+    """A tracked regular file cannot redirect inventory through a worktree symlink."""
+    repository = GitRepository.create(tmp_path / "repository")
+    owner = repository.write_text("src/pkg/owner.py", "VALUE = 1\n")
+    target = repository.write_text("outside.py", "VALUE = 2\n")
+    repository.commit()
+    owner.unlink()
+    os.symlink(os.path.relpath(target, owner.parent), owner)
+
+    with pytest.raises(RuntimeError, match="cannot open tracked path"):
         load_git_inventory(repository.root)
 
 

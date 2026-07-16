@@ -28,7 +28,8 @@ tests cover clean, unstaged, and staged-plus-unstaged bytes; text, binary,
 non-UTF-8, symlink, oversized, missing, and gitlink paths; SHA-1 and SHA-256
 repositories; alternate policy discovery; inclusive AST spans; negative-search
 tree anchors; bounded large-member evidence; strict schema parsing; report
-round trips; and anchor drift rejection. The candidate-anchor module must
+round trips; concurrent oversized-file mutation rejection through public
+inventory and scan APIs; and anchor drift rejection. The candidate-anchor module must
 retain at least 95% branch-aware isolated coverage.
 
 The Git provenance owner tests use real executable files and temporary Git

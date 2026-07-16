@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -195,17 +196,76 @@ def _blob_id(payload: bytes, object_format: str) -> str:
     return digest.hexdigest()
 
 
-def _stream_blob_id(path: Path, byte_size: int, object_format: str) -> str:
-    """Return the Git blob identity for a large file without loading it."""
-    digest = hashlib.new(object_format)
-    digest.update(f"blob {byte_size}\0".encode())
+def _file_snapshot(metadata: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    """Return descriptor fields that must remain stable during one read."""
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _read_regular_bytes(
+    path: Path,
+    relative: str,
+    object_format: str,
+) -> tuple[int, bytes | None, str, str]:
+    """Read one regular file once and derive both content identities.
+
+    Returns
+    -------
+    tuple[int, bytes | None, str, str]
+        Exact byte count, buffered payload for bounded files, SHA-256, and Git
+        blob object identifier.
+
+    Raises
+    ------
+    RuntimeError
+        If the path is not one stable regular file for the complete read.
+    """
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        with path.open("rb") as handle:
-            while chunk := handle.read(1024 * 1024):
-                digest.update(chunk)
+        descriptor = os.open(path, flags)
     except OSError as exc:
-        raise RuntimeError(f"cannot hash tracked path as a Git blob: {path}") from exc
-    return digest.hexdigest()
+        raise RuntimeError(f"cannot open tracked path: {relative}") from exc
+    try:
+        before = os.fstat(descriptor)
+        path_before = os.stat(path, follow_symlinks=False)
+        if not stat.S_ISREG(before.st_mode) or _file_snapshot(path_before)[:2] != (
+            before.st_dev,
+            before.st_ino,
+        ):
+            raise RuntimeError(f"tracked path is not one regular file: {relative}")
+        content_digest = hashlib.sha256()
+        blob_digest = hashlib.new(object_format)
+        blob_digest.update(f"blob {before.st_size}\0".encode())
+        buffered = bytearray() if before.st_size <= MAX_TEXT_BYTES else None
+        byte_count = 0
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            while chunk := handle.read(1024 * 1024):
+                byte_count += len(chunk)
+                content_digest.update(chunk)
+                blob_digest.update(chunk)
+                if buffered is not None:
+                    buffered.extend(chunk)
+        after = os.fstat(descriptor)
+        path_after = os.stat(path, follow_symlinks=False)
+    except OSError as exc:
+        raise RuntimeError(f"cannot read tracked path: {relative}") from exc
+    finally:
+        os.close(descriptor)
+    if (
+        byte_count != before.st_size
+        or _file_snapshot(after) != _file_snapshot(before)
+        or _file_snapshot(path_after)[:2] != (before.st_dev, before.st_ino)
+    ):
+        raise RuntimeError(f"tracked path changed while being read: {relative}")
+    payload = None if buffered is None else bytes(buffered)
+    return byte_count, payload, content_digest.hexdigest(), blob_digest.hexdigest()
 
 
 def _read_tracked_file(
@@ -275,23 +335,23 @@ def _read_tracked_file(
             object_id=entry.object_id,
             scanned_blob_id=None,
         )
-    try:
-        byte_size = absolute.stat().st_size
-        if byte_size > MAX_TEXT_BYTES:
-            return TrackedFile(
-                path=relative,
-                absolute_path=absolute,
-                text=None,
-                content_kind="oversize",
-                byte_size=byte_size,
-                content_digest=_stream_digest(absolute),
-                git_mode=entry.git_mode,
-                object_id=entry.object_id,
-                scanned_blob_id=_stream_blob_id(absolute, byte_size, object_format),
-            )
-        payload = absolute.read_bytes()
-    except OSError as exc:
-        raise RuntimeError(f"cannot read tracked path: {relative}") from exc
+    byte_size, payload, content_digest, scanned_blob_id = _read_regular_bytes(
+        absolute,
+        relative,
+        object_format,
+    )
+    if payload is None:
+        return TrackedFile(
+            path=relative,
+            absolute_path=absolute,
+            text=None,
+            content_kind="oversize",
+            byte_size=byte_size,
+            content_digest=content_digest,
+            git_mode=entry.git_mode,
+            object_id=entry.object_id,
+            scanned_blob_id=scanned_blob_id,
+        )
     if b"\0" in payload:
         text = None
         content_kind: ContentKind = "binary"
@@ -308,24 +368,12 @@ def _read_tracked_file(
         absolute_path=absolute,
         text=text,
         content_kind=content_kind,
-        byte_size=len(payload),
-        content_digest=hashlib.sha256(payload).hexdigest(),
+        byte_size=byte_size,
+        content_digest=content_digest,
         git_mode=entry.git_mode,
         object_id=entry.object_id,
-        scanned_blob_id=_blob_id(payload, object_format),
+        scanned_blob_id=scanned_blob_id,
     )
-
-
-def _stream_digest(path: Path) -> str:
-    """Return SHA-256 for a large tracked file without loading it into memory."""
-    digest = hashlib.sha256()
-    try:
-        with path.open("rb") as handle:
-            while chunk := handle.read(1024 * 1024):
-                digest.update(chunk)
-    except OSError as exc:
-        raise RuntimeError(f"cannot hash tracked path: {path}") from exc
-    return digest.hexdigest()
 
 
 def _tracked_content_digest(files: tuple[TrackedFile, ...]) -> str:
