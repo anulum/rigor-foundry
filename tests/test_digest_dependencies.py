@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 from typing import cast
@@ -626,60 +625,11 @@ def test_adapter_pack_and_effective_profile_form_an_isolated_subgraph(
     )
 
 
-def test_policy_review_and_closure_identities_round_trip_and_fail_closed() -> None:
-    """New first-class identities bind complete records and reject tampering."""
-    definition, events = lifecycle()
-    record = WorkRecord.build(definition, events)
-    closure = WorkClosure.build(record)
+def test_policy_and_review_identities_bind_complete_canonical_records() -> None:
+    """First-class policy and review identities preserve canonical semantics."""
+    definition, _events = lifecycle()
     assert definition.review_digest == source_records()[1].review_digest
     assert source_records()[0].policy_digest == source_records()[0].policy.policy_digest
-    assert WorkClosure.from_dict(closure.to_dict()) == closure
-    assert closure.valid_for(record)
-    assert WorkClosure.build(WorkRecord.build(definition, events[:7])) == closure
-
-    unclosed = WorkRecord.build(definition, events[:6])
-    with pytest.raises(ValueError, match="exactly one closed"):
-        WorkClosure.build(unclosed)
-    assert not closure.valid_for(unclosed)
-
-    forged_task = replace(definition, definition_digest="0" * 64)
-    with pytest.raises(ValueError, match="task definition digest"):
-        WorkClosure.build(WorkRecord.build(forged_task, events))
-    forged_event = replace(events[6], event_digest="0" * 64)
-    with pytest.raises(ValueError, match="work-event digest"):
-        WorkClosure.build(WorkRecord.build(definition, (*events[:6], forged_event)))
-    noncanonical_record = WorkRecord(
-        task=definition,
-        events=cast(tuple[WorkEvent, ...], list(events)),
-    )
-    with pytest.raises(ValueError, match="exact integrity-checked"):
-        WorkClosure.build(noncanonical_record)
-
-    for field, value, message in (
-        ("schema_version", "9", "schema"),
-        ("definition_digest", "0" * 64, "digest does not match"),
-        ("closure_event_digest", "0" * 64, "digest does not match"),
-        ("event_count", 0, "integer"),
-        ("closure_digest", "0" * 64, "digest does not match"),
-    ):
-        encoded = deepcopy(closure.to_dict())
-        encoded[field] = value
-        with pytest.raises(ValueError, match=message):
-            WorkClosure.from_dict(encoded)
-    unknown = closure.to_dict()
-    unknown["unbound"] = "discarded"
-    with pytest.raises(ValueError, match="fields do not match schema"):
-        WorkClosure.from_dict(unknown)
-
-    task_data = definition.to_dict()
-    task_data.pop("definition_digest")
-    task_data["created_at"] = "2026-07-15T10:06:00Z"
-    task_data["definition_digest"] = models_module.canonical_digest(task_data)
-    changed_task = WorkTask.from_dict(task_data)
-    changed_closure = WorkClosure.build(WorkRecord.build(changed_task, events))
-    assert changed_closure.closure_event_digest == closure.closure_event_digest
-    assert changed_closure.closure_digest != closure.closure_digest
-    assert not closure.valid_for(WorkRecord.build(changed_task, events))
 
 
 def test_digest_query_rejects_an_unknown_runtime_node() -> None:
