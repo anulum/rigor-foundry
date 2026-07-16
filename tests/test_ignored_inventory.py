@@ -23,7 +23,7 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 import rigor_foundry
-from rigor_foundry.git_inventory import load_git_inventory
+from rigor_foundry.git_inventory import load_git_inventory, open_directory_no_follow
 from rigor_foundry.git_provenance import GitRunner, GitTrustPolicy
 from rigor_foundry.ignored_inventory import (
     IGNORED_INVENTORY_SCHEMA_VERSION,
@@ -448,6 +448,44 @@ def test_public_scan_fails_closed_on_ignored_parent_replacement(
     assert evidence.content_sha256 is None
 
 
+def test_public_scan_fails_closed_on_repository_root_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A real root replacement before post-collection binding aborts the scan."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state.bin", "file-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    target = repository.write_bytes(".rigor/state.bin", b"authenticated-state")
+    displaced = repository.root.with_name("repository-displaced")
+    root_opens = 0
+    replaced = False
+
+    def replace_root_before_revalidation(path: Path) -> int:
+        nonlocal replaced, root_opens
+        root_opens += 1
+        if root_opens == 2:
+            repository.root.rename(displaced)
+            repository.root.mkdir()
+            replaced = True
+        return open_directory_no_follow(path)
+
+    monkeypatch.setattr(
+        "rigor_foundry.ignored_inventory.open_directory_no_follow",
+        replace_root_before_revalidation,
+    )
+    with pytest.raises(RuntimeError, match="repository root changed"):
+        rigor_foundry.scan_repository(repository.root)
+    assert replaced
+    assert root_opens == 2
+    assert displaced.joinpath(target.relative_to(repository.root)).read_bytes() == (
+        b"authenticated-state"
+    )
+
+
 def test_collection_rejects_symlinked_repository_root(tmp_path: Path) -> None:
     """Ignored inventory cannot bind evidence through a symlinked root alias."""
     repository = GitRepository.create(tmp_path / "repository")
@@ -483,84 +521,6 @@ def test_empty_ignored_inventory_does_not_open_repository_root(tmp_path: Path) -
         )
         == ()
     )
-
-
-def test_public_scan_fails_closed_on_repository_root_replacement(tmp_path: Path) -> None:
-    """A repository root replaced during ignored collection cannot retain evidence."""
-    repository = GitRepository.create(tmp_path / "repository")
-    repository.write_policy(
-        ignored_inventory=[_declaration("state", ".rigor/state.bin", "file-sha256")]
-    )
-    mutator = repository.write_text(
-        "controls/replace_root.py",
-        """
-import ctypes
-import os
-import pathlib
-import signal
-import sys
-
-root, target, ready, changed = map(pathlib.Path, sys.argv[1:5])
-scanner_pid = int(sys.argv[5])
-libc = ctypes.CDLL(None, use_errno=True)
-notify = libc.inotify_init1(os.O_CLOEXEC)
-if notify < 0:
-    raise OSError(ctypes.get_errno(), "inotify_init1")
-if libc.inotify_add_watch(notify, os.fsencode(target), 0x20) < 0:
-    raise OSError(ctypes.get_errno(), "inotify_add_watch")
-temporary = ready.with_suffix(".tmp")
-temporary.write_text("ready", encoding="utf-8")
-os.replace(temporary, ready)
-os.read(notify, 4096)
-os.kill(scanner_pid, signal.SIGSTOP)
-try:
-    root.rename(root.with_name("repository-old"))
-    root.mkdir()
-    temporary = changed.with_suffix(".tmp")
-    temporary.write_text("changed", encoding="utf-8")
-    os.replace(temporary, changed)
-finally:
-    os.kill(scanner_pid, signal.SIGCONT)
-    os.close(notify)
-""".lstrip(),
-    )
-    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
-    repository.commit()
-    target = repository.write_bytes(".rigor/state.bin", b"A" * (32 * 1024 * 1024))
-    ready = tmp_path / "root-ready"
-    changed = tmp_path / "root-changed"
-    original_affinity = os.sched_getaffinity(0)
-    os.sched_setaffinity(0, {min(original_affinity)})
-    process = subprocess.Popen(  # nosec B603
-        [
-            sys.executable,
-            str(mutator),
-            str(repository.root),
-            str(target),
-            str(ready),
-            str(changed),
-            str(os.getpid()),
-        ],
-        cwd=repository.root,
-        shell=False,
-    )
-    try:
-        deadline = time.monotonic() + 10
-        while not ready.is_file() and time.monotonic() < deadline:
-            time.sleep(0.005)
-        assert ready.read_text(encoding="utf-8") == "ready"
-        with pytest.raises(RuntimeError, match="repository root changed"):
-            rigor_foundry.scan_repository(repository.root)
-        assert changed.read_text(encoding="utf-8") == "changed"
-    finally:
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.terminate()
-            process.wait(timeout=10)
-            raise
-        finally:
-            os.sched_setaffinity(0, original_affinity)
 
 
 def test_git_check_ignore_failure_is_not_reinterpreted_as_ancestor_success(
@@ -653,7 +613,10 @@ os.close(notify)
             time.sleep(0.005)
         assert ready.is_file()
         report = rigor_foundry.scan_repository(repository.root)
-        assert changed.is_file()
+        deadline = time.monotonic() + 10
+        while not changed.is_file() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert changed.read_text(encoding="utf-8") == "mutated"
         evidence = report.ignored_inventory_evidence[0]
         assert evidence.status == "unavailable"
         assert evidence.reason == "changed-while-read"
