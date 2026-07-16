@@ -24,9 +24,12 @@ in responsibility review but not polyglot ownership; native languages without
 a relative-import parser still participate in dedicated-test ownership.
 
 Repository-relative source roots use whole-component prefix containment and
-choose the most specific overlapping owner. Test roots use whole contiguous
-components at any repository depth. Common test names are shared, while
-singular and plural native suffixes are a deliberate polyglot-only extension.
+choose the most specific overlapping owner. GodFile, authenticity, and
+polyglot test roots use whole contiguous components at any repository depth;
+Python module ownership preserves repository-prefix test roots and its narrower
+`test_`/`_test.py` naming. Common generic test names are shared by the other
+collectors, while singular and plural native suffixes are a deliberate
+polyglot-only extension.
 Resolved filesystem containment is available for non-security-sensitive path
 classification; descriptor-bound no-follow inventory remains authoritative at
 filesystem trust boundaries.

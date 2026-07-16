@@ -123,6 +123,42 @@ def test_overlapping_source_roots_choose_the_most_specific_component_owner(
     assert missing.symbol == "pkg.core"
 
 
+def test_python_test_owner_roots_preserve_repository_prefix_semantics(tmp_path: Path) -> None:
+    """A nested component named tests does not suppress Python ownership evidence."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "def value() -> int:\n    return 1\n")
+    repository.write_text("workspace/tests/core.py", "from pkg.core import value\n")
+    repository.write_text("workspace/core.spec.py", "from pkg.core import value\n")
+    repository.commit()
+
+    candidates = scan_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(source_roots=("src",), test_roots=("tests",)),
+    )
+    assert any(
+        item.rule_id == "AR005-no-module-named-test-owner" and item.path == "src/pkg/core.py"
+        for item in candidates
+    )
+
+
+def test_normalised_source_root_components_produce_canonical_module_names(
+    tmp_path: Path,
+) -> None:
+    """Dot and duplicate separators do not leak into nested src-layout imports."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("engine/src/pkg/core.py", "def value() -> int:\n    return 1\n")
+    repository.commit()
+
+    candidates = scan_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(source_roots=("engine//src/.",), test_roots=("tests",)),
+    )
+    missing = next(
+        item for item in candidates if item.rule_id == "AR005-no-module-named-test-owner"
+    )
+    assert missing.symbol == "pkg.core"
+
+
 def test_syntax_error_in_production_is_skipped_without_false_clean_scope_claim(
     tmp_path: Path,
 ) -> None:

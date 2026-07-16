@@ -22,7 +22,6 @@ from .candidate_anchor import (
 )
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import (
-    is_test_path,
     owning_repository_root,
     repository_path_under_roots,
 )
@@ -373,7 +372,7 @@ def _test_stems(inventory: GitInventory, policy: AuditPolicy) -> frozenset[str]:
         if not (
             pure.name.startswith("test_")
             or pure.name.endswith("_test.py")
-            or is_test_path(item.path, policy.test_roots)
+            or repository_path_under_roots(item.path, policy.test_roots)
         ):
             continue
         stem = pure.stem

@@ -194,7 +194,7 @@ def repository_path_has_root(path: str, roots: tuple[str, ...]) -> bool:
 def owning_repository_root(path: str, roots: tuple[str, ...]) -> str | None:
     """Return the most specific configured root prefix that owns ``path``."""
     matches = tuple(
-        (len(root_parts), root.rstrip("/"))
+        (len(root_parts), "/".join(root_parts))
         for root in roots
         if (root_parts := _parts(root)) and _parts(path)[: len(root_parts)] == root_parts
     )

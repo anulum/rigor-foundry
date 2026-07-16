@@ -84,12 +84,14 @@ Missing Git state and unsafe path states fail closed.
 Every signal is a candidate. None is permission to edit code.
 
 Configured source roots are repository-prefix contracts over whole path
-components. Test roots may occur below workspace prefixes but must still match
-complete contiguous components. The shared classifier rejects lexical prefix
-collisions such as `src-old` for `src`, selects the most specific overlapping
-source root, and preserves scanner-specific naming: plural native
-`*_tests.<suffix>` owners are recognised by the polyglot scanner but do not
-change the generic GodFile or authenticity thresholds.
+components. GodFile, authenticity, and polyglot test roots retain their
+component-anywhere semantics; Python module-ownership roots retain their
+repository-prefix semantics. The shared classifiers reject lexical prefix
+collisions such as `src-old` for `src`, canonicalise dot and duplicate-separator
+forms, select the most specific overlapping source root, and preserve
+scanner-specific naming: plural native `*_tests.<suffix>` owners are recognised
+by the polyglot scanner but do not change generic GodFile or authenticity
+thresholds.
 
 `candidate_anchor.py` owns the strict candidate-evidence boundary:
 

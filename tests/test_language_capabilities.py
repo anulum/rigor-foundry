@@ -88,6 +88,13 @@ def test_repository_roots_are_component_aware_and_choose_most_specific_owner() -
     assert not repository_path_under_roots("/engine/src/pkg/core.py", roots)
     assert not repository_path_under_roots("engine/src/../pkg/core.py", roots)
     assert owning_repository_root("engine/src/pkg/core.py", roots) == "engine/src/pkg"
+    assert (
+        owning_repository_root(
+            "engine/src/pkg/core.py",
+            ("engine//src/.",),
+        )
+        == "engine/src"
+    )
     assert owning_repository_root("srcish/core.py", roots) is None
     assert repository_path_has_root("workspace/quality/tests/core.py", ("quality/tests",))
     assert not repository_path_has_root("workspace/quality/testsuite/core.py", ("tests",))

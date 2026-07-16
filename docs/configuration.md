@@ -47,7 +47,9 @@ below a workspace prefix, but it must match complete contiguous components, so
 `.test.`, and `.spec.` conventions apply to the generic scanners. Polyglot
 ownership additionally recognises native `_test.<suffix>` and
 `_tests.<suffix>` names. These naming profiles are fixed scanner capabilities,
-not policy-controlled aliases.
+not policy-controlled aliases. Python module ownership deliberately preserves
+the narrower historical contract: configured test roots are repository
+prefixes, and only `test_`/`_test.py` names apply outside them.
 
 ## Declared ignored inventory
 
