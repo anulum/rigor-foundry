@@ -1,7 +1,7 @@
 # RigorFoundry
 
-[![CI](https://github.com/anulum/RIGOR-FOUNDRY/actions/workflows/ci.yml/badge.svg)](https://github.com/anulum/RIGOR-FOUNDRY/actions/workflows/ci.yml)
-[![Documentation](https://github.com/anulum/RIGOR-FOUNDRY/actions/workflows/docs.yml/badge.svg)](https://github.com/anulum/RIGOR-FOUNDRY/actions/workflows/docs.yml)
+[![CI](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml)
+[![Documentation](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](pyproject.toml)
 
@@ -69,7 +69,7 @@ authority, or prove effectiveness on an external corpus. See
 ## Quick start from source
 
 ```bash
-git clone https://github.com/anulum/RIGOR-FOUNDRY.git
+git clone https://github.com/anulum/rigor-foundry.git RIGOR-FOUNDRY
 cd RIGOR-FOUNDRY
 python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
@@ -167,8 +167,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Community
 
-- [Issue tracker](https://github.com/anulum/RIGOR-FOUNDRY/issues)
-- [Discussions](https://github.com/anulum/RIGOR-FOUNDRY/discussions)
+- [Issue tracker](https://github.com/anulum/rigor-foundry/issues)
+- [Discussions](https://github.com/anulum/rigor-foundry/discussions)
 - [Support](SUPPORT.md)
 - [Security reporting](SECURITY.md)
 

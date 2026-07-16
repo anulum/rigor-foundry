@@ -20,7 +20,7 @@ FROM python:3.12-slim@sha256:c3d81d25b3154142b0b42eb1e61300024426268edeb5b5a26dd
 
 LABEL org.opencontainers.image.title="RigorFoundry"
 LABEL org.opencontainers.image.description="Evidence-bound repository auditing and remediation planning"
-LABEL org.opencontainers.image.source="https://github.com/anulum/RIGOR-FOUNDRY"
+LABEL org.opencontainers.image.source="https://github.com/anulum/rigor-foundry"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 

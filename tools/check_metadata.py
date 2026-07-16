@@ -21,7 +21,7 @@ from tools._repository import ROOT
 EXPECTED_NAME = "rigor-foundry"
 EXPECTED_LICENSE = "Apache-2.0"
 EXPECTED_PYTHON = ">=3.11"
-EXPECTED_REPOSITORY = "https://github.com/anulum/RIGOR-FOUNDRY"
+EXPECTED_REPOSITORY = "https://github.com/anulum/rigor-foundry"
 
 
 def _package_version(path: Path) -> str | None:

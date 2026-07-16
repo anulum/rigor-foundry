@@ -22,7 +22,7 @@ from tools.check_headers import header_errors
 from tools.check_metadata import metadata_errors
 from tools.check_secrets import secret_errors
 
-EXPECTED_ORIGIN = "https://github.com/anulum/RIGOR-FOUNDRY.git"
+EXPECTED_ORIGIN = "https://github.com/anulum/rigor-foundry.git"
 REQUIRED_PATHS = (
     ".github/CODEOWNERS",
     ".github/dependency-waivers.json",
@@ -128,8 +128,8 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
         errors.append("canonical origin remote is missing")
     else:
         origin_url = origin.stdout.strip().removesuffix(".git")
-        if not origin_url.endswith("/RIGOR-FOUNDRY"):
-            errors.append("origin does not identify the RIGOR-FOUNDRY repository")
+        if not origin_url.endswith("/rigor-foundry"):
+            errors.append("origin does not identify the rigor-foundry repository")
         if strict_authoring and origin.stdout.strip() != EXPECTED_ORIGIN:
             errors.append(f"strict authoring requires origin {EXPECTED_ORIGIN!r}")
 

@@ -67,13 +67,13 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/anulum/RIGOR-FOUNDRY"
-Changelog = "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/CHANGELOG.md"
-Discussions = "https://github.com/anulum/RIGOR-FOUNDRY/discussions"
-Documentation = "https://anulum.github.io/RIGOR-FOUNDRY/"
-Issues = "https://github.com/anulum/RIGOR-FOUNDRY/issues"
-Security = "https://github.com/anulum/RIGOR-FOUNDRY/security/policy"
-Source = "https://github.com/anulum/RIGOR-FOUNDRY"
+Homepage = "https://github.com/anulum/rigor-foundry"
+Changelog = "https://github.com/anulum/rigor-foundry/blob/main/CHANGELOG.md"
+Discussions = "https://github.com/anulum/rigor-foundry/discussions"
+Documentation = "https://anulum.github.io/rigor-foundry/"
+Issues = "https://github.com/anulum/rigor-foundry/issues"
+Security = "https://github.com/anulum/rigor-foundry/security/policy"
+Source = "https://github.com/anulum/rigor-foundry"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rigor_foundry"]

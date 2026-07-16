@@ -8,8 +8,8 @@
 
 site_name: RigorFoundry
 site_description: Evidence-bound codebase transformation
-site_url: https://anulum.github.io/RIGOR-FOUNDRY/
-repo_url: https://github.com/anulum/RIGOR-FOUNDRY
+site_url: https://anulum.github.io/rigor-foundry/
+repo_url: https://github.com/anulum/rigor-foundry
 exclude_docs: |
   internal/
 
