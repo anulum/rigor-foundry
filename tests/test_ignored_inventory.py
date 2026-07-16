@@ -395,9 +395,11 @@ def test_public_scan_fails_closed_on_ignored_final_replacement(
 import ctypes
 import os
 import pathlib
+import signal
 import sys
 
-target, replacement, ready, changed = map(pathlib.Path, sys.argv[1:])
+target, replacement, ready, primed, changed = map(pathlib.Path, sys.argv[1:6])
+scanner_pid = int(sys.argv[6])
 libc = ctypes.CDLL(None, use_errno=True)
 notify = libc.inotify_init1(os.O_CLOEXEC)
 if notify < 0:
@@ -408,12 +410,20 @@ temporary = ready.with_suffix(".tmp")
 temporary.write_text("ready", encoding="utf-8")
 os.replace(temporary, ready)
 os.read(notify, 4096)
-target.rename(target.with_suffix(".old"))
-os.replace(replacement, target)
-temporary = changed.with_suffix(".tmp")
-temporary.write_text("changed", encoding="utf-8")
-os.replace(temporary, changed)
-os.close(notify)
+temporary = primed.with_suffix(".tmp")
+temporary.write_text("primed", encoding="utf-8")
+os.replace(temporary, primed)
+os.read(notify, 4096)
+os.kill(scanner_pid, signal.SIGSTOP)
+try:
+    target.rename(target.with_suffix(".old"))
+    os.replace(replacement, target)
+    temporary = changed.with_suffix(".tmp")
+    temporary.write_text("changed", encoding="utf-8")
+    os.replace(temporary, changed)
+finally:
+    os.kill(scanner_pid, signal.SIGCONT)
+    os.close(notify)
 """.lstrip(),
     )
     repository.write_text("src/pkg/module.py", "VALUE = 1\n")
@@ -421,11 +431,21 @@ os.close(notify)
     target = repository.write_bytes(".rigor/state.bin", b"A" * (32 * 1024 * 1024))
     replacement = repository.write_bytes(".rigor/replacement.bin", b"B" * (32 * 1024 * 1024))
     ready = repository.root / ".rigor/ready"
+    primed = repository.root / ".rigor/primed"
     changed = repository.root / ".rigor/changed"
     original_affinity = os.sched_getaffinity(0)
     os.sched_setaffinity(0, {min(original_affinity)})
     process = subprocess.Popen(  # nosec B603
-        [sys.executable, str(mutator), str(target), str(replacement), str(ready), str(changed)],
+        [
+            sys.executable,
+            str(mutator),
+            str(target),
+            str(replacement),
+            str(ready),
+            str(primed),
+            str(changed),
+            str(os.getpid()),
+        ],
         cwd=repository.root,
         shell=False,
     )
@@ -434,6 +454,12 @@ os.close(notify)
         while not ready.is_file() and time.monotonic() < deadline:
             time.sleep(0.005)
         assert ready.read_text(encoding="utf-8") == "ready"
+        descriptor = os.open(target, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0))
+        os.close(descriptor)
+        deadline = time.monotonic() + 10
+        while not primed.is_file() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert primed.read_text(encoding="utf-8") == "primed"
         report = rigor_foundry.scan_repository(repository.root)
         assert changed.read_text(encoding="utf-8") == "changed"
         evidence = report.ignored_inventory_evidence[0]
