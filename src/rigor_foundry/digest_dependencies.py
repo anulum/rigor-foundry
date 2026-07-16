@@ -14,10 +14,11 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.1"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.2"
 
 DigestNode = Literal[
     "inventory",
+    "ignored-inventory",
     "git-provenance",
     "policy",
     "rule-pack",
@@ -71,6 +72,11 @@ class DigestDependency:
 DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     DigestNodeSpec("inventory", "tracked_content_digest", "git_inventory"),
     DigestNodeSpec(
+        "ignored-inventory",
+        "ignored_inventory_digest",
+        "ignored_inventory",
+    ),
+    DigestNodeSpec(
         "git-provenance",
         "git_provenance.identity_digest",
         "git_provenance",
@@ -91,6 +97,7 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
 
 DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("inventory", "report", "tracked_content_digest"),
+    DigestDependency("ignored-inventory", "report", "ignored_inventory_evidence + digest"),
     DigestDependency("git-provenance", "report", "git_provenance"),
     DigestDependency("policy", "report", "policy + policy_digest"),
     DigestDependency("rule-pack", "report", "rule_pack_digest"),
@@ -99,6 +106,11 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),
     DigestDependency("report", "review", "report_digest"),
     DigestDependency("inventory", "campaign", "tracked_content_digest"),
+    DigestDependency(
+        "ignored-inventory",
+        "campaign",
+        "ignored_inventory_evidence + digest",
+    ),
     DigestDependency("git-provenance", "campaign", "git_provenance"),
     DigestDependency("policy", "campaign", "policy_digest"),
     DigestDependency("rule-pack", "campaign", "rule_pack_digest"),

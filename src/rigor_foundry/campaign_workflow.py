@@ -30,7 +30,8 @@ from .campaign_store import (
 )
 from .domains import audit_domain_coverage
 from .git_inventory import load_git_inventory
-from .git_provenance import GitTrustPolicy
+from .git_provenance import GitRunner, GitTrustPolicy
+from .ignored_inventory import collect_ignored_inventory, ignored_inventory_digest
 from .models import canonical_digest
 from .review import validate_reviews
 from .scanner import scan_repository
@@ -114,9 +115,15 @@ def execute_campaign(
         "full",
         trusted=trusted_native_audits,
     )
+    post_runner = GitRunner(git_trust_policy)
     post_inventory = load_git_inventory(
         repository,
-        git_trust_policy=git_trust_policy,
+        git_runner=post_runner,
+    )
+    post_ignored = collect_ignored_inventory(
+        post_inventory,
+        report.policy.ignored_inventory,
+        git_runner=post_runner,
     )
     post_state = (
         post_inventory.head,
@@ -138,6 +145,11 @@ def execute_campaign(
     )
     if post_state != report_state:
         raise RuntimeError("native audit mutated tracked repository state; run not attested")
+    if (
+        post_ignored != report.ignored_inventory_evidence
+        or ignored_inventory_digest(post_ignored) != report.ignored_inventory_digest
+    ):
+        raise RuntimeError("native audit mutated ignored inventory state; run not attested")
     attempted = frozenset(result.name for result in adapter_results)
     coverage = audit_domain_coverage(report.policy, attempted_adapters=attempted)
     covered_domains = tuple(

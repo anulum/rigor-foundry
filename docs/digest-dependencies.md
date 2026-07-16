@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.1 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.2 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -23,6 +23,7 @@ separately and are not misrepresented as unconditional digest edges.
 | Node | Identity | Owning module |
 |---|---|---|
 | Inventory | `tracked_content_digest` | `git_inventory` |
+| Ignored inventory | `ignored_inventory_digest` | `ignored_inventory` |
 | Git provenance | `git_provenance.identity_digest` | `git_provenance` |
 | Policy | `policy_digest` | `models` |
 | Rule pack | `rule_pack_digest` | `rules` |
@@ -46,9 +47,9 @@ one envelope. Existing rules retain their original introduction version.
 Git provenance binds the resolved executable path, selected root, executable
 SHA-256, observed version, complete trust policy, and trust-policy digest.
 Toolchain identity binds Python implementation/version, platform, and
-interpreter executable SHA-256. Campaign schema 1.4 embeds both complete
-records; effective-profile locks bind the toolchain digest used for profile
-resolution.
+interpreter executable SHA-256. Campaign schema 1.5 embeds both complete
+records plus the ignored evidence tuple and digest; effective-profile locks
+bind the toolchain digest used for profile resolution.
 
 `WorkClosure` schema 1.0 binds `WorkTask.definition_digest` to the exact
 `closed` event digest and its sequence number. The event digest already binds
@@ -62,6 +63,7 @@ the task baseline and a revalidation that names another candidate or report.
 | Upstream | Downstream | Canonical binding |
 |---|---|---|
 | Inventory | Report | `tracked_content_digest` |
+| Ignored inventory | Report | complete evidence tuple plus `ignored_inventory_digest` |
 | Git provenance | Report | complete `git_provenance` record |
 | Policy | Report | complete `policy` plus `policy_digest` |
 | Rule pack | Report | `rule_pack_digest` |
@@ -70,6 +72,7 @@ the task baseline and a revalidation that names another candidate or report.
 | Toolchain | Effective profile | `toolchain_digest` |
 | Report | Review | `report_digest` |
 | Inventory | Campaign | `tracked_content_digest` |
+| Ignored inventory | Campaign | complete evidence tuple plus `ignored_inventory_digest` |
 | Git provenance | Campaign | complete `git_provenance` record |
 | Policy | Campaign | `policy_digest` |
 | Rule pack | Campaign | `rule_pack_digest` |
@@ -119,7 +122,7 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 14 identities and cover inventory, Git provenance,
+The tests compare all 15 identities and cover inventory, ignored inventory, Git provenance,
 policy, rule-pack, toolchain, report, review, campaign, task, adapter-lock,
 standard-pack, effective-profile, and closure mutations. Strict parsing
 vectors reject altered closure schemas, fields, references, counts, and

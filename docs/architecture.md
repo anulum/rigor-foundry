@@ -6,7 +6,8 @@ generator.
 1. A fixed-root Git trust policy selects one non-symlink executable and binds
    its path, root, version, executable digest, and policy digest.
 2. Git inventory freezes the exact tracked paths, objects, tree, object format,
-   and dirty state with that continuously revalidated executable.
+   and dirty state; an optional declared ignored inventory separately records
+   bounded content-free local evidence through no-follow descriptors.
 3. Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
@@ -56,8 +57,8 @@ are used for missing policy, missing registries, missing test owners, gitlinks,
 and other absence or repository-wide findings. They never claim that an absent
 path has a blob.
 
-Candidate identifiers bind the complete anchor. Report schema 1.2 also records
-the Git object format, so SHA-1 and SHA-256 repositories cannot be
+Candidate identifiers bind the complete anchor. Report schema 1.3 also records
+the Git object format and digest-bound ignored evidence, so SHA-1 and SHA-256 repositories cannot be
 reinterpreted. Every anchor is checked against the same inventory before report
 construction. Human-readable excerpts remain separate, whitespace-normalised,
 and limited to 512 UTF-8 bytes; large member sets carry a full count and

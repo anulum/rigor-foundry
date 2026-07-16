@@ -12,9 +12,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from .ignored_inventory import IgnoredInventoryEvidence
+
 if TYPE_CHECKING:
     from .campaign_models import AuditCampaign, ToolchainIdentity
     from .models import AuditReport
+
+
+def parse_ignored_evidence_array(value: object) -> list[dict[str, object]]:
+    """Parse ignored evidence into its canonical campaign representation."""
+    if not isinstance(value, list):
+        raise ValueError("ignored_inventory_evidence must be an array")
+    return [
+        IgnoredInventoryEvidence.from_dict(item, index).to_dict()
+        for index, item in enumerate(value)
+    ]
 
 
 def campaign_input_divergence(
@@ -59,6 +71,10 @@ def campaign_input_divergence(
         "dirty_paths": report.dirty_paths,
         "tracked_file_count": report.tracked_file_count,
         "policy_digest": report.policy_digest,
+        "ignored_inventory_evidence": tuple(
+            item.to_dict() for item in report.ignored_inventory_evidence
+        ),
+        "ignored_inventory_digest": report.ignored_inventory_digest,
         "rule_pack_version": report.rule_pack_version,
         "rule_pack_digest": report.rule_pack_digest,
         "scanner_version": report.scanner_version,
@@ -76,6 +92,10 @@ def campaign_input_divergence(
         "dirty_paths": campaign.dirty_paths,
         "tracked_file_count": campaign.tracked_file_count,
         "policy_digest": campaign.policy_digest,
+        "ignored_inventory_evidence": tuple(
+            item.to_dict() for item in campaign.ignored_inventory_evidence
+        ),
+        "ignored_inventory_digest": campaign.ignored_inventory_digest,
         "rule_pack_version": campaign.rule_pack_version,
         "rule_pack_digest": campaign.rule_pack_digest,
         "scanner_version": campaign.scanner_version,

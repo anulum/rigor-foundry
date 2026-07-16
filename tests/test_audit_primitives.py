@@ -49,9 +49,9 @@ def test_models_facade_preserves_protocol_primitive_exports() -> None:
     """The module split keeps the original public import surface intact."""
     assert AUDIT_DOMAINS
     assert len(AUDIT_DOMAINS) == len(set(AUDIT_DOMAINS))
-    assert SCHEMA_VERSION == "1.2"
-    assert POLICY_SCHEMA_VERSION == "1.0"
+    assert SCHEMA_VERSION == "1.3"
+    assert POLICY_SCHEMA_VERSION == "1.1"
     assert REVIEW_SCHEMA_VERSION == "1.0"
-    assert SCANNER_VERSION == "0.2.0"
+    assert SCANNER_VERSION == "0.3.0"
     assert models.AUDIT_DOMAINS is AUDIT_DOMAINS
     assert models.canonical_digest is canonical_digest

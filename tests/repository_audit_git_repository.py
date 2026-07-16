@@ -136,10 +136,11 @@ class GitRepository:
             }
         ),
         registries: list[str] | None = None,
+        ignored_inventory: list[dict[str, str]] | None = None,
     ) -> Path:
         """Write a complete internal repository policy for this worktree."""
         policy: dict[str, object] = {
-            "schema_version": "1.0",
+            "schema_version": "1.1",
             "source_line_threshold": source_threshold,
             "test_line_threshold": test_threshold,
             "source_roots": ["src", "tools"],
@@ -149,6 +150,7 @@ class GitRepository:
             "canonical_todo": "docs/internal/work/INDEX.md",
             "review_ledger": "docs/internal/audit/reviews.json",
             "enforcement_mode": "observe",
+            "ignored_inventory": ignored_inventory or [],
             "audit_domains": [
                 {
                     "name": domain,

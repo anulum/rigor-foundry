@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -252,6 +254,95 @@ def test_campaign_requires_native_consent_and_binds_secret_free_adapter_identity
     serialised = json.dumps(attestation.to_dict(), sort_keys=True)
     assert sentinel not in serialised
     assert sentinel not in (directory / "attestation.json").read_text(encoding="utf-8")
+
+
+def test_campaign_rejects_ignored_inventory_mutation_during_native_adapter(
+    tmp_path: Path,
+) -> None:
+    """Post-adapter recollection rejects a real externally mutated ignored input."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    adapter = repository.write_text(
+        "controls/native.py",
+        "import time\ntime.sleep(0.5)\nprint('complete')\n",
+    )
+    mutator = repository.write_text(
+        "controls/mutate.py",
+        """
+import os
+import pathlib
+import sys
+import time
+
+watched, target = map(pathlib.Path, sys.argv[1:])
+needle = os.fsencode(os.path.relpath(watched))
+deadline = time.monotonic() + 10
+while time.monotonic() < deadline:
+    for command in pathlib.Path("/proc").glob("[0-9]*/cmdline"):
+        if command.parent.name == str(os.getpid()):
+            continue
+        try:
+            payload = command.read_bytes()
+        except OSError:
+            continue
+        if needle in payload:
+            break
+    else:
+        time.sleep(0.005)
+        continue
+    break
+else:
+    raise TimeoutError("native adapter process was not observed")
+target.write_text('changed-during-adapter', encoding='utf-8')
+""".lstrip(),
+    )
+    repository.write_policy(
+        ignored_inventory=[
+            {
+                "evidence_id": "native-state",
+                "path": ".rigor/native-state.txt",
+                "capture": "file-sha256",
+            }
+        ],
+        native_audits=[
+            {
+                "name": "native-boundary",
+                "command": ["{python}", "controls/native.py"],
+                "timeout_seconds": 10,
+                "scope": "full",
+                "working_directory": ".",
+                "required": True,
+                "domains": ["application-security"],
+            }
+        ],
+    )
+    repository.commit()
+    target = repository.root / ".rigor/native-state.txt"
+    target.parent.mkdir()
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".coordination/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="ignored-mutation",
+        actor="coordinator/one",
+        expected_independent_runs=1,
+    )
+    process = subprocess.Popen(
+        [sys.executable, str(mutator), str(adapter), str(target)],
+        cwd=repository.root,
+    )
+    try:
+        with pytest.raises(RuntimeError, match="mutated ignored inventory state"):
+            execute_campaign(
+                campaign_path,
+                run_id="mutated",
+                agent_identity="SAMPLE-PROJECT/agent-one",
+                session_identity="terminal/one",
+                trusted_native_audits=True,
+            )
+    finally:
+        process.wait(timeout=10)
 
 
 def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: Path) -> None:

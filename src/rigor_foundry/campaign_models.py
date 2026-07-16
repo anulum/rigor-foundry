@@ -19,8 +19,9 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
-from .campaign_inputs import validate_campaign_input
+from .campaign_inputs import parse_ignored_evidence_array, validate_campaign_input
 from .git_provenance import GitExecutableProvenance
+from .ignored_inventory import IgnoredInventoryEvidence
 from .models import (
     AuditReport,
     canonical_digest,
@@ -31,18 +32,9 @@ from .models import (
 )
 from .sandbox_provenance import BubblewrapProvenance
 
-CAMPAIGN_SCHEMA_VERSION = "1.4"
+CAMPAIGN_SCHEMA_VERSION = "1.5"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
-_TOOLCHAIN_FIELDS = frozenset(
-    {
-        "python_implementation",
-        "python_version",
-        "platform",
-        "executable_digest",
-        "identity_digest",
-    }
-)
 _CAMPAIGN_FIELDS = frozenset(
     {
         "schema_version",
@@ -58,6 +50,8 @@ _CAMPAIGN_FIELDS = frozenset(
         "dirty_paths",
         "tracked_file_count",
         "policy_digest",
+        "ignored_inventory_evidence",
+        "ignored_inventory_digest",
         "rule_pack_version",
         "rule_pack_digest",
         "scanner_version",
@@ -194,7 +188,7 @@ class ToolchainIdentity:
     def from_dict(cls, value: object) -> ToolchainIdentity:
         """Parse and integrity-check a runtime identity."""
         data = require_mapping(value, "toolchain")
-        if frozenset(data) != _TOOLCHAIN_FIELDS:
+        if frozenset(data) != frozenset(cls.__dataclass_fields__):
             raise ValueError("toolchain identity fields do not match schema")
         fields = {
             "python_implementation": require_string(
@@ -239,6 +233,8 @@ class AuditCampaign:
     dirty_paths: tuple[str, ...]
     tracked_file_count: int
     policy_digest: str
+    ignored_inventory_evidence: tuple[IgnoredInventoryEvidence, ...]
+    ignored_inventory_digest: str
     rule_pack_version: str
     rule_pack_digest: str
     scanner_version: str
@@ -278,6 +274,10 @@ class AuditCampaign:
             "dirty_paths": list(report.dirty_paths),
             "tracked_file_count": report.tracked_file_count,
             "policy_digest": report.policy_digest,
+            "ignored_inventory_evidence": [
+                item.to_dict() for item in report.ignored_inventory_evidence
+            ],
+            "ignored_inventory_digest": report.ignored_inventory_digest,
             "rule_pack_version": report.rule_pack_version,
             "rule_pack_digest": report.rule_pack_digest,
             "scanner_version": report.scanner_version,
@@ -314,6 +314,13 @@ class AuditCampaign:
             dirty_paths=tuple(cast(list[str], fields["dirty_paths"])),
             tracked_file_count=cast(int, fields["tracked_file_count"]),
             policy_digest=cast(str, fields["policy_digest"]),
+            ignored_inventory_evidence=tuple(
+                IgnoredInventoryEvidence.from_dict(item, index)
+                for index, item in enumerate(
+                    cast(list[object], fields["ignored_inventory_evidence"])
+                )
+            ),
+            ignored_inventory_digest=cast(str, fields["ignored_inventory_digest"]),
             rule_pack_version=cast(str, fields["rule_pack_version"]),
             rule_pack_digest=cast(str, fields["rule_pack_digest"]),
             scanner_version=cast(str, fields["scanner_version"]),
@@ -342,6 +349,10 @@ class AuditCampaign:
             "dirty_paths": list(self.dirty_paths),
             "tracked_file_count": self.tracked_file_count,
             "policy_digest": self.policy_digest,
+            "ignored_inventory_evidence": [
+                item.to_dict() for item in self.ignored_inventory_evidence
+            ],
+            "ignored_inventory_digest": self.ignored_inventory_digest,
             "rule_pack_version": self.rule_pack_version,
             "rule_pack_digest": self.rule_pack_digest,
             "scanner_version": self.scanner_version,
@@ -386,6 +397,13 @@ class AuditCampaign:
                 "tracked_file_count",
             ),
             "policy_digest": require_string(data.get("policy_digest"), "policy_digest"),
+            "ignored_inventory_evidence": parse_ignored_evidence_array(
+                data.get("ignored_inventory_evidence")
+            ),
+            "ignored_inventory_digest": require_string(
+                data.get("ignored_inventory_digest"),
+                "ignored_inventory_digest",
+            ),
             "rule_pack_version": require_string(
                 data.get("rule_pack_version"),
                 "rule_pack_version",

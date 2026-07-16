@@ -84,6 +84,16 @@ class GitInventory:
         return tuple(item for item in self.files if item.text is not None)
 
 
+@dataclass(frozen=True)
+class StableRegularRead:
+    """Content identities derived from one stable regular-file descriptor."""
+
+    byte_size: int
+    payload: bytes | None
+    content_digest: str
+    git_blob_id: str | None
+
+
 def _run_git(
     runner: GitRunner,
     root: Path,
@@ -209,63 +219,108 @@ def _file_snapshot(metadata: os.stat_result) -> tuple[int, int, int, int, int, i
     )
 
 
-def _read_regular_bytes(
-    path: Path,
+def read_stable_regular_file_at(
+    parent_descriptor: int,
+    name: str,
     relative: str,
-    object_format: str,
-) -> tuple[int, bytes | None, str, str]:
-    """Read one regular file once and derive both content identities.
+    *,
+    object_format: str | None = None,
+    buffer_limit: int = MAX_TEXT_BYTES,
+) -> StableRegularRead:
+    """Read one no-follow regular file once through a trusted parent descriptor.
 
     Returns
     -------
-    tuple[int, bytes | None, str, str]
-        Exact byte count, buffered payload for bounded files, SHA-256, and Git
-        blob object identifier.
+    StableRegularRead
+        Exact byte count, optional bounded payload, SHA-256, and optional Git
+        blob identity, all derived from the same descriptor pass.
 
     Raises
     ------
     RuntimeError
         If the path is not one stable regular file for the complete read.
     """
+    if "/" in name or name in {"", ".", ".."}:
+        raise ValueError("stable-read name must be one path component")
+    if object_format is not None and object_format not in {"sha1", "sha256"}:
+        raise ValueError("unsupported Git object format")
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(path, flags)
+        descriptor = os.open(name, flags, dir_fd=parent_descriptor)
     except OSError as exc:
-        raise RuntimeError(f"cannot open tracked path: {relative}") from exc
+        raise RuntimeError(f"cannot open regular path: {relative}") from exc
     try:
         before = os.fstat(descriptor)
-        path_before = os.stat(path, follow_symlinks=False)
+        path_before = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
         if not stat.S_ISREG(before.st_mode) or _file_snapshot(path_before)[:2] != (
             before.st_dev,
             before.st_ino,
         ):
-            raise RuntimeError(f"tracked path is not one regular file: {relative}")
+            raise RuntimeError(f"path is not one regular file: {relative}")
         content_digest = hashlib.sha256()
-        blob_digest = hashlib.new(object_format)
-        blob_digest.update(f"blob {before.st_size}\0".encode())
-        buffered = bytearray() if before.st_size <= MAX_TEXT_BYTES else None
+        blob_digest = hashlib.new(object_format) if object_format is not None else None
+        if blob_digest is not None:
+            blob_digest.update(f"blob {before.st_size}\0".encode())
+        buffered = bytearray() if before.st_size <= buffer_limit else None
         byte_count = 0
         with os.fdopen(descriptor, "rb", closefd=False) as handle:
             while chunk := handle.read(1024 * 1024):
                 byte_count += len(chunk)
                 content_digest.update(chunk)
-                blob_digest.update(chunk)
+                if blob_digest is not None:
+                    blob_digest.update(chunk)
                 if buffered is not None:
                     buffered.extend(chunk)
         after = os.fstat(descriptor)
-        path_after = os.stat(path, follow_symlinks=False)
+        path_after = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
     except OSError as exc:
-        raise RuntimeError(f"cannot read tracked path: {relative}") from exc
+        raise RuntimeError(f"cannot read regular path: {relative}") from exc
     finally:
         os.close(descriptor)
     if (
         byte_count != before.st_size
         or _file_snapshot(after) != _file_snapshot(before)
-        or _file_snapshot(path_after)[:2] != (before.st_dev, before.st_ino)
+        or _file_snapshot(path_before) != _file_snapshot(before)
+        or _file_snapshot(path_after) != _file_snapshot(before)
     ):
-        raise RuntimeError(f"tracked path changed while being read: {relative}")
+        raise RuntimeError(f"regular path changed while being read: {relative}")
     payload = None if buffered is None else bytes(buffered)
-    return byte_count, payload, content_digest.hexdigest(), blob_digest.hexdigest()
+    return StableRegularRead(
+        byte_size=byte_count,
+        payload=payload,
+        content_digest=content_digest.hexdigest(),
+        git_blob_id=blob_digest.hexdigest() if blob_digest is not None else None,
+    )
+
+
+def _read_regular_bytes(
+    path: Path,
+    relative: str,
+    object_format: str,
+) -> tuple[int, bytes | None, str, str]:
+    """Read one tracked regular file through the shared stable-read primitive."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0)
+    try:
+        parent_descriptor = os.open(path.parent, flags)
+    except OSError as exc:
+        raise RuntimeError(f"cannot open tracked parent: {relative}") from exc
+    try:
+        result = read_stable_regular_file_at(
+            parent_descriptor,
+            path.name,
+            relative,
+            object_format=object_format,
+        )
+    finally:
+        os.close(parent_descriptor)
+    if result.git_blob_id is None:
+        raise RuntimeError(f"tracked path has no Git blob identity: {relative}")
+    return (
+        result.byte_size,
+        result.payload,
+        result.content_digest,
+        result.git_blob_id,
+    )
 
 
 def _read_tracked_file(

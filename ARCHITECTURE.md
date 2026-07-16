@@ -100,9 +100,13 @@ depends on the absence of a matching tracked owner, not only on source bytes.
 The portable inventory is deliberately Git-tracked-only. A rule may reason
 about the tracked tree, but it must not infer that an ignored or untracked
 artefact does not exist. Any control whose meaning depends on that wider local
-reality must consume an explicit, policy-declared ignored-inventory evidence
-extension or remain `needs-evidence`; tracked-only absence cannot become a
-failure verdict.
+reality must consume the explicit policy-declared ignored inventory or remain
+`needs-evidence`; tracked-only absence cannot become a failure verdict.
+`ignored_inventory.py` validates exact non-tracked Git-ignored paths, walks
+parents and final entries with no-follow descriptors, and emits content-free
+`observed`, `missing`, or `unavailable` evidence. Missing or unavailable
+evidence is not itself a failed control. Concurrent replacement or mutation
+fails closed as unavailable evidence and can never produce a mixed digest.
 
 ### Evidence records
 
@@ -111,16 +115,18 @@ failure verdict.
 validators, and shared type contracts. `candidate_anchor.py` defines candidate
 and anchor records. `models.py` defines policy, report, adapter, and review
 records while preserving the original public primitive imports. Callers must
-verify digests during load; silent repair is not permitted. Report schema 1.2
-includes `GitExecutableProvenance`, the Git object format, and strict anchored
-candidates; changing any bound input changes the report digest. Review-ledger
+verify digests during load; silent repair is not permitted. Report schema 1.3
+includes `GitExecutableProvenance`, the Git object format, ignored-inventory
+evidence, and strict anchored candidates; changing any bound input changes the
+report digest. Review-ledger
 schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes schema 1.1 of the machine-readable graph of
+`digest_dependencies.py` publishes schema 1.2 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
-includes Git provenance and toolchain identities in addition to the inventory,
-policy, rule-pack, desired-state, report, review, campaign, comparison, task,
-and closure records. Policy and review records expose one canonical identity
-each. Rule-pack version 1.1.0 binds its schema, registry version, ordered
+includes ignored inventory, Git provenance, and toolchain identities in
+addition to the tracked inventory, policy, rule-pack, desired-state, report,
+review, campaign, comparison, task, and closure records. Policy and review
+records expose one canonical identity each. Rule-pack version 1.1.0 binds its
+schema, registry version, ordered
 definitions, and definition fields into the pack digest. Conditional
 comparison inputs and deliberate stable non-edges are documented explicitly
 rather than presented as full bindings.
@@ -129,7 +135,8 @@ rather than presented as full bindings.
 
 `review.py` validates reviewer identity, decision state, evidence, timestamps,
 report binding, and duplicate prevention. Promotion rescans the repository and
-rejects changed HEAD, content, policy, Git provenance, or candidate identity.
+rejects changed HEAD, content, policy, Git provenance, ignored evidence, or
+candidate identity.
 
 `enforcement.py` supports observe, ratchet, and zero modes. A command-line mode
 may strengthen but cannot weaken the repository policy.

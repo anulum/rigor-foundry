@@ -34,7 +34,15 @@ def _repository(path: Path) -> GitRepository:
         "tests/test_optional.py",
         "import pkg.optional\n\ndef test_import() -> None:\n    assert pkg.optional is not None\n",
     )
-    repository.write_policy()
+    repository.write_policy(
+        ignored_inventory=[
+            {
+                "evidence_id": "runtime-state",
+                "path": ".rigor/runtime-state.json",
+                "capture": "file-sha256",
+            }
+        ]
+    )
     repository.commit()
     (repository.root / ".coordination").mkdir()
     repository.write_text("docs/internal/work/INDEX.md", "# Active work\n")
@@ -225,3 +233,31 @@ def test_cli_promotion_rejects_repository_head_content_and_policy_drift(
         == 2
     )
     assert "report policy is stale" in capsys.readouterr().err
+
+
+def test_cli_promotion_rejects_ignored_inventory_drift(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Promotion cannot reuse a review after declared ignored evidence changes."""
+    repository = _repository(tmp_path / "ignored-drift")
+    report_path = repository.root / ".coordination/report.json"
+    review_path = repository.root / ".coordination/review.json"
+    assert (
+        main(
+            [
+                "scan",
+                "--root",
+                str(repository.root),
+                "--policy",
+                _POLICY,
+                "--json-out",
+                str(report_path),
+            ]
+        )
+        == 0
+    )
+    candidate_id = _write_valid_review(report_path, review_path)
+    repository.write_text(".rigor/runtime-state.json", '{"state":"changed"}\n')
+    assert main(_promotion_arguments(repository, report_path, review_path, candidate_id)) == 2
+    assert "ignored inventory is stale" in capsys.readouterr().err

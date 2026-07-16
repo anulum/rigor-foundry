@@ -80,9 +80,11 @@ def report_markdown(report: AuditReport) -> str:
         f"- Git executable digest: `{report.git_provenance.executable_digest}`",
         f"- Git trust-policy digest: `{report.git_provenance.trust_policy_digest}`",
         f"- Policy digest: `{report.policy_digest}`",
+        f"- Ignored-inventory digest: `{report.ignored_inventory_digest}`",
         f"- Report digest: `{report.report_digest}`",
         f"- Tracked files: {report.tracked_file_count}",
         f"- Dirty tracked paths: {len(report.dirty_paths)}",
+        f"- Declared ignored paths: {len(report.ignored_inventory_evidence)}",
         f"- Candidates: {len(report.candidates)}",
         "",
         "## Categories",
@@ -91,6 +93,16 @@ def report_markdown(report: AuditReport) -> str:
     lines.extend(f"- `{category}`: {categories[category]}" for category in sorted(categories))
     lines.extend(("", "## Rules", ""))
     lines.extend(f"- `{rule}`: {rules[rule]}" for rule in sorted(rules))
+    lines.extend(("", "## Ignored inventory", ""))
+    if not report.ignored_inventory_evidence:
+        lines.append("- No ignored paths were declared.")
+    for item in report.ignored_inventory_evidence:
+        lines.append(
+            f"- `{item.evidence_id}`: `{item.path}`; capture `{item.capture}`; "
+            f"status `{item.status}`; kind `{item.observed_kind or '-'}`; "
+            f"bytes `{item.byte_size if item.byte_size is not None else '-'}`; "
+            f"SHA-256 `{item.content_sha256 or '-'}`; reason `{item.reason}`"
+        )
     lines.extend(("", "## Candidates", ""))
     for candidate in report.candidates:
         anchor = candidate.anchor
@@ -235,6 +247,13 @@ def _promote_command(args: argparse.Namespace) -> int:
         raise ValueError("report tracked content is stale; rescan and re-review before promotion")
     if current.policy_digest != report.policy_digest:
         raise ValueError("report policy is stale; rescan and re-review before promotion")
+    if (
+        current.ignored_inventory_evidence != report.ignored_inventory_evidence
+        or current.ignored_inventory_digest != report.ignored_inventory_digest
+    ):
+        raise ValueError(
+            "report ignored inventory is stale; rescan and re-review before promotion"
+        )
     if current.git_provenance.identity_digest != report.git_provenance.identity_digest:
         raise ValueError("report Git executable provenance is stale; rescan before promotion")
     if review.candidate_id not in {candidate.candidate_id for candidate in current.candidates}:

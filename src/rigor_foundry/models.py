@@ -44,6 +44,12 @@ from .candidate_anchor import (
     candidate_object_format_errors,
 )
 from .git_provenance import GitExecutableProvenance
+from .ignored_inventory import (
+    IgnoredInventoryDeclaration,
+    IgnoredInventoryEvidence,
+    ignored_inventory_digest,
+    parse_ignored_inventory,
+)
 from .rules import RULE_PACK_VERSION, rule_pack_digest
 
 __all__ = (
@@ -85,6 +91,8 @@ _REPORT_FIELDS = frozenset(
         "git_provenance",
         "policy",
         "policy_digest",
+        "ignored_inventory_evidence",
+        "ignored_inventory_digest",
         "candidates",
         "report_digest",
     }
@@ -212,6 +220,7 @@ class AuditPolicy:
     enforcement_mode: EnforcementMode = "observe"
     audit_domains: tuple[AuditDomainSpec, ...] = ()
     native_audits: tuple[AdapterSpec, ...] = ()
+    ignored_inventory: tuple[IgnoredInventoryDeclaration, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the policy deterministically."""
@@ -228,6 +237,7 @@ class AuditPolicy:
             "enforcement_mode": self.enforcement_mode,
             "audit_domains": [domain.to_dict() for domain in self.audit_domains],
             "native_audits": [adapter.to_dict() for adapter in self.native_audits],
+            "ignored_inventory": [item.to_dict() for item in self.ignored_inventory],
         }
 
     @property
@@ -305,6 +315,7 @@ class AuditPolicy:
             native_audits=tuple(
                 AdapterSpec.from_dict(item, index) for index, item in enumerate(raw_adapters)
             ),
+            ignored_inventory=parse_ignored_inventory(data.get("ignored_inventory", [])),
         )
 
     @classmethod
@@ -339,10 +350,12 @@ class AuditReport:
     tracked_file_count: int
     git_provenance: GitExecutableProvenance
     policy: AuditPolicy
+    ignored_inventory_evidence: tuple[IgnoredInventoryEvidence, ...]
     candidates: tuple[Candidate, ...]
     rule_pack_version: str
     rule_pack_digest: str
     policy_digest: str
+    ignored_inventory_digest: str
     report_digest: str
 
     @classmethod
@@ -359,6 +372,7 @@ class AuditReport:
         tracked_file_count: int,
         git_provenance: GitExecutableProvenance,
         policy: AuditPolicy,
+        ignored_inventory_evidence: tuple[IgnoredInventoryEvidence, ...] = (),
         candidates: tuple[Candidate, ...],
     ) -> AuditReport:
         """Build a sorted report and compute its integrity digest."""
@@ -370,6 +384,15 @@ class AuditReport:
         anchor_errors = candidate_object_format_errors(git_object_format, candidates)
         if anchor_errors:
             raise ValueError("; ".join(anchor_errors))
+        declarations = tuple(
+            (item.evidence_id, item.path, item.capture) for item in policy.ignored_inventory
+        )
+        observations = tuple(
+            (item.evidence_id, item.path, item.capture) for item in ignored_inventory_evidence
+        )
+        if observations != declarations:
+            raise ValueError("ignored inventory evidence does not match policy declarations")
+        ignored_digest = ignored_inventory_digest(ignored_inventory_evidence)
         ordered = tuple(
             sorted(
                 candidates,
@@ -400,6 +423,8 @@ class AuditReport:
             "git_provenance": git_provenance.to_dict(),
             "policy": policy.to_dict(),
             "policy_digest": policy.policy_digest,
+            "ignored_inventory_evidence": [item.to_dict() for item in ignored_inventory_evidence],
+            "ignored_inventory_digest": ignored_digest,
             "candidates": [item.to_dict() for item in ordered],
         }
         return cls(
@@ -414,10 +439,12 @@ class AuditReport:
             tracked_file_count=tracked_file_count,
             git_provenance=git_provenance,
             policy=policy,
+            ignored_inventory_evidence=ignored_inventory_evidence,
             candidates=ordered,
             rule_pack_version=RULE_PACK_VERSION,
             rule_pack_digest=rule_pack_digest(),
             policy_digest=policy.policy_digest,
+            ignored_inventory_digest=ignored_digest,
             report_digest=_sha256(body),
         )
 
@@ -439,6 +466,10 @@ class AuditReport:
             "git_provenance": self.git_provenance.to_dict(),
             "policy": self.policy.to_dict(),
             "policy_digest": self.policy_digest,
+            "ignored_inventory_evidence": [
+                item.to_dict() for item in self.ignored_inventory_evidence
+            ],
+            "ignored_inventory_digest": self.ignored_inventory_digest,
             "candidates": [item.to_dict() for item in self.candidates],
             "report_digest": self.report_digest,
         }
@@ -464,6 +495,9 @@ class AuditReport:
         raw_candidates = data.get("candidates")
         if not isinstance(raw_candidates, list):
             raise ValueError("report.candidates must be an array")
+        raw_ignored = data.get("ignored_inventory_evidence")
+        if not isinstance(raw_ignored, list):
+            raise ValueError("report.ignored_inventory_evidence must be an array")
         report = cls.build(
             repository_root=_string(data.get("repository_root"), "report.repository_root"),
             head=_string(data.get("head"), "report.head"),
@@ -484,6 +518,10 @@ class AuditReport:
             ),
             git_provenance=GitExecutableProvenance.from_dict(data.get("git_provenance")),
             policy=AuditPolicy.from_dict(data.get("policy")),
+            ignored_inventory_evidence=tuple(
+                IgnoredInventoryEvidence.from_dict(item, index)
+                for index, item in enumerate(raw_ignored)
+            ),
             candidates=tuple(Candidate.from_dict(item) for item in raw_candidates),
         )
         recorded_digest = _string(data.get("report_digest"), "report.report_digest")
@@ -491,8 +529,14 @@ class AuditReport:
             data.get("policy_digest"),
             "report.policy_digest",
         )
+        recorded_ignored_digest = _string(
+            data.get("ignored_inventory_digest"),
+            "report.ignored_inventory_digest",
+        )
         if report.policy_digest != recorded_policy_digest:
             raise ValueError("policy digest does not match report policy")
+        if report.ignored_inventory_digest != recorded_ignored_digest:
+            raise ValueError("ignored inventory digest does not match report evidence")
         if report.report_digest != recorded_digest:
             raise ValueError("report digest does not match report content")
         return report

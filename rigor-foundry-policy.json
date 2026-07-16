@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "source_line_threshold": 700,
   "test_line_threshold": 700,
   "source_roots": [
@@ -17,6 +17,7 @@
   "canonical_todo": ".rigor/TODO.md",
   "review_ledger": ".rigor/reviews.json",
   "enforcement_mode": "observe",
+  "ignored_inventory": [],
   "audit_domains": [
     {
       "name": "test-authenticity",

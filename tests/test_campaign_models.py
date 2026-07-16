@@ -115,7 +115,7 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
 
 def test_campaign_schema_version_declares_complete_input_binding_migration() -> None:
     """Campaign 1.4 also binds the repository Git object format."""
-    assert CAMPAIGN_SCHEMA_VERSION == "1.4"
+    assert CAMPAIGN_SCHEMA_VERSION == "1.5"
     assert rigor_foundry.campaign_input_divergence is campaign_input_divergence
     assert rigor_foundry.validate_campaign_input is validate_campaign_input
 

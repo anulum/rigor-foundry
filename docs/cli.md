@@ -21,13 +21,19 @@ requires an explicit containing root. Reports expose the selected Git version,
 executable digest, and trust-policy digest; JSON reports additionally retain
 the resolved path, selected root, and provenance identity digest.
 
-JSON report schema 1.2 records `git_object_format` and a strict discriminated
+JSON report schema 1.3 records `git_object_format`, the declared ignored-path
+evidence tuple and digest, and a strict discriminated
 anchor for every candidate. `tracked-blob` anchors include path, inclusive
 `line_start`/`line_end`, exact scanned `blob_oid`, and `content_sha256`.
 `repository-tree` anchors include the path locus, fixed `1:1` state span,
 `tree_oid`, and `tracked_content_sha256`. Markdown output renders the same
 location, anchor kind, object identity, and digest beside the bounded evidence
 excerpt.
+
+Ignored evidence is collected only for exact paths declared by policy schema
+1.1. JSON never includes ignored file content, link targets, environment
+values, or recursive directory members. `missing` and `unavailable` remain
+evidence states and do not create findings by themselves.
 
 ## Evidence review
 
@@ -50,9 +56,10 @@ option-surface digest, and derived provenance identity.
 inputs, retain attestations, and record disagreements rather than averaging
 them away.
 
-Campaign schema 1.4 freezes the repository Git object format in addition to the
-report input projection. Runs from a different object format fail as input
-divergence.
+Campaign schema 1.5 freezes the repository Git object format and ignored
+inventory in addition to the report input projection. Runs from a different
+object format or ignored state fail as input divergence. Evidence is collected
+again after native adapters; any mutation rejects the run before attestation.
 
 `campaign-run` uses the same native consent flag and sandbox boundary. A run
 without declared native adapters remains passive and does not require consent.

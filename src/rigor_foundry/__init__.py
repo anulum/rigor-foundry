@@ -50,6 +50,13 @@ from .effective_profile import (
     ResolvedVariable,
 )
 from .git_provenance import GitExecutableProvenance, GitTrustPolicy
+from .ignored_inventory import (
+    IGNORED_INVENTORY_SCHEMA_VERSION,
+    IgnoredInventoryDeclaration,
+    IgnoredInventoryEvidence,
+    collect_ignored_inventory,
+    ignored_inventory_digest,
+)
 from .model_primitives import (
     SecretReference,
     VariableAssignment,
@@ -104,6 +111,7 @@ __all__ = [
     "DIGEST_DEPENDENCY_SCHEMA_VERSION",
     "DIGEST_NODES",
     "ED25519_SIGNATURE_MESSAGE_VERSION",
+    "IGNORED_INVENTORY_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
     "AdapterLock",
@@ -129,6 +137,8 @@ __all__ = [
     "ExceptionWaiver",
     "GitExecutableProvenance",
     "GitTrustPolicy",
+    "IgnoredInventoryDeclaration",
+    "IgnoredInventoryEvidence",
     "NegativeSearch",
     "PackSelection",
     "PackSignature",
@@ -165,11 +175,13 @@ __all__ = [
     "bounded_candidate_evidence",
     "campaign_input_divergence",
     "candidate_anchor_errors",
+    "collect_ignored_inventory",
     "coverage_residual_errors",
     "digest_dependency_graph",
     "digest_dependency_graph_digest",
     "direct_dependents",
     "ed25519_signature_message",
+    "ignored_inventory_digest",
     "render_todo_entry",
     "report_markdown",
     "resolve_effective_profile",

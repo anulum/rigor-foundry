@@ -20,8 +20,9 @@ from .candidate_anchor import (
 )
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
-from .git_provenance import GitTrustPolicy
+from .git_provenance import GitRunner, GitTrustPolicy
 from .godfiles import scan_godfiles
+from .ignored_inventory import collect_ignored_inventory
 from .models import AuditPolicy, AuditReport, Candidate
 from .polyglot_architecture import scan_polyglot_architecture
 from .test_authenticity import scan_test_authenticity
@@ -182,8 +183,14 @@ def scan_repository(
     AuditReport
         Content-addressed report including exact Git executable provenance.
     """
-    inventory = load_git_inventory(root, git_trust_policy=git_trust_policy)
+    runner = GitRunner(git_trust_policy)
+    inventory = load_git_inventory(root, git_runner=runner)
     policy, policy_anchor, governance = resolve_policy(inventory, policy_path)
+    ignored_evidence = collect_ignored_inventory(
+        inventory,
+        policy.ignored_inventory,
+        git_runner=runner,
+    )
     candidates = (
         *governance,
         *domain_governance_candidates(policy, policy_anchor),
@@ -207,5 +214,6 @@ def scan_repository(
         tracked_file_count=len(inventory.files),
         git_provenance=inventory.git_provenance,
         policy=policy,
+        ignored_inventory_evidence=ignored_evidence,
         candidates=candidates,
     )

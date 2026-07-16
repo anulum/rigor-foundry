@@ -23,9 +23,9 @@ Candidate-anchor schema 1.0 is a strict discriminated union:
 - `repository-tree` binds a path locus, fixed state span `1:1`, HEAD tree
   identity, and complete tracked-content SHA-256.
 
-Report schema 1.2 requires one anchor on every candidate and records
-`git_object_format`. Scanner version 0.2.0 verifies all anchors against the
-inventory that produced the report. Campaign schema 1.4 carries the object
+Report schema 1.3 requires one anchor on every candidate and records
+`git_object_format`. Scanner version 0.3.0 verifies all anchors against the
+inventory that produced the report. Campaign schema 1.5 carries the object
 format into independent-run input comparison. Earlier report or campaign
 records must be regenerated; unknown or mixed anchor fields have no
 compatibility fallback.
@@ -35,6 +35,22 @@ mandatory audit domains, size registries, enforcement mode, and declared native
 adapters. The desired-state API adds typed adopter variables, namespaced custom
 controls, applicability decisions, exact standard-pack selections, and
 secret-provider references.
+
+## Declared ignored inventory
+
+Policy schema 1.1 accepts an `ignored_inventory` array sorted by
+`evidence_id`, `path`, and `capture`. Every declaration contains a unique
+portable `evidence_id`, a unique exact normalised repository-relative path,
+and either `presence` or `file-sha256`. Globs, absolute paths, parent traversal,
+tracked paths, and paths outside Git ignore rules are rejected.
+
+Collection never recursively inventories a directory and never records file
+content, symlink targets, environment values, or undeclared paths. Evidence is
+limited to `observed`, `missing`, or `unavailable`, the observed entry kind, a
+regular-file byte size, an optional SHA-256 for `file-sha256`, and a bounded
+reason. No-follow descriptor walks prevent parent or final symlink traversal.
+Concurrent mutation or replacement becomes unavailable evidence. Missing and
+unavailable observations are evidence gaps, not automatic control failures.
 
 ## Git executable trust
 

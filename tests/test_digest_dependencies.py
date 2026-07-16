@@ -44,6 +44,10 @@ from rigor_foundry.effective_profile import (
     ResolvedVariable,
 )
 from rigor_foundry.git_provenance import GitExecutableProvenance
+from rigor_foundry.ignored_inventory import (
+    IgnoredInventoryDeclaration,
+    IgnoredInventoryEvidence,
+)
 from rigor_foundry.models import (
     AuditPolicy,
     AuditReport,
@@ -76,6 +80,7 @@ def _report(
     tracked_content_digest: str = "3" * 64,
     candidates: tuple[Candidate, ...] | None = None,
     git_provenance: GitExecutableProvenance | None = None,
+    ignored_inventory_evidence: tuple[IgnoredInventoryEvidence, ...] = (),
 ) -> AuditReport:
     """Build one report whose repository root exists for campaign construction."""
     source, _review_record = source_records()
@@ -90,6 +95,7 @@ def _report(
         tracked_file_count=source.tracked_file_count,
         git_provenance=git_provenance or sample_git_provenance(),
         policy=source.policy if policy is None else policy,
+        ignored_inventory_evidence=ignored_inventory_evidence,
         candidates=source.candidates if candidates is None else candidates,
     )
 
@@ -229,6 +235,7 @@ def _workflow_snapshot(
     """Return production identities for the report/campaign/work subgraph."""
     return {
         "inventory": report.tracked_content_digest,
+        "ignored-inventory": report.ignored_inventory_digest,
         "git-provenance": report.git_provenance.identity_digest,
         "policy": report.policy_digest,
         "rule-pack": report.rule_pack_digest,
@@ -318,9 +325,10 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.1"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.2"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
+        "ignored-inventory",
         "git-provenance",
         "policy",
         "rule-pack",
@@ -335,12 +343,12 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 20
+    assert len(DIGEST_DEPENDENCIES) == 22
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.1"
+    assert digest_dependency_graph()["schema_version"] == "1.2"
     assert (
         digest_dependency_graph_digest()
-        == "3138828da5a6bc5d1cd1a5ac633e3206911327b4cd54fa0ff4dd80eedced2362"
+        == "e2922f40b51aff8e86e16676aa164bf3e4a5333d812465969db4b2e2a7201a4e"
     )
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
@@ -625,6 +633,77 @@ def test_report_review_campaign_and_task_mutations_respect_stable_nonedges(
                 baseline_review,
                 task_changed,
                 baseline_campaign,
+            ),
+            **profile,
+        },
+    )
+
+
+def test_ignored_inventory_mutation_rebinds_report_and_campaign_subgraphs(
+    tmp_path: Path,
+) -> None:
+    """Ignored evidence changes every declared dependent and no unrelated identity."""
+    declaration = IgnoredInventoryDeclaration(
+        "runtime-state",
+        ".rigor/runtime-state.json",
+        "file-sha256",
+    )
+    policy = replace(_report(tmp_path).policy, ignored_inventory=(declaration,))
+    missing = IgnoredInventoryEvidence(
+        declaration.evidence_id,
+        declaration.path,
+        declaration.capture,
+        "missing",
+        None,
+        None,
+        None,
+        "missing",
+    )
+    observed = IgnoredInventoryEvidence(
+        declaration.evidence_id,
+        declaration.path,
+        declaration.capture,
+        "observed",
+        "regular-file",
+        2,
+        "a" * 64,
+        "observed",
+    )
+    before_report = _report(
+        tmp_path,
+        policy=policy,
+        ignored_inventory_evidence=(missing,),
+    )
+    before_review = _review(before_report)
+    before_task = _task(before_report, before_review)
+    before_campaign = _campaign(before_report)
+    baseline = _workflow_snapshot(
+        before_report,
+        before_review,
+        before_task,
+        before_campaign,
+    )
+    profile = _profile_snapshot(
+        *_effective_records(toolchain_digest=before_campaign.toolchain.identity_digest)
+    )
+    baseline.update(profile)
+
+    after_report = _report(
+        tmp_path,
+        policy=policy,
+        ignored_inventory_evidence=(observed,),
+    )
+    after_review = _review(after_report)
+    after_task = _task(after_report, after_review)
+    _assert_transition(
+        "ignored-inventory",
+        baseline,
+        {
+            **_workflow_snapshot(
+                after_report,
+                after_review,
+                after_task,
+                _campaign(after_report),
             ),
             **profile,
         },

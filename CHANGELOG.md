@@ -7,6 +7,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Policy schema 1.1 can declare a sorted, unique inventory of exact Git-ignored
+  paths for bounded `presence` or `file-sha256` capture. Evidence records only
+  status, kind, regular-file size, optional SHA-256, and a bounded reason; raw
+  content, symlink targets, environment values, and recursive members are
+  never retained.
 - Every audit candidate now carries a strict machine-verifiable anchor. A
   tracked-blob anchor binds the exact scanned Git blob, content SHA-256, and
   inclusive line span; a repository-tree anchor binds absence and
@@ -17,9 +22,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Report schema 1.2 and scanner version 0.2.0 require anchored candidates and
-  record the repository Git object format. Campaign schema 1.4 binds that
-  object format into every independent-run input contract.
+- Report schema 1.3 and scanner version 0.3.0 bind ignored-inventory evidence
+  and its digest in addition to anchored candidates and the repository Git
+  object format. Campaign schema 1.5 freezes the same evidence and rejects
+  mutation during native adapters; promotion rejects stale ignored evidence.
+- Digest-dependency schema 1.2 adds the ignored-inventory identity and its
+  unconditional report and campaign bindings.
 - Dirty tracked files are anchored to the exact worktree bytes inspected by
   the scanner, including binary, non-UTF-8, symlink, and oversized content,
   rather than to a stale stage-zero index object.

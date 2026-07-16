@@ -48,6 +48,13 @@ bindings, missing public regressions, and expired residual reviews. Classified
 race, platform, and runtime-invariant residuals remain visible debt and receive
 no coverage credit.
 
+Ignored-inventory validation uses real temporary Git repositories. The focused
+owner test covers strict declarations, tracked and nonignored rejection,
+regular files, directories, missing paths, final symlinks, unsafe symlinked
+parents, report round trips, sentinel non-disclosure, and five deterministic
+inotify-synchronised concurrent-mutation runs. Campaign and promotion tests
+prove ignored-state drift is rejected before attestation or TODO mutation.
+
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. The exact-tag guard uses
