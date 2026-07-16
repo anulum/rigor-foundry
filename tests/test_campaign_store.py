@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import json
 import shutil
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.campaign_models import AuditCampaign
+from rigor_foundry.campaign_compare import compare_campaign
+from rigor_foundry.campaign_models import AuditCampaign, AuditRunAttestation
 from rigor_foundry.campaign_store import (
     StoredAuditRun,
     campaign_relative_path,
@@ -31,6 +31,7 @@ from rigor_foundry.campaign_store import (
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
 from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import ReviewRecord, canonical_digest, reviews_to_json
+from rigor_foundry.scanner import scan_repository
 
 
 def _repository(path: Path) -> GitRepository:
@@ -78,6 +79,18 @@ def _rewrite_attestation(run_directory: Path, changed: dict[str, object]) -> Non
         json.dumps(changed, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _rebuild_attestation(
+    attestation: object,
+    **changes: object,
+) -> AuditRunAttestation:
+    """Return a parser-verified attestation carrying selected relation changes."""
+    assert isinstance(attestation, AuditRunAttestation)
+    document = {**attestation.to_dict(), **changes}
+    document.pop("attestation_digest")
+    document["attestation_digest"] = canonical_digest(document)
+    return AuditRunAttestation.from_dict(document)
 
 
 def test_campaign_storage_is_canonical_ignored_and_create_only(tmp_path: Path) -> None:
@@ -155,19 +168,31 @@ def test_store_run_rejects_cross_campaign_and_noncanonical_bundles(tmp_path: Pat
     attestation = stored.attestation
     cases = (
         (
-            replace(attestation, run_id="wrong-campaign", campaign_id="OTHER-PROJECT"),
+            _rebuild_attestation(
+                attestation,
+                run_id="wrong-campaign",
+                campaign_id="OTHER-PROJECT",
+            ),
             "different campaign",
         ),
         (
-            replace(attestation, run_id="wrong-contract", input_contract_digest="0" * 64),
+            _rebuild_attestation(
+                attestation,
+                run_id="wrong-contract",
+                input_contract_digest="0" * 64,
+            ),
             "input contract",
         ),
         (
-            replace(attestation, run_id="wrong-report", report_digest="0" * 64),
+            _rebuild_attestation(
+                attestation,
+                run_id="wrong-report",
+                report_digest="0" * 64,
+            ),
             "report digest",
         ),
         (
-            replace(
+            _rebuild_attestation(
                 attestation,
                 run_id="wrong-path",
                 report_relative_path="runs/elsewhere/report.json",
@@ -184,6 +209,55 @@ def test_store_run_rejects_cross_campaign_and_noncanonical_bundles(tmp_path: Pat
     shutil.copy2(campaign_path, outside)
     with pytest.raises(ValueError, match="outside its repository"):
         store_run(outside, stored.report, attestation)
+
+
+def test_campaign_storage_rejects_report_from_another_real_git_executable(
+    tmp_path: Path,
+) -> None:
+    """Store, reload, and comparison cannot launder alternate Git provenance."""
+    _repository, campaign_path, campaign, stored = _campaign_bundle(tmp_path)
+    tools = tmp_path / "alternate-tools"
+    tools.mkdir()
+    shutil.copy2(stored.report.git_provenance.resolved_path, tools / "git")
+    alternate = scan_repository(
+        Path(campaign.repository_root),
+        Path(campaign.policy_path),
+        git_trust_policy=GitTrustPolicy(trusted_roots=(str(tools),)),
+    )
+    forged = _rebuild_attestation(
+        stored.attestation,
+        run_id="alternate-git",
+        report_relative_path="runs/alternate-git/report.json",
+        report_digest=alternate.report_digest,
+        candidate_count=len(alternate.candidates),
+    )
+
+    with pytest.raises(ValueError, match="git_provenance"):
+        store_run(campaign_path, alternate, forged)
+
+    run_directory = campaign_path.parent / "runs" / stored.attestation.run_id
+    (run_directory / "report.json").write_text(alternate.to_json(), encoding="utf-8")
+    persisted = _rebuild_attestation(
+        stored.attestation,
+        report_digest=alternate.report_digest,
+        candidate_count=len(alternate.candidates),
+    )
+    _rewrite_attestation(run_directory, persisted.to_dict())
+    with pytest.raises(ValueError, match="campaign input divergence: git_provenance"):
+        load_runs(campaign_path)
+
+    comparison = compare_campaign(
+        campaign,
+        (StoredAuditRun(attestation=forged, report=alternate),),
+        (),
+        comparison_id="alternate-git",
+        created_by="coordinator/one",
+        created_at="2026-07-15T12:00:00Z",
+    )
+    assert comparison.unresolved
+    assert comparison.input_divergence == (
+        "run alternate-git: git_provenance differs from campaign contract",
+    )
 
 
 def test_load_runs_rejects_self_consistent_wrong_bindings(tmp_path: Path) -> None:

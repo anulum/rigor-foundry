@@ -29,6 +29,7 @@ _VERSION = re.compile(
 )
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _READ_SIZE = 1024 * 1024
+_COMMAND_TIMEOUT_SECONDS = 30
 _PROTECTED_CONFIG_KEYS: Final = frozenset({"core.fsmonitor", "core.hookspath"})
 
 
@@ -552,8 +553,11 @@ class GitRunner:
         *,
         cwd: Path,
         check: bool,
+        timeout_seconds: int,
     ) -> subprocess.CompletedProcess[bytes]:
         """Execute argv and verify the executable on both sides of the call."""
+        if timeout_seconds <= 0:
+            raise ValueError("Git command timeout must be positive")
         self._verify_unchanged()
         descriptor: int | None = None
         try:
@@ -598,10 +602,12 @@ class GitRunner:
                     env=self._environment(),
                     pass_fds=(descriptor,),
                     shell=False,
-                    timeout=30,
+                    timeout=timeout_seconds,
                 )
             except subprocess.TimeoutExpired as exc:
-                raise RuntimeError("trusted Git command exceeded the 30-second limit") from exc
+                raise RuntimeError(
+                    f"trusted Git command exceeded the {timeout_seconds}-second limit"
+                ) from exc
             except subprocess.CalledProcessError as exc:
                 raise RuntimeError(
                     f"trusted Git command failed with exit status {exc.returncode}"
@@ -613,7 +619,12 @@ class GitRunner:
 
     def _read_version(self) -> str:
         """Read and parse the exact binary's machine-comparable version."""
-        completed = self._execute(("--version",), cwd=self._path.parent, check=True)
+        completed = self._execute(
+            ("--version",),
+            cwd=self._path.parent,
+            check=True,
+            timeout_seconds=_COMMAND_TIMEOUT_SECONDS,
+        )
         try:
             output = completed.stdout.decode("utf-8").strip()
         except UnicodeDecodeError as exc:
@@ -628,8 +639,21 @@ class GitRunner:
         cwd: Path,
         *arguments: str,
         check: bool = True,
+        timeout_seconds: int = _COMMAND_TIMEOUT_SECONDS,
     ) -> subprocess.CompletedProcess[bytes]:
-        """Run one fixed Git argv from ``cwd`` without shell or ambient PATH."""
+        """Run one fixed Git argv from ``cwd`` without shell or ambient PATH.
+
+        Parameters
+        ----------
+        cwd:
+            Existing working directory for the Git command.
+        *arguments:
+            Fixed Git arguments.
+        check:
+            Raise when Git returns a non-zero exit status.
+        timeout_seconds:
+            Positive hard wall-clock deadline for the child process.
+        """
         self._reject_protected_config_overrides(arguments)
         hooks = Path(self.provenance.trusted_root) / ".rigor-foundry-disabled-hooks"
         if hooks.exists() or hooks.is_symlink():
@@ -642,7 +666,12 @@ class GitRunner:
             f"core.hooksPath={hooks_path}",
             *arguments,
         )
-        return self._execute(guarded_arguments, cwd=cwd, check=check)
+        return self._execute(
+            guarded_arguments,
+            cwd=cwd,
+            check=check,
+            timeout_seconds=timeout_seconds,
+        )
 
     @staticmethod
     def _reject_protected_config_overrides(arguments: tuple[str, ...]) -> None:

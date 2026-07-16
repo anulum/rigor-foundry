@@ -14,6 +14,7 @@ import os
 import re
 from pathlib import Path
 
+from rigor_foundry.coverage_residuals import coverage_residual_errors
 from tools._repository import ROOT, read_text, run, visible_files
 from tools.check_action_pins import action_pin_errors
 from tools.check_data_boundary import data_boundary_errors
@@ -46,6 +47,7 @@ REQUIRED_PATHS = (
     "CITATION.cff",
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
+    "coverage-residuals.json",
     "Dockerfile",
     "GOVERNANCE.md",
     "LICENSE",
@@ -152,6 +154,7 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
     errors.extend(secret_errors(root))
     errors.extend(data_boundary_errors(root))
     errors.extend(dependency_waiver_errors(root))
+    errors.extend(coverage_residual_errors(root))
     return errors
 
 

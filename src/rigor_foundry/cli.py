@@ -22,6 +22,10 @@ from .campaign_workflow import (
     create_campaign,
     execute_campaign,
 )
+from .coverage_residuals import (
+    DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
+    coverage_residual_errors,
+)
 from .enforcement import evaluate_enforcement
 from .git_provenance import (
     DEFAULT_MAXIMUM_GIT_VERSION_EXCLUSIVE,
@@ -318,6 +322,18 @@ def _campaign_compare_command(args: argparse.Namespace) -> int:
     return 1 if comparison.unresolved else 0
 
 
+def _residuals_check_command(args: argparse.Namespace) -> int:
+    """Validate classified residual evidence and preregistered negative searches."""
+    errors = coverage_residual_errors(args.root, args.manifest)
+    if errors:
+        print("coverage residuals: FAIL")
+        for error in errors:
+            print(f"- {error}")
+        return 1
+    print("coverage residuals: PASS")
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     """Build the command-line parser."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -423,6 +439,18 @@ def _parser() -> argparse.ArgumentParser:
     campaign_compare.add_argument("--actor", required=True)
     _add_git_trust_arguments(campaign_compare)
     campaign_compare.set_defaults(handler=_campaign_compare_command)
+
+    residuals = subparsers.add_parser(
+        "residuals-check",
+        help="Validate expiring classified coverage residuals.",
+    )
+    residuals.add_argument("--root", type=Path, required=True)
+    residuals.add_argument(
+        "--manifest",
+        type=Path,
+        default=DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
+    )
+    residuals.set_defaults(handler=_residuals_check_command)
     return parser
 
 

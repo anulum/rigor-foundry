@@ -32,6 +32,7 @@ execution, or production promotion.
 | Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
 | Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |
+| Classified residuals | Exact source-symbol binding, expiry, public-test references, and preregistered negative searches | Same contract plus aggregate branch-aware coverage evidence |
 
 ## Local integration evidence
 
@@ -149,19 +150,38 @@ documentation, wheel and source-distribution builds, Twine checks, and an
 external installed-wheel same-key cross-domain round trip passed. Hosted CI
 remains required after an authorised push.
 
-The digest-dependency lane ran 105 affected tests across 12 explicit owner and
-consumer files without invoking the prohibited aggregate local suite. Its
-51-test owner coverage run reached 99.03% branch-aware coverage across the five
-changed protocol modules; the new graph, closure, and versioned-rule modules
-each reached 100%. The graph mutation tests compare all 12 identities for every
-declared upstream class, require every reachable digest to change, and require
-every unrelated digest to remain stable. Ruff, strict MyPy, Bandit, Semgrep,
-strict repository and documentation audits, Actionlint, typos, REUSE 171/171,
-secret and dependency-waiver guards, and both dependency audits passed. A
-fresh wheel and source distribution passed Twine checks; a clean external
-environment installed the hash-locked runtime dependencies and wheel, then
-reproduced the normative graph and rule-pack digest vectors through the public
-API. Hosted CI remains required after an authorised push.
+The initial digest-dependency lane ran 105 affected tests across 12 explicit
+owner and consumer files without invoking the prohibited aggregate local
+suite. Its 51-test owner coverage run reached 99.03% branch-aware coverage
+across the five changed protocol modules; the graph, closure, and versioned-rule
+modules each reached 100%. Ruff, strict MyPy, Bandit, Semgrep, strict repository
+and documentation audits, Actionlint, typos, REUSE 171/171, secret and
+dependency-waiver guards, both dependency audits, package checks, and an
+external installed-wheel digest round trip passed.
+
+The current successor advances the graph to schema 1.1 and 14 identities by
+adding Git provenance and toolchain nodes plus their direct bindings. Its
+dedicated 13-test mutation suite reaches 100% statement and branch coverage,
+requires every reachable digest to change, and requires every unrelated digest
+to remain stable. Hosted CI remains required after an authorised push.
+
+The exact-object audit of the first combined successor then identified two
+blockers: campaign records did not validate the report's complete Git input at
+every persistence/comparison boundary, and security-sensitive owner tests
+claimed coverage through private helpers and simulated production internals.
+The current successor uses one public campaign-input validator in attestation
+construction, durable store/load, workflow execution, and comparison. Real
+alternate Git executables now prove rejection at those public boundaries.
+
+The same successor replaces the prohibited tests with public APIs, real
+executables, real filesystems, real process deadlines, and installed-platform
+contracts. Nine intentionally inaccessible fail-closed guards are instead
+recorded in an expiring, source-digest-bound residual manifest. Its dedicated
+32-test owner run reaches 100% statement and branch coverage for
+`coverage_residuals.py`; a 138-test affected-owner invocation passed every
+test. The partial combined coverage selection from that invocation is not
+represented as repository-wide coverage evidence. Aggregate coverage and the
+supported Python/platform matrix remain hosted-CI gates.
 
 ## Security-boundary remediation evidence
 

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -184,16 +185,7 @@ def test_campaign_rejects_git_executable_provenance_divergence(tmp_path: Path) -
     tools = tmp_path / "trusted-tools"
     tools.mkdir()
     executable = tools / "git"
-    executable.write_text(
-        "#!/bin/sh\n"
-        'if [ "$1" = "--version" ]; then\n'
-        "  printf '%s\\n' 'git version 2.43.0'\n"
-        "  exit 0\n"
-        "fi\n"
-        f"exec '{repository.git}' \"$@\"\n",
-        encoding="utf-8",
-    )
-    executable.chmod(0o755)
+    shutil.copy2(repository.git, executable)
     policy = GitTrustPolicy(trusted_roots=(str(tools),))
 
     with pytest.raises(ValueError, match="git_provenance"):

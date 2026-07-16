@@ -174,25 +174,45 @@ RULES: tuple[RuleDefinition, ...] = (
 RULES_BY_ID = {rule.rule_id: rule for rule in RULES}
 
 
-def rule_pack_digest() -> str:
-    """Return the canonical identity of the versioned ordered rule registry."""
+def rule_pack_digest(
+    *,
+    rules: tuple[RuleDefinition, ...] = RULES,
+    version: str = RULE_PACK_VERSION,
+) -> str:
+    """Return the canonical identity of one versioned ordered rule registry.
+
+    Parameters
+    ----------
+    rules:
+        Ordered rule definitions whose complete metadata enters the identity.
+    version:
+        Rule-pack version bound into the identity envelope.
+    """
     return canonical_digest(
         {
             "schema_version": RULE_PACK_SCHEMA_VERSION,
-            "rule_pack_version": RULE_PACK_VERSION,
-            "rules": [rule.to_dict() for rule in RULES],
+            "rule_pack_version": version,
+            "rules": [rule.to_dict() for rule in rules],
         }
     )
 
 
-def validate_rule_registry() -> tuple[str, ...]:
-    """Return structural errors in the built-in rule registry."""
+def validate_rule_registry(
+    rules: tuple[RuleDefinition, ...] = RULES,
+) -> tuple[str, ...]:
+    """Return structural errors in one ordered rule registry.
+
+    Parameters
+    ----------
+    rules:
+        Registry to validate. The built-in registry is used by default.
+    """
     errors: list[str] = []
-    identifiers = [rule.rule_id for rule in RULES]
+    identifiers = [rule.rule_id for rule in rules]
     if len(identifiers) != len(set(identifiers)):
         errors.append("rule identifiers must be unique")
     allowed_categories = {"test-authenticity", "architecture", "godfile", "governance"}
-    for rule in RULES:
+    for rule in rules:
         if rule.category not in allowed_categories:
             errors.append(f"{rule.rule_id}: unsupported category {rule.category}")
         if not rule.summary.strip():

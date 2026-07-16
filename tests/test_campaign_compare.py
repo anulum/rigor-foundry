@@ -153,10 +153,20 @@ def _stored_run(
     omitted_domains: tuple[str, ...] = (),
     adapters: tuple[AdapterResult, ...] = (),
 ) -> StoredAuditRun:
-    """Build a content-addressed run record accepted by the comparison API."""
-    attestation = AuditRunAttestation.build(
+    """Build a parser-valid adversarial run for comparison-only divergence tests."""
+    source_campaign = AuditCampaign.build(
+        report,
+        campaign_id=campaign.campaign_id,
+        project=campaign.project,
+        policy_path=campaign.policy_path,
+        toolchain=toolchain,
+        created_by=campaign.created_by,
+        created_at=campaign.created_at,
+        expected_independent_runs=campaign.expected_independent_runs,
+    )
+    source_attestation = AuditRunAttestation.build(
         run_id=run_id,
-        campaign=campaign,
+        campaign=source_campaign,
         agent_identity=agent_identity,
         session_identity=f"terminal/{run_id}",
         started_at="2026-07-15T12:00:00Z",
@@ -173,6 +183,12 @@ def _stored_run(
         command_digest="6" * 64,
         limitations=(),
     )
+    document = source_attestation.to_dict()
+    document["campaign_id"] = campaign.campaign_id
+    document["input_contract_digest"] = campaign.contract_digest
+    document.pop("attestation_digest")
+    document["attestation_digest"] = canonical_digest(document)
+    attestation = AuditRunAttestation.from_dict(document)
     return StoredAuditRun(attestation=attestation, report=report)
 
 

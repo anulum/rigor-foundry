@@ -18,13 +18,8 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
-import rigor_foundry.adapters as adapters_module
 from rigor_foundry.adapters import AdapterResult, run_adapter, run_native_audits
 from rigor_foundry.models import AdapterSpec
-from rigor_foundry.sandbox_provenance import (
-    BubblewrapCompatibilityPolicy,
-    BubblewrapProvenance,
-)
 
 
 def _spec(name: str, script: str, *, scope: str = "full", timeout: int = 3) -> AdapterSpec:
@@ -186,24 +181,29 @@ def test_native_audit_selection_is_scope_exact_and_names_are_unique(tmp_path: Pa
 
 def test_sandbox_identity_binds_the_complete_bubblewrap_argument_contract(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Changing one launcher argument changes the durable sandbox identity."""
+    """A public working-directory change alters the durable launcher identity."""
     repository = GitRepository.create(tmp_path / "repository")
-    executable = repository.write_text("controls/pass.py", "print('pass')\n")
+    script = repository.write_text("controls/pass.py", "print('pass')\n")
     repository.commit()
-    first = adapters_module._sandbox_contract(repository.root, executable, repository.root)
-    first[4].close()
-    original = adapters_module._mount_parent_arguments
-    monkeypatch.setattr(
-        adapters_module,
-        "_mount_parent_arguments",
-        lambda mounts: (*original(mounts), "--dir", "/argument-contract-regression"),
+    command = ("{python}", str(script))
+    root_spec = replace(
+        _spec("sandbox-contract", "unused.py"),
+        command=command,
+        working_directory=".",
     )
-    second = adapters_module._sandbox_contract(repository.root, executable, repository.root)
-    second[4].close()
+    nested_spec = replace(
+        root_spec,
+        working_directory="controls",
+    )
 
-    assert first[3] != second[3]
+    first = run_adapter(repository.root, root_spec, trusted=True)
+    second = run_adapter(repository.root, nested_spec, trusted=True)
+
+    assert first.passed
+    assert second.passed
+    assert first.command_digest == second.command_digest
+    assert first.sandbox_digest != second.sandbox_digest
 
 
 def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path) -> None:
@@ -341,29 +341,3 @@ def test_adapter_timeout_kills_tree_after_output_pipes_close(tmp_path: Path) -> 
         text=True,
     )
     assert marker not in processes.stdout
-
-
-def test_adapter_rejects_sandbox_provenance_change_during_execution(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An OS package change during a native audit prevents attestation."""
-    repository = GitRepository.create(tmp_path / "repository")
-    repository.write_text("controls/pass.py", "print('pass')\n")
-    repository.commit()
-    observed = adapters_module.inspect_bubblewrap()
-    calls = 0
-
-    def changing_provenance(
-        policy: BubblewrapCompatibilityPolicy | None = None,
-    ) -> BubblewrapProvenance:
-        nonlocal calls
-        assert policy is None or isinstance(policy, BubblewrapCompatibilityPolicy)
-        calls += 1
-        if calls == 1:
-            return observed
-        return replace(observed, identity_digest="0" * 64)
-
-    monkeypatch.setattr(adapters_module, "inspect_bubblewrap", changing_provenance)
-    with pytest.raises(RuntimeError, match="changed during native audit execution"):
-        run_adapter(repository.root, _spec("pass", "controls/pass.py"), trusted=True)

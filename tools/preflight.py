@@ -67,29 +67,54 @@ def preflight_commands(*, fast: bool) -> tuple[PreflightStep, ...]:
     return tuple(commands)
 
 
-def _run(step: PreflightStep, root: Path) -> int:
-    command = step.argv
-    if command[-1] == "dist/*":
-        distributions = tuple(str(path) for path in sorted((root / "dist").glob("*")))
-        command = (*command[:-1], *distributions)
-        if not distributions:
-            print("preflight: distribution build produced no files", file=sys.stderr)
-            return 1
-    print(f"preflight: {' '.join(command[1:])}")
-    try:
-        result = subprocess.run(
-            command,
-            cwd=root,
-            check=False,
-            timeout=step.timeout_seconds,
-        )
-    except subprocess.TimeoutExpired:
-        print(
-            f"preflight: command exceeded {step.timeout_seconds}s wall-clock budget",
-            file=sys.stderr,
-        )
-        return 124
-    return result.returncode
+def run_preflight_steps(steps: tuple[PreflightStep, ...], root: Path) -> int:
+    """Run explicit preflight steps and stop on the first failure.
+
+    Parameters
+    ----------
+    steps:
+        Shell-free commands with positive wall-clock budgets.
+    root:
+        Existing repository root used as every command's working directory.
+    """
+    for step in steps:
+        command = step.argv
+        if command[-1] == "dist/*":
+            distributions = tuple(str(path) for path in sorted((root / "dist").glob("*")))
+            command = (*command[:-1], *distributions)
+            if not distributions:
+                print("preflight: distribution build produced no files", file=sys.stderr)
+                return 1
+        print(f"preflight: {' '.join(command[1:])}")
+        try:
+            result = subprocess.run(
+                command,
+                cwd=root,
+                check=False,
+                timeout=step.timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            print(
+                f"preflight: command exceeded {step.timeout_seconds}s wall-clock budget",
+                file=sys.stderr,
+            )
+            return 124
+        if result.returncode:
+            return result.returncode
+    return 0
+
+
+def run_preflight(root: Path = ROOT, *, fast: bool = False) -> int:
+    """Run the repository preflight contract.
+
+    Parameters
+    ----------
+    root:
+        Existing repository root.
+    fast:
+        Omit documentation and distribution builds when true.
+    """
+    return run_preflight_steps(preflight_commands(fast=fast), root)
 
 
 def main() -> int:
@@ -97,10 +122,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fast", action="store_true", help="skip docs and distribution builds")
     arguments = parser.parse_args()
-    for step in preflight_commands(fast=arguments.fast):
-        returncode = _run(step, ROOT)
-        if returncode:
-            return returncode
+    returncode = run_preflight(fast=arguments.fast)
+    if returncode:
+        return returncode
     print("Preflight passed; exhaustive tests remain a CI-only gate")
     return 0
 

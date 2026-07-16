@@ -15,8 +15,6 @@ from pathlib import Path
 
 import pytest
 
-import rigor_foundry.sandbox_provenance as sandbox_module
-import rigor_foundry.trusted_executable as trusted_module
 from rigor_foundry.trusted_executable import (
     TrustedExecutable,
     open_trusted_executable,
@@ -44,44 +42,12 @@ def _open_fixture_executable(path: Path) -> TrustedExecutable:
     )
 
 
-@pytest.mark.parametrize(
-    ("program", "message"),
-    [
-        ("raise SystemExit(3)", "returned failure"),
-        ("import sys; print('warning', file=sys.stderr)", "wrote to stderr"),
-        ("import os; os.write(1, b'\\xff')", "was not UTF-8"),
-        ("print('x' * 9000)", "exceeded output limit"),
-        ("import sys; print('x' * 9000, file=sys.stderr)", "exceeded output limit"),
-    ],
-)
-def test_metadata_command_rejects_process_failures_and_unbounded_output(
-    tmp_path: Path,
-    program: str,
-    message: str,
-) -> None:
-    """Metadata subprocesses have strict exit, encoding, stderr, and output bounds."""
+def test_trusted_command_normalises_real_spawn_failures(tmp_path: Path) -> None:
+    """A missing shebang interpreter exposes no host-dependent spawn detail."""
     executable = _write_executable(
-        tmp_path / "metadata-command",
-        f"#!/usr/bin/python3\n{program}\n",
+        tmp_path / "command",
+        "#!/rigor-foundry-missing-interpreter\n",
     )
-    with (
-        _open_fixture_executable(executable) as handle,
-        pytest.raises(RuntimeError, match=message),
-    ):
-        sandbox_module._metadata_command(handle)
-
-
-def test_trusted_command_normalises_spawn_failures(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """OS-level spawn failures expose no host-dependent subprocess detail."""
-    executable = _write_executable(tmp_path / "command", "#!/bin/sh\nexit 0\n")
-
-    def fail_spawn(*_args: object, **_kwargs: object) -> None:
-        raise OSError("unavailable")
-
-    monkeypatch.setattr(trusted_module.subprocess, "Popen", fail_spawn)
     with (
         _open_fixture_executable(executable) as handle,
         pytest.raises(RuntimeError, match="metadata query failed"),
@@ -212,23 +178,8 @@ def test_trusted_command_rejects_non_positive_bounds(tmp_path: Path) -> None:
                 )
 
 
-def test_trusted_executable_rejects_unsupported_components_and_execution(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Missing platform primitives and descriptor execution fail closed."""
-    executable = _write_executable(tmp_path / "command", "#!/bin/sh\nexit 0\n")
+def test_trusted_executable_rejects_relative_paths(tmp_path: Path) -> None:
+    """The public opener accepts only absolute component-safe paths."""
+    _write_executable(tmp_path / "command", "#!/bin/sh\nexit 0\n")
     with pytest.raises(RuntimeError, match="absolute file path"):
         _open_fixture_executable(Path("relative-command"))
-
-    monkeypatch.setattr(trusted_module.os, "supports_dir_fd", set())
-    with pytest.raises(RuntimeError, match="component-safe"):
-        _open_fixture_executable(executable)
-    monkeypatch.undo()
-
-    handle = _open_fixture_executable(executable)
-    monkeypatch.setattr(trusted_module.Path, "is_dir", lambda _path: False)
-    with pytest.raises(RuntimeError, match="descriptor-pinned"):
-        _ = handle.execution_path
-    handle.close()
-    handle.close()

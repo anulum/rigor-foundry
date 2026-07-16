@@ -54,5 +54,18 @@ run. A different Git identity is reported as campaign input divergence.
 `campaign-compare` accepts the same options for its Git-ignored storage check
 but does not execute a new repository audit.
 
+## Classified residual validation
+
+`rigor residuals-check --root PATH` validates the repository-relative
+`coverage-residuals.json` manifest. `--manifest` selects another
+repository-relative manifest when a repository adopts the same contract.
+
+The command rejects schema drift, duplicate or unsorted identifiers, source
+symbol or guard drift, stale symbol digests, missing public verification tests,
+review dates in the future, expired reviews, and any preregistered negative
+search match. It does not mark residual lines as covered and does not execute
+the cited tests; the focused owner tests and remote coverage matrix remain
+separate required evidence.
+
 Run `rigor COMMAND --help` for the exact options supported by the installed
 version.

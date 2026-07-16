@@ -23,6 +23,10 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     assert project["build-system"]["requires"] == ["hatchling==1.31.0"]
     assert project["project"]["license"] == "Apache-2.0"
     assert project["project"]["license-files"] == ["LICENSE", "NOTICE"]
+    assert (
+        "/coverage-residuals.json"
+        in project["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
+    )
 
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     bases = re.findall(r"^FROM\s+([^\s]+)", dockerfile, re.MULTILINE)

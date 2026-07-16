@@ -9,7 +9,7 @@
 PYTHON ?= .venv/bin/python
 TYPOS ?= typos
 
-.PHONY: install lock lint fmt typecheck bandit typos audit audit-authoring test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean
+.PHONY: install lock lint fmt typecheck bandit typos audit audit-authoring residuals test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean
 
 install:
 	$(PYTHON) -m pip install --require-hashes -r requirements/ci.txt
@@ -44,6 +44,9 @@ audit:
 
 audit-authoring:
 	$(PYTHON) -m tools.audit --strict-authoring
+
+residuals:
+	$(PYTHON) -m rigor_foundry residuals-check --root .
 
 test:
 	@test "$(ALLOW_LOCAL_FULL_TESTS)" = "1" || { echo "Local full suite blocked; run a focused test-file or use CI."; exit 2; }

@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The versioned graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.1 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -23,10 +23,12 @@ separately and are not misrepresented as unconditional digest edges.
 | Node | Identity | Owning module |
 |---|---|---|
 | Inventory | `tracked_content_digest` | `git_inventory` |
+| Git provenance | `git_provenance.identity_digest` | `git_provenance` |
 | Policy | `policy_digest` | `models` |
 | Rule pack | `rule_pack_digest` | `rules` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
+| Toolchain | `toolchain.identity_digest` | `campaign_models` |
 | Effective profile | `lock_digest` | `effective_profile` |
 | Report | `report_digest` | `models` |
 | Review | `review_digest` | `models` |
@@ -41,6 +43,13 @@ Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.1.0` bind the
 registry version, ordered rule definitions, and every definition field into
 one envelope. Existing rules retain their original introduction version.
 
+Git provenance binds the resolved executable path, selected root, executable
+SHA-256, observed version, complete trust policy, and trust-policy digest.
+Toolchain identity binds Python implementation/version, platform, and
+interpreter executable SHA-256. Campaign schema 1.3 embeds both complete
+records; effective-profile locks bind the toolchain digest used for profile
+resolution.
+
 `WorkClosure` schema 1.0 binds `WorkTask.definition_digest` to the exact
 `closed` event digest and its sequence number. The event digest already binds
 the preceding event chain. Archiving a closed record therefore does not alter
@@ -53,14 +62,18 @@ the task baseline and a revalidation that names another candidate or report.
 | Upstream | Downstream | Canonical binding |
 |---|---|---|
 | Inventory | Report | `tracked_content_digest` |
+| Git provenance | Report | complete `git_provenance` record |
 | Policy | Report | complete `policy` plus `policy_digest` |
 | Rule pack | Report | `rule_pack_digest` |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
+| Toolchain | Effective profile | `toolchain_digest` |
 | Report | Review | `report_digest` |
 | Inventory | Campaign | `tracked_content_digest` |
+| Git provenance | Campaign | complete `git_provenance` record |
 | Policy | Campaign | `policy_digest` |
 | Rule pack | Campaign | `rule_pack_digest` |
+| Toolchain | Campaign | complete `toolchain` record |
 | Campaign | Comparison | `input_contract_digest` |
 | Inventory | Task | `baseline_tracked_content_digest` |
 | Policy | Task | `source_policy_digest` |
@@ -80,8 +93,9 @@ absence of cycles.
   campaign freezes scanner inputs, not one scanner output. It does change the
   report, rebound review, task, and closure identities.
 - Standard packs, adapter locks, and effective-profile locks form a separate
-  desired-state subgraph. Current repository reports and campaigns do not
-  claim to bind that lock.
+  desired-state subgraph. Current repository reports and campaigns do not bind
+  that lock, although the same toolchain identity can independently affect a
+  campaign contract and an effective-profile lock.
 - A standard-pack mutation does not change an adapter lock, and an adapter-lock
   mutation does not change a standard pack. Both change an effective-profile
   lock that contains them.
@@ -105,8 +119,9 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests cover inventory, policy, rule-pack, report, review, campaign, task,
-adapter-lock, standard-pack, effective-profile, and closure mutations. Strict
-parsing vectors reject altered closure schemas, fields, references, counts,
-and digests. An archived work record and its original closed record reproduce
-the same closure identity.
+The tests compare all 14 identities and cover inventory, Git provenance,
+policy, rule-pack, toolchain, report, review, campaign, task, adapter-lock,
+standard-pack, effective-profile, and closure mutations. Strict parsing
+vectors reject altered closure schemas, fields, references, counts, and
+digests. An archived work record and its original closed record reproduce the
+same closure identity.

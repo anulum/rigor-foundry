@@ -17,14 +17,10 @@ from typing import cast
 
 import pytest
 
-import rigor_foundry.sandbox_provenance as sandbox_module
 from rigor_foundry.sandbox_provenance import (
     BubblewrapCompatibilityPolicy,
     BubblewrapProvenance,
     inspect_bubblewrap,
-)
-from rigor_foundry.trusted_executable import (
-    TrustedExecutable,
 )
 
 
@@ -41,26 +37,67 @@ def _fake_policy(
     *,
     version: str = "0.9.0",
     help_options: str = "--disable-userns --unshare-user",
+    version_output: bytes | None = None,
+    version_stderr: bytes = b"",
+    version_exit: int = 0,
+    owner_outputs: tuple[bytes, bytes] | None = None,
+    record_outputs: tuple[bytes, bytes] | None = None,
+    replace_bwrap_on_help: bool = False,
 ) -> BubblewrapCompatibilityPolicy:
-    """Create fixed fake Bubblewrap and dpkg-query executables."""
-    bwrap = _write_executable(
-        tmp_path / "bwrap",
-        "#!/bin/sh\n"
-        'case "$1" in\n'
-        f"  --version) printf '%s\\n' 'bubblewrap {version}' ;;\n"
-        f"  --help) printf '%s\\n' '{help_options}' ;;\n"
-        "  *) exit 64 ;;\n"
-        "esac\n",
+    """Create stateful real Bubblewrap and dpkg-query process fixtures."""
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    bwrap_path = tmp_path / "bwrap"
+    observed_version = version_output or f"bubblewrap {version}\n".encode()
+    replacement = (
+        f"open({str(bwrap_path)!r}, 'ab').write(b'# replaced\\\\n')"
+        if replace_bwrap_on_help
+        else "None"
     )
+    bwrap = _write_executable(
+        bwrap_path,
+        "#!/usr/bin/python3\n"
+        "import os\n"
+        "import sys\n"
+        "if sys.argv[1:] == ['--version']:\n"
+        f"    os.write(1, {observed_version!r})\n"
+        f"    os.write(2, {version_stderr!r})\n"
+        f"    raise SystemExit({version_exit})\n"
+        "if sys.argv[1:] == ['--help']:\n"
+        f"    {replacement}\n"
+        f"    os.write(1, {(help_options + chr(10)).encode()!r})\n"
+        "    raise SystemExit(0)\n"
+        "raise SystemExit(64)\n",
+    )
+    owner_pair = owner_outputs or (
+        f"bubblewrap: {bwrap}\n".encode(),
+        f"bubblewrap: {bwrap}\n".encode(),
+    )
+    record_pair = record_outputs or (
+        b"bubblewrap|0.9.0-1ubuntu0.1|amd64|install ok installed\n",
+        b"bubblewrap|0.9.0-1ubuntu0.1|amd64|install ok installed\n",
+    )
+    owner_state = tmp_path / "owner-query-count"
+    record_state = tmp_path / "record-query-count"
     query = _write_executable(
         tmp_path / "dpkg-query",
-        "#!/bin/sh\n"
-        'case "$1" in\n'
-        "  --search) printf 'bubblewrap: %s\\n' \"$2\" ;;\n"
-        "  --show) printf '%s\\n' "
-        "'bubblewrap|0.9.0-1ubuntu0.1|amd64|install ok installed' ;;\n"
-        "  *) exit 64 ;;\n"
-        "esac\n",
+        "#!/usr/bin/python3\n"
+        "import os\n"
+        "import sys\n"
+        "from pathlib import Path\n"
+        f"owner_outputs = {owner_pair!r}\n"
+        f"record_outputs = {record_pair!r}\n"
+        f"owner_state = Path({str(owner_state)!r})\n"
+        f"record_state = Path({str(record_state)!r})\n"
+        "def emit(state, outputs):\n"
+        "    count = int(state.read_text()) if state.exists() else 0\n"
+        "    state.write_text(str(count + 1))\n"
+        "    os.write(1, outputs[min(count, len(outputs) - 1)])\n"
+        "if sys.argv[1] == '--search':\n"
+        "    emit(owner_state, owner_outputs)\n"
+        "elif sys.argv[1] == '--show':\n"
+        "    emit(record_state, record_outputs)\n"
+        "else:\n"
+        "    raise SystemExit(64)\n",
     )
     return BubblewrapCompatibilityPolicy(
         executable_path=str(bwrap),
@@ -270,28 +307,38 @@ def test_single_link_requirement_can_be_explicitly_relaxed(tmp_path: Path) -> No
 
 def test_inspection_detects_executable_replacement_during_metadata_queries(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A launcher changed after observation cannot produce attested provenance."""
-    policy = _fake_policy(tmp_path)
-    original = sandbox_module._metadata_command
-    calls = 0
-
-    def replacing_query(executable: TrustedExecutable, *arguments: str) -> str:
-        nonlocal calls
-        output = original(executable, *arguments)
-        calls += 1
-        if calls == 6:
-            path = Path(policy.executable_path)
-            path.write_text(
-                path.read_text(encoding="utf-8") + "# replaced\n",
-                encoding="utf-8",
-            )
-            path.chmod(0o755)
-        return output
-
-    monkeypatch.setattr(sandbox_module, "_metadata_command", replacing_query)
+    policy = _fake_policy(tmp_path, replace_bwrap_on_help=True)
     with pytest.raises(RuntimeError, match="changed during inspection"):
+        inspect_bubblewrap(policy)
+
+
+@pytest.mark.parametrize(
+    ("version_output", "version_stderr", "version_exit", "message"),
+    [
+        (b"bubblewrap 0.9.0\n", b"", 3, "returned failure"),
+        (b"bubblewrap 0.9.0\n", b"warning\n", 0, "wrote to stderr"),
+        (b"\xff", b"", 0, "was not UTF-8"),
+        (b"x" * 9000, b"", 0, "exceeded output limit"),
+        (b"", b"x" * 9000, 0, "exceeded output limit"),
+    ],
+)
+def test_inspection_rejects_real_metadata_process_failures(
+    tmp_path: Path,
+    version_output: bytes,
+    version_stderr: bytes,
+    version_exit: int,
+    message: str,
+) -> None:
+    """Public inspection normalises exit, encoding, stderr, and output failures."""
+    policy = _fake_policy(
+        tmp_path,
+        version_output=version_output,
+        version_stderr=version_stderr,
+        version_exit=version_exit,
+    )
+    with pytest.raises(RuntimeError, match=message):
         inspect_bubblewrap(policy)
 
 
@@ -433,20 +480,18 @@ def test_provenance_parser_rejects_policy_inconsistent_observations(
 )
 def test_inspection_rejects_malformed_command_responses(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     outputs: tuple[str, str, str, str],
     message: str,
 ) -> None:
     """Malformed version, ownership, and package records fail closed."""
-    policy = _fake_policy(tmp_path)
-    owner, record, version, help_output = (
-        output.format(path=policy.executable_path) for output in outputs
-    )
-    responses = iter((owner, record, version, help_output, owner, record))
-    monkeypatch.setattr(
-        sandbox_module,
-        "_metadata_command",
-        lambda _executable, *_arguments: next(responses),
+    bwrap_path = tmp_path / "bwrap"
+    owner, record, version, help_output = (output.format(path=bwrap_path) for output in outputs)
+    policy = _fake_policy(
+        tmp_path,
+        version_output=version.encode(),
+        help_options=help_output.rstrip("\n"),
+        owner_outputs=(owner.encode(), owner.encode()),
+        record_outputs=(record.encode(), record.encode()),
     )
     with pytest.raises((RuntimeError, ValueError), match=message):
         inspect_bubblewrap(policy)
@@ -461,30 +506,19 @@ def test_inspection_rejects_malformed_command_responses(
 )
 def test_inspection_rejects_package_database_changes(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     change_owner: bool,
     message: str,
 ) -> None:
     """Package ownership and metadata must remain stable across inspection."""
-    policy = _fake_policy(tmp_path)
-    owner = f"bubblewrap: {policy.executable_path}\n"
+    bwrap_path = tmp_path / "bwrap"
+    owner = f"bubblewrap: {bwrap_path}\n"
     record = "bubblewrap|0.9.0-1|amd64|install ok installed\n"
     owner_after = "other: /other\n" if change_owner else owner
     record_after = record if change_owner else "bubblewrap|0.9.0-2|amd64|install ok installed\n"
-    responses = iter(
-        (
-            owner,
-            record,
-            "bubblewrap 0.9.0\n",
-            "--disable-userns --unshare-user\n",
-            owner_after,
-            record_after,
-        )
-    )
-    monkeypatch.setattr(
-        sandbox_module,
-        "_metadata_command",
-        lambda _executable, *_arguments: next(responses),
+    policy = _fake_policy(
+        tmp_path,
+        owner_outputs=(owner.encode(), owner_after.encode()),
+        record_outputs=(record.encode(), record_after.encode()),
     )
     with pytest.raises(RuntimeError, match=message):
         inspect_bubblewrap(policy)

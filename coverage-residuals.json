@@ -1,0 +1,201 @@
+{
+  "schema_version": "1.0",
+  "residuals": [
+    {
+      "residual_id": "CR-ADAPTER-PIPE-INVARIANT",
+      "classification": "runtime-invariant",
+      "source_path": "src/rigor_foundry/adapters.py",
+      "symbol": "_stream_process",
+      "guard": "native audit output pipes were not created",
+      "source_digest": "44c59958f892b28b507ce339bc885ff52402a333931140a22a4244e1730fb473",
+      "owner": "runtime-security",
+      "rationale": "subprocess.PIPE makes both streams non-null under the supported Python contract; replacing Popen to manufacture a null stream would test a simulation rather than the public adapter boundary, so the fail-closed guard remains explicit and expiring",
+      "public_verification": [
+        "tests/test_adapters.py::test_adapter_waits_for_process_after_output_pipes_close"
+      ],
+      "revisit_triggers": [
+        "a supported Python runtime permits null PIPE streams",
+        "the adapter process transport changes"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-ADAPTER-PROVENANCE-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/adapters.py",
+      "symbol": "run_adapter",
+      "guard": "Bubblewrap provenance changed during native audit execution",
+      "source_digest": "4c43f4b446afc850480a9934f9a506462ac0f68e554d47367209397b61355cdd",
+      "owner": "runtime-security",
+      "rationale": "honest activation requires replacing the root-owned installed Bubblewrap package during a live audit; CI must not mutate that host trust anchor, and a patched provenance function would not exercise the operating-system boundary",
+      "public_verification": [
+        "tests/test_adapters.py::test_adapter_records_real_success_failure_and_bounded_output",
+        "tests/test_sandbox_provenance.py::test_real_bubblewrap_provenance_is_complete_and_round_trips"
+      ],
+      "revisit_triggers": [
+        "a disposable package-manager integration host becomes available",
+        "sandbox provenance moves to a repository-owned executable"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-GIT-DESCRIPTOR-ROOT",
+      "classification": "platform-primitive",
+      "source_path": "src/rigor_foundry/git_provenance.py",
+      "symbol": "GitRunner._execute",
+      "guard": "platform cannot execute a pinned Git descriptor",
+      "source_digest": "55e6e709c5f97ba8472c573616970d3881d8bec9a7e3e156d2bcfa7b4202c5e5",
+      "owner": "supply-chain-security",
+      "rationale": "supported Linux runners expose procfs or devfs descriptor execution; hiding both roots through a patched pathlib method would bypass the platform rather than verify the public Git runner",
+      "public_verification": [
+        "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap"
+      ],
+      "revisit_triggers": [
+        "a supported runner lacks both descriptor roots",
+        "portable descriptor execution support is added"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-GIT-HASH-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/git_provenance.py",
+      "symbol": "GitRunner._snapshot_file",
+      "guard": "trusted Git executable changed while hashing",
+      "source_digest": "58a096cc37b2d8c7975fbee7fe4fd11131c43f20677c938ca751736fc98d6dff",
+      "owner": "supply-chain-security",
+      "rationale": "the branch detects a metadata change between two fstat calls on one retained descriptor; deterministic activation requires kernel-scheduled mutation inside that exact interval, while patched fstat results would only simulate the guard",
+      "public_verification": [
+        "tests/test_git_provenance.py::test_constructor_binds_validation_to_component_safe_snapshot",
+        "tests/test_git_provenance.py::test_runner_detects_replacement_before_executing_new_bytes"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "executable hashing moves to a kernel-attested primitive"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-GIT-NOFOLLOW-PLATFORM",
+      "classification": "platform-primitive",
+      "source_path": "src/rigor_foundry/git_provenance.py",
+      "symbol": "GitRunner._open_no_follow",
+      "guard": "platform lacks component-safe no-follow file opening",
+      "source_digest": "f5938805812703eb15846b8532f7cb93bd1dace4dc0fdc3d44b0b6c530c39e55",
+      "owner": "supply-chain-security",
+      "rationale": "the supported POSIX runtime provides O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would not represent a real supported platform and would conceal the need for native platform CI",
+      "public_verification": [
+        "tests/test_git_provenance.py::test_runner_rejects_executable_and_trust_root_symlinks"
+      ],
+      "revisit_triggers": [
+        "non-POSIX Git execution becomes supported",
+        "the minimum Python or operating-system contract changes"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-GIT-PREPIN-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/git_provenance.py",
+      "symbol": "GitRunner._execute",
+      "guard": "trusted Git executable changed before descriptor pinning",
+      "source_digest": "55e6e709c5f97ba8472c573616970d3881d8bec9a7e3e156d2bcfa7b4202c5e5",
+      "owner": "supply-chain-security",
+      "rationale": "the branch covers replacement after the pre-call snapshot but before descriptor identity comparison; public tests exercise replacements on both sides of execution, while patching open or fstat would not prove the race boundary",
+      "public_verification": [
+        "tests/test_git_provenance.py::test_runner_detects_replacement_before_executing_new_bytes",
+        "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap"
+      ],
+      "revisit_triggers": [
+        "Git execution no longer uses a retained descriptor",
+        "a deterministic filesystem-race harness is introduced"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
+      "classification": "platform-primitive",
+      "source_path": "src/rigor_foundry/trusted_executable.py",
+      "symbol": "TrustedExecutable.execution_path",
+      "guard": "descriptor-pinned executable execution is unavailable",
+      "source_digest": "fca3629957448f2ce97af64d79e84ca4e8bc037336d65d948b254b0026d9b85e",
+      "owner": "runtime-security",
+      "rationale": "the supported Linux runtime mounts procfs for descriptor execution; patching Path.is_dir would simulate an unsupported host rather than exercise descriptor-pinned process creation",
+      "public_verification": [
+        "tests/test_trusted_executable.py::test_trusted_command_executes_open_descriptor_after_path_replacement"
+      ],
+      "revisit_triggers": [
+        "a supported Linux runner omits procfs",
+        "trusted execution gains a second native descriptor path"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-TRUSTED-NOFOLLOW-PLATFORM",
+      "classification": "platform-primitive",
+      "source_path": "src/rigor_foundry/trusted_executable.py",
+      "symbol": "_open_parent",
+      "guard": "component-safe executable inspection is unavailable",
+      "source_digest": "52c5bd10a5a831bda46bc9624f7e63f582a83b442352c960ee7e8bdfc0a3cf94",
+      "owner": "runtime-security",
+      "rationale": "supported hosts provide descriptor-relative open, O_NOFOLLOW, and O_DIRECTORY; deleting those primitives in-process is a forbidden platform simulation rather than native compatibility evidence",
+      "public_verification": [
+        "tests/test_trusted_executable.py::test_trusted_executable_rejects_relative_paths"
+      ],
+      "revisit_triggers": [
+        "non-Linux native adapters become supported",
+        "the operating-system primitive contract changes"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    },
+    {
+      "residual_id": "CR-TRUSTED-PIPE-INVARIANT",
+      "classification": "runtime-invariant",
+      "source_path": "src/rigor_foundry/trusted_executable.py",
+      "symbol": "run_trusted_command",
+      "guard": "trusted executable output pipes were not created",
+      "source_digest": "e27f6338aedfbed6cab34cb6dc7906a68f514999316b5fe75029fb916fe0f5b3",
+      "owner": "runtime-security",
+      "rationale": "subprocess.PIPE makes both streams non-null under the supported Python contract; monkeypatching Popen to return an invalid process shape would not exercise the real descriptor-pinned command boundary",
+      "public_verification": [
+        "tests/test_trusted_executable.py::test_trusted_command_applies_deadline_after_both_pipes_close",
+        "tests/test_trusted_executable.py::test_trusted_command_kills_tree_when_pipes_close_before_timeout"
+      ],
+      "revisit_triggers": [
+        "a supported Python runtime permits null PIPE streams",
+        "trusted command process transport changes"
+      ],
+      "reviewed_on": "2026-07-16",
+      "review_by": "2026-10-14"
+    }
+  ],
+  "negative_searches": [
+    {
+      "search_id": "NS-NO-PRIVATE-SIMULATION",
+      "include": [
+        "tests/test_adapters.py",
+        "tests/test_digest_dependencies.py",
+        "tests/test_git_provenance.py",
+        "tests/test_preflight.py",
+        "tests/test_rules.py",
+        "tests/test_sandbox_provenance.py",
+        "tests/test_trusted_executable.py"
+      ],
+      "patterns": [
+        "\\._(?:snapshot_file|open_no_follow|validate_path|locate|environment|metadata_command|sandbox_contract|mount_parent_arguments)\\(",
+        "\\b(?:monkeypatch|patch)\\.setattr\\(",
+        "\\bobject\\.__new__\\(",
+        "from tools\\.preflight import [^\\n]*\\b_run\\b"
+      ],
+      "rationale": "claimed security coverage must use public APIs and real processes, filesystems, or platform CI; production-private calls and monkeypatched internals are prohibited"
+    }
+  ]
+}

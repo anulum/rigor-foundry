@@ -81,6 +81,8 @@ jobs:
           python -m pip install --no-build-isolation --no-deps .
       - name: Audit repository contracts
         run: python -m tools.audit
+      - name: Validate classified coverage residuals
+        run: python -m rigor_foundry residuals-check --root .
       - name: Lint and format
         run: |
           python -m ruff check src tests tools

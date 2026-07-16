@@ -13,13 +13,13 @@ from dataclasses import replace
 
 import pytest
 
-import rigor_foundry.rules as rules_module
 from rigor_foundry.rules import (
     INITIAL_RULE_PACK_VERSION,
     RULE_PACK_SCHEMA_VERSION,
     RULE_PACK_VERSION,
     RULES,
     RULES_BY_ID,
+    RuleDefinition,
     rule_pack_digest,
     validate_rule_registry,
 )
@@ -41,15 +41,11 @@ def test_rule_registry_is_unique_complete_and_content_addressed() -> None:
     assert {rule.introduced for rule in RULES} == {INITIAL_RULE_PACK_VERSION}
 
 
-def test_rule_pack_digest_binds_version_envelope_and_every_rule_field(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_rule_pack_digest_binds_version_envelope_and_every_rule_field() -> None:
     """Pack identity changes for version or ordered registry content mutations."""
     baseline = rule_pack_digest()
-    monkeypatch.setattr(rules_module, "RULE_PACK_VERSION", "rigor-foundry/1.1.1")
-    assert rule_pack_digest() != baseline
+    assert rule_pack_digest(version="rigor-foundry/1.1.1") != baseline
 
-    monkeypatch.setattr(rules_module, "RULE_PACK_VERSION", RULE_PACK_VERSION)
     variants = (
         (replace(RULES[0], rule_id="TA001-test-double-v2"), *RULES[1:]),
         (replace(RULES[0], category="architecture"), *RULES[1:]),
@@ -58,8 +54,7 @@ def test_rule_pack_digest_binds_version_envelope_and_every_rule_field(
         (RULES[1], RULES[0], *RULES[2:]),
     )
     for changed_rules in variants:
-        monkeypatch.setattr(rules_module, "RULES", changed_rules)
-        assert rule_pack_digest() != baseline
+        assert rule_pack_digest(rules=changed_rules) != baseline
 
 
 @pytest.mark.parametrize(
@@ -72,10 +67,8 @@ def test_rule_pack_digest_binds_version_envelope_and_every_rule_field(
     ],
 )
 def test_rule_registry_validation_rejects_ambiguous_metadata(
-    monkeypatch: pytest.MonkeyPatch,
-    rules: tuple[rules_module.RuleDefinition, ...],
+    rules: tuple[RuleDefinition, ...],
     message: str,
 ) -> None:
     """Registry validation reports duplicate, unsupported, and empty metadata."""
-    monkeypatch.setattr(rules_module, "RULES", rules)
-    assert any(message in error for error in validate_rule_registry())
+    assert any(message in error for error in validate_rule_registry(rules))

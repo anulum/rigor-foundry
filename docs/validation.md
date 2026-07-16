@@ -30,6 +30,14 @@ report/campaign binding, filesystem-monitor suppression, reserved hook-path
 rejection, CLI configuration, and campaign divergence. These focused tests do
 not replace the hosted Python-version matrix.
 
+Security-sensitive tests must exercise public APIs with real processes,
+filesystems, and installed platform surfaces. The quality job runs
+`rigor residuals-check --root .` to reject private production-helper calls,
+`object.__new__` construction, monkeypatched production internals, stale source
+bindings, missing public regressions, and expired residual reviews. Classified
+race, platform, and runtime-invariant residuals remain visible debt and receive
+no coverage credit.
+
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. See the repository

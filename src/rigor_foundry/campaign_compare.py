@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .campaign_models import CAMPAIGN_SCHEMA_VERSION, AuditCampaign
+from .campaign_inputs import campaign_input_divergence
+from .campaign_models import (
+    CAMPAIGN_SCHEMA_VERSION,
+    AuditCampaign,
+)
 from .campaign_store import StoredAuditRun
 from .models import ReviewRecord, canonical_digest
 
@@ -73,31 +77,8 @@ def _input_divergence(
     for stored in runs:
         run = stored.attestation
         report = stored.report
-        expected = {
-            "head": campaign.head,
-            "head_tree": campaign.head_tree,
-            "branch": campaign.branch,
-            "tracked_content_digest": campaign.tracked_content_digest,
-            "dirty_paths": campaign.dirty_paths,
-            "policy_digest": campaign.policy_digest,
-            "rule_pack_version": campaign.rule_pack_version,
-            "rule_pack_digest": campaign.rule_pack_digest,
-        }
-        observed = {
-            "head": report.head,
-            "head_tree": report.head_tree,
-            "branch": report.branch,
-            "tracked_content_digest": report.tracked_content_digest,
-            "dirty_paths": report.dirty_paths,
-            "policy_digest": report.policy_digest,
-            "rule_pack_version": report.rule_pack_version,
-            "rule_pack_digest": report.rule_pack_digest,
-        }
-        for field in expected:
-            if observed[field] != expected[field]:
-                problems.append(f"run {run.run_id}: {field} differs from campaign contract")
-        if run.toolchain.identity_digest != campaign.toolchain.identity_digest:
-            problems.append(f"run {run.run_id}: toolchain differs from campaign contract")
+        for field in campaign_input_divergence(campaign, report, run.toolchain):
+            problems.append(f"run {run.run_id}: {field} differs from campaign contract")
     return tuple(sorted(problems))
 
 

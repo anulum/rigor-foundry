@@ -30,6 +30,14 @@ The [digest-dependency graph](digest-dependencies.md) defines every
 unconditional identity edge, its stable non-edges, and the production mutation
 proofs required for a schema change.
 
+The tracked classified-residual contract records fail-closed race windows,
+platform primitives, and runtime invariants that cannot be exercised honestly
+through supported public surfaces. Every entry binds an exact symbol digest,
+guard, owner, public regressions, revisit triggers, and a maximum 90-day review
+window. Preregistered negative searches prevent those residuals from becoming
+an excuse to restore private-helper tests or monkeypatched production
+internals. Repository audit and CI enforce the contract.
+
 ## Isolation boundary
 
 Git plumbing never resolves from ambient `PATH`. The default platform policy

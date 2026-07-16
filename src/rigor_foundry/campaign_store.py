@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from .campaign_inputs import validate_campaign_input
 from .campaign_models import AuditCampaign, AuditRunAttestation
 from .git_inventory import is_git_ignored
 from .git_provenance import GitExecutableProvenance, GitTrustPolicy
@@ -130,12 +131,15 @@ def store_run(
 ) -> Path:
     """Persist one new per-agent report and attestation bundle."""
     campaign = load_campaign(campaign_path)
+    report = AuditReport.from_dict(report.to_dict())
+    attestation = AuditRunAttestation.from_dict(attestation.to_dict())
     if attestation.campaign_id != campaign.campaign_id:
         raise ValueError("attestation belongs to a different campaign")
     if attestation.input_contract_digest != campaign.contract_digest:
         raise ValueError("attestation input contract does not match campaign")
     if attestation.report_digest != report.report_digest:
         raise ValueError("attestation report digest does not match report")
+    validate_campaign_input(campaign, report, attestation.toolchain)
     campaign_directory = campaign_path.resolve(strict=True).parent
     repository = Path(campaign.repository_root).resolve(strict=True)
     try:
@@ -186,6 +190,13 @@ def load_runs(campaign_path: Path) -> tuple[StoredAuditRun, ...]:
         report = AuditReport.from_path(report_path)
         if report.report_digest != attestation.report_digest:
             raise ValueError(f"run {attestation.run_id} report digest mismatch")
+        try:
+            validate_campaign_input(campaign, report, attestation.toolchain)
+        except ValueError as exc:
+            raise ValueError(
+                f"run {attestation.run_id} has campaign input divergence: "
+                + str(exc).partition(": ")[2]
+            ) from exc
         if len(report.candidates) != attestation.candidate_count:
             raise ValueError(f"run {attestation.run_id} candidate count mismatch")
         loaded.append(StoredAuditRun(attestation=attestation, report=report))

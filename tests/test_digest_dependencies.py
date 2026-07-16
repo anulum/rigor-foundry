@@ -21,7 +21,6 @@ from test_effective_profile import standard_pack
 from test_work_models import lifecycle, source_records
 
 import rigor_foundry
-import rigor_foundry.models as models_module
 from rigor_foundry.campaign_compare import AuditComparison, compare_campaign
 from rigor_foundry.campaign_models import AuditCampaign, ToolchainIdentity
 from rigor_foundry.digest_dependencies import (
@@ -44,7 +43,14 @@ from rigor_foundry.effective_profile import (
     PackVerification,
     ResolvedVariable,
 )
-from rigor_foundry.models import AuditPolicy, AuditReport, Candidate, ReviewRecord
+from rigor_foundry.git_provenance import GitExecutableProvenance
+from rigor_foundry.models import (
+    AuditPolicy,
+    AuditReport,
+    Candidate,
+    ReviewRecord,
+    canonical_digest,
+)
 from rigor_foundry.standard_pack import StandardPack
 from rigor_foundry.work_closure import WorkClosure
 from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkTask
@@ -52,17 +58,15 @@ from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkTask
 DigestSnapshot = dict[DigestNode, str]
 
 
-def _toolchain() -> ToolchainIdentity:
+def _toolchain(*, executable_digest: str = "f" * 64) -> ToolchainIdentity:
     """Return one deterministic, parser-verified toolchain identity."""
     fields = {
         "python_implementation": "CPython",
         "python_version": "3.12.3",
         "platform": "linux-test-fixture",
-        "executable_digest": "f" * 64,
+        "executable_digest": executable_digest,
     }
-    return ToolchainIdentity.from_dict(
-        {**fields, "identity_digest": models_module.canonical_digest(fields)}
-    )
+    return ToolchainIdentity.from_dict({**fields, "identity_digest": canonical_digest(fields)})
 
 
 def _report(
@@ -71,6 +75,7 @@ def _report(
     policy: AuditPolicy | None = None,
     tracked_content_digest: str = "3" * 64,
     candidates: tuple[Candidate, ...] | None = None,
+    git_provenance: GitExecutableProvenance | None = None,
 ) -> AuditReport:
     """Build one report whose repository root exists for campaign construction."""
     source, _review_record = source_records()
@@ -82,7 +87,7 @@ def _report(
         tracked_content_digest=tracked_content_digest,
         dirty_paths=source.dirty_paths,
         tracked_file_count=source.tracked_file_count,
-        git_provenance=sample_git_provenance(),
+        git_provenance=git_provenance or sample_git_provenance(),
         policy=source.policy if policy is None else policy,
         candidates=source.candidates if candidates is None else candidates,
     )
@@ -136,6 +141,7 @@ def _campaign(
     report: AuditReport,
     *,
     created_at: str = "2026-07-15T12:00:00Z",
+    toolchain: ToolchainIdentity | None = None,
 ) -> AuditCampaign:
     """Build one independent-audit contract from the report input projection."""
     return AuditCampaign.build(
@@ -143,7 +149,7 @@ def _campaign(
         campaign_id="digest-campaign",
         project="rigor-foundry",
         policy_path="rigor-foundry-policy.json",
-        toolchain=_toolchain(),
+        toolchain=toolchain or _toolchain(),
         created_by="coordinator/one",
         created_at=created_at,
         expected_independent_runs=1,
@@ -222,8 +228,10 @@ def _workflow_snapshot(
     """Return production identities for the report/campaign/work subgraph."""
     return {
         "inventory": report.tracked_content_digest,
+        "git-provenance": report.git_provenance.identity_digest,
         "policy": report.policy_digest,
         "rule-pack": report.rule_pack_digest,
+        "toolchain": campaign.toolchain.identity_digest,
         "report": report.report_digest,
         "review": review.review_digest,
         "campaign": campaign.contract_digest,
@@ -309,13 +317,15 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.0"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.1"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
+        "git-provenance",
         "policy",
         "rule-pack",
         "adapter-lock",
         "standard-pack",
+        "toolchain",
         "effective-profile",
         "report",
         "review",
@@ -324,17 +334,22 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 16
+    assert len(DIGEST_DEPENDENCIES) == 20
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.0"
+    assert digest_dependency_graph()["schema_version"] == "1.1"
     assert (
         digest_dependency_graph_digest()
-        == "ad0c485ba89a087ae6a4e5f20faca8faa49eafd4f8eefc680b136155bb439075"
+        == "3138828da5a6bc5d1cd1a5ac633e3206911327b4cd54fa0ff4dd80eedced2362"
     )
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
     assert transitive_dependents("review") == ("task", "closure")
+    assert transitive_dependents("toolchain") == (
+        "effective-profile",
+        "campaign",
+        "comparison",
+    )
     assert transitive_dependents("inventory") == (
         "report",
         "review",
@@ -404,7 +419,6 @@ def test_graph_validator_rejects_ambiguous_or_cyclic_schemas(
 
 def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Input identities change every report, campaign, task, and closure dependent."""
     baseline_report = _report(tmp_path)
@@ -417,7 +431,9 @@ def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(
         baseline_task,
         baseline_campaign,
     )
-    profile = _profile_snapshot(*_effective_records())
+    profile = _profile_snapshot(
+        *_effective_records(toolchain_digest=baseline_campaign.toolchain.identity_digest)
+    )
     baseline.update(profile)
 
     inventory_report = _report(tmp_path, tracked_content_digest="4" * 64)
@@ -458,8 +474,14 @@ def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(
         },
     )
 
-    monkeypatch.setattr(models_module, "rule_pack_digest", lambda: "e" * 64)
-    rule_report = _report(tmp_path)
+    changed_rule_body = baseline_report.to_dict()
+    changed_rule_body.pop("report_digest")
+    changed_rule_body["rule_pack_digest"] = "e" * 64
+    rule_report = replace(
+        baseline_report,
+        rule_pack_digest="e" * 64,
+        report_digest=canonical_digest(changed_rule_body),
+    )
     rule_review = _review(rule_report)
     rule_task = _task(rule_report, rule_review)
     _assert_transition(
@@ -471,6 +493,31 @@ def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(
                 rule_review,
                 rule_task,
                 _campaign(rule_report),
+            ),
+            **profile,
+        },
+    )
+
+    original_git = baseline_report.git_provenance
+    changed_git = GitExecutableProvenance.build(
+        resolved_path=original_git.resolved_path,
+        trusted_root=original_git.trusted_root,
+        version=original_git.version,
+        executable_digest="a" * 64,
+        trust_policy=original_git.trust_policy,
+    )
+    git_report = _report(tmp_path, git_provenance=changed_git)
+    git_review = _review(git_report)
+    git_task = _task(git_report, git_review)
+    _assert_transition(
+        "git-provenance",
+        baseline,
+        {
+            **_workflow_snapshot(
+                git_report,
+                git_review,
+                git_task,
+                _campaign(git_report),
             ),
             **profile,
         },
@@ -491,7 +538,9 @@ def test_report_review_campaign_and_task_mutations_respect_stable_nonedges(
         baseline_task,
         baseline_campaign,
     )
-    profile = _profile_snapshot(*_effective_records())
+    profile = _profile_snapshot(
+        *_effective_records(toolchain_digest=baseline_campaign.toolchain.identity_digest)
+    )
     baseline.update(profile)
 
     added = Candidate.build(
@@ -582,19 +631,23 @@ def test_report_review_campaign_and_task_mutations_respect_stable_nonedges(
     )
 
 
-def test_adapter_pack_and_effective_profile_form_an_isolated_subgraph(
+def test_adapter_pack_toolchain_and_effective_profile_bind_exact_dependencies(
     tmp_path: Path,
 ) -> None:
-    """Standard and adapter mutations change the lock but not each other."""
-    adapter, pack, lock = _effective_records()
-    baseline = _profile_snapshot(adapter, pack, lock)
+    """Adapter, pack, and toolchain mutations change only declared dependents."""
     report = _report(tmp_path)
     review = _review(report)
     task = _task(report, review)
-    workflow = _workflow_snapshot(report, review, task, _campaign(report))
+    campaign = _campaign(report)
+    adapter, pack, lock = _effective_records(toolchain_digest=campaign.toolchain.identity_digest)
+    baseline = _profile_snapshot(adapter, pack, lock)
+    workflow = _workflow_snapshot(report, review, task, campaign)
     baseline.update(workflow)
 
-    changed_adapter, same_pack, adapter_lock = _effective_records(adapter_config_digest="a" * 64)
+    changed_adapter, same_pack, adapter_lock = _effective_records(
+        adapter_config_digest="a" * 64,
+        toolchain_digest=campaign.toolchain.identity_digest,
+    )
     _assert_transition(
         "adapter-lock",
         baseline,
@@ -604,7 +657,10 @@ def test_adapter_pack_and_effective_profile_form_an_isolated_subgraph(
         },
     )
 
-    same_adapter, changed_pack, pack_lock = _effective_records(pack_id="alternate")
+    same_adapter, changed_pack, pack_lock = _effective_records(
+        pack_id="alternate",
+        toolchain_digest=campaign.toolchain.identity_digest,
+    )
     _assert_transition(
         "standard-pack",
         baseline,
@@ -614,13 +670,22 @@ def test_adapter_pack_and_effective_profile_form_an_isolated_subgraph(
         },
     )
 
-    same_adapter, same_pack, changed_lock = _effective_records(toolchain_digest="b" * 64)
+    changed_toolchain = _toolchain(executable_digest="b" * 64)
+    same_adapter, same_pack, changed_lock = _effective_records(
+        toolchain_digest=changed_toolchain.identity_digest
+    )
+    changed_workflow = _workflow_snapshot(
+        report,
+        review,
+        task,
+        _campaign(report, toolchain=changed_toolchain),
+    )
     _assert_transition(
-        "effective-profile",
+        "toolchain",
         baseline,
         {
             **_profile_snapshot(same_adapter, same_pack, changed_lock),
-            **workflow,
+            **changed_workflow,
         },
     )
 

@@ -65,6 +65,34 @@ Campaign storage and TODO promotion reproduce the report or campaign identity
 before using Git ignore rules; a different policy-compliant binary is still
 treated as input divergence.
 
+## Classified coverage residuals
+
+Repository self-governance uses the tracked `coverage-residuals.json` manifest.
+It is separate from adopter audit policy because it describes this tool's own
+test-evidence boundary, not a finding in the repository being audited.
+
+Each residual must identify one exact source symbol and guard, bind the
+symbol's SHA-256, use one of `platform-primitive`, `runtime-invariant`, or
+`race-window`, name an accountable owner, cite public regression tests, list
+specific revisit triggers, and expire no later than 90 days after review. A
+source edit, removed guard, missing test, expired review, unknown field, or
+duplicate identifier fails validation.
+
+The manifest also contains preregistered regular-expression searches over
+explicit test owners. Their expected result is empty. They currently reject
+private production-helper calls, `object.__new__` construction, monkeypatched
+production internals, and direct use of the private preflight runner.
+
+Validate the contract directly with:
+
+```bash
+rigor residuals-check --root .
+```
+
+`python -m tools.audit`, `make audit`, local preflight, and the CI quality job
+run the same validator. Residuals never count as covered lines and do not lower
+the aggregate branch-coverage threshold.
+
 ## Desired-state inputs
 
 A `StandardPack` defines versioned controls, evidence contracts, remediation

@@ -14,14 +14,16 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.0"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.1"
 
 DigestNode = Literal[
     "inventory",
+    "git-provenance",
     "policy",
     "rule-pack",
     "adapter-lock",
     "standard-pack",
+    "toolchain",
     "effective-profile",
     "report",
     "review",
@@ -68,10 +70,16 @@ class DigestDependency:
 
 DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     DigestNodeSpec("inventory", "tracked_content_digest", "git_inventory"),
+    DigestNodeSpec(
+        "git-provenance",
+        "git_provenance.identity_digest",
+        "git_provenance",
+    ),
     DigestNodeSpec("policy", "policy_digest", "models"),
     DigestNodeSpec("rule-pack", "rule_pack_digest", "rules"),
     DigestNodeSpec("adapter-lock", "adapter_digest", "effective_profile"),
     DigestNodeSpec("standard-pack", "pack_digest", "standard_pack"),
+    DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
     DigestNodeSpec("effective-profile", "lock_digest", "effective_profile"),
     DigestNodeSpec("report", "report_digest", "models"),
     DigestNodeSpec("review", "review_digest", "models"),
@@ -83,14 +91,18 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
 
 DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("inventory", "report", "tracked_content_digest"),
+    DigestDependency("git-provenance", "report", "git_provenance"),
     DigestDependency("policy", "report", "policy + policy_digest"),
     DigestDependency("rule-pack", "report", "rule_pack_digest"),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
+    DigestDependency("toolchain", "effective-profile", "toolchain_digest"),
     DigestDependency("report", "review", "report_digest"),
     DigestDependency("inventory", "campaign", "tracked_content_digest"),
+    DigestDependency("git-provenance", "campaign", "git_provenance"),
     DigestDependency("policy", "campaign", "policy_digest"),
     DigestDependency("rule-pack", "campaign", "rule_pack_digest"),
+    DigestDependency("toolchain", "campaign", "toolchain"),
     DigestDependency("campaign", "comparison", "input_contract_digest"),
     DigestDependency("inventory", "task", "baseline_tracked_content_digest"),
     DigestDependency("policy", "task", "source_policy_digest"),

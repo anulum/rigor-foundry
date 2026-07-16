@@ -25,7 +25,12 @@ SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = [".zenodo.json", ".github/**/*.json", "rigor-foundry-policy.json"]
+path = [
+    ".zenodo.json",
+    ".github/**/*.json",
+    "coverage-residuals.json",
+    "rigor-foundry-policy.json",
+]
 SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"
 

@@ -14,7 +14,12 @@ from pathlib import Path
 
 from .adapters import run_native_audits
 from .campaign_compare import AuditComparison, compare_campaign
-from .campaign_models import AuditCampaign, AuditRunAttestation, ToolchainIdentity
+from .campaign_inputs import validate_campaign_input
+from .campaign_models import (
+    AuditCampaign,
+    AuditRunAttestation,
+    ToolchainIdentity,
+)
 from .campaign_store import (
     load_campaign,
     load_campaign_reviews,
@@ -26,7 +31,7 @@ from .campaign_store import (
 from .domains import audit_domain_coverage
 from .git_inventory import load_git_inventory
 from .git_provenance import GitTrustPolicy
-from .models import AuditReport, canonical_digest
+from .models import canonical_digest
 from .review import validate_reviews
 from .scanner import scan_repository
 
@@ -34,43 +39,6 @@ from .scanner import scan_repository
 def _now() -> str:
     """Return the current UTC time in the protocol timestamp form."""
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
-def _validate_campaign_input(
-    campaign: AuditCampaign,
-    report: AuditReport,
-    toolchain: ToolchainIdentity,
-) -> None:
-    """Reject a run whose input differs from the frozen campaign contract."""
-    observed: dict[str, object] = {
-        "repository_root": str(Path(report.repository_root).resolve(strict=True)),
-        "head": report.head,
-        "head_tree": report.head_tree,
-        "branch": report.branch,
-        "tracked_content_digest": report.tracked_content_digest,
-        "dirty_paths": report.dirty_paths,
-        "policy_digest": report.policy_digest,
-        "rule_pack_version": report.rule_pack_version,
-        "rule_pack_digest": report.rule_pack_digest,
-        "git_provenance": report.git_provenance.identity_digest,
-        "toolchain": toolchain.identity_digest,
-    }
-    expected: dict[str, object] = {
-        "repository_root": str(Path(campaign.repository_root).resolve(strict=True)),
-        "head": campaign.head,
-        "head_tree": campaign.head_tree,
-        "branch": campaign.branch,
-        "tracked_content_digest": campaign.tracked_content_digest,
-        "dirty_paths": campaign.dirty_paths,
-        "policy_digest": campaign.policy_digest,
-        "rule_pack_version": campaign.rule_pack_version,
-        "rule_pack_digest": campaign.rule_pack_digest,
-        "git_provenance": campaign.git_provenance.identity_digest,
-        "toolchain": campaign.toolchain.identity_digest,
-    }
-    mismatches = tuple(field for field in expected if observed[field] != expected[field])
-    if mismatches:
-        raise ValueError("campaign input divergence: " + ", ".join(mismatches))
 
 
 def create_campaign(
@@ -139,7 +107,7 @@ def execute_campaign(
         policy_path,
         git_trust_policy=git_trust_policy,
     )
-    _validate_campaign_input(campaign, report, toolchain)
+    validate_campaign_input(campaign, report, toolchain)
     adapter_results = run_native_audits(
         repository,
         report.policy.native_audits,

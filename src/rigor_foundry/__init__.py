@@ -9,9 +9,17 @@
 
 __version__ = "0.1.0"
 
+from .campaign_inputs import campaign_input_divergence, validate_campaign_input
 from .cli import report_markdown
 from .condition_language import ConditionExpression
 from .control_assessment import ControlAssessment, EvidenceReference
+from .coverage_residuals import (
+    COVERAGE_RESIDUAL_SCHEMA_VERSION,
+    CoverageResidual,
+    CoverageResidualManifest,
+    NegativeSearch,
+    coverage_residual_errors,
+)
 from .digest_dependencies import (
     DIGEST_DEPENDENCIES,
     DIGEST_DEPENDENCY_SCHEMA_VERSION,
@@ -82,6 +90,7 @@ from .work_closure import WorkClosure
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
+    "COVERAGE_RESIDUAL_SCHEMA_VERSION",
     "DIGEST_DEPENDENCIES",
     "DIGEST_DEPENDENCY_SCHEMA_VERSION",
     "DIGEST_NODES",
@@ -99,6 +108,8 @@ __all__ = [
     "ControlAssessment",
     "ControlDefinition",
     "ControlOverlay",
+    "CoverageResidual",
+    "CoverageResidualManifest",
     "DigestDependency",
     "DigestNodeSpec",
     "EffectiveControl",
@@ -108,6 +119,7 @@ __all__ = [
     "ExceptionWaiver",
     "GitExecutableProvenance",
     "GitTrustPolicy",
+    "NegativeSearch",
     "PackSelection",
     "PackSignature",
     "PackVerification",
@@ -138,6 +150,8 @@ __all__ = [
     "WorkRecord",
     "WorkTask",
     "__version__",
+    "campaign_input_divergence",
+    "coverage_residual_errors",
     "digest_dependency_graph",
     "digest_dependency_graph_digest",
     "direct_dependents",
@@ -149,6 +163,7 @@ __all__ = [
     "review_templates",
     "scan_repository",
     "transitive_dependents",
+    "validate_campaign_input",
     "validate_digest_dependency_graph",
     "validate_reviews",
 ]

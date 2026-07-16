@@ -405,6 +405,7 @@ class Candidate:
 class AuditReport:
     """Deterministic candidate report for one exact Git tree."""
 
+    scanner_version: str
     repository_root: str
     head: str
     head_tree: str
@@ -460,6 +461,7 @@ class AuditReport:
             "candidates": [item.to_dict() for item in ordered],
         }
         return cls(
+            scanner_version=SCANNER_VERSION,
             repository_root=repository_root,
             head=head,
             head_tree=head_tree,
@@ -480,7 +482,7 @@ class AuditReport:
         """Serialise the report with its integrity digest."""
         return {
             "schema_version": SCHEMA_VERSION,
-            "scanner_version": SCANNER_VERSION,
+            "scanner_version": self.scanner_version,
             "rule_pack_version": self.rule_pack_version,
             "rule_pack_digest": self.rule_pack_digest,
             "repository_root": self.repository_root,

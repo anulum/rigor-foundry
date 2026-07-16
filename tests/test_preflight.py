@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-from tools.preflight import PreflightStep, _run, preflight_commands
+from tools.preflight import PreflightStep, preflight_commands, run_preflight_steps
 
 
 def test_local_preflight_never_embeds_the_exhaustive_test_suite() -> None:
@@ -39,5 +39,5 @@ def test_preflight_terminates_a_command_that_exceeds_its_budget(tmp_path: Path) 
         timeout_seconds=1,
     )
     started = time.monotonic()
-    assert _run(step, tmp_path) == 124
+    assert run_preflight_steps((step,), tmp_path) == 124
     assert time.monotonic() - started < 5

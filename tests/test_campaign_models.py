@@ -9,12 +9,18 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import cast
 
 import pytest
 from repository_audit_git_repository import GitRepository
 
+import rigor_foundry
+from rigor_foundry.campaign_inputs import (
+    campaign_input_divergence,
+    validate_campaign_input,
+)
 from rigor_foundry.campaign_models import (
     CAMPAIGN_SCHEMA_VERSION,
     AuditCampaign,
@@ -24,7 +30,9 @@ from rigor_foundry.campaign_models import (
 )
 from rigor_foundry.campaign_store import load_runs
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
+from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import AuditReport
+from rigor_foundry.scanner import scan_repository
 
 
 def _protocol_records(
@@ -105,9 +113,11 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
         ToolchainIdentity.from_dict(unrecognised)
 
 
-def test_campaign_schema_version_declares_sandbox_provenance_migration() -> None:
-    """Campaign 1.2 makes structured sandbox provenance mandatory."""
-    assert CAMPAIGN_SCHEMA_VERSION == "1.2"
+def test_campaign_schema_version_declares_complete_input_binding_migration() -> None:
+    """Campaign 1.3 binds complete report input and sandbox provenance."""
+    assert CAMPAIGN_SCHEMA_VERSION == "1.3"
+    assert rigor_foundry.campaign_input_divergence is campaign_input_divergence
+    assert rigor_foundry.validate_campaign_input is validate_campaign_input
 
 
 def test_campaign_contract_binds_git_executable_provenance(tmp_path: Path) -> None:
@@ -169,6 +179,30 @@ def test_attestation_build_rejects_reversed_time_and_unknown_status(tmp_path: Pa
             campaign,
             report,
             status=cast(RunStatus, "paused"),
+            started_at="2026-07-15T12:00:00Z",
+            finished_at="2026-07-15T12:01:00Z",
+        )
+
+
+def test_attestation_build_rejects_report_from_another_real_git_executable(
+    tmp_path: Path,
+) -> None:
+    """Attestation construction rejects a report from a different trusted Git path."""
+    campaign, _attestation, report = _protocol_records(tmp_path)
+    tools = tmp_path / "alternate-tools"
+    tools.mkdir()
+    shutil.copy2(report.git_provenance.resolved_path, tools / "git")
+    alternate = scan_repository(
+        Path(report.repository_root),
+        Path("rigor-foundry-policy.json"),
+        git_trust_policy=GitTrustPolicy(trusted_roots=(str(tools),)),
+    )
+
+    with pytest.raises(ValueError, match="git_provenance"):
+        _build_attestation(
+            campaign,
+            alternate,
+            status="complete",
             started_at="2026-07-15T12:00:00Z",
             finished_at="2026-07-15T12:01:00Z",
         )

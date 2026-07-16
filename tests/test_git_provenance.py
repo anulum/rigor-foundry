@@ -11,12 +11,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 from repository_audit_git_repository import GitRepository
 
-import rigor_foundry.git_provenance as provenance_module
 from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.git_provenance import (
     GitExecutableProvenance,
@@ -144,28 +142,28 @@ def test_runner_detects_replacement_before_executing_new_bytes(tmp_path: Path) -
 
 def test_constructor_binds_validation_to_component_safe_snapshot(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An intermediate-root swap after pathname validation never becomes baseline."""
+    """A real root swap during version execution cannot become constructor evidence."""
     trusted_root = tmp_path / "trusted-tools"
-    _git_script(trusted_root / "git", "2.43.0")
+    preserved = tmp_path / "preserved-tools"
     outside = tmp_path / "outside-tools"
     marker = tmp_path / "outside-invoked"
     _git_script(outside / "git", "2.43.0", marker=marker)
-    preserved = tmp_path / "preserved-tools"
-    original_validate = GitRunner._validate_path
+    executable = trusted_root / "git"
+    executable.parent.mkdir()
+    executable.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "--version" ]; then\n'
+        f"  /usr/bin/mv '{trusted_root}' '{preserved}'\n"
+        f"  /usr/bin/ln -s '{outside}' '{trusted_root}'\n"
+        "  printf '%s\\n' 'git version 2.43.0'\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 64\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
 
-    def validate_then_swap(
-        runner: GitRunner,
-        candidate: Path,
-        root: Path,
-    ) -> tuple[Path, Path]:
-        result = original_validate(runner, candidate, root)
-        root.rename(preserved)
-        root.symlink_to(outside, target_is_directory=True)
-        return result
-
-    monkeypatch.setattr(GitRunner, "_validate_path", validate_then_swap)
     with pytest.raises(RuntimeError, match="cannot open trusted Git executable"):
         GitRunner(_policy(trusted_root))
     assert not marker.exists()
@@ -173,7 +171,6 @@ def test_constructor_binds_validation_to_component_safe_snapshot(
 
 def test_runner_pins_descriptor_across_execution_path_swap(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A swap after descriptor pinning executes original bytes, then fails evidence."""
     if not any(path.is_dir() for path in (Path("/proc/self/fd"), Path("/dev/fd"))):
@@ -189,6 +186,7 @@ def test_runner_pins_descriptor_across_execution_path_swap(
         "  printf '%s\\n' 'git version 2.43.0'\n"
         "  exit 0\n"
         "fi\n"
+        f"/usr/bin/mv '{tmp_path / 'replacement'}' '{executable}'\n"
         f"printf original > '{original_marker}'\n",
         encoding="utf-8",
     )
@@ -199,13 +197,7 @@ def test_runner_pins_descriptor_across_execution_path_swap(
         "2.43.0",
         marker=attacker_marker,
     )
-    original_run = provenance_module.subprocess.run
-
-    def swap_then_run(*args: object, **kwargs: object) -> object:
-        os.replace(replacement, executable)
-        return original_run(*args, **kwargs)
-
-    monkeypatch.setattr(provenance_module.subprocess, "run", swap_then_run)
+    assert replacement == tmp_path / "replacement"
     with pytest.raises(RuntimeError, match="replaced after provenance capture"):
         runner.run(tmp_path, "status")
 
@@ -313,7 +305,6 @@ def test_runner_uses_ordered_roots_and_most_specific_absolute_root(tmp_path: Pat
 
 def test_runner_rejects_unavailable_nonexecutable_and_failed_binaries(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Discovery and version execution never coerce invalid executable surfaces."""
     with pytest.raises(RuntimeError, match="unavailable below"):
@@ -338,12 +329,6 @@ def test_runner_rejects_unavailable_nonexecutable_and_failed_binaries(
     unsafe.chmod(0o775)
     with pytest.raises(RuntimeError, match="group/world write"):
         GitRunner(_policy(unsafe_root))
-    reference_root = tmp_path / "reference"
-    _git_script(reference_root / "git", "2.43.0")
-    reference_runner = GitRunner(_policy(reference_root))
-    with monkeypatch.context() as patch:
-        patch.setattr(provenance_module.os, "name", "nt")
-        assert reference_runner._validate_path(unsafe, unsafe_root) == (unsafe, unsafe_root)
 
     hardlink_root = tmp_path / "hardlink"
     hardlink_root.mkdir()
@@ -402,218 +387,31 @@ def test_runner_rejects_protected_config_overrides(
         runner.run(tmp_path, *arguments, check=False)
 
 
-def test_runner_file_descriptor_and_timeout_guards_fail_closed(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Real non-files and a simulated subprocess deadline exercise final guards."""
-    with pytest.raises(RuntimeError, match="cannot open trusted"):
-        GitRunner._snapshot_file(tmp_path / "missing")
-    with pytest.raises(RuntimeError, match="not a regular file"):
-        GitRunner._snapshot_file(tmp_path)
-    with pytest.raises(RuntimeError, match="must be absolute"):
-        GitRunner._open_no_follow(Path("relative/git"))
-    with monkeypatch.context() as patch:
-        patch.delattr(os, "O_NOFOLLOW")
-        with pytest.raises(RuntimeError, match="lacks component-safe"):
-            GitRunner._open_no_follow(Path("/usr/bin/git"))
-
+def test_runner_enforces_public_command_deadline_and_positive_bound(tmp_path: Path) -> None:
+    """A real Git-compatible process cannot exceed the caller's public deadline."""
     tools = tmp_path / "tools"
-    _git_script(tools / "git", "2.43.0")
+    executable = tools / "git"
+    executable.parent.mkdir()
+    executable.write_text(
+        "#!/bin/sh\n"
+        'if [ "$1" = "--version" ]; then\n'
+        "  printf '%s\\n' 'git version 2.43.0'\n"
+        "  exit 0\n"
+        "fi\n"
+        "/usr/bin/sleep 30\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
     runner = GitRunner(_policy(tools))
 
-    def expire(*_args: object, **_kwargs: object) -> None:
-        raise provenance_module.subprocess.TimeoutExpired("git", 30)
-
-    monkeypatch.setattr(provenance_module.subprocess, "run", expire)
-    with pytest.raises(RuntimeError, match="30-second limit"):
-        runner.run(tmp_path, "status")
+    with pytest.raises(RuntimeError, match="1-second limit"):
+        runner.run(tmp_path, "status", timeout_seconds=1)
+    with pytest.raises(ValueError, match="must be positive"):
+        runner.run(tmp_path, "status", timeout_seconds=0)
 
 
-def test_runner_detects_validation_and_hash_races(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Instrumented race points reject escape, disappearance, and identity changes."""
-    tools = tmp_path / "tools"
-    executable = _git_script(tools / "git", "2.43.0")
-    runner = GitRunner(_policy(tools))
-    with pytest.raises(RuntimeError, match="outside trusted roots"):
-        runner._validate_path(tmp_path / "outside" / "git", tools)
-    with pytest.raises(RuntimeError, match="path is unavailable"):
-        runner._validate_path(tools / "missing", tools)
-
-    original_resolve = Path.resolve
-
-    def unavailable_resolve(
-        path: Path,
-        *args: object,
-        **kwargs: object,
-    ) -> Path:
-        if path == executable:
-            raise OSError("injected resolution race")
-        return original_resolve(path, *args, **kwargs)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Path, "resolve", unavailable_resolve)
-        with pytest.raises(RuntimeError, match="cannot be resolved"):
-            runner._validate_path(executable, tools)
-
-    def changed_resolve(path: Path, *args: object, **kwargs: object) -> Path:
-        if path == executable:
-            return tmp_path / "different"
-        return original_resolve(path, *args, **kwargs)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Path, "resolve", changed_resolve)
-        with pytest.raises(RuntimeError, match="must not contain symlinks"):
-            runner._validate_path(executable, tools)
-
-    original_fstat = os.fstat
-    calls = 0
-
-    def changed_fstat(descriptor: int) -> os.stat_result | SimpleNamespace:
-        nonlocal calls
-        calls += 1
-        metadata = original_fstat(descriptor)
-        if calls == 2:
-            return SimpleNamespace(
-                st_dev=metadata.st_dev,
-                st_ino=metadata.st_ino,
-                st_mode=metadata.st_mode,
-                st_nlink=metadata.st_nlink,
-                st_size=metadata.st_size + 1,
-                st_mtime_ns=metadata.st_mtime_ns,
-                st_ctime_ns=metadata.st_ctime_ns,
-            )
-        return metadata
-
-    with monkeypatch.context() as patch:
-        patch.setattr(os, "fstat", changed_fstat)
-        with pytest.raises(RuntimeError, match="changed while hashing"):
-            GitRunner._snapshot_file(executable)
-
-    original_stat = Path.stat
-
-    def disappeared_stat(path: Path, *args: object, **kwargs: object) -> os.stat_result:
-        if path == executable:
-            raise OSError("injected disappearance")
-        return original_stat(path, *args, **kwargs)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Path, "stat", disappeared_stat)
-        with pytest.raises(RuntimeError, match="disappeared while hashing"):
-            GitRunner._snapshot_file(executable)
-
-    def changed_path_stat(
-        path: Path, *args: object, **kwargs: object
-    ) -> os.stat_result | SimpleNamespace:
-        metadata = original_stat(path, *args, **kwargs)
-        if path == executable:
-            return SimpleNamespace(
-                st_dev=metadata.st_dev + 1,
-                st_ino=metadata.st_ino,
-                st_mode=metadata.st_mode,
-                st_nlink=metadata.st_nlink,
-                st_size=metadata.st_size,
-                st_mtime_ns=metadata.st_mtime_ns,
-                st_ctime_ns=metadata.st_ctime_ns,
-            )
-        return metadata
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Path, "stat", changed_path_stat)
-        with pytest.raises(RuntimeError, match="changed while hashing"):
-            GitRunner._snapshot_file(executable)
-
-    unsafe = _git_script(tmp_path / "unsafe-snapshot" / "git", "2.43.0")
-    unsafe.chmod(0o775)
-    with pytest.raises(RuntimeError, match="group/world write"):
-        GitRunner._snapshot_file(unsafe)
-
-    original_open_no_follow = GitRunner._open_no_follow
-    open_calls = 0
-
-    def disappear_before_pin(path: Path) -> int:
-        nonlocal open_calls
-        open_calls += 1
-        if open_calls == 2:
-            raise RuntimeError("injected pre-pin disappearance")
-        return original_open_no_follow(path)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(GitRunner, "_open_no_follow", staticmethod(disappear_before_pin))
-        with pytest.raises(RuntimeError, match="disappeared before execution"):
-            runner.run(tmp_path, "status", check=False)
-
-    fstat_calls = 0
-
-    def change_before_pin(descriptor: int) -> os.stat_result | SimpleNamespace:
-        nonlocal fstat_calls
-        fstat_calls += 1
-        metadata = original_fstat(descriptor)
-        if fstat_calls == 3:
-            return SimpleNamespace(
-                st_dev=metadata.st_dev,
-                st_ino=metadata.st_ino + 1,
-                st_mode=metadata.st_mode,
-                st_nlink=metadata.st_nlink,
-                st_size=metadata.st_size,
-                st_mtime_ns=metadata.st_mtime_ns,
-                st_ctime_ns=metadata.st_ctime_ns,
-            )
-        return metadata
-
-    with monkeypatch.context() as patch:
-        patch.setattr(os, "fstat", change_before_pin)
-        with pytest.raises(RuntimeError, match="changed before descriptor pinning"):
-            runner.run(tmp_path, "status", check=False)
-
-    original_is_dir = Path.is_dir
-
-    def hide_descriptor_roots(path: Path) -> bool:
-        if path in {Path("/proc/self/fd"), Path("/dev/fd")}:
-            return False
-        return original_is_dir(path)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Path, "is_dir", hide_descriptor_roots)
-        with pytest.raises(RuntimeError, match="cannot execute a pinned Git descriptor"):
-            runner.run(tmp_path, "status", check=False)
-
-
-def test_portable_default_roots_are_platform_specific(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The fixed default root table has explicit Windows, macOS, and POSIX branches."""
-    runner = GitRunner()
-    monkeypatch.setattr(provenance_module.os, "name", "nt")
-    assert provenance_module._portable_roots()[0] == "C:/Program Files/Git/cmd"
-    assert runner._environment()["SYSTEMROOT"]
-    monkeypatch.setattr(provenance_module.os, "name", "posix")
-    monkeypatch.setattr(provenance_module.sys, "platform", "darwin")
-    assert provenance_module._portable_roots()[1] == "/opt/homebrew/bin"
-    monkeypatch.setattr(provenance_module.sys, "platform", "linux")
-    assert provenance_module._portable_roots()[0] == "/usr/bin"
-
-
-def test_windows_basename_discovery_adds_executable_suffix(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Windows basename discovery checks the fixed-root ``.exe`` form explicitly."""
-    tools = tmp_path / "windows-tools"
-    executable = _git_script(tools / "git.exe", "2.43.0")
-    policy = GitTrustPolicy(trusted_roots=(str(tools),))
-    monkeypatch.setattr(provenance_module.sys, "platform", "win32")
-    runner = object.__new__(GitRunner)
-    runner.policy = policy
-
-    resolved, root = runner._locate()
-
-    assert resolved == executable
-    assert root == tools
-
+def test_windows_provenance_rejects_unapproved_executable_suffix() -> None:
+    """Portable Windows evidence accepts only policy-derived executable names."""
     with pytest.raises(ValueError, match="differs from its trust policy"):
         GitExecutableProvenance.build(
             resolved_path="/usr/bin/git.exe",

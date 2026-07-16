@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
+from .campaign_inputs import validate_campaign_input
 from .git_provenance import GitExecutableProvenance
 from .models import (
     AuditReport,
@@ -30,7 +31,7 @@ from .models import (
 )
 from .sandbox_provenance import BubblewrapProvenance
 
-CAMPAIGN_SCHEMA_VERSION = "1.2"
+CAMPAIGN_SCHEMA_VERSION = "1.3"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 _TOOLCHAIN_FIELDS = frozenset(
@@ -54,6 +55,7 @@ _CAMPAIGN_FIELDS = frozenset(
         "branch",
         "tracked_content_digest",
         "dirty_paths",
+        "tracked_file_count",
         "policy_digest",
         "rule_pack_version",
         "rule_pack_digest",
@@ -216,6 +218,7 @@ class AuditCampaign:
     branch: str
     tracked_content_digest: str
     dirty_paths: tuple[str, ...]
+    tracked_file_count: int
     policy_digest: str
     rule_pack_version: str
     rule_pack_digest: str
@@ -253,10 +256,11 @@ class AuditCampaign:
             "branch": report.branch,
             "tracked_content_digest": report.tracked_content_digest,
             "dirty_paths": list(report.dirty_paths),
+            "tracked_file_count": report.tracked_file_count,
             "policy_digest": report.policy_digest,
             "rule_pack_version": report.rule_pack_version,
             "rule_pack_digest": report.rule_pack_digest,
-            "scanner_version": report.to_dict()["scanner_version"],
+            "scanner_version": report.scanner_version,
             "required_domains": sorted(
                 domain.name
                 for domain in report.policy.audit_domains
@@ -287,6 +291,7 @@ class AuditCampaign:
             branch=cast(str, fields["branch"]),
             tracked_content_digest=cast(str, fields["tracked_content_digest"]),
             dirty_paths=tuple(cast(list[str], fields["dirty_paths"])),
+            tracked_file_count=cast(int, fields["tracked_file_count"]),
             policy_digest=cast(str, fields["policy_digest"]),
             rule_pack_version=cast(str, fields["rule_pack_version"]),
             rule_pack_digest=cast(str, fields["rule_pack_digest"]),
@@ -313,6 +318,7 @@ class AuditCampaign:
             "branch": self.branch,
             "tracked_content_digest": self.tracked_content_digest,
             "dirty_paths": list(self.dirty_paths),
+            "tracked_file_count": self.tracked_file_count,
             "policy_digest": self.policy_digest,
             "rule_pack_version": self.rule_pack_version,
             "rule_pack_digest": self.rule_pack_digest,
@@ -351,6 +357,10 @@ class AuditCampaign:
                 "tracked_content_digest",
             ),
             "dirty_paths": list(require_string_tuple(data.get("dirty_paths"), "dirty_paths")),
+            "tracked_file_count": require_integer(
+                data.get("tracked_file_count"),
+                "tracked_file_count",
+            ),
             "policy_digest": require_string(data.get("policy_digest"), "policy_digest"),
             "rule_pack_version": require_string(
                 data.get("rule_pack_version"),
@@ -495,6 +505,7 @@ class AuditRunAttestation:
         limitations: tuple[str, ...],
     ) -> AuditRunAttestation:
         """Build a content-addressed run attestation."""
+        validate_campaign_input(campaign, report, toolchain)
         fields: dict[str, object] = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "run_id": _identifier(run_id, "run_id"),

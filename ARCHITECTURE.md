@@ -88,12 +88,15 @@ primitive imports. Callers must verify digests during load; silent repair is
 not permitted. Report schema 1.1 includes `GitExecutableProvenance`; changing
 the executable, version, path, root, or embedded trust policy changes the
 report digest. Review-ledger schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes the versioned machine-readable graph of
-unconditional identity bindings and its own canonical digest. Policy and
-review records expose one canonical identity each. Rule-pack version 1.1.0
-binds its schema, registry version, ordered definitions, and definition fields
-into the pack digest. Conditional comparison inputs and deliberate stable
-non-edges are documented explicitly rather than presented as full bindings.
+`digest_dependencies.py` publishes schema 1.1 of the machine-readable graph of
+unconditional identity bindings and its own canonical digest. The graph
+includes Git provenance and toolchain identities in addition to the inventory,
+policy, rule-pack, desired-state, report, review, campaign, comparison, task,
+and closure records. Policy and review records expose one canonical identity
+each. Rule-pack version 1.1.0 binds its schema, registry version, ordered
+definitions, and definition fields into the pack digest. Conditional
+comparison inputs and deliberate stable non-edges are documented explicitly
+rather than presented as full bindings.
 
 ### Review, enforcement, and promotion
 
@@ -117,19 +120,39 @@ execution, streaming output bounds, deadlines, and process-group termination.
 
 ### Independent campaigns
 
-`campaign_models.py`, `campaign_store.py`, `campaign_workflow.py`, and
-`campaign_compare.py` freeze campaign inputs, Git and sandbox provenance,
-independent toolchains, and limitations, and preserve disagreement. Campaign
-schema 1.2 requires every run to reproduce the frozen Git identity and retain
-complete native-adapter provenance; a different trusted binary or omitted
-adapter is divergence, not an equivalent unrecorded substitution. The
-ignored-storage check that persists a campaign, run, or comparison must also
-reproduce that frozen identity.
+`campaign_models.py`, `campaign_inputs.py`, `campaign_store.py`,
+`campaign_workflow.py`, and `campaign_compare.py` freeze campaign inputs, Git
+and sandbox provenance, independent toolchains, and limitations, and preserve
+disagreement. Campaign schema 1.3 requires every run to reproduce the complete
+frozen input projection: repository root, HEAD, tree, branch, tracked-content
+identity, dirty paths, tracked-file count, policy, rule pack, scanner, required
+domains, Git provenance, and toolchain. One canonical validator is called by
+attestation construction, storage, durable reload, and comparison; a different
+trusted binary or omitted adapter is divergence, not an equivalent unrecorded
+substitution. The ignored-storage check that persists a campaign, run, or
+comparison must also reproduce that frozen identity.
 Majority agreement is not converted into truth.
 
 Distinct session or agent labels do not prove independent inference. Promotion
 campaigns must record model/provider identity, treat correlated same-model runs
 as one witness, and include at least one independently operated model family.
+
+### Classified coverage residuals
+
+`coverage_residuals.py` validates the tracked
+`coverage-residuals.json` contract. A residual is permitted only for an
+explicit fail-closed race window, platform primitive, or runtime invariant
+that cannot be exercised honestly through the supported public boundary. Each
+entry binds the exact owning symbol digest and guard text, names public
+regressions around the boundary, records an owner and concrete revisit
+triggers, and expires within 90 days.
+
+The same manifest preregisters negative searches that prohibit private
+production-helper calls, `object.__new__` construction, and monkeypatched
+production internals in the security-sensitive owner tests. Repository audit,
+local preflight, and CI validate the manifest. Residuals are visible technical
+debt, not coverage credit, waivers, or permission to lower the aggregate CI
+threshold.
 
 ## Write boundary
 

@@ -39,6 +39,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reviewer-attestation domains and cross-protocol replay regressions.
 - A versioned machine-readable digest-dependency graph, first-class policy and
   review identities, and a strict task-definition-bound work-closure record.
+- An expiring classified coverage-residual manifest, public validation command,
+  source-symbol binding, public-regression references, and preregistered
+  negative searches that prohibit simulated security-boundary coverage.
 
 ### Changed
 
@@ -55,9 +58,15 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   review-ledger schema remains at 1.0.
 - Campaign persistence and TODO promotion require ignored-path checks to
   reproduce the evidence-bound Git identity.
-- Enforcement schema 1.1 and campaign schema 1.2 require complete structured
+- Enforcement schema 1.1 and campaign schema 1.3 require complete structured
   sandbox provenance, reject unknown envelope fields, and compare full native
   adapter evidence including missing, extra, and duplicate results.
+- Campaign schema 1.3 binds tracked-file count, scanner identity, the complete
+  Git provenance record, and toolchain identity through one validator used by
+  attestation build, durable store/load, and comparison.
+- Digest-dependency schema 1.1 adds Git provenance and toolchain identities,
+  including their direct report, campaign, comparison, and effective-profile
+  propagation contracts.
 - GitHub native-audit jobs use Ubuntu 24.04 explicitly and verify the compatible
   Bubblewrap version, dpkg association, option surface, initial sandbox, and
   nested-userns denial.
@@ -93,5 +102,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   instead of resolving its symlink to an ambient system interpreter.
 - Local preflight subprocesses enforce explicit hard wall-clock timeouts and
   report timeout exit status `124`.
+- Git, Bubblewrap, trusted-executable, adapter, rule-pack, digest, and preflight
+  tests use public APIs and real process/filesystem behavior; intentionally
+  unreachable fail-closed guards are explicit expiring residuals rather than
+  monkeypatched coverage claims.
 - Release publication produces a draft for human approval and the publish job
   remains protected by the PyPI environment and OIDC.
