@@ -212,9 +212,9 @@ remain separate gates.
 
 The repository is public but unreleased. Release-tag validation is implemented
 as a standard-library-only CLI and a real `python -S` regression proves that it
-runs before the project package or site packages are installed. Container and
-PyPI environments accept only `v*` tag deployments and retain required owner
-review before publication.
+runs with site-package imports disabled and without importing the
+`rigor_foundry` package. Container and PyPI environments accept only `v*` tag
+deployments and retain required owner review before publication.
 
 ## Required promotion evidence
 
