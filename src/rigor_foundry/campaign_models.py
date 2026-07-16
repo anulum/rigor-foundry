@@ -43,7 +43,7 @@ from .models import (
     require_string_tuple,
 )
 
-CAMPAIGN_SCHEMA_VERSION = "1.6"
+CAMPAIGN_SCHEMA_VERSION = "1.7"
 RunStatus = Literal["complete", "incomplete"]
 CampaignPurpose = Literal["diagnostic", "promotion"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")

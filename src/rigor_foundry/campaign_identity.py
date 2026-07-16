@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from .models import canonical_digest, require_mapping, require_string, require_string_tuple
 
 INFERENCE_IDENTITY_SCHEMA_VERSION = "1.0"
-MODEL_WITNESS_SCHEMA_VERSION = "1.0"
+MODEL_WITNESS_SCHEMA_VERSION = "1.1"
 _IDENTITY_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,255}\Z")
 _INFERENCE_IDENTITY_FIELDS = frozenset(
     {
@@ -31,7 +31,7 @@ _INFERENCE_IDENTITY_FIELDS = frozenset(
 _MODEL_WITNESS_FIELDS = frozenset(
     {
         "schema_version",
-        "model_family",
+        "model_families",
         "providers",
         "models",
         "operators",
@@ -134,9 +134,9 @@ class InferenceIdentity:
 
 @dataclass(frozen=True)
 class ModelWitness:
-    """One correlation-collapsed evidentiary witness for a model family."""
+    """One connected component of correlated model identity declarations."""
 
-    model_family: str
+    model_families: tuple[str, ...]
     providers: tuple[str, ...]
     models: tuple[str, ...]
     operators: tuple[str, ...]
@@ -147,27 +147,31 @@ class ModelWitness:
     def build(
         cls,
         *,
-        model_family: str,
+        model_families: Iterable[str],
         providers: Iterable[str],
         models: Iterable[str],
         operators: Iterable[str],
         run_ids: Iterable[str],
     ) -> ModelWitness:
-        """Build one deterministic model-family witness."""
+        """Build one deterministic correlation-component witness."""
         body: dict[str, object] = {
             "schema_version": MODEL_WITNESS_SCHEMA_VERSION,
-            "model_family": _identity_component(model_family, "model_family"),
+            "model_families": sorted(set(model_families)),
             "providers": sorted(set(providers)),
             "models": sorted(set(models)),
             "operators": sorted(set(operators)),
             "run_ids": sorted(set(run_ids)),
         }
+        model_families_tuple = _sorted_unique_components(
+            body["model_families"],
+            "model_families",
+        )
         providers_tuple = _sorted_unique_components(body["providers"], "providers")
         models_tuple = _sorted_unique_components(body["models"], "models")
         operators_tuple = _sorted_unique_components(body["operators"], "operators")
         run_ids_tuple = _sorted_unique_components(body["run_ids"], "run_ids")
         return cls(
-            model_family=str(body["model_family"]),
+            model_families=model_families_tuple,
             providers=providers_tuple,
             models=models_tuple,
             operators=operators_tuple,
@@ -179,7 +183,7 @@ class ModelWitness:
         """Serialise one model-family witness."""
         return {
             "schema_version": MODEL_WITNESS_SCHEMA_VERSION,
-            "model_family": self.model_family,
+            "model_families": list(self.model_families),
             "providers": list(self.providers),
             "models": list(self.models),
             "operators": list(self.operators),
@@ -196,7 +200,10 @@ class ModelWitness:
         if data.get("schema_version") != MODEL_WITNESS_SCHEMA_VERSION:
             raise ValueError("unsupported model witness schema version")
         witness = cls.build(
-            model_family=_identity_component(data.get("model_family"), "model_family"),
+            model_families=_sorted_unique_components(
+                data.get("model_families"),
+                "model_families",
+            ),
             providers=_sorted_unique_components(data.get("providers"), "providers"),
             models=_sorted_unique_components(data.get("models"), "models"),
             operators=_sorted_unique_components(data.get("operators"), "operators"),
@@ -210,25 +217,54 @@ class ModelWitness:
 def collapse_model_witnesses(
     runs: Iterable[tuple[str, InferenceIdentity]],
 ) -> tuple[ModelWitness, ...]:
-    """Collapse run identities into one deterministic witness per model family."""
-    grouped: dict[str, list[tuple[str, InferenceIdentity]]] = {}
+    """Collapse connected family or exact-model correlations into witnesses."""
+    records: list[tuple[str, InferenceIdentity]] = []
     seen_run_ids: set[str] = set()
     for run_id, identity in runs:
         parsed_run_id = _identity_component(run_id, "run_id")
         if parsed_run_id in seen_run_ids:
             raise ValueError("model witness input contains duplicate run identifiers")
         seen_run_ids.add(parsed_run_id)
-        grouped.setdefault(identity.model_family, []).append((parsed_run_id, identity))
-    return tuple(
+        records.append((parsed_run_id, identity))
+
+    parents = list(range(len(records)))
+
+    def find(index: int) -> int:
+        """Return the canonical root of one correlation component."""
+        while parents[index] != index:
+            parents[index] = parents[parents[index]]
+            index = parents[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        """Merge two correlation components deterministically."""
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parents[max(left_root, right_root)] = min(left_root, right_root)
+
+    family_owner: dict[str, int] = {}
+    exact_model_owner: dict[tuple[str, str], int] = {}
+    for index, (_run_id, identity) in enumerate(records):
+        family = family_owner.setdefault(identity.model_family, index)
+        exact_model = exact_model_owner.setdefault((identity.provider, identity.model), index)
+        union(index, family)
+        union(index, exact_model)
+
+    grouped: dict[int, list[tuple[str, InferenceIdentity]]] = {}
+    for index, record in enumerate(records):
+        grouped.setdefault(find(index), []).append(record)
+    witnesses = (
         ModelWitness.build(
-            model_family=model_family,
-            providers=(identity.provider for _run_id, identity in records),
-            models=(identity.model for _run_id, identity in records),
-            operators=(identity.operator for _run_id, identity in records),
-            run_ids=(run_id for run_id, _identity in records),
+            model_families=(identity.model_family for _run_id, identity in component),
+            providers=(identity.provider for _run_id, identity in component),
+            models=(identity.model for _run_id, identity in component),
+            operators=(identity.operator for _run_id, identity in component),
+            run_ids=(run_id for run_id, _identity in component),
         )
-        for model_family, records in sorted(grouped.items())
+        for component in grouped.values()
     )
+    return tuple(sorted(witnesses, key=lambda item: (item.model_families, item.run_ids)))
 
 
 def promotion_identity_gaps(

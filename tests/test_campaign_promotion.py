@@ -74,6 +74,8 @@ def _promotion_bundle(
     tmp_path: Path,
     *,
     families: tuple[str, str] = ("family-one", "family-two"),
+    providers: tuple[str, str] = ("provider-1", "provider-2"),
+    models: tuple[str, str] | None = None,
     operators: tuple[str, str] = ("operator-one", "operator-two"),
     purpose: CampaignPurpose = "promotion",
 ) -> tuple[Path, Path, StoredAuditRun, ReviewRecord]:
@@ -90,15 +92,17 @@ def _promotion_bundle(
         purpose=purpose,
         required_model_witnesses=2 if purpose == "promotion" else 1,
     )
-    for index, (family, operator) in enumerate(zip(families, operators, strict=True), start=1):
+    exact_models = models or tuple(f"{family}-v1" for family in families)
+    identities = zip(families, providers, exact_models, operators, strict=True)
+    for index, (family, provider, model, operator) in enumerate(identities, start=1):
         execute_campaign(
             campaign_path,
             run_id=f"run-{index}",
             agent_identity=f"SAMPLE-PROJECT/agent-{index}",
             session_identity=f"terminal/{index}",
             inference_identity=InferenceIdentity.build(
-                provider=f"provider-{index}",
-                model=f"{family}-v1",
+                provider=provider,
+                model=model,
                 model_family=family,
                 operator=operator,
             ),
@@ -153,6 +157,20 @@ def test_promotion_campaign_rejects_correlated_or_diagnostic_campaigns(
             correlated[1],
             correlated[2].report,
             correlated[3],
+        )
+
+    exact_model_alias = _promotion_bundle(
+        tmp_path / "exact-model-alias",
+        families=("family-one", "family-two"),
+        providers=("provider-shared", "provider-shared"),
+        models=("same-model", "same-model"),
+    )
+    with pytest.raises(ValueError, match="not eligible"):
+        validate_promotion_campaign(
+            exact_model_alias[0],
+            exact_model_alias[1],
+            exact_model_alias[2].report,
+            exact_model_alias[3],
         )
 
     diagnostic = _promotion_bundle(tmp_path / "diagnostic", purpose="diagnostic")

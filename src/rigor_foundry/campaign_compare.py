@@ -192,10 +192,9 @@ class AuditComparison:
         if not isinstance(raw_witnesses, list):
             raise ValueError("model_witnesses must be an array")
         witnesses = tuple(ModelWitness.from_dict(item) for item in raw_witnesses)
-        if tuple(item.model_family for item in witnesses) != tuple(
-            sorted({item.model_family for item in witnesses})
-        ):
-            raise ValueError("model_witnesses must be sorted with unique model families")
+        witness_keys = tuple((item.model_families, item.run_ids) for item in witnesses)
+        if witness_keys != tuple(sorted(set(witness_keys))):
+            raise ValueError("model_witnesses must be sorted with unique correlation components")
         unresolved = data.get("unresolved")
         promotion_eligible = data.get("promotion_eligible")
         if not isinstance(unresolved, bool) or not isinstance(promotion_eligible, bool):

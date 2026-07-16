@@ -105,9 +105,9 @@ def test_model_witness_collapse_counts_one_family_once_across_run_labels() -> No
         )
     )
 
-    assert tuple(witness.model_family for witness in witnesses) == (
-        "independent-family",
-        "shared-family",
+    assert tuple(witness.model_families for witness in witnesses) == (
+        ("independent-family",),
+        ("shared-family",),
     )
     shared = witnesses[1]
     assert shared.providers == ("provider.example", "provider.other")
@@ -116,7 +116,44 @@ def test_model_witness_collapse_counts_one_family_once_across_run_labels() -> No
     assert shared.run_ids == ("run-one", "run-two")
     assert ModelWitness.from_dict(shared.to_dict()) == shared
     assert rigor_foundry.ModelWitness is ModelWitness
-    assert rigor_foundry.MODEL_WITNESS_SCHEMA_VERSION == "1.0"
+    assert rigor_foundry.MODEL_WITNESS_SCHEMA_VERSION == "1.1"
+
+
+def test_exact_model_and_family_edges_form_one_transitive_witness() -> None:
+    """Exact-model aliases and shared families cannot multiply witnesses."""
+    first = _identity(
+        "family-one",
+        provider="provider.example",
+        model="exact-model",
+        operator="operator-one",
+    )
+    alias = _identity(
+        "family-two",
+        provider="provider.example",
+        model="exact-model",
+        operator="operator-two",
+    )
+    transitive = _identity(
+        "family-two",
+        provider="provider.other",
+        model="other-model",
+        operator="operator-three",
+    )
+
+    witnesses = collapse_model_witnesses(
+        (
+            ("run-one", first),
+            ("run-two", alias),
+            ("run-three", transitive),
+        )
+    )
+
+    assert len(witnesses) == 1
+    assert witnesses[0].model_families == ("family-one", "family-two")
+    assert witnesses[0].run_ids == ("run-one", "run-three", "run-two")
+    assert promotion_identity_gaps(witnesses, 2)[0] == (
+        "expected 2 model-family witnesses, found 1"
+    )
 
 
 def test_model_witness_parser_and_input_reject_duplicates_and_tampering() -> None:
@@ -179,4 +216,5 @@ def test_promotion_identity_gaps_require_cross_model_and_operator_independence()
         )
     )
     assert promotion_identity_gaps(independent, 2) == ()
-    assert INFERENCE_IDENTITY_SCHEMA_VERSION == MODEL_WITNESS_SCHEMA_VERSION == "1.0"
+    assert INFERENCE_IDENTITY_SCHEMA_VERSION == "1.0"
+    assert MODEL_WITNESS_SCHEMA_VERSION == "1.1"

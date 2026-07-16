@@ -56,12 +56,16 @@ inotify-synchronised concurrent-mutation runs. Campaign and promotion tests
 prove ignored-state drift is rejected before attestation or TODO mutation.
 
 Campaign identity tests cover strict provider, exact-model, correlation-family,
-and operator schemas plus deterministic same-family witness collapse.
+and operator schemas plus transitive same-family or exact-model witness
+collapse.
 Workflow, comparison, storage, promotion, and installed-CLI tests use real
 repositories and durable records to prove cross-model eligibility, same-family
 rejection, operator separation, exact report/review membership, replay and
 tamper rejection, storage-link safety, and concurrent tracked mutation
 rejection.
+Campaign storage tests also reject symlinked run directories, linked
+attestations, hard-linked reports and reviews, and symlinked campaign-parent
+components through the public durable-loading APIs.
 
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an

@@ -26,7 +26,7 @@ Candidate-anchor schema 1.0 is a strict discriminated union:
 Report schema 1.3 requires one anchor on every candidate and records
 `git_object_format`. Scanner version 0.3.0 verifies all anchors against the
 inventory that produced the report. Campaign schema 1.5 carries the object
-format into independent-run input comparison. Campaign schema 1.6 additionally
+format into independent-run input comparison. Campaign schema 1.7 additionally
 binds ignored inventory, campaign purpose, witness requirements, and explicit
 inference identity. Earlier report or campaign
 records must be regenerated; unknown or mixed anchor fields have no
@@ -87,7 +87,9 @@ validated open descriptor.
 `campaign-create`; otherwise frozen Git provenance diverges and the run is
 rejected. It must also receive explicit provider, exact-model,
 model-correlation-family, and operator identities. These values are evidence,
-not labels inferred from a session or agent name.
+not labels inferred from a session or agent name. Operator declarations must be
+authenticated by the surrounding deployment; the campaign record does not
+claim a cryptographic operator signature.
 
 Python callers pass `GitTrustPolicy` through the keyword-only
 `git_trust_policy` argument of `scan_repository`, `load_git_inventory`, campaign
@@ -219,9 +221,10 @@ freezing the repository input projection, so the tool's own durable storage
 cannot create a post-freeze ignored-inventory divergence.
 
 Diagnostic campaigns may use one model witness. Promotion campaigns require at
-least two expected runs, at least two model-family witnesses, and at least two
-operator identities. Repeated runs from one model family remain useful for
-repeatability evidence but count as one promotion witness.
+least two expected runs, at least two correlation witnesses, and at least two
+declared operator identities. Repeated runs from one model family or the same
+provider/exact-model pair remain useful for repeatability evidence but join one
+transitive correlation component and count as one promotion witness.
 
 Configuration schemas are versioned. Unknown schema versions, contradictory
 variables, unavailable adapters, and unresolved controls remain explicit

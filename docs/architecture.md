@@ -98,14 +98,18 @@ mutable staging area.
 
 ## Campaign promotion boundary
 
-Campaign schema 1.6 binds every run to an explicit provider, exact model,
+Campaign schema 1.7 binds every run to an explicit provider, exact model,
 model-correlation family, and operator. Comparison groups all runs with one
-correlation family into one model witness and binds the exact participating
+correlation family or one provider/exact-model pair into transitive connected
+components. Each component is one witness and binds the exact participating
 attestation, report, review, and witness digests. A promotion campaign is
-eligible only when it is otherwise resolved and contains at least two model
-witnesses operated by at least two identities.
+eligible only when it is otherwise resolved and contains at least two witnesses
+and two declared operator identities. Operator labels are declarations; access
+control or a future signature layer must authenticate the submitting operator.
 
 Promotion reloads the ignored durable campaign, runs, reviews, and comparison;
-revalidates their schema and campaign relations; reconstructs the comparison;
-and admits only a report and review that participated in that exact comparison.
-Diagnostic campaigns and same-family repetition cannot authorise promotion.
+opens every path through no-follow directory descriptors, requires single-link
+bounded record files, revalidates schema and campaign relations, reconstructs
+the comparison, and admits only a report and review that participated in that
+exact comparison. Diagnostic campaigns, same-family repetition, and exact-model
+aliasing cannot authorise promotion.

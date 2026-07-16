@@ -404,14 +404,14 @@ def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
 
     reversed_witnesses = comparison.to_dict()
     reversed_witnesses["model_witnesses"] = list(reversed(reversed_witnesses["model_witnesses"]))
-    with pytest.raises(ValueError, match="sorted with unique model families"):
+    with pytest.raises(ValueError, match="sorted with unique correlation components"):
         AuditComparison.from_dict(reversed_witnesses)
 
     excess_witnesses = comparison.to_dict()
     excess_witnesses["model_witnesses"] = [
         *excess_witnesses["model_witnesses"],
         ModelWitness.build(
-            model_family="family-3",
+            model_families=("family-3",),
             providers=("provider-family-3",),
             models=("family-3-v1",),
             operators=("operator-family-3",),

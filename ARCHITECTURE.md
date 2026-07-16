@@ -158,7 +158,7 @@ execution, streaming output bounds, deadlines, and process-group termination.
 `campaign_inputs.py`, `campaign_store.py`, `campaign_workflow.py`,
 `campaign_compare.py`, and `campaign_promotion.py` freeze campaign inputs,
 inference identities, Git and sandbox provenance, independent toolchains, and
-limitations, and preserve disagreement. Campaign schema 1.6 requires every run
+limitations, and preserve disagreement. Campaign schema 1.7 requires every run
 to reproduce the complete
 frozen input projection: repository root, HEAD, tree, branch, tracked-content
 identity, Git object format, dirty paths, tracked-file count, policy, rule pack,
@@ -171,9 +171,13 @@ Majority agreement is not converted into truth.
 
 Distinct session or agent labels do not prove independent inference. Each run
 attestation binds the provider, exact model, correlation family, and operator.
-All runs in one correlation family collapse into one model witness. Promotion
-campaigns require at least two model-family witnesses and at least two
-operators. Promotion reloads and reconstructs the durable comparison and
+Runs are joined into one witness transitively when they share either a declared
+correlation family or the same provider and exact model. A changed family label
+therefore cannot multiply one exact model into independent evidence. Promotion
+campaigns require at least two resulting witnesses and at least two declared
+operators. Operator labels are retained evidence, not cryptographic identity
+proof; deployments must authenticate who may submit them. Promotion reloads
+and reconstructs the durable comparison and
 requires the selected report and review digests to be members of that exact
 eligible comparison.
 

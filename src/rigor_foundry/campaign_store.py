@@ -21,7 +21,12 @@ from .campaign_inputs import validate_campaign_input
 from .campaign_models import AuditCampaign, AuditRunAttestation
 from .git_inventory import is_git_ignored
 from .git_provenance import GitExecutableProvenance, GitTrustPolicy
-from .models import AuditReport, ReviewRecord, reviews_from_path
+from .models import (
+    REVIEW_SCHEMA_VERSION,
+    AuditReport,
+    ReviewRecord,
+    require_mapping,
+)
 
 if TYPE_CHECKING:
     from .campaign_compare import AuditComparison
@@ -90,16 +95,37 @@ def _write_new(path: Path, text: str) -> None:
             os.close(descriptor)
 
 
+def _open_directory_no_follow(path: Path) -> int:
+    """Open an absolute directory through a component-safe descriptor walk."""
+    if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
+        raise OSError("platform does not support no-follow directory traversal")
+    absolute = path.absolute()
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
+    descriptor = os.open(absolute.anchor or os.sep, flags)
+    try:
+        for part in absolute.parts[1:]:
+            child = os.open(part, flags, dir_fd=descriptor)
+            state = os.fstat(child)
+            if not stat.S_ISDIR(state.st_mode):
+                os.close(child)
+                raise OSError(f"non-directory path component: {part}")
+            os.close(descriptor)
+            descriptor = child
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def _read_single_link_json(path: Path, *, label: str) -> object:
     """Read one bounded inode-bound JSON record and reject concurrent mutation."""
     parent_descriptor: int | None = None
+    parent_recheck_descriptor: int | None = None
     descriptor: int | None = None
     try:
-        parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-        parent_flags |= getattr(os, "O_NOFOLLOW", 0)
-        parent_descriptor = os.open(path.parent, parent_flags)
+        parent_descriptor = _open_directory_no_follow(path.parent)
         parent_before = os.fstat(parent_descriptor)
-        file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        file_flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
         descriptor = os.open(path.name, file_flags, dir_fd=parent_descriptor)
         before = os.fstat(descriptor)
         if (
@@ -116,7 +142,6 @@ def _read_single_link_json(path: Path, *, label: str) -> object:
                 raise ValueError(f"{label} exceeds the record size limit")
             chunks.append(chunk)
         after = os.fstat(descriptor)
-        parent_after = os.fstat(parent_descriptor)
         stable_file = (
             before.st_dev,
             before.st_ino,
@@ -132,17 +157,18 @@ def _read_single_link_json(path: Path, *, label: str) -> object:
             after.st_ctime_ns,
             after.st_nlink,
         )
-        stable_parent = (parent_before.st_dev, parent_before.st_ino) == (
-            parent_after.st_dev,
-            parent_after.st_ino,
+        path_file = os.stat(
+            path.name,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
         )
-        path_file = path.stat(follow_symlinks=False)
-        path_parent = path.parent.stat(follow_symlinks=False)
+        parent_recheck_descriptor = _open_directory_no_follow(path.parent)
+        parent_recheck = os.fstat(parent_recheck_descriptor)
         if (
             not stable_file
-            or not stable_parent
+            or observed != before.st_size
             or (path_file.st_dev, path_file.st_ino) != (before.st_dev, before.st_ino)
-            or (path_parent.st_dev, path_parent.st_ino)
+            or (parent_recheck.st_dev, parent_recheck.st_ino)
             != (parent_before.st_dev, parent_before.st_ino)
         ):
             raise ValueError(f"{label} changed while it was read")
@@ -151,12 +177,25 @@ def _read_single_link_json(path: Path, *, label: str) -> object:
         except (UnicodeError, json.JSONDecodeError) as exc:
             raise ValueError(f"cannot parse {label} {path}") from exc
     except OSError as exc:
-        raise ValueError(f"cannot read {label} {path}") from exc
+        raise ValueError(f"cannot read {label} {path}: {exc}") from exc
     finally:
         if descriptor is not None:
             os.close(descriptor)
+        if parent_recheck_descriptor is not None:
+            os.close(parent_recheck_descriptor)
         if parent_descriptor is not None:
             os.close(parent_descriptor)
+
+
+def _review_document_from_value(value: object) -> tuple[ReviewRecord, ...]:
+    """Parse one strict review document already read through durable storage."""
+    data = require_mapping(value, "review document")
+    if data.get("schema_version") != REVIEW_SCHEMA_VERSION:
+        raise ValueError("unsupported review schema version")
+    raw_reviews = data.get("reviews")
+    if not isinstance(raw_reviews, list):
+        raise ValueError("review document reviews must be an array")
+    return tuple(ReviewRecord.from_dict(item) for item in raw_reviews)
 
 
 def campaign_relative_path(
@@ -211,11 +250,7 @@ def store_campaign(
 
 def load_campaign(path: Path) -> AuditCampaign:
     """Load and integrity-check one campaign manifest."""
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"cannot read audit campaign {path}") from exc
-    return AuditCampaign.from_dict(value)
+    return AuditCampaign.from_dict(_read_single_link_json(path, label="audit campaign"))
 
 
 def store_run(
@@ -262,28 +297,50 @@ def store_run(
 def load_runs(campaign_path: Path) -> tuple[StoredAuditRun, ...]:
     """Load every complete, integrity-verified run for one campaign."""
     campaign = load_campaign(campaign_path)
-    campaign_directory = campaign_path.resolve(strict=True).parent
+    campaign_directory = campaign_path.absolute().parent
     runs_directory = campaign_directory / "runs"
-    if not runs_directory.exists():
+    try:
+        runs_descriptor = _open_directory_no_follow(runs_directory)
+    except FileNotFoundError:
         return ()
+    except OSError as exc:
+        raise ValueError(f"cannot enumerate campaign runs {runs_directory}") from exc
+    run_names: list[str]
+    try:
+        run_names = sorted(os.listdir(runs_descriptor))
+        for name in run_names:
+            state = os.stat(name, dir_fd=runs_descriptor, follow_symlinks=False)
+            if _RECORD_IDENTIFIER.fullmatch(name) is None or not stat.S_ISDIR(state.st_mode):
+                raise ValueError(
+                    f"campaign run entry must be a portable non-symlink directory: {name}"
+                )
+    except OSError as exc:
+        raise ValueError(f"cannot enumerate campaign runs {runs_directory}") from exc
+    finally:
+        os.close(runs_descriptor)
     loaded: list[StoredAuditRun] = []
-    for run_directory in sorted(path for path in runs_directory.iterdir() if path.is_dir()):
+    for name in run_names:
+        run_directory = runs_directory / name
         attestation_path = run_directory / "attestation.json"
-        try:
-            attestation_value = json.loads(attestation_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            raise ValueError(f"cannot read audit attestation {attestation_path}") from exc
-        attestation = AuditRunAttestation.from_dict(attestation_value)
+        attestation = AuditRunAttestation.from_dict(
+            _read_single_link_json(
+                attestation_path,
+                label="audit attestation",
+            )
+        )
         if attestation.campaign_id != campaign.campaign_id:
             raise ValueError(f"run {attestation.run_id} belongs to a different campaign")
         if attestation.input_contract_digest != campaign.contract_digest:
             raise ValueError(f"run {attestation.run_id} has a different input contract")
-        report_path = (campaign_directory / attestation.report_relative_path).resolve(strict=True)
-        try:
-            report_path.relative_to(run_directory.resolve(strict=True))
-        except ValueError as exc:
-            raise ValueError(f"run {attestation.run_id} report path escapes its run") from exc
-        report = AuditReport.from_path(report_path)
+        if name != attestation.run_id:
+            raise ValueError(
+                f"run directory {name} does not match attestation {attestation.run_id}"
+            )
+        expected_report_path = f"runs/{attestation.run_id}/report.json"
+        if attestation.report_relative_path != expected_report_path:
+            raise ValueError(f"run {attestation.run_id} report path is not canonical")
+        report_path = run_directory / "report.json"
+        report = AuditReport.from_dict(_read_single_link_json(report_path, label="audit report"))
         if report.report_digest != attestation.report_digest:
             raise ValueError(f"run {attestation.run_id} report digest mismatch")
         try:
@@ -304,14 +361,36 @@ def load_runs(campaign_path: Path) -> tuple[StoredAuditRun, ...]:
 
 def load_campaign_reviews(campaign_path: Path) -> tuple[tuple[ReviewRecord, ...], ...]:
     """Load every immutable independent review document in filename order."""
-    reviews_directory = campaign_path.resolve(strict=True).parent / "reviews"
-    if not reviews_directory.exists():
+    load_campaign(campaign_path)
+    reviews_directory = campaign_path.absolute().parent / "reviews"
+    try:
+        reviews_descriptor = _open_directory_no_follow(reviews_directory)
+    except FileNotFoundError:
         return ()
+    except OSError as exc:
+        raise ValueError(f"cannot enumerate campaign reviews {reviews_directory}") from exc
+    review_names: list[str]
+    try:
+        review_names = sorted(
+            name for name in os.listdir(reviews_descriptor) if name.endswith(".json")
+        )
+        for name in review_names:
+            state = os.stat(name, dir_fd=reviews_descriptor, follow_symlinks=False)
+            if not stat.S_ISREG(state.st_mode):
+                raise ValueError(
+                    f"campaign review must be a regular non-symlink file: "
+                    f"{reviews_directory / name}"
+                )
+    except OSError as exc:
+        raise ValueError(f"cannot enumerate campaign reviews {reviews_directory}") from exc
+    finally:
+        os.close(reviews_descriptor)
     documents: list[tuple[ReviewRecord, ...]] = []
-    for path in sorted(reviews_directory.glob("*.json")):
-        if path.is_symlink() or not path.is_file():
-            raise ValueError(f"campaign review must be a regular non-symlink file: {path}")
-        documents.append(reviews_from_path(path))
+    for name in review_names:
+        path = reviews_directory / name
+        documents.append(
+            _review_document_from_value(_read_single_link_json(path, label="campaign review"))
+        )
     return tuple(documents)
 
 
@@ -368,12 +447,9 @@ def load_comparison_record(
     from .campaign_compare import AuditComparison
 
     campaign = load_campaign(campaign_path)
-    campaign_directory = campaign_path.resolve(strict=True).parent
+    campaign_directory = campaign_path.absolute().parent
     expected_directory = campaign_directory / "comparisons"
-    try:
-        comparison_absolute = comparison_path.resolve(strict=True)
-    except OSError as exc:
-        raise ValueError(f"cannot read audit comparison {comparison_path}") from exc
+    comparison_absolute = comparison_path.absolute()
     if comparison_absolute.parent != expected_directory:
         raise ValueError("comparison path is outside the campaign comparison directory")
     value = _read_single_link_json(comparison_path, label="audit comparison")

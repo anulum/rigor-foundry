@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -161,7 +162,7 @@ def test_campaign_and_comparison_records_reject_malformed_or_replayed_input(
     """Durable JSON is readable, identifier-safe, and create-only."""
     repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path)
     malformed = repository.write_text(".rigor/malformed-campaign.json", "{\n")
-    with pytest.raises(ValueError, match="cannot read audit campaign"):
+    with pytest.raises(ValueError, match="cannot parse audit campaign"):
         load_campaign(malformed)
 
     campaign = load_campaign(campaign_path)
@@ -447,7 +448,7 @@ def test_load_runs_rejects_malformed_escaping_and_duplicate_records(tmp_path: Pa
     _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "malformed")
     run_directory = campaign_path.parent / "runs" / stored.attestation.run_id
     (run_directory / "attestation.json").write_text("{\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="cannot read audit attestation"):
+    with pytest.raises(ValueError, match="cannot parse audit attestation"):
         load_runs(campaign_path)
 
     _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "escaping")
@@ -458,7 +459,7 @@ def test_load_runs_rejects_malformed_escaping_and_duplicate_records(tmp_path: Pa
     changed = stored.attestation.to_dict()
     changed["report_relative_path"] = "runs/other/report.json"
     _rewrite_attestation(run_directory, changed)
-    with pytest.raises(ValueError, match="report path escapes its run"):
+    with pytest.raises(ValueError, match="report path is not canonical"):
         load_runs(campaign_path)
 
     _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "duplicate")
@@ -468,7 +469,7 @@ def test_load_runs_rejects_malformed_escaping_and_duplicate_records(tmp_path: Pa
     changed = stored.attestation.to_dict()
     changed["report_relative_path"] = "runs/copied/report.json"
     _rewrite_attestation(copied, changed)
-    with pytest.raises(ValueError, match="duplicate run identifiers"):
+    with pytest.raises(ValueError, match="does not match attestation"):
         load_runs(campaign_path)
 
 
@@ -493,3 +494,136 @@ def test_campaign_review_loading_is_ordered_and_symlink_safe(tmp_path: Path) -> 
     (reviews / "30-linked.json").symlink_to(first_path)
     with pytest.raises(ValueError, match="regular non-symlink"):
         load_campaign_reviews(campaign_path)
+
+
+def test_campaign_loading_rejects_linked_components_and_run_evidence(
+    tmp_path: Path,
+) -> None:
+    """Every durable campaign component must remain inside its no-follow path."""
+    repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "run-directory")
+    run_directory = campaign_path.parent / "runs" / stored.attestation.run_id
+    outside_run = tmp_path / "outside-run"
+    run_directory.rename(outside_run)
+    run_directory.symlink_to(outside_run, target_is_directory=True)
+    with pytest.raises(ValueError, match="non-symlink directory"):
+        load_runs(campaign_path)
+
+    _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "attestation-link")
+    run_directory = campaign_path.parent / "runs" / stored.attestation.run_id
+    attestation = run_directory / "attestation.json"
+    outside_attestation = tmp_path / "outside-attestation.json"
+    attestation.rename(outside_attestation)
+    attestation.symlink_to(outside_attestation)
+    with pytest.raises(ValueError, match="cannot read audit attestation"):
+        load_runs(campaign_path)
+
+    _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path / "report-hardlink")
+    report = campaign_path.parent / "runs" / stored.attestation.run_id / "report.json"
+    outside_report = tmp_path / "outside-report.json"
+    outside_report.hardlink_to(report)
+    with pytest.raises(ValueError, match="bounded single-link regular file"):
+        load_runs(campaign_path)
+
+    repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path / "campaign-parent")
+    alias = tmp_path / "repository-alias"
+    alias.symlink_to(repository.root, target_is_directory=True)
+    aliased_campaign = alias / campaign_path.relative_to(repository.root)
+    with pytest.raises(ValueError, match="cannot read audit campaign"):
+        load_campaign(aliased_campaign)
+
+
+def test_campaign_review_loading_rejects_hardlinks(tmp_path: Path) -> None:
+    """A mutable hardlink alias cannot supply promotion review evidence."""
+    _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path)
+    reviews = campaign_path.parent / "reviews"
+    reviews.mkdir()
+    review = ReviewRecord.template(stored.report.report_digest, "candidate-one")
+    review_path = reviews / "review.json"
+    review_path.write_text(reviews_to_json((review,)), encoding="utf-8")
+    (tmp_path / "review-alias.json").hardlink_to(review_path)
+
+    with pytest.raises(ValueError, match="bounded single-link regular file"):
+        load_campaign_reviews(campaign_path)
+
+
+def test_campaign_review_loading_rejects_invalid_documents_and_linked_directory(
+    tmp_path: Path,
+) -> None:
+    """Review discovery rejects malformed records and a linked storage root."""
+    _repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path / "schema")
+    reviews = campaign_path.parent / "reviews"
+    reviews.mkdir()
+    review_path = reviews / "review.json"
+    review_path.write_text('{"schema_version":"unknown","reviews":[]}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported review schema"):
+        load_campaign_reviews(campaign_path)
+
+    review_path.write_text('{"schema_version":"1.0","reviews":{}}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="reviews must be an array"):
+        load_campaign_reviews(campaign_path)
+
+    _repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path / "linked")
+    external_reviews = tmp_path / "external-reviews"
+    external_reviews.mkdir()
+    (campaign_path.parent / "reviews").symlink_to(external_reviews, target_is_directory=True)
+    with pytest.raises(ValueError, match="cannot enumerate campaign reviews"):
+        load_campaign_reviews(campaign_path)
+
+
+def test_campaign_run_loading_rejects_linked_directory(tmp_path: Path) -> None:
+    """Run discovery never follows a replacement storage-directory link."""
+    _repository, campaign_path, _campaign, stored = _campaign_bundle(tmp_path)
+    runs = campaign_path.parent / "runs"
+    external_runs = tmp_path / "external-runs"
+    runs.rename(external_runs)
+    runs.symlink_to(external_runs, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="cannot enumerate campaign runs"):
+        load_runs(campaign_path)
+    assert (external_runs / stored.attestation.run_id / "report.json").is_file()
+
+
+def test_campaign_loading_rejects_file_replacement_before_revalidation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A real inode replacement at the finish check fails closed."""
+    _repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path)
+    replacement = tmp_path / "replacement.json"
+    replacement.write_bytes(campaign_path.read_bytes())
+    real_stat = os.stat
+    replaced = False
+
+    def replace_before_revalidation(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        nonlocal replaced
+        if (
+            not replaced
+            and path == campaign_path.name
+            and dir_fd is not None
+            and not follow_symlinks
+        ):
+            os.replace(replacement, campaign_path)
+            replaced = True
+        return real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "stat", replace_before_revalidation)
+    with pytest.raises(ValueError, match="changed while it was read"):
+        load_campaign(campaign_path)
+    assert replaced
+
+
+def test_campaign_loading_fails_closed_without_no_follow_support(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Public loading reports an unavailable platform safety primitive."""
+    _repository, campaign_path, _campaign, _stored = _campaign_bundle(tmp_path)
+    monkeypatch.delattr(os, "O_NOFOLLOW")
+
+    with pytest.raises(ValueError, match="platform does not support no-follow"):
+        load_campaign(campaign_path)

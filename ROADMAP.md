@@ -46,7 +46,7 @@ Roadmap items are acceptance-gated; dates and versions are not release promises.
   behaviour without granting implicit remediation authority.
 - Validate cross-model promotion campaigns against representative external
   repositories and publish adjudicated evidence for the two-model-family,
-  two-operator threshold.
+  exact-model-alias collapse, and two-operator threshold.
 
 ## 1.0 — Promotion candidate
 
