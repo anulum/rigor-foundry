@@ -30,6 +30,7 @@ execution, or production promotion.
 | Repository self-audit | Immutable temporary-commit scan for authoring evidence | Full policy scan, native-control gate, and 30-day evidence artifact |
 | Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
 | Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
+| Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
 
 ## Local integration evidence
 
@@ -125,6 +126,27 @@ distribution passed Twine checks, contained both provenance modules, and passed
 an external installed-wheel provenance round trip with hash-locked runtime
 dependencies. The exact outer-sandbox smoke succeeded and the nested-userns
 probe failed as required. Hosted CI remains required after an authorised push.
+
+Ed25519 protocol separation has a dedicated schema and replay contract. Tests
+must verify the exact framed-message vector, both accepted domains, the domain
+length boundary, malformed inputs, same-key cross-protocol replay, raw-digest
+legacy signatures, strict envelope fields, schema migration, effective-profile
+binding, and reviewer verification through the public trust boundary.
+
+On 2026-07-16, 63 focused affected tests passed across seven explicitly named
+files; the prohibited aggregate local suite was not run. A 56-test owner run
+reached 98.88% branch-aware coverage across `trust.py`, `standard_pack.py`,
+`review_attestation.py`, and `effective_profile.py`; the message/trust and
+reviewer-attestation modules reached 100%, the standard-pack module reached
+99%, and the effective-profile module reached 97%. Ruff lint and format passed
+all 96 source, test, and tool files, and strict MyPy passed 48 source/tool
+modules. Bandit and Semgrep reported zero findings. Repository, strict
+authoring, fast preflight, Actionlint, typos, secret, dependency-waiver, and
+REUSE (167/167) gates passed. Both hash-locked dependency audits passed with
+only the existing exact `PYSEC-2026-2132` security-tool exception. Strict
+documentation, wheel and source-distribution builds, Twine checks, and an
+external installed-wheel same-key cross-domain round trip passed. Hosted CI
+remains required after an authorised push.
 
 ## Security-boundary remediation evidence
 

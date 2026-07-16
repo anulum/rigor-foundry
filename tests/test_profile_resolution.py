@@ -16,7 +16,11 @@ import pytest
 from signing_fixtures import pack_signature, trust_store
 
 from rigor_foundry.condition_language import ConditionExpression
-from rigor_foundry.effective_profile import AdapterLock, PackVerification
+from rigor_foundry.effective_profile import (
+    PACK_VERIFICATION_SCHEMA_VERSION,
+    AdapterLock,
+    PackVerification,
+)
 from rigor_foundry.model_primitives import VariableConstraints, VariableDefinition
 from rigor_foundry.profile_resolution import resolve_effective_profile
 from rigor_foundry.project_profile import (
@@ -36,6 +40,7 @@ from rigor_foundry.standard_pack import (
     RemediationContract,
     StandardPack,
 )
+from rigor_foundry.trust import REVIEW_ATTESTATION_SIGNATURE_DOMAIN
 
 
 def control(
@@ -254,10 +259,43 @@ def test_stricter_overlay_wins_and_missing_adapter_remains_explicit() -> None:
 def test_signature_proof_and_adapter_domain_are_exactly_bound() -> None:
     """A verification binds detached proof bytes and adapters cover the control domain."""
     standard = pack()
-    wrong_proof = replace(verification(standard), signature_digest="0" * 64)
+    exact_proof = verification(standard)
+    assert exact_proof.to_dict()["schema_version"] == PACK_VERIFICATION_SCHEMA_VERSION
+    assert exact_proof.to_dict()["signature_domain"] == (standard.signature.signature_domain)
+    wrong_proof = replace(exact_proof, signature_digest="0" * 64)
     rejected = resolve(profile(standard), standard, verifications=(wrong_proof,))
     assert not rejected.ready
     assert "unverified-pack" in {item.code for item in rejected.contradictions}
+
+    wrong_identity = replace(exact_proof, verification_digest="0" * 64)
+    identity_rejected = resolve(
+        profile(standard),
+        standard,
+        verifications=(wrong_identity,),
+    )
+    assert not identity_rejected.ready
+    assert "unverified-pack" in {item.code for item in identity_rejected.contradictions}
+
+    replayed_proof = replace(
+        exact_proof,
+        signature_domain=REVIEW_ATTESTATION_SIGNATURE_DOMAIN,
+    )
+    replay_rejected = resolve(
+        profile(standard),
+        standard,
+        verifications=(replayed_proof,),
+    )
+    assert not replay_rejected.ready
+    assert "unverified-pack" in {item.code for item in replay_rejected.contradictions}
+
+    unversioned_proof = replace(exact_proof, schema_version="0.9")
+    schema_rejected = resolve(
+        profile(standard),
+        standard,
+        verifications=(unversioned_proof,),
+    )
+    assert not schema_rejected.ready
+    assert "unverified-pack" in {item.code for item in schema_rejected.contradictions}
 
     wrong_domain = AdapterLock.build(
         adapter_id="loc-adapter",

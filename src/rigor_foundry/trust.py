@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from typing import Final
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -21,6 +23,11 @@ ED25519_ALGORITHM = "ed25519"
 ED25519_PUBLIC_KEY_HEX_LENGTH = 64
 ED25519_SIGNATURE_HEX_LENGTH = 128
 TRUST_STORE_SCHEMA_VERSION = "1.0"
+ED25519_SIGNATURE_MESSAGE_VERSION: Final = "1.0"
+ED25519_SIGNATURE_MESSAGE_PREFIX: Final = b"RIGOR-FOUNDRY-ED25519\x00v1\x00"
+STANDARD_PACK_SIGNATURE_DOMAIN: Final = "rigor-foundry.standard-pack.v1"
+REVIEW_ATTESTATION_SIGNATURE_DOMAIN: Final = "rigor-foundry.reviewer-attestation.v1"
+_SIGNATURE_DOMAIN = re.compile(r"[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?\Z")
 
 
 def require_lower_hex(value: object, field: str, *, length: int) -> str:
@@ -29,6 +36,21 @@ def require_lower_hex(value: object, field: str, *, length: int) -> str:
     if len(text) != length or any(character not in "0123456789abcdef" for character in text):
         raise ValueError(f"{field} must be {length} lowercase hexadecimal characters")
     return text
+
+
+def ed25519_signature_message(*, signature_domain: str, payload_digest: str) -> bytes:
+    """Encode one versioned, domain-separated Ed25519 signing message."""
+    domain = require_string(signature_domain, "signature.signature_domain")
+    if _SIGNATURE_DOMAIN.fullmatch(domain) is None:
+        raise ValueError("signature.signature_domain must be a canonical protocol domain")
+    digest = require_digest(payload_digest, "signature.payload_digest")
+    encoded_domain = domain.encode("ascii")
+    return (
+        ED25519_SIGNATURE_MESSAGE_PREFIX
+        + len(encoded_domain).to_bytes(2, "big")
+        + encoded_domain
+        + bytes.fromhex(digest)
+    )
 
 
 @dataclass(frozen=True)
@@ -133,10 +155,11 @@ class VerificationTrustStore:
         *,
         key_id: str,
         algorithm: str,
+        signature_domain: str,
         payload_digest: str,
         signature_hex: str,
     ) -> bool:
-        """Return whether one trusted key signed the exact payload digest bytes."""
+        """Return whether a trusted key signed the exact domain and payload digest."""
         try:
             if VerificationTrustStore.build(self.keys) != self:
                 return False
@@ -145,7 +168,10 @@ class VerificationTrustStore:
         if algorithm != ED25519_ALGORITHM:
             return False
         try:
-            digest = require_digest(payload_digest, "signature.payload_digest")
+            message = ed25519_signature_message(
+                signature_domain=signature_domain,
+                payload_digest=payload_digest,
+            )
             signature = require_lower_hex(
                 signature_hex,
                 "signature.signature_hex",
@@ -160,7 +186,7 @@ class VerificationTrustStore:
             public_key = Ed25519PublicKey.from_public_bytes(
                 bytes.fromhex(matches[0].public_key_hex)
             )
-            public_key.verify(bytes.fromhex(signature), bytes.fromhex(digest))
+            public_key.verify(bytes.fromhex(signature), message)
         except (InvalidSignature, ValueError):
             return False
         return True

@@ -15,7 +15,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from rigor_foundry.standard_pack import PackSignature
-from rigor_foundry.trust import TrustedPublicKey, VerificationTrustStore
+from rigor_foundry.trust import (
+    STANDARD_PACK_SIGNATURE_DOMAIN,
+    TrustedPublicKey,
+    VerificationTrustStore,
+    ed25519_signature_message,
+)
 
 
 def private_key(key_id: str) -> Ed25519PrivateKey:
@@ -47,9 +52,13 @@ def trust_store(*key_ids: str) -> VerificationTrustStore:
     )
 
 
-def sign_digest(key_id: str, payload_digest: str) -> str:
-    """Sign canonical digest bytes with one deterministic fixture private key."""
-    return private_key(key_id).sign(bytes.fromhex(payload_digest)).hex()
+def sign_message(key_id: str, signature_domain: str, payload_digest: str) -> str:
+    """Sign one domain-separated fixture message with a deterministic key."""
+    message = ed25519_signature_message(
+        signature_domain=signature_domain,
+        payload_digest=payload_digest,
+    )
+    return private_key(key_id).sign(message).hex()
 
 
 def pack_signature(payload_digest: str, key_id: str = "trusted-key") -> PackSignature:
@@ -57,5 +66,5 @@ def pack_signature(payload_digest: str, key_id: str = "trusted-key") -> PackSign
     return PackSignature.build(
         key_id=key_id,
         payload_digest=payload_digest,
-        signature_hex=sign_digest(key_id, payload_digest),
+        signature_hex=sign_message(key_id, STANDARD_PACK_SIGNATURE_DOMAIN, payload_digest),
     )

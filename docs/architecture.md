@@ -14,9 +14,13 @@ generator.
    and approval gates pass.
 
 Pack resolution and reviewer clearance cross an explicit cryptographic trust
-boundary. Detached Ed25519 signatures cover canonical digest bytes, public keys
-live in integrity-bound trust stores, and every clearance path reverifies the
-signature rather than trusting serialized booleans or proof labels.
+boundary. Detached Ed25519 signatures cover a versioned framed message with a
+length-prefixed protocol domain and canonical digest bytes. Standard packs use
+`rigor-foundry.standard-pack.v1`; reviewer attestations use
+`rigor-foundry.reviewer-attestation.v1`. Public keys live in integrity-bound
+trust stores, and every clearance path reverifies the signature rather than
+trusting serialized booleans or proof labels. Raw-digest signatures and
+domainless legacy envelopes are not accepted.
 
 The records stay separate so that missing evidence, accepted risk, failed
 controls, and completed remediation cannot be collapsed into a misleading

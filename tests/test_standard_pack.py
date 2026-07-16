@@ -16,11 +16,15 @@ from signing_fixtures import pack_signature
 
 from rigor_foundry.condition_language import ConditionExpression
 from rigor_foundry.standard_pack import (
+    PACK_COMPONENT_SCHEMA_VERSION,
+    PACK_SCHEMA_VERSION,
+    PACK_SIGNATURE_SCHEMA_VERSION,
     ControlDefinition,
     EvidenceContract,
     RemediationContract,
     StandardPack,
 )
+from rigor_foundry.trust import STANDARD_PACK_SIGNATURE_DOMAIN
 
 SOURCE_DIGEST = "1" * 64
 
@@ -86,6 +90,12 @@ def pack(*, pack_id: str = "core") -> StandardPack:
 def test_complete_pack_round_trips_with_all_nested_digests() -> None:
     """Signed pack, control, condition, and contracts survive exact parsing."""
     expected = pack()
+    serialised = expected.to_dict()
+    assert serialised["schema_version"] == PACK_SCHEMA_VERSION
+    assert serialised["signature_domain"] == STANDARD_PACK_SIGNATURE_DOMAIN
+    assert expected.signature.schema_version == PACK_SIGNATURE_SCHEMA_VERSION
+    assert expected.signature.signature_domain == STANDARD_PACK_SIGNATURE_DOMAIN
+    assert expected.controls[0].to_dict()["schema_version"] == (PACK_COMPONENT_SCHEMA_VERSION)
     assert expected.signature.payload_digest == StandardPack.payload_digest(
         pack_id=expected.pack_id,
         version=expected.version,
@@ -94,7 +104,7 @@ def test_complete_pack_round_trips_with_all_nested_digests() -> None:
         licence=expected.licence,
         controls=expected.controls,
     )
-    assert StandardPack.from_dict(expected.to_dict()) == expected
+    assert StandardPack.from_dict(serialised) == expected
     assert ControlDefinition.from_dict(expected.controls[0].to_dict()) == expected.controls[0]
     assert EvidenceContract.from_dict(expected.controls[0].evidence.to_dict()) == (
         expected.controls[0].evidence
@@ -181,6 +191,12 @@ def test_nested_pack_schemas_and_digests_fail_closed() -> None:
     pack_schema = deepcopy(expected.to_dict())
     pack_schema["schema_version"] = "9.0"
     cases.append((StandardPack.from_dict, pack_schema, "schema"))
+    pack_fields = deepcopy(expected.to_dict())
+    pack_fields.pop("signature_domain")
+    cases.append((StandardPack.from_dict, pack_fields, "fields"))
+    pack_domain = deepcopy(expected.to_dict())
+    pack_domain["signature_domain"] = "rigor-foundry.reviewer-attestation.v1"
+    cases.append((StandardPack.from_dict, pack_domain, "signature domain"))
     pack_array = deepcopy(expected.to_dict())
     pack_array["controls"] = "all"
     cases.append((StandardPack.from_dict, pack_array, "array"))

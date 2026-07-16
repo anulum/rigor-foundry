@@ -13,19 +13,24 @@ from copy import deepcopy
 from dataclasses import replace
 
 import pytest
-from signing_fixtures import public_key_hex, sign_digest, trust_store
+from signing_fixtures import public_key_hex, sign_message, trust_store
 
-from rigor_foundry.trust import TrustedPublicKey, VerificationTrustStore
+from rigor_foundry.trust import (
+    STANDARD_PACK_SIGNATURE_DOMAIN,
+    TrustedPublicKey,
+    VerificationTrustStore,
+)
 
 
 def test_trust_store_round_trip_and_real_signature_verification() -> None:
     """Only the trusted key's real signature verifies for exact digest bytes."""
     store = trust_store("release-key")
     payload = "a" * 64
-    signature = sign_digest("release-key", payload)
+    signature = sign_message("release-key", STANDARD_PACK_SIGNATURE_DOMAIN, payload)
     assert store.verify(
         key_id="release-key",
         algorithm="ed25519",
+        signature_domain=STANDARD_PACK_SIGNATURE_DOMAIN,
         payload_digest=payload,
         signature_hex=signature,
     )
@@ -36,9 +41,24 @@ def test_trust_store_round_trip_and_real_signature_verification() -> None:
 @pytest.mark.parametrize(
     ("key_id", "algorithm", "payload", "signature"),
     [
-        ("unknown-key", "ed25519", "a" * 64, sign_digest("release-key", "a" * 64)),
-        ("release-key", "rsa", "a" * 64, sign_digest("release-key", "a" * 64)),
-        ("release-key", "ed25519", "b" * 64, sign_digest("release-key", "a" * 64)),
+        (
+            "unknown-key",
+            "ed25519",
+            "a" * 64,
+            sign_message("release-key", STANDARD_PACK_SIGNATURE_DOMAIN, "a" * 64),
+        ),
+        (
+            "release-key",
+            "rsa",
+            "a" * 64,
+            sign_message("release-key", STANDARD_PACK_SIGNATURE_DOMAIN, "a" * 64),
+        ),
+        (
+            "release-key",
+            "ed25519",
+            "b" * 64,
+            sign_message("release-key", STANDARD_PACK_SIGNATURE_DOMAIN, "a" * 64),
+        ),
         ("release-key", "ed25519", "a" * 64, "0" * 128),
         ("release-key", "ed25519", "not-a-digest", "0" * 128),
     ],
@@ -53,6 +73,7 @@ def test_unknown_key_tampering_and_fabricated_signature_never_verify(
     assert not trust_store("release-key").verify(
         key_id=key_id,
         algorithm=algorithm,
+        signature_domain=STANDARD_PACK_SIGNATURE_DOMAIN,
         payload_digest=payload,
         signature_hex=signature,
     )
@@ -95,8 +116,13 @@ def test_trust_store_rejects_duplicate_ids_tampering_and_unsupported_keys() -> N
     assert not forged_store.verify(
         key_id="release-key",
         algorithm="ed25519",
+        signature_domain=STANDARD_PACK_SIGNATURE_DOMAIN,
         payload_digest="a" * 64,
-        signature_hex=sign_digest("release-key", "a" * 64),
+        signature_hex=sign_message(
+            "release-key",
+            STANDARD_PACK_SIGNATURE_DOMAIN,
+            "a" * 64,
+        ),
     )
 
 
@@ -128,8 +154,13 @@ def test_trust_store_rejects_malformed_key_and_store_protocol_records() -> None:
     assert not malformed_store.verify(
         key_id="release-key",
         algorithm="ed25519",
+        signature_domain=STANDARD_PACK_SIGNATURE_DOMAIN,
         payload_digest="a" * 64,
-        signature_hex=sign_digest("release-key", "a" * 64),
+        signature_hex=sign_message(
+            "release-key",
+            STANDARD_PACK_SIGNATURE_DOMAIN,
+            "a" * 64,
+        ),
     )
 
     unsupported_schema = store.to_dict()

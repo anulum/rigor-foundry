@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from typing import cast
 
 import pytest
-from signing_fixtures import pack_signature, sign_digest, trust_store
+from signing_fixtures import pack_signature, sign_message, trust_store
 
 from rigor_foundry.control_assessment import (
     ControlAssessment,
@@ -42,6 +42,7 @@ from rigor_foundry.standard_pack import (
     RemediationContract,
     StandardPack,
 )
+from rigor_foundry.trust import REVIEW_ATTESTATION_SIGNATURE_DOMAIN
 
 ASSESSED_AT = "2026-07-15T12:00:00Z"
 
@@ -251,7 +252,7 @@ def review(
         reviewed_at="2026-07-15T11:45:00Z",
         expires_at="2026-07-15T13:00:00Z",
         signature_hex=(
-            sign_digest(key_id, payload_digest)
+            sign_message(key_id, REVIEW_ATTESTATION_SIGNATURE_DOMAIN, payload_digest)
             if proof_level == "cryptographically-verified"
             else "0" * 128
         ),

@@ -55,6 +55,10 @@ reviews prioritise:
   repository-signature or installed-payload checksum; the executable digest is
   the observed binary identity.
 - Missing evidence cannot become pass.
+- Ed25519 signatures cover a versioned framed message with a length-prefixed
+  protocol domain and canonical payload digest. Standard-pack and reviewer
+  domains are distinct; raw-digest signatures, absent domains, and legacy
+  envelopes fail closed without compatibility verification.
 - Writes require an explicit command and stay within validated ignored paths.
 - Secret profile variables store provider references, never secret values.
 - CI actions are pinned to full commit SHAs and third-party dependencies are

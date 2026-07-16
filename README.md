@@ -26,6 +26,8 @@ remediation inputs without treating static heuristics as defect verdicts.
   exact Git executable/version provenance.
 - Promotion rejects stale reports, stale policies, changed Git provenance,
   duplicate findings, and mismatched repositories.
+- Pack and reviewer signatures use distinct versioned Ed25519 message domains;
+  legacy raw-digest signatures are rejected rather than reinterpreted.
 - Native audit adapters use validated argv, bounded execution time, and
   `shell=False`.
 - Internal campaign records are written only below Git-ignored paths.

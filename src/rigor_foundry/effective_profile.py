@@ -37,6 +37,7 @@ from .standard_pack import (
 from .trust import VerificationTrustStore
 
 LOCK_SCHEMA_VERSION = "1.0"
+PACK_VERIFICATION_SCHEMA_VERSION = "1.0"
 RESOLVER_VERSION = "0.1.0"
 
 
@@ -116,8 +117,10 @@ class AdapterLock:
 class PackVerification:
     """Result of verifying one exact pack against an explicit trust store."""
 
+    schema_version: str
     pack_digest: str
     key_id: str
+    signature_domain: str
     signature_digest: str
     trust_store_digest: str
     verified_at: str
@@ -146,13 +149,16 @@ class PackVerification:
         if not trust_store.verify(
             key_id=pack.signature.key_id,
             algorithm=pack.signature.algorithm,
+            signature_domain=pack.signature.signature_domain,
             payload_digest=pack.signature.payload_digest,
             signature_hex=pack.signature.signature_hex,
         ):
             raise ValueError("pack signature is not valid under the supplied trust store")
         fields: dict[str, object] = {
+            "schema_version": PACK_VERIFICATION_SCHEMA_VERSION,
             "pack_digest": pack.pack_digest,
             "key_id": pack.signature.key_id,
+            "signature_domain": pack.signature.signature_domain,
             "signature_digest": pack.signature.signature_digest,
             "trust_store_digest": trust_store.trust_store_digest,
             "verified_at": require_utc_timestamp(
@@ -161,8 +167,10 @@ class PackVerification:
             ),
         }
         return cls(
+            schema_version=PACK_VERIFICATION_SCHEMA_VERSION,
             pack_digest=cast(str, fields["pack_digest"]),
             key_id=cast(str, fields["key_id"]),
+            signature_domain=cast(str, fields["signature_domain"]),
             signature_digest=cast(str, fields["signature_digest"]),
             trust_store_digest=cast(str, fields["trust_store_digest"]),
             verified_at=cast(str, fields["verified_at"]),
@@ -176,36 +184,22 @@ class PackVerification:
     ) -> bool:
         """Reverify every binding and the detached signature itself."""
         try:
-            rebuilt = StandardPack.build(
-                pack_id=pack.pack_id,
-                version=pack.version,
-                source_uri=pack.source_uri,
-                source_digest=pack.source_digest,
-                licence=pack.licence,
-                signature=pack.signature,
-                controls=pack.controls,
+            rebuilt = PackVerification.build(
+                pack=pack,
+                trust_store=trust_store,
+                verified_at=self.verified_at,
             )
         except ValueError:
             return False
-        return (
-            rebuilt == pack
-            and self.pack_digest == pack.pack_digest
-            and self.key_id == pack.signature.key_id
-            and self.signature_digest == pack.signature.signature_digest
-            and self.trust_store_digest == trust_store.trust_store_digest
-            and trust_store.verify(
-                key_id=pack.signature.key_id,
-                algorithm=pack.signature.algorithm,
-                payload_digest=pack.signature.payload_digest,
-                signature_hex=pack.signature.signature_hex,
-            )
-        )
+        return rebuilt == self
 
     def to_dict(self) -> dict[str, object]:
         """Serialise external signature-verification evidence."""
         return {
+            "schema_version": self.schema_version,
             "pack_digest": self.pack_digest,
             "key_id": self.key_id,
+            "signature_domain": self.signature_domain,
             "signature_digest": self.signature_digest,
             "trust_store_digest": self.trust_store_digest,
             "verified_at": self.verified_at,

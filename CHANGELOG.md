@@ -35,6 +35,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   trusted `dpkg-query` identity, and dpkg-reported package-database fields.
 - A component-safe trusted-executable runner with descriptor-pinned execution,
   streaming aggregate output limits, deadlines, and process-group termination.
+- A public versioned Ed25519 message encoder with distinct standard-pack and
+  reviewer-attestation domains and cross-protocol replay regressions.
 
 ### Changed
 
@@ -57,6 +59,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - GitHub native-audit jobs use Ubuntu 24.04 explicitly and verify the compatible
   Bubblewrap version, dpkg association, option surface, initial sandbox, and
   nested-userns denial.
+- Standard packs advance to schema 1.1; pack signatures and verification
+  evidence gain schema 1.0 domain envelopes; reviewer attestations advance to
+  schema 2.0. Unchanged nested pack components remain at schema 1.0.
 
 ### Security
 
@@ -65,6 +70,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   revalidates executable identity and SHA-256 before and after every command.
   Repository-local filesystem monitors and hooks are disabled for plumbing
   calls.
+- Pack and reviewer Ed25519 verification signs a versioned, length-prefixed
+  protocol-domain message. Legacy raw-digest signatures and domainless records
+  are rejected rather than accepted through a compatibility fallback.
 
 - Native repository commands execute validated argv with the active locked
   Python environment, mandatory timeouts, bounded output, and no shell.

@@ -58,10 +58,20 @@ from .standard_pack import (
     RemediationContract,
     StandardPack,
 )
-from .trust import TrustedPublicKey, VerificationTrustStore
+from .trust import (
+    ED25519_SIGNATURE_MESSAGE_VERSION,
+    REVIEW_ATTESTATION_SIGNATURE_DOMAIN,
+    STANDARD_PACK_SIGNATURE_DOMAIN,
+    TrustedPublicKey,
+    VerificationTrustStore,
+    ed25519_signature_message,
+)
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
+    "ED25519_SIGNATURE_MESSAGE_VERSION",
+    "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
+    "STANDARD_PACK_SIGNATURE_DOMAIN",
     "AdapterLock",
     "ApplicabilityDecision",
     "AuditPolicy",
@@ -109,6 +119,7 @@ __all__ = [
     "WorkRecord",
     "WorkTask",
     "__version__",
+    "ed25519_signature_message",
     "render_todo_entry",
     "report_markdown",
     "resolve_effective_profile",

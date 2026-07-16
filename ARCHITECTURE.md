@@ -155,6 +155,31 @@ dependency graphs of argv-only adapter steps. Pack sources, licences,
 signatures, and digests are locked. Unsupported evidence remains
 `needs-evidence` or `blocked`.
 
+### Signature domains
+
+Ed25519 signs one versioned binary message, never the bare 32-byte payload
+digest:
+
+```text
+ASCII("RIGOR-FOUNDRY-ED25519") || 0x00 || ASCII("v1") || 0x00
+|| uint16_be(len(domain)) || ASCII(domain) || bytes.fromhex(payload_digest)
+```
+
+The two accepted domains are `rigor-foundry.standard-pack.v1` and
+`rigor-foundry.reviewer-attestation.v1`. The domain length prefix makes the
+encoding unambiguous, and both protocol payloads also bind their exact domain.
+Using one public key in both protocols therefore does not make either
+signature valid in the other protocol.
+
+The standard-pack envelope is schema 1.1 with a pack-signature envelope at
+schema 1.0; its external verification evidence is also schema 1.0 and binds the
+signature domain. Unchanged nested control, evidence, and remediation records
+remain at schema 1.0. Reviewer attestations are schema 2.0. Earlier pack schema
+1.0, unversioned reviewer records, envelopes without a domain, and signatures
+over a raw digest are rejected. Migration requires regenerating the canonical
+payload digest and signing the framed message; there is no legacy verification
+fallback.
+
 `model_primitives.py` owns typed variables, constraints, sensitivity labels,
 and opaque versioned secret references. `condition_language.py` owns the
 bounded, non-executable condition tree. `standard_pack.py` defines versioned
@@ -204,6 +229,6 @@ process supervisor or permission grant.
 ## Packaging
 
 The package uses a `src/` layout, a typed-package marker, Hatchling, an installed
-`rigor` entry point, and no third-party runtime dependency. CI tests Python
-3.11–3.13, builds wheel and source distributions, installs the wheel outside
-the source tree, and verifies its metadata and CLI.
+`rigor` entry point, and the `cryptography` runtime dependency for Ed25519. CI
+tests Python 3.11–3.13, builds wheel and source distributions, installs the
+wheel outside the source tree, and verifies its metadata and CLI.

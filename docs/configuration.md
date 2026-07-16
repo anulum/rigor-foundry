@@ -72,6 +72,16 @@ contracts, licence and source metadata, a detached signature envelope, and a
 content digest. A `ProjectProfile` selects exact pack versions and digests and
 records project intent without copying or weakening the pack silently.
 
+Standard-pack schema 1.1, signature-envelope schema 1.0, and pack-verification
+schema 1.0 require and bind the `rigor-foundry.standard-pack.v1` signature
+domain. Reviewer-attestation schema 2.0 requires
+`rigor-foundry.reviewer-attestation.v1`. Both sign the public
+`ed25519_signature_message()` encoding: the fixed
+`RIGOR-FOUNDRY-ED25519\0v1\0` prefix, a two-byte big-endian domain length, the
+ASCII domain, and the 32 payload-digest bytes. Earlier pack schema 1.0,
+unversioned reviewer records, missing domains, and raw-digest signatures must be
+regenerated and re-signed; the parser and verifier provide no legacy fallback.
+
 Project variables support `string`, `integer`, `number`, `boolean`, and
 `string-list` values. Every variable declares project, environment, or control
 scope and public, internal, or secret sensitivity. Definitions can constrain
@@ -107,14 +117,14 @@ cannot import code, invoke a shell, access the network, or mutate the audited
 repository. Missing references and malformed or oversized expressions fail
 closed.
 
-Profile resolution verifies exact pack pins and actual Ed25519 signature bytes
-against an explicit public-key trust store, resolves typed assignments, applies
-overlays and finite waivers, retains contradictions, and emits an
-`EffectiveProfileLock`. The verification record binds the key, signature, pack,
-and trust-store digests; a caller-supplied `valid` label is never accepted. A
-lock is ready only when required inputs are complete and no blocking
-contradiction remains. Stronger targets and explicit denial win over
-unauthorised weakening.
+Profile resolution verifies exact pack pins and actual domain-separated
+Ed25519 signature bytes against an explicit public-key trust store, resolves
+typed assignments, applies overlays and finite waivers, retains contradictions,
+and emits an `EffectiveProfileLock`. The verification record binds the key,
+signature domain, signature, pack, and trust-store digests; a caller-supplied
+`valid` label is never accepted. A lock is ready only when required inputs are
+complete and no blocking contradiction remains. Stronger targets and explicit
+denial win over unauthorised weakening.
 
 Every weakening waiver is exact: control, field, previous value, new value,
 and active time window must match. Risk acceptance uses a dedicated

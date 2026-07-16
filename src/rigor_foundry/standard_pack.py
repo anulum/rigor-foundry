@@ -30,9 +30,16 @@ from .models import (
     require_mapping,
     require_string,
 )
-from .trust import ED25519_ALGORITHM, ED25519_SIGNATURE_HEX_LENGTH, require_lower_hex
+from .trust import (
+    ED25519_ALGORITHM,
+    ED25519_SIGNATURE_HEX_LENGTH,
+    STANDARD_PACK_SIGNATURE_DOMAIN,
+    require_lower_hex,
+)
 
-PACK_SCHEMA_VERSION = "1.0"
+PACK_COMPONENT_SCHEMA_VERSION = "1.0"
+PACK_SCHEMA_VERSION = "1.1"
+PACK_SIGNATURE_SCHEMA_VERSION = "1.0"
 
 TargetLevel = Literal["baseline", "production", "enterprise", "industrial-safety"]
 ControlMode = Literal["require", "deny"]
@@ -65,7 +72,9 @@ def _severity(value: object, field: str) -> Severity:
 class PackSignature:
     """Detached Ed25519 signature over a canonical pack payload digest."""
 
+    schema_version: str
     algorithm: str
+    signature_domain: str
     key_id: str
     payload_digest: str
     signature_hex: str
@@ -78,18 +87,23 @@ class PackSignature:
         key_id: str,
         payload_digest: str,
         signature_hex: str,
+        signature_domain: str = STANDARD_PACK_SIGNATURE_DOMAIN,
         algorithm: str = ED25519_ALGORITHM,
     ) -> PackSignature:
         """Build signature metadata from actual detached signature bytes."""
         if algorithm != ED25519_ALGORITHM:
             raise ValueError("signature.algorithm must be ed25519")
+        if signature_domain != STANDARD_PACK_SIGNATURE_DOMAIN:
+            raise ValueError("signature.signature_domain must be the standard-pack v1 domain")
         signature = require_lower_hex(
             signature_hex,
             "signature.signature_hex",
             length=ED25519_SIGNATURE_HEX_LENGTH,
         )
         return cls(
+            schema_version=PACK_SIGNATURE_SCHEMA_VERSION,
             algorithm=algorithm,
+            signature_domain=signature_domain,
             key_id=require_identifier(key_id, "signature.key_id"),
             payload_digest=require_digest(payload_digest, "signature.payload_digest"),
             signature_hex=signature,
@@ -99,7 +113,9 @@ class PackSignature:
     def to_dict(self) -> dict[str, str]:
         """Serialise detached signature metadata."""
         return {
+            "schema_version": self.schema_version,
             "algorithm": self.algorithm,
+            "signature_domain": self.signature_domain,
             "key_id": self.key_id,
             "payload_digest": self.payload_digest,
             "signature_hex": self.signature_hex,
@@ -110,8 +126,27 @@ class PackSignature:
     def from_dict(cls, value: object) -> PackSignature:
         """Parse detached signature metadata."""
         data = require_mapping(value, "signature")
+        expected = frozenset(
+            {
+                "schema_version",
+                "algorithm",
+                "signature_domain",
+                "key_id",
+                "payload_digest",
+                "signature_hex",
+                "signature_digest",
+            }
+        )
+        if frozenset(data) != expected:
+            raise ValueError("pack signature fields do not match schema")
+        if data.get("schema_version") != PACK_SIGNATURE_SCHEMA_VERSION:
+            raise ValueError("unsupported pack-signature schema version")
         signature = cls.build(
             algorithm=require_identifier(data.get("algorithm"), "signature.algorithm"),
+            signature_domain=require_string(
+                data.get("signature_domain"),
+                "signature.signature_domain",
+            ),
             key_id=require_identifier(data.get("key_id"), "signature.key_id"),
             payload_digest=require_digest(
                 data.get("payload_digest"),
@@ -150,7 +185,7 @@ class EvidenceContract:
     ) -> EvidenceContract:
         """Build a fail-closed evidence contract."""
         fields: dict[str, object] = {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "contract_id": require_identifier(contract_id, "evidence.contract_id"),
             "required_adapters": list(
                 validate_unique_strings(
@@ -192,7 +227,7 @@ class EvidenceContract:
     def to_dict(self) -> dict[str, object]:
         """Serialise the integrity-bound evidence contract."""
         return {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "contract_id": self.contract_id,
             "required_adapters": list(self.required_adapters),
             "evidence_types": list(self.evidence_types),
@@ -205,7 +240,7 @@ class EvidenceContract:
     def from_dict(cls, value: object) -> EvidenceContract:
         """Parse and integrity-check one evidence contract."""
         data = require_mapping(value, "evidence_contract")
-        if data.get("schema_version") != PACK_SCHEMA_VERSION:
+        if data.get("schema_version") != PACK_COMPONENT_SCHEMA_VERSION:
             raise ValueError("unsupported evidence-contract schema version")
         contract = cls.build(
             contract_id=require_identifier(data.get("contract_id"), "evidence.contract_id"),
@@ -259,7 +294,7 @@ class RemediationContract:
     ) -> RemediationContract:
         """Build one complete remediation acceptance contract."""
         fields: dict[str, object] = {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "dependencies": list(
                 validate_unique_strings(dependencies, "remediation.dependencies")
             ),
@@ -300,7 +335,7 @@ class RemediationContract:
     def to_dict(self) -> dict[str, object]:
         """Serialise one remediation contract."""
         return {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "dependencies": list(self.dependencies),
             "procedure_ids": list(self.procedure_ids),
             "acceptance_gates": list(self.acceptance_gates),
@@ -313,7 +348,7 @@ class RemediationContract:
     def from_dict(cls, value: object) -> RemediationContract:
         """Parse and integrity-check one remediation contract."""
         data = require_mapping(value, "remediation_contract")
-        if data.get("schema_version") != PACK_SCHEMA_VERSION:
+        if data.get("schema_version") != PACK_COMPONENT_SCHEMA_VERSION:
             raise ValueError("unsupported remediation-contract schema version")
         contract = cls.build(
             dependencies=require_unique_strings(
@@ -389,7 +424,7 @@ class ControlDefinition:
         if mode not in {"require", "deny"}:
             raise ValueError("control.mode is unsupported")
         fields: dict[str, object] = {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "control_id": require_identifier(control_id, "control.control_id"),
             "version": require_semantic_version(version, "control.version"),
             "title": require_string(title, "control.title"),
@@ -423,7 +458,7 @@ class ControlDefinition:
     def to_dict(self) -> dict[str, object]:
         """Serialise one versioned control definition."""
         return {
-            "schema_version": PACK_SCHEMA_VERSION,
+            "schema_version": PACK_COMPONENT_SCHEMA_VERSION,
             "control_id": self.control_id,
             "version": self.version,
             "title": self.title,
@@ -442,7 +477,7 @@ class ControlDefinition:
     def from_dict(cls, value: object) -> ControlDefinition:
         """Parse and integrity-check one control definition."""
         data = require_mapping(value, "control")
-        if data.get("schema_version") != PACK_SCHEMA_VERSION:
+        if data.get("schema_version") != PACK_COMPONENT_SCHEMA_VERSION:
             raise ValueError("unsupported control schema version")
         raw_condition = data.get("condition")
         condition = None if raw_condition is None else ConditionExpression.from_dict(raw_condition)
@@ -533,6 +568,7 @@ class StandardPack:
             raise ValueError("pack control identifiers must use the pack namespace")
         return {
             "schema_version": PACK_SCHEMA_VERSION,
+            "signature_domain": STANDARD_PACK_SIGNATURE_DOMAIN,
             "pack_id": validated_id,
             "version": validated_version,
             "source_uri": validated_uri,
@@ -563,16 +599,17 @@ class StandardPack:
             controls=controls,
         )
         payload_digest = canonical_digest(payload)
-        if signature.payload_digest != payload_digest:
+        validated_signature = PackSignature.from_dict(signature.to_dict())
+        if validated_signature.payload_digest != payload_digest:
             raise ValueError("pack signature does not bind the canonical payload")
-        body = {**payload, "signature": signature.to_dict()}
+        body = {**payload, "signature": validated_signature.to_dict()}
         return cls(
             pack_id=cast(str, payload["pack_id"]),
             version=cast(str, payload["version"]),
             source_uri=cast(str, payload["source_uri"]),
             source_digest=cast(str, payload["source_digest"]),
             licence=cast(str, payload["licence"]),
-            signature=signature,
+            signature=validated_signature,
             controls=controls,
             pack_digest=canonical_digest(body),
         )
@@ -581,6 +618,7 @@ class StandardPack:
         """Serialise the signed pack and its complete integrity digest."""
         return {
             "schema_version": PACK_SCHEMA_VERSION,
+            "signature_domain": STANDARD_PACK_SIGNATURE_DOMAIN,
             "pack_id": self.pack_id,
             "version": self.version,
             "source_uri": self.source_uri,
@@ -595,8 +633,26 @@ class StandardPack:
     def from_dict(cls, value: object) -> StandardPack:
         """Parse and integrity-check one signed standard pack."""
         data = require_mapping(value, "pack")
+        expected = frozenset(
+            {
+                "schema_version",
+                "signature_domain",
+                "pack_id",
+                "version",
+                "source_uri",
+                "source_digest",
+                "licence",
+                "signature",
+                "controls",
+                "pack_digest",
+            }
+        )
+        if frozenset(data) != expected:
+            raise ValueError("standard-pack fields do not match schema")
         if data.get("schema_version") != PACK_SCHEMA_VERSION:
             raise ValueError("unsupported pack schema version")
+        if data.get("signature_domain") != STANDARD_PACK_SIGNATURE_DOMAIN:
+            raise ValueError("standard-pack signature domain does not match schema")
         raw_controls = data.get("controls")
         if not isinstance(raw_controls, list):
             raise ValueError("pack.controls must be an array")
