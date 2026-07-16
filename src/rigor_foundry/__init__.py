@@ -7,7 +7,7 @@
 # RigorFoundry — reusable repository-audit API
 """Public API for evidence-first repository auditing."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .campaign_inputs import campaign_input_divergence, validate_campaign_input
 from .cli import report_markdown

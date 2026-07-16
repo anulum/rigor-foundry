@@ -23,7 +23,7 @@ execution, or production promotion.
 | Metadata | Version, licence, Python, package, citation, and archive consistency | Required |
 | Tests | Focused single test files only | Full matrix on 3.11, 3.12, 3.13 |
 | Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 95% |
-| Packaging | Wheel and sdist build; wheel smoke outside checkout | Build, Twine check, wheel smoke |
+| Packaging | Wheel and sdist build; metadata-truth guard; wheel smoke outside checkout | Build, metadata-truth guard, Twine check, wheel smoke |
 | Release tag | Isolated `python -S` CLI proves exact-version validation without site packages | Exact tag validation runs before build, container publication, and package publication |
 | Documentation | Strict MkDocs build | Strict build and Pages artifact |
 | Container | Local build/smoke when resources permit | Non-root CLI smoke and vulnerability scan |
@@ -210,10 +210,25 @@ release, and publication workflows remain remote-only gates. Green `main`
 workflows establish landing evidence; tag-triggered release and publication
 remain separate gates.
 
-The repository is public but unreleased. Release-tag validation is implemented
-as a standard-library-only CLI and a real `python -S` regression proves that it
-runs with site-package imports disabled and without importing the
-`rigor_foundry` package. Container and PyPI environments accept only `v*` tag
+Version `v0.1.0` is published as a GitHub Release and GHCR image without a PyPI
+counterpart. Its immutable wheel retained pre-publication-only status text, so
+uploading that artefact to a permanent public index was rejected instead of
+rebuilding under the same tag. Version `0.1.1` is the first PyPI-intended
+release.
+
+Release-tag validation is implemented as a standard-library-only CLI and a
+real `python -S` regression proves that it runs with site-package imports
+disabled and without importing the `rigor_foundry` package. A separate
+distribution-metadata guard builds a real wheel, binds its name and version,
+requires an exact versioned installation command and public registry link, and
+rejects pre-publication status text. CI, tagged release assembly, and protected
+PyPI publication all run that guard before accepting the distribution.
+
+Automated PyPI publication gates on the repository owner as the event actor,
+not on the workflow-created draft release's original author. An owner-only
+manual dispatch remains a recovery path; it requires explicit public-index
+confirmation and verifies that the requested tag already has a published
+GitHub Release. Container and PyPI environments accept only `v*` tag
 deployments and retain required owner review before publication.
 
 ## Required promotion evidence

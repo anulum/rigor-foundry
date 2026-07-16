@@ -39,13 +39,13 @@ def _run_release_guard(*arguments: str) -> subprocess.CompletedProcess[str]:
 
 def test_release_tag_matches_the_single_package_version() -> None:
     """Release automation rejects aliases and metadata drift."""
-    assert release_tag_errors("v0.1.0") == []
-    assert release_tag_errors("0.1.0") == ["release tag '0.1.0' does not match 'v0.1.0'"]
+    assert release_tag_errors("v0.1.1") == []
+    assert release_tag_errors("0.1.1") == ["release tag '0.1.1' does not match 'v0.1.1'"]
 
 
 def test_release_tag_cli_runs_before_package_installation() -> None:
     """The workflow guard runs without site packages or source-path injection."""
-    completed = _run_release_guard("v0.1.0")
+    completed = _run_release_guard("v0.1.1")
 
     assert completed.returncode == 0, completed.stderr
     assert completed.stdout == "Release tag guard passed\n"
@@ -55,7 +55,7 @@ def test_release_tag_cli_runs_before_package_installation() -> None:
 def test_release_tag_module_entrypoint_executes() -> None:
     """The public module entry point delegates to the validated CLI boundary."""
     completed = subprocess.run(
-        [sys.executable, "-m", "tools.check_release_tag", "v0.1.0"],
+        [sys.executable, "-m", "tools.check_release_tag", "v0.1.1"],
         cwd=_REPOSITORY_ROOT,
         check=False,
         capture_output=True,
@@ -75,7 +75,7 @@ def test_release_tag_module_entrypoint_executes() -> None:
         (
             ("v9.9.9",),
             1,
-            "release tag 'v9.9.9' does not match 'v0.1.0'\n",
+            "release tag 'v9.9.9' does not match 'v0.1.1'\n",
         ),
     ],
 )
@@ -96,8 +96,8 @@ def test_release_tag_cli_rejects_invalid_invocations(
     ("arguments", "expected_code", "expected_output"),
     [
         ([], 2, "usage: python -m tools.check_release_tag <tag>\n"),
-        (["v9.9.9"], 1, "release tag 'v9.9.9' does not match 'v0.1.0'\n"),
-        (["v0.1.0"], 0, "Release tag guard passed\n"),
+        (["v9.9.9"], 1, "release tag 'v9.9.9' does not match 'v0.1.1'\n"),
+        (["v0.1.1"], 0, "Release tag guard passed\n"),
     ],
 )
 def test_release_tag_main_reports_each_public_outcome(

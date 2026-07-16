@@ -82,6 +82,7 @@ jobs:
           python -m pip install --require-hashes -r requirements/ci.txt
           python -m tools.check_release_tag "$RELEASE_TAG"
           python -m build --no-isolation
+          python -m tools.check_distribution_metadata dist/*.whl
           python -m twine check dist/*
           test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 1
           test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l)" -eq 1

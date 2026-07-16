@@ -67,6 +67,7 @@ REQUIRED_PATHS = (
     "requirements/security.txt",
     "requirements/test.txt",
     "tools/check_dependency_waivers.py",
+    "tools/check_distribution_metadata.py",
 )
 FORBIDDEN_PUBLIC_PARTS = {".coordination", ".rigor"}
 FORBIDDEN_PUBLIC_TERMS = tuple(

@@ -13,9 +13,14 @@ RigorFoundry inventories Git-tracked repository content, emits reproducible
 audit candidates, binds review decisions to exact evidence, and prepares
 remediation inputs without treating static heuristics as defect verdicts.
 
-> **Current status:** standalone migration and verification. The repository has
-> not been promoted as the GOTM fleet audit authority, published to PyPI, or
-> released. A clean static scan is not a clean-repository claim.
+> **Current status:** standalone pre-alpha. Versioned
+> [GitHub Releases](https://github.com/anulum/rigor-foundry/releases) and
+> [GHCR images](https://github.com/anulum/rigor-foundry/pkgs/container/rigor-foundry)
+> are published through the repository, beginning with `v0.1.0`. PyPI
+> availability is established from the
+> [public registry](https://pypi.org/project/rigor-foundry/), not inferred from
+> a tag or workflow result. RigorFoundry has not been promoted as the GOTM
+> fleet audit authority. A clean static scan is not a clean-repository claim.
 
 ## Operating contract
 
@@ -66,6 +71,16 @@ API. They do not grant execution authority, make RigorFoundry the fleet audit
 authority, or prove effectiveness on an external corpus. See
 [ARCHITECTURE.md](ARCHITECTURE.md).
 
+## Install a published release
+
+After the exact version appears in the
+[PyPI release history](https://pypi.org/project/rigor-foundry/#history), install
+it with:
+
+```bash
+python -m pip install "rigor-foundry==0.1.1"
+```
+
 ## Quick start from source
 
 ```bash
@@ -76,10 +91,6 @@ python3 -m venv .venv
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/rigor scan --root /path/to/repository
 ```
-
-The GitHub repository is public, but RigorFoundry remains unreleased and is not
-published to PyPI. There is no valid `pip install rigor-foundry` instruction
-yet.
 
 ## Command surface
 

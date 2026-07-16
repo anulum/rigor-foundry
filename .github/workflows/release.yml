@@ -41,6 +41,7 @@ jobs:
           python -m pip install --require-hashes -r requirements/ci.txt
           python -m tools.check_release_tag "$GITHUB_REF_NAME"
           python -m build --no-isolation
+          python -m tools.check_distribution_metadata dist/*.whl
           python -m twine check dist/*
           python -m venv --without-pip /tmp/rigor-sbom
           SBOM_SITE=$(/tmp/rigor-sbom/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')

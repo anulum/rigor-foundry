@@ -5,6 +5,22 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-16
+
+### Fixed
+
+- Package publication now gates automated release events on the repository
+  owner actor rather than the workflow-created draft author. An owner-only,
+  explicitly confirmed recovery dispatch verifies the published release tag
+  before entering the protected PyPI environment.
+- CI, release assembly, and PyPI publication now inspect the real built wheel
+  and reject package identity drift, missing registry/install guidance, and
+  pre-publication status text.
+- Public status and installation documentation now distinguish the immutable
+  GitHub/GHCR-only `v0.1.0` release from registry-verified Python packages.
+
+## [0.1.0] - 2026-07-16
+
 ### Added
 
 - Standalone Apache-2.0-licensed repository, package, CLI, documentation, tests, and

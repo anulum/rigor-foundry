@@ -196,6 +196,7 @@ jobs:
         run: |
           python -m pip install --require-hashes -r requirements/ci.txt
           python -m build --no-isolation
+          python -m tools.check_distribution_metadata dist/*.whl
           python -m twine check dist/*
       - name: Smoke installed wheel outside checkout
         run: |

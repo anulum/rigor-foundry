@@ -43,6 +43,14 @@ source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. The exact-tag guard uses
 only the Python standard library and is tested through an isolated `python -S`
 process, so release, container, and package-publication jobs can execute it
-before installing the project package. The protected publication environments
-admit only `v*` tags and retain required owner review. See the repository
+before installing the project package.
+
+The built-wheel metadata guard runs in CI, tagged release assembly, and PyPI
+publication. It checks the real wheel's name and version, requires a
+version-matched installation command plus the public registry link, and rejects
+status text that publication would contradict. Automated package publication
+uses the repository owner actor; an explicitly confirmed owner-only dispatch is
+available for recovery and first verifies an existing published GitHub Release.
+The protected publication environments admit only `v*` tags and retain required
+owner review. See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
