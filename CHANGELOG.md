@@ -19,6 +19,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Candidate excerpts are limited to 512 UTF-8 bytes. Large deterministic
   member sets retain their complete count and SHA-256 identity plus a bounded
   prefix.
+- Promotion campaigns now carry content-addressed provider, exact-model,
+  correlation-family, and operator identities. Correlated runs collapse to
+  one witness, and promotion requires at least two model-family witnesses and
+  two operators bound to the durable comparison, reports, and reviews.
 
 ### Changed
 
@@ -37,6 +41,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tracked regular files replaced by dangling symlinks now fail closed, and a
   deleted size-registry owner emits repository-tree GF005 evidence rather than
   attempting to construct an unavailable blob anchor.
+- Campaign and comparison schemas advance to 1.8 and model-witness schema to
+  1.2. Witnesses store canonical provider/exact-model pairs, derive their
+  projections, and reject repeated families or exact pairs across components.
 
 ### Fixed
 
@@ -49,6 +56,18 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   action's broad native release uploader is disabled; one repository-controlled
   step attaches only the two validated bundle paths. Default-branch recovery
   uses a time-bounded PyPI environment policy that is removed after the run.
+
+### Security
+
+- The security-tool audit now carries three exact, machine-validated,
+  30-day waivers for MCP server-only vulnerabilities that are unreachable from
+  RigorFoundry's fixed `semgrep scan` invocation. At the 2026-07-16 review,
+  latest Semgrep 1.170.0 hard-pinned vulnerable MCP 1.23.3; the waivers expire
+  on 2026-08-15 and fail the repository audit unless removed or explicitly
+  reviewed after an upstream-compatible Semgrep release.
+- Durable campaign paths are traversed without following symlinks. Campaign,
+  run, comparison, report, and review records must be bounded, single-link
+  regular files whose file and parent identities remain stable through read.
 
 ## [0.1.1] - 2026-07-16
 
