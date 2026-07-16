@@ -49,10 +49,20 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
+          set -euo pipefail
           python -m pip install --require-hashes -r requirements/ci.txt
           python -m tools.check_release_tag "$RELEASE_TAG"
           python -m build --no-isolation
           python -m twine check dist/*
+          test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l)" -eq 1
+          python -m venv --clear /tmp/rigor-foundry-package-smoke
+          /tmp/rigor-foundry-package-smoke/bin/python -m pip install \
+            --require-hashes -r requirements/runtime.txt
+          /tmp/rigor-foundry-package-smoke/bin/python -m pip install --no-deps dist/*.whl
+          /tmp/rigor-foundry-package-smoke/bin/python -m pip check
+          /tmp/rigor-foundry-package-smoke/bin/rigor --help >/dev/null
+          python -m pip hash dist/*.whl dist/*.tar.gz
       - uses: sigstore/gh-action-sigstore-python@5b79a39c381910c090341a2c9b0bf022c8b387e1
         with:
           inputs: >-
