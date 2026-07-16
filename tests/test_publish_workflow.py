@@ -37,7 +37,7 @@ def test_publish_workflow_has_owner_confirmed_manual_recovery() -> None:
     assert "github.ref_name == github.event.repository.default_branch" in workflow
     assert "inputs.confirm_public_pypi == 'publish'" in workflow
     assert "github.event.release.author.login" not in workflow
-    assert workflow.count(RELEASE_TAG_EXPRESSION) == 3
+    assert workflow.count(RELEASE_TAG_EXPRESSION) == 4
 
 
 def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
@@ -60,7 +60,8 @@ def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
     assert f"          ref: {QUALIFIED_TAG_EXPRESSION}" in workflow
     assert f"          ref: {RELEASE_TAG_EXPRESSION}" not in workflow
     assert "          persist-credentials: false" in workflow
-    assert "release-signing-artifacts: true" in workflow
+    assert "release-signing-artifacts: false" in workflow
+    assert "release-signing-artifacts: true" not in workflow
     assert "pypa/gh-action-pypi-publish@" in workflow
     assert "password:" not in workflow
 
@@ -77,8 +78,12 @@ def test_publish_workflow_keeps_signatures_out_of_distribution_uploads() -> None
     assert "mkdir --mode=0700 signing-bundles" in workflow
     assert "mv dist/*.sigstore.json signing-bundles/" in workflow
     assert 'test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2' in workflow
-    assert "name: Attach recovery signing bundles" in workflow
-    assert "if: github.event_name == 'workflow_dispatch'" in workflow
+    assert "name: Attach signing bundles" in workflow
+    assert "name: Attach recovery signing bundles" not in workflow
+    assert "if: github.event_name == 'workflow_dispatch'" not in workflow
+    assert f"          RELEASE_TAG: {RELEASE_TAG_EXPRESSION}" in workflow
     assert 'test "$bundle_count" -eq 2' in workflow
     assert 'gh release upload "$RELEASE_TAG" signing-bundles/*.sigstore.json' in workflow
+    assert workflow.count("gh release upload") == 1
     assert "--clobber" in workflow
+    assert "softprops/action-gh-release@" not in workflow

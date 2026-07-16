@@ -104,7 +104,7 @@ jobs:
           inputs: >-
             ./dist/*.tar.gz
             ./dist/*.whl
-          release-signing-artifacts: true
+          release-signing-artifacts: false
       - name: Isolate signing bundles
         run: |
           set -euo pipefail
@@ -113,11 +113,10 @@ jobs:
           test "$bundle_count" -eq 2
           mv dist/*.sigstore.json signing-bundles/
           test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 2
-      - name: Attach recovery signing bundles
-        if: github.event_name == 'workflow_dispatch'
+      - name: Attach signing bundles
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: |
           set -euo pipefail
           bundle_count=$(

@@ -12,9 +12,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   recovery may run from the named tag or the repository default branch, but
   always validates and builds its fully qualified tag ref with checkout
   credential persistence disabled. Signing bundles are moved out of the
-  distribution directory before attestation and PyPI upload, then attached to
-  the release. Default-branch recovery uses a time-bounded PyPI environment
-  policy that is removed after the run.
+  distribution directory before attestation and PyPI upload. The signing
+  action's broad native release uploader is disabled; one repository-controlled
+  step attaches only the two validated bundle paths. Default-branch recovery
+  uses a time-bounded PyPI environment policy that is removed after the run.
 
 ## [0.1.1] - 2026-07-16
 

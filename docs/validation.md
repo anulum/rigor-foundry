@@ -53,13 +53,15 @@ uses the repository owner actor; an explicitly confirmed owner-only dispatch is
 available for recovery from the named tag or the repository default branch,
 always checks out its fully qualified tag ref, and first verifies an existing
 published GitHub Release. The publication job's write permission is limited to
-attaching Sigstore bundles to that release. Both paths require exactly two
-generated package bundles, move them out of the distribution directory, and
-revalidate the wheel and source distribution before attestation and
-publication. Checkout credentials are not persisted. The PyPI environment
-normally admits only `v*` tags; default-branch recovery uses a time-bounded
-`main` deployment policy that is removed after the run. Required owner review
-remains active. See the repository
+attaching Sigstore bundles to that release. The signing action's native release
+uploader is disabled because its upload set includes signed inputs and source
+archives. Both paths require exactly two generated package bundles, move them
+out of the distribution directory, and revalidate the wheel and source
+distribution before attestation and publication. One repository-controlled
+upload attaches only those two bundle paths. Checkout credentials are not
+persisted. The PyPI environment normally admits only `v*` tags; default-branch
+recovery uses a time-bounded `main` deployment policy that is removed after the
+run. Required owner review remains active. See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
 
 CI-facing repository guards and the composed self-audit print only fixed

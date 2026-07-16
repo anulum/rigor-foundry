@@ -242,16 +242,17 @@ the tag already has a published GitHub Release. The default-branch route permits
 a workflow-only recovery after an immutable release tag exists; it never builds
 package content from the branch or resolves an unqualified branch/tag name. The
 publication job grants `contents: write` only so Sigstore can attach signing
-bundles to that release. Release events use the pinned Sigstore action's native
-attachment path; both paths require exactly two package bundles, move them out
-of the distribution directory, and revalidate that only the wheel and source
-distribution reach attestation and PyPI. Manual recovery then uploads the two
-bundles to the named release. Checkout credential persistence remains disabled.
-The container environment accepts only `v*` tags. The PyPI environment normally
-applies the same policy; default-branch recovery requires a time-bounded `main`
-deployment policy that is added after snapshotting the tag-only configuration
-and removed immediately after the run. Both environments retain required owner
-review.
+bundles to that release. The pinned Sigstore action's native release uploader is
+disabled because it includes signed inputs and source archives in its upload
+set. Both event paths require exactly two package bundles, move them out of the
+distribution directory, and revalidate that only the wheel and source
+distribution reach attestation and PyPI. One repository-controlled upload then
+attaches only the two validated bundle paths to the named release. Checkout
+credential persistence remains disabled. The container environment accepts only
+`v*` tags. The PyPI environment normally applies the same policy; default-branch
+recovery requires a time-bounded `main` deployment policy that is added after
+snapshotting the tag-only configuration and removed immediately after the run.
+Both environments retain required owner review.
 
 ## Required promotion evidence
 
