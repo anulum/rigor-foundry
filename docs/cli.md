@@ -57,7 +57,7 @@ inputs, retain attestations, and record disagreements rather than averaging
 them away. `campaign-create --purpose promotion` defaults to two required model
 witnesses; `--required-model-witnesses` may raise that threshold.
 
-Campaign schema 1.7 freezes the repository Git object format and ignored
+Campaign schema 1.8 freezes the repository Git object format and ignored
 inventory in addition to the report input projection. Every `campaign-run`
 requires `--provider`, `--model`, `--model-family`, and `--operator`. The exact
 identity is content-addressed in the run attestation. Runs from a different
@@ -80,6 +80,8 @@ component and count as one witness. Promotion requires an otherwise resolved
 comparison with at least two witnesses and two declared operator identities.
 The operator field is auditable protocol evidence, not a cryptographic
 authentication mechanism.
+Each witness retains canonical provider/exact-model pairs; comparison loading
+rejects a family or exact pair repeated across nominally distinct witnesses.
 
 `rigor promote` requires both `--campaign` and `--comparison`. It reloads the
 durable campaign, runs, reports, and reviews, reconstructs the comparison, and

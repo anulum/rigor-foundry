@@ -26,7 +26,7 @@ Candidate-anchor schema 1.0 is a strict discriminated union:
 Report schema 1.3 requires one anchor on every candidate and records
 `git_object_format`. Scanner version 0.3.0 verifies all anchors against the
 inventory that produced the report. Campaign schema 1.5 carries the object
-format into independent-run input comparison. Campaign schema 1.7 additionally
+format into independent-run input comparison. Campaign schema 1.8 additionally
 binds ignored inventory, campaign purpose, witness requirements, and explicit
 inference identity. Earlier report or campaign
 records must be regenerated; unknown or mixed anchor fields have no
@@ -225,6 +225,8 @@ least two expected runs, at least two correlation witnesses, and at least two
 declared operator identities. Repeated runs from one model family or the same
 provider/exact-model pair remain useful for repeatability evidence but join one
 transitive correlation component and count as one promotion witness.
+Witness schema 1.2 stores each provider/exact-model pair and forbids families
+or exact pairs from appearing in more than one durable comparison component.
 
 Configuration schemas are versioned. Unknown schema versions, contradictory
 variables, unavailable adapters, and unresolved controls remain explicit

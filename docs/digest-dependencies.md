@@ -47,7 +47,7 @@ one envelope. Existing rules retain their original introduction version.
 Git provenance binds the resolved executable path, selected root, executable
 SHA-256, observed version, complete trust policy, and trust-policy digest.
 Toolchain identity binds Python implementation/version, platform, and
-interpreter executable SHA-256. Campaign schema 1.7 embeds both complete
+interpreter executable SHA-256. Campaign schema 1.8 embeds both complete
 records plus the ignored evidence tuple and digest; effective-profile locks
 bind the toolchain digest used for profile resolution.
 

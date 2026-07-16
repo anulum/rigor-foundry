@@ -57,7 +57,9 @@ prove ignored-state drift is rejected before attestation or TODO mutation.
 
 Campaign identity tests cover strict provider, exact-model, correlation-family,
 and operator schemas plus transitive same-family or exact-model witness
-collapse.
+collapse. Comparison parser regressions recompute witness and comparison
+digests after introducing cross-component family or exact-model overlap and
+prove that the durable record still fails closed.
 Workflow, comparison, storage, promotion, and installed-CLI tests use real
 repositories and durable records to prove cross-model eligibility, same-family
 rejection, operator separation, exact report/review membership, replay and

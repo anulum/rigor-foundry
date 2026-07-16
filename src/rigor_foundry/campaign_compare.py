@@ -195,6 +195,14 @@ class AuditComparison:
         witness_keys = tuple((item.model_families, item.run_ids) for item in witnesses)
         if witness_keys != tuple(sorted(set(witness_keys))):
             raise ValueError("model_witnesses must be sorted with unique correlation components")
+        model_families = tuple(
+            family for witness in witnesses for family in witness.model_families
+        )
+        if len(model_families) != len(set(model_families)):
+            raise ValueError("model family appears in multiple correlation components")
+        exact_models = tuple(pair for witness in witnesses for pair in witness.exact_models)
+        if len(exact_models) != len(set(exact_models)):
+            raise ValueError("exact model appears in multiple correlation components")
         unresolved = data.get("unresolved")
         promotion_eligible = data.get("promotion_eligible")
         if not isinstance(unresolved, bool) or not isinstance(promotion_eligible, bool):

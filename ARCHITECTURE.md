@@ -158,7 +158,7 @@ execution, streaming output bounds, deadlines, and process-group termination.
 `campaign_inputs.py`, `campaign_store.py`, `campaign_workflow.py`,
 `campaign_compare.py`, and `campaign_promotion.py` freeze campaign inputs,
 inference identities, Git and sandbox provenance, independent toolchains, and
-limitations, and preserve disagreement. Campaign schema 1.7 requires every run
+limitations, and preserve disagreement. Campaign schema 1.8 requires every run
 to reproduce the complete
 frozen input projection: repository root, HEAD, tree, branch, tracked-content
 identity, Git object format, dirty paths, tracked-file count, policy, rule pack,
@@ -180,6 +180,10 @@ proof; deployments must authenticate who may submit them. Promotion reloads
 and reconstructs the durable comparison and
 requires the selected report and review digests to be members of that exact
 eligible comparison.
+
+Witness schema 1.2 retains canonical provider/exact-model pairs rather than
+only their independent projections. Strict comparison loading requires both
+families and exact-model pairs to be disjoint across witness components.
 
 ### Classified coverage residuals
 

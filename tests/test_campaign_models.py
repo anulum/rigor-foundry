@@ -128,8 +128,8 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
 
 
 def test_campaign_schema_version_declares_cross_model_identity_migration() -> None:
-    """Campaign 1.7 binds explicit inference identity and correlation witnesses."""
-    assert CAMPAIGN_SCHEMA_VERSION == "1.7"
+    """Campaign 1.8 binds explicit identity and strict correlation witnesses."""
+    assert CAMPAIGN_SCHEMA_VERSION == "1.8"
     assert rigor_foundry.campaign_input_divergence is campaign_input_divergence
     assert rigor_foundry.validate_campaign_input is validate_campaign_input
 

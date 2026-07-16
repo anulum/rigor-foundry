@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from .models import canonical_digest, require_mapping, require_string, require_string_tuple
 
 INFERENCE_IDENTITY_SCHEMA_VERSION = "1.0"
-MODEL_WITNESS_SCHEMA_VERSION = "1.1"
+MODEL_WITNESS_SCHEMA_VERSION = "1.2"
 _IDENTITY_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,255}\Z")
 _INFERENCE_IDENTITY_FIELDS = frozenset(
     {
@@ -32,6 +32,7 @@ _MODEL_WITNESS_FIELDS = frozenset(
     {
         "schema_version",
         "model_families",
+        "exact_models",
         "providers",
         "models",
         "operators",
@@ -60,6 +61,45 @@ def _sorted_unique_components(value: object, field: str) -> tuple[str, ...]:
     if parsed != tuple(sorted(set(parsed))):
         raise ValueError(f"{field} must be sorted and contain unique values")
     return parsed
+
+
+def _sorted_unique_exact_models(value: object) -> tuple[tuple[str, str], ...]:
+    """Return canonical provider and exact-model identity pairs."""
+    if not isinstance(value, list):
+        raise ValueError("exact_models must be an array")
+    pairs: list[tuple[str, str]] = []
+    for index, item in enumerate(value):
+        data = require_mapping(item, f"exact_models[{index}]")
+        if frozenset(data) != {"provider", "model"}:
+            raise ValueError("exact model fields do not match schema")
+        pairs.append(
+            (
+                _identity_component(data.get("provider"), f"exact_models[{index}].provider"),
+                _identity_component(data.get("model"), f"exact_models[{index}].model"),
+            )
+        )
+    result = tuple(pairs)
+    if not result:
+        raise ValueError("exact_models must not be empty")
+    if result != tuple(sorted(set(result))):
+        raise ValueError("exact_models must be sorted and contain unique values")
+    return result
+
+
+def _exact_model_documents(
+    pairs: Iterable[tuple[str, str]],
+) -> list[dict[str, str]]:
+    """Return deterministic JSON objects for provider and model pairs."""
+    parsed = sorted(
+        {
+            (
+                _identity_component(provider, "exact_models.provider"),
+                _identity_component(model, "exact_models.model"),
+            )
+            for provider, model in pairs
+        }
+    )
+    return [{"provider": provider, "model": model} for provider, model in parsed]
 
 
 @dataclass(frozen=True)
@@ -137,6 +177,7 @@ class ModelWitness:
     """One connected component of correlated model identity declarations."""
 
     model_families: tuple[str, ...]
+    exact_models: tuple[tuple[str, str], ...]
     providers: tuple[str, ...]
     models: tuple[str, ...]
     operators: tuple[str, ...]
@@ -148,17 +189,21 @@ class ModelWitness:
         cls,
         *,
         model_families: Iterable[str],
-        providers: Iterable[str],
-        models: Iterable[str],
+        exact_models: Iterable[tuple[str, str]],
         operators: Iterable[str],
         run_ids: Iterable[str],
     ) -> ModelWitness:
         """Build one deterministic correlation-component witness."""
+        exact_model_documents = _exact_model_documents(exact_models)
+        exact_models_tuple = _sorted_unique_exact_models(exact_model_documents)
+        providers = sorted({provider for provider, _model in exact_models_tuple})
+        models = sorted({model for _provider, model in exact_models_tuple})
         body: dict[str, object] = {
             "schema_version": MODEL_WITNESS_SCHEMA_VERSION,
             "model_families": sorted(set(model_families)),
-            "providers": sorted(set(providers)),
-            "models": sorted(set(models)),
+            "exact_models": exact_model_documents,
+            "providers": providers,
+            "models": models,
             "operators": sorted(set(operators)),
             "run_ids": sorted(set(run_ids)),
         }
@@ -172,6 +217,7 @@ class ModelWitness:
         run_ids_tuple = _sorted_unique_components(body["run_ids"], "run_ids")
         return cls(
             model_families=model_families_tuple,
+            exact_models=exact_models_tuple,
             providers=providers_tuple,
             models=models_tuple,
             operators=operators_tuple,
@@ -184,6 +230,7 @@ class ModelWitness:
         return {
             "schema_version": MODEL_WITNESS_SCHEMA_VERSION,
             "model_families": list(self.model_families),
+            "exact_models": _exact_model_documents(self.exact_models),
             "providers": list(self.providers),
             "models": list(self.models),
             "operators": list(self.operators),
@@ -199,16 +246,19 @@ class ModelWitness:
             raise ValueError("model witness fields do not match schema")
         if data.get("schema_version") != MODEL_WITNESS_SCHEMA_VERSION:
             raise ValueError("unsupported model witness schema version")
+        providers = _sorted_unique_components(data.get("providers"), "providers")
+        models = _sorted_unique_components(data.get("models"), "models")
         witness = cls.build(
             model_families=_sorted_unique_components(
                 data.get("model_families"),
                 "model_families",
             ),
-            providers=_sorted_unique_components(data.get("providers"), "providers"),
-            models=_sorted_unique_components(data.get("models"), "models"),
+            exact_models=_sorted_unique_exact_models(data.get("exact_models")),
             operators=_sorted_unique_components(data.get("operators"), "operators"),
             run_ids=_sorted_unique_components(data.get("run_ids"), "run_ids"),
         )
+        if providers != witness.providers or models != witness.models:
+            raise ValueError("model witness projections do not match exact models")
         if data.get("witness_digest") != witness.witness_digest:
             raise ValueError("model witness digest does not match its content")
         return witness
@@ -257,8 +307,7 @@ def collapse_model_witnesses(
     witnesses = (
         ModelWitness.build(
             model_families=(identity.model_family for _run_id, identity in component),
-            providers=(identity.provider for _run_id, identity in component),
-            models=(identity.model for _run_id, identity in component),
+            exact_models=((identity.provider, identity.model) for _run_id, identity in component),
             operators=(identity.operator for _run_id, identity in component),
             run_ids=(run_id for run_id, _identity in component),
         )

@@ -116,7 +116,11 @@ def test_model_witness_collapse_counts_one_family_once_across_run_labels() -> No
     assert shared.run_ids == ("run-one", "run-two")
     assert ModelWitness.from_dict(shared.to_dict()) == shared
     assert rigor_foundry.ModelWitness is ModelWitness
-    assert rigor_foundry.MODEL_WITNESS_SCHEMA_VERSION == "1.1"
+    assert shared.exact_models == (
+        ("provider.example", "shared-v1"),
+        ("provider.other", "shared-v2"),
+    )
+    assert rigor_foundry.MODEL_WITNESS_SCHEMA_VERSION == "1.2"
 
 
 def test_exact_model_and_family_edges_form_one_transitive_witness() -> None:
@@ -169,6 +173,34 @@ def test_model_witness_parser_and_input_reject_duplicates_and_tampering() -> Non
         ModelWitness.from_dict(changed)
 
     changed = witness.to_dict()
+    changed["models"] = ["other-model"]
+    with pytest.raises(ValueError, match="projections do not match exact models"):
+        ModelWitness.from_dict(changed)
+
+    changed = witness.to_dict()
+    changed["exact_models"] = [{"provider": "provider.example"}]
+    with pytest.raises(ValueError, match="exact model fields do not match"):
+        ModelWitness.from_dict(changed)
+
+    changed = witness.to_dict()
+    changed["exact_models"] = {}
+    with pytest.raises(ValueError, match="exact_models must be an array"):
+        ModelWitness.from_dict(changed)
+
+    changed = witness.to_dict()
+    changed["exact_models"] = []
+    with pytest.raises(ValueError, match="exact_models must not be empty"):
+        ModelWitness.from_dict(changed)
+
+    changed = witness.to_dict()
+    changed["exact_models"] = [
+        *changed["exact_models"],
+        *changed["exact_models"],
+    ]
+    with pytest.raises(ValueError, match="sorted and contain unique"):
+        ModelWitness.from_dict(changed)
+
+    changed = witness.to_dict()
     changed["run_ids"] = []
     with pytest.raises(ValueError, match="must not be empty"):
         ModelWitness.from_dict(changed)
@@ -217,4 +249,4 @@ def test_promotion_identity_gaps_require_cross_model_and_operator_independence()
     )
     assert promotion_identity_gaps(independent, 2) == ()
     assert INFERENCE_IDENTITY_SCHEMA_VERSION == "1.0"
-    assert MODEL_WITNESS_SCHEMA_VERSION == "1.1"
+    assert MODEL_WITNESS_SCHEMA_VERSION == "1.2"
