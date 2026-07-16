@@ -18,13 +18,45 @@ from pathlib import Path, PurePosixPath
 from typing import Literal, cast
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
-from .git_inventory import GitInventory, is_git_ignored, read_stable_regular_file_at
+from .git_inventory import (
+    GitInventory,
+    StableReadError,
+    is_git_ignored,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
+)
 from .git_provenance import GitRunner
 
 IGNORED_INVENTORY_SCHEMA_VERSION = "1.0"
 IgnoredCapture = Literal["presence", "file-sha256"]
 IgnoredStatus = Literal["observed", "missing", "unavailable"]
 IgnoredKind = Literal["regular-file", "directory", "other"]
+IgnoredReason = Literal[
+    "changed-while-read",
+    "inaccessible",
+    "inaccessible-parent",
+    "missing",
+    "missing-parent",
+    "multiple-links",
+    "not-regular-file",
+    "observed",
+    "platform-unavailable",
+    "symlink",
+    "unsafe-parent",
+]
+_MISSING_REASONS = frozenset({"missing", "missing-parent"})
+_UNAVAILABLE_REASONS = frozenset(
+    {
+        "changed-while-read",
+        "inaccessible",
+        "inaccessible-parent",
+        "multiple-links",
+        "not-regular-file",
+        "platform-unavailable",
+        "symlink",
+        "unsafe-parent",
+    }
+)
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 _GLOB_CHARACTERS = frozenset("*?[]{}\\")
 
@@ -32,6 +64,8 @@ _GLOB_CHARACTERS = frozenset("*?[]{}\\")
 def _exact_relative_path(value: object, field: str) -> str:
     """Return one exact normalised repository-relative POSIX path."""
     result = require_string(value, field)
+    if any(ord(character) < 32 or ord(character) == 127 for character in result):
+        raise ValueError(f"{field} must not contain control characters")
     if any(character in result for character in _GLOB_CHARACTERS):
         raise ValueError(f"{field} must not contain glob or escape syntax")
     path = PurePosixPath(result)
@@ -51,6 +85,20 @@ class IgnoredInventoryDeclaration:
     path: str
     capture: IgnoredCapture
 
+    def __post_init__(self) -> None:
+        """Validate direct construction as strictly as parsed construction."""
+        if (
+            not isinstance(self.evidence_id, str)
+            or _IDENTIFIER.fullmatch(self.evidence_id) is None
+        ):
+            raise ValueError("ignored inventory evidence_id must be a portable identifier")
+        _exact_relative_path(self.path, "ignored inventory path")
+        if not isinstance(self.capture, str) or self.capture not in {
+            "presence",
+            "file-sha256",
+        }:
+            raise ValueError("ignored inventory capture is unsupported")
+
     def to_dict(self) -> dict[str, str]:
         """Serialise one declaration."""
         return {
@@ -69,13 +117,7 @@ class IgnoredInventoryDeclaration:
             data.get("evidence_id"),
             f"ignored_inventory[{index}].evidence_id",
         )
-        if _IDENTIFIER.fullmatch(evidence_id) is None:
-            raise ValueError(
-                f"ignored_inventory[{index}].evidence_id must be a portable identifier"
-            )
         capture = require_string(data.get("capture"), f"ignored_inventory[{index}].capture")
-        if capture not in {"presence", "file-sha256"}:
-            raise ValueError(f"ignored_inventory[{index}].capture is unsupported")
         return cls(
             evidence_id=evidence_id,
             path=_exact_relative_path(data.get("path"), f"ignored_inventory[{index}].path"),
@@ -111,7 +153,38 @@ class IgnoredInventoryEvidence:
     observed_kind: IgnoredKind | None
     byte_size: int | None
     content_sha256: str | None
-    reason: str
+    reason: IgnoredReason
+
+    def __post_init__(self) -> None:
+        """Validate direct construction and every exact field relation."""
+        IgnoredInventoryDeclaration(self.evidence_id, self.path, self.capture)
+        if not isinstance(self.status, str) or self.status not in {
+            "observed",
+            "missing",
+            "unavailable",
+        }:
+            raise ValueError("ignored inventory evidence status is unsupported")
+        if self.observed_kind is not None and (
+            not isinstance(self.observed_kind, str)
+            or self.observed_kind not in {"regular-file", "directory", "other"}
+        ):
+            raise ValueError("ignored inventory observed kind is unsupported")
+        if self.byte_size is not None and (
+            isinstance(self.byte_size, bool)
+            or not isinstance(self.byte_size, int)
+            or self.byte_size < 0
+        ):
+            raise ValueError("ignored inventory byte_size is invalid")
+        if self.content_sha256 is not None and (
+            not isinstance(self.content_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", self.content_sha256) is None
+        ):
+            raise ValueError("ignored inventory content_sha256 is invalid")
+        if not isinstance(self.reason, str) or self.reason not in (
+            _MISSING_REASONS | _UNAVAILABLE_REASONS | {"observed"}
+        ):
+            raise ValueError("ignored inventory evidence reason is unsupported")
+        self._validate_relation()
 
     def to_dict(self) -> dict[str, object]:
         """Serialise bounded evidence without raw content or link targets."""
@@ -155,62 +228,90 @@ class IgnoredInventoryEvidence:
             index,
         )
         status = require_string(data.get("status"), f"ignored_inventory_evidence[{index}].status")
-        if status not in {"observed", "missing", "unavailable"}:
-            raise ValueError(f"ignored_inventory_evidence[{index}].status is unsupported")
         raw_kind = data.get("observed_kind")
-        if raw_kind is not None and raw_kind not in {"regular-file", "directory", "other"}:
-            raise ValueError(f"ignored_inventory_evidence[{index}].observed_kind is unsupported")
         raw_size = data.get("byte_size")
-        if raw_size is not None and (
-            isinstance(raw_size, bool) or not isinstance(raw_size, int) or raw_size < 0
-        ):
-            raise ValueError(f"ignored_inventory_evidence[{index}].byte_size is invalid")
         raw_digest = data.get("content_sha256")
-        if raw_digest is not None and (
-            not isinstance(raw_digest, str) or re.fullmatch(r"[0-9a-f]{64}", raw_digest) is None
-        ):
-            raise ValueError(f"ignored_inventory_evidence[{index}].content_sha256 is invalid")
-        evidence = cls(
+        reason = require_string(data.get("reason"), f"ignored_inventory_evidence[{index}].reason")
+        return cls(
             evidence_id=declaration.evidence_id,
             path=declaration.path,
             capture=declaration.capture,
             status=cast(IgnoredStatus, status),
-            observed_kind=raw_kind,
-            byte_size=raw_size,
-            content_sha256=raw_digest,
-            reason=require_string(
-                data.get("reason"), f"ignored_inventory_evidence[{index}].reason"
-            ),
+            observed_kind=cast(IgnoredKind | None, raw_kind),
+            byte_size=cast(int | None, raw_size),
+            content_sha256=cast(str | None, raw_digest),
+            reason=cast(IgnoredReason, reason),
         )
-        evidence._validate_relation()
-        return evidence
 
     def _validate_relation(self) -> None:
         """Reject contradictory evidence fields."""
-        if self.status != "observed" and any(
-            value is not None
-            for value in (self.observed_kind, self.byte_size, self.content_sha256)
+        if self.status == "missing":
+            if self.reason not in _MISSING_REASONS or any(
+                value is not None
+                for value in (self.observed_kind, self.byte_size, self.content_sha256)
+            ):
+                raise ValueError("missing ignored evidence fields contradict status")
+            return
+        if self.status == "unavailable":
+            if self.reason not in _UNAVAILABLE_REASONS or any(
+                value is not None
+                for value in (self.observed_kind, self.byte_size, self.content_sha256)
+            ):
+                raise ValueError("unavailable ignored evidence fields contradict status")
+            if self.reason == "not-regular-file" and self.capture != "file-sha256":
+                raise ValueError("not-regular-file requires file-sha256 capture")
+            return
+        if self.reason != "observed" or self.observed_kind is None:
+            raise ValueError("observed ignored evidence requires observed kind and reason")
+        if self.observed_kind == "regular-file":
+            if self.byte_size is None:
+                raise ValueError("regular-file ignored evidence requires byte_size")
+            if self.capture == "file-sha256" and self.content_sha256 is None:
+                raise ValueError("file-sha256 evidence requires content_sha256")
+            if self.capture == "presence" and self.content_sha256 is not None:
+                raise ValueError("presence evidence must not carry content_sha256")
+            return
+        if self.capture != "presence" or any(
+            value is not None for value in (self.byte_size, self.content_sha256)
         ):
-            raise ValueError("non-observed ignored evidence must not carry observations")
-        if self.status == "observed" and self.observed_kind is None:
-            raise ValueError("observed ignored evidence requires observed_kind")
-        if self.observed_kind == "regular-file" and self.byte_size is None:
-            raise ValueError("regular-file ignored evidence requires byte_size")
-        if self.capture == "file-sha256" and self.status == "observed":
-            if self.observed_kind != "regular-file" or self.content_sha256 is None:
-                raise ValueError("file-sha256 evidence requires an observed regular file")
-        elif self.content_sha256 is not None:
-            raise ValueError("content_sha256 is only permitted for file-sha256 evidence")
+            raise ValueError("non-file observed evidence requires presence-only empty metadata")
+
+
+def _validate_evidence_sequence(
+    evidence: tuple[IgnoredInventoryEvidence, ...],
+) -> None:
+    """Require one canonical evidence record per unique declaration identity."""
+    keys = tuple((item.evidence_id, item.path, item.capture) for item in evidence)
+    if keys != tuple(sorted(keys)):
+        raise ValueError(
+            "ignored_inventory_evidence must be sorted by evidence_id, path, and capture"
+        )
+    if len({item.evidence_id for item in evidence}) != len(evidence):
+        raise ValueError("ignored_inventory_evidence evidence_id values must be unique")
+    if len({item.path for item in evidence}) != len(evidence):
+        raise ValueError("ignored_inventory_evidence paths must be unique")
 
 
 def ignored_inventory_digest(evidence: tuple[IgnoredInventoryEvidence, ...]) -> str:
     """Return the canonical identity of one ordered ignored evidence tuple."""
+    _validate_evidence_sequence(evidence)
     return canonical_digest([item.to_dict() for item in evidence])
+
+
+def parse_ignored_evidence_array(value: object) -> tuple[IgnoredInventoryEvidence, ...]:
+    """Parse an ignored evidence array into immutable typed records."""
+    if not isinstance(value, list):
+        raise ValueError("ignored_inventory_evidence must be an array")
+    evidence = tuple(
+        IgnoredInventoryEvidence.from_dict(item, index) for index, item in enumerate(value)
+    )
+    _validate_evidence_sequence(evidence)
+    return evidence
 
 
 def _unavailable(
     declaration: IgnoredInventoryDeclaration,
-    reason: str,
+    reason: IgnoredReason,
 ) -> IgnoredInventoryEvidence:
     """Return one content-free unavailable observation."""
     return IgnoredInventoryEvidence(
@@ -225,23 +326,136 @@ def _unavailable(
     )
 
 
+def _snapshot(metadata: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    """Return the complete identity fields used for stable presence evidence."""
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _observe_present(
+    parent: int,
+    name: str,
+    declaration: IgnoredInventoryDeclaration,
+    expected: tuple[int, int, int, int, int, int, int],
+) -> IgnoredInventoryEvidence:
+    """Bind a present non-regular entry without blocking FIFOs or devices."""
+    if (
+        not hasattr(os, "O_PATH")
+        or not hasattr(os, "O_NOFOLLOW")
+        or os.open not in os.supports_dir_fd
+        or os.stat not in os.supports_dir_fd
+        or os.stat not in os.supports_follow_symlinks
+    ):
+        return _unavailable(declaration, "platform-unavailable")
+    descriptor: int | None = None
+    flags = os.O_PATH | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent)
+        before = os.fstat(descriptor)
+        path_before = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        after = os.fstat(descriptor)
+        path_after = os.stat(name, dir_fd=parent, follow_symlinks=False)
+    except OSError:
+        return _unavailable(declaration, "inaccessible")
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+    if stat.S_ISREG(before.st_mode) and before.st_nlink != 1:
+        return _unavailable(declaration, "multiple-links")
+    if (
+        _snapshot(before) != expected
+        or _snapshot(before) != _snapshot(after)
+        or _snapshot(path_before) != _snapshot(before)
+        or _snapshot(path_after) != _snapshot(before)
+    ):
+        return _unavailable(declaration, "changed-while-read")
+    if stat.S_ISLNK(before.st_mode):
+        return _unavailable(declaration, "symlink")
+    if stat.S_ISDIR(before.st_mode):
+        kind: IgnoredKind = "directory"
+    else:
+        kind = "other"
+    if declaration.capture == "file-sha256":
+        return _unavailable(declaration, "not-regular-file")
+    return IgnoredInventoryEvidence(
+        declaration.evidence_id,
+        declaration.path,
+        declaration.capture,
+        "observed",
+        kind,
+        None,
+        None,
+        "observed",
+    )
+
+
 def _collect_one(
     root_descriptor: int,
     declaration: IgnoredInventoryDeclaration,
 ) -> IgnoredInventoryEvidence:
     """Collect one declaration through descriptor-relative no-follow traversal."""
     descriptors: list[int] = []
+    parent_bindings: list[tuple[int, str, int, tuple[int, ...]]] = []
     parent = root_descriptor
     directory_flags = (
         os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     )
     parts = PurePosixPath(declaration.path).parts
+
+    def finish(evidence: IgnoredInventoryEvidence) -> IgnoredInventoryEvidence:
+        """Reject evidence if any opened parent pathname changed identity."""
+        try:
+            for parent_fd, component, child_fd, before in parent_bindings:
+                child_after = os.fstat(child_fd)
+                path_after = os.stat(component, dir_fd=parent_fd, follow_symlinks=False)
+                if _snapshot(child_after) != before or _snapshot(path_after) != before:
+                    return _unavailable(declaration, "changed-while-read")
+        except OSError:
+            return _unavailable(declaration, "changed-while-read")
+        return evidence
+
     try:
         for component in parts[:-1]:
             try:
                 descriptor = os.open(component, directory_flags, dir_fd=parent)
             except FileNotFoundError:
-                return IgnoredInventoryEvidence(
+                return finish(
+                    IgnoredInventoryEvidence(
+                        declaration.evidence_id,
+                        declaration.path,
+                        declaration.capture,
+                        "missing",
+                        None,
+                        None,
+                        None,
+                        "missing-parent",
+                    )
+                )
+            except OSError as exc:
+                reason: IgnoredReason = (
+                    "unsafe-parent"
+                    if exc.errno in {errno.ELOOP, errno.ENOTDIR}
+                    else "inaccessible-parent"
+                )
+                return finish(_unavailable(declaration, reason))
+            parent_bindings.append(
+                (parent, component, descriptor, _snapshot(os.fstat(descriptor)))
+            )
+            descriptors.append(descriptor)
+            parent = descriptor
+        name = parts[-1]
+        try:
+            metadata = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except FileNotFoundError:
+            return finish(
+                IgnoredInventoryEvidence(
                     declaration.evidence_id,
                     declaration.path,
                     declaration.capture,
@@ -249,83 +463,65 @@ def _collect_one(
                     None,
                     None,
                     None,
-                    "missing-parent",
+                    "missing",
                 )
-            except OSError as exc:
-                reason = (
-                    "unsafe-parent"
-                    if exc.errno in {errno.ELOOP, errno.ENOTDIR}
-                    else "inaccessible-parent"
-                )
-                return _unavailable(declaration, reason)
-            descriptors.append(descriptor)
-            parent = descriptor
-        name = parts[-1]
-        try:
-            metadata = os.stat(name, dir_fd=parent, follow_symlinks=False)
-        except FileNotFoundError:
-            return IgnoredInventoryEvidence(
-                declaration.evidence_id,
-                declaration.path,
-                declaration.capture,
-                "missing",
-                None,
-                None,
-                None,
-                "missing",
             )
         except OSError:
-            return _unavailable(declaration, "inaccessible")
-        if stat.S_ISLNK(metadata.st_mode):
-            return _unavailable(declaration, "symlink")
-        if stat.S_ISDIR(metadata.st_mode):
-            if declaration.capture == "file-sha256":
-                return _unavailable(declaration, "not-regular-file")
-            return IgnoredInventoryEvidence(
-                declaration.evidence_id,
-                declaration.path,
-                declaration.capture,
-                "observed",
-                "directory",
-                None,
-                None,
-                "observed",
-            )
+            return finish(_unavailable(declaration, "inaccessible"))
         if not stat.S_ISREG(metadata.st_mode):
-            if declaration.capture == "file-sha256":
-                return _unavailable(declaration, "not-regular-file")
-            return IgnoredInventoryEvidence(
-                declaration.evidence_id,
-                declaration.path,
-                declaration.capture,
-                "observed",
-                "other",
-                None,
-                None,
-                "observed",
-            )
+            return finish(_observe_present(parent, name, declaration, _snapshot(metadata)))
         try:
             result = read_stable_regular_file_at(
                 parent,
                 name,
                 declaration.path,
                 buffer_limit=0,
+                require_single_link=True,
             )
-        except RuntimeError:
-            return _unavailable(declaration, "changed-or-inaccessible")
-        return IgnoredInventoryEvidence(
-            declaration.evidence_id,
-            declaration.path,
-            declaration.capture,
-            "observed",
-            "regular-file",
-            result.byte_size,
-            result.content_digest if declaration.capture == "file-sha256" else None,
-            "observed",
+        except StableReadError as exc:
+            stable_reason: IgnoredReason = cast(IgnoredReason, exc.reason)
+            if stable_reason == "not-regular-file" and declaration.capture == "presence":
+                stable_reason = "changed-while-read"
+            return finish(_unavailable(declaration, stable_reason))
+        return finish(
+            IgnoredInventoryEvidence(
+                declaration.evidence_id,
+                declaration.path,
+                declaration.capture,
+                "observed",
+                "regular-file",
+                result.byte_size,
+                result.content_digest if declaration.capture == "file-sha256" else None,
+                "observed",
+            )
         )
     finally:
         for descriptor in reversed(descriptors):
             os.close(descriptor)
+
+
+def _first_unsafe_prefix(root_descriptor: int, path: str) -> Path | None:
+    """Return only the first symlink or non-directory lexical parent prefix."""
+    descriptor = os.dup(root_descriptor)
+    prefix: list[str] = []
+    flags = (
+        os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        for component in PurePosixPath(path).parts[:-1]:
+            prefix.append(component)
+            try:
+                metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+            except FileNotFoundError:
+                return None
+            if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+                return Path(*prefix)
+            next_descriptor = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = next_descriptor
+        return None
+    finally:
+        os.close(descriptor)
 
 
 def collect_ignored_inventory(
@@ -335,37 +531,42 @@ def collect_ignored_inventory(
     git_runner: GitRunner,
 ) -> tuple[IgnoredInventoryEvidence, ...]:
     """Validate and collect all declared ignored paths under one Git identity."""
-    tracked = {item.path for item in inventory.files}
-    for declaration in declarations:
-        if declaration.path in tracked:
-            raise ValueError(f"ignored inventory path is tracked: {declaration.path}")
-        candidate = Path(declaration.path)
-        try:
-            ignored = is_git_ignored(
-                inventory.root,
-                candidate,
-                git_runner=git_runner,
-                expected_git_provenance=inventory.git_provenance,
-            )
-        except RuntimeError:
-            ignored = any(
-                is_git_ignored(
-                    inventory.root,
-                    parent,
-                    git_runner=git_runner,
-                    expected_git_provenance=inventory.git_provenance,
-                )
-                for parent in reversed(candidate.parents)
-                if parent != Path(".")
-            )
-        if not ignored:
-            raise ValueError(f"ignored inventory path is not ignored: {declaration.path}")
-    root_flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0)
+    if not declarations:
+        return ()
     try:
-        root_descriptor = os.open(inventory.root, root_flags)
+        root_descriptor = open_directory_no_follow(inventory.root)
     except OSError as exc:
         raise RuntimeError("cannot open repository root for ignored inventory") from exc
     try:
-        return tuple(_collect_one(root_descriptor, declaration) for declaration in declarations)
+        root_before = _snapshot(os.fstat(root_descriptor))
+        tracked = {item.path for item in inventory.files}
+        for declaration in declarations:
+            if declaration.path in tracked:
+                raise ValueError(f"ignored inventory path is tracked: {declaration.path}")
+            unsafe_prefix = _first_unsafe_prefix(root_descriptor, declaration.path)
+            check_path = unsafe_prefix or Path(declaration.path)
+            if not is_git_ignored(
+                inventory.root,
+                check_path,
+                git_runner=git_runner,
+                expected_git_provenance=inventory.git_provenance,
+            ):
+                raise ValueError(f"ignored inventory path is not ignored: {declaration.path}")
+        evidence = tuple(
+            _collect_one(root_descriptor, declaration) for declaration in declarations
+        )
+        try:
+            post_root_descriptor = open_directory_no_follow(inventory.root)
+        except (OSError, RuntimeError) as exc:
+            raise RuntimeError(
+                "repository root changed during ignored inventory collection"
+            ) from exc
+        try:
+            root_after = _snapshot(os.fstat(post_root_descriptor))
+        finally:
+            os.close(post_root_descriptor)
+        if root_after != root_before:
+            raise RuntimeError("repository root changed during ignored inventory collection")
+        return evidence
     finally:
         os.close(root_descriptor)

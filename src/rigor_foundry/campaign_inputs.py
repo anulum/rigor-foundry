@@ -9,24 +9,32 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .ignored_inventory import IgnoredInventoryEvidence
+from .audit_primitives import require_string
 
 if TYPE_CHECKING:
     from .campaign_models import AuditCampaign, ToolchainIdentity
     from .models import AuditReport
 
 
-def parse_ignored_evidence_array(value: object) -> list[dict[str, object]]:
-    """Parse ignored evidence into its canonical campaign representation."""
-    if not isinstance(value, list):
-        raise ValueError("ignored_inventory_evidence must be an array")
-    return [
-        IgnoredInventoryEvidence.from_dict(item, index).to_dict()
-        for index, item in enumerate(value)
-    ]
+def campaign_git_object_format(value: object) -> str:
+    """Return one supported campaign Git object format."""
+    result = require_string(value, "git_object_format")
+    if result not in {"sha1", "sha256"}:
+        raise ValueError("git_object_format is unsupported")
+    return result
+
+
+def campaign_git_identity(value: object, field: str, object_format: str) -> str:
+    """Return one campaign Git identity matching its object format."""
+    result = require_string(value, field)
+    expected_length = 40 if object_format == "sha1" else 64
+    if len(result) != expected_length or re.fullmatch(r"[0-9a-f]+", result) is None:
+        raise ValueError(f"{field} contradicts git_object_format")
+    return result
 
 
 def campaign_input_divergence(
@@ -71,9 +79,7 @@ def campaign_input_divergence(
         "dirty_paths": report.dirty_paths,
         "tracked_file_count": report.tracked_file_count,
         "policy_digest": report.policy_digest,
-        "ignored_inventory_evidence": tuple(
-            item.to_dict() for item in report.ignored_inventory_evidence
-        ),
+        "ignored_inventory_evidence": report.ignored_inventory_evidence,
         "ignored_inventory_digest": report.ignored_inventory_digest,
         "rule_pack_version": report.rule_pack_version,
         "rule_pack_digest": report.rule_pack_digest,
@@ -92,9 +98,7 @@ def campaign_input_divergence(
         "dirty_paths": campaign.dirty_paths,
         "tracked_file_count": campaign.tracked_file_count,
         "policy_digest": campaign.policy_digest,
-        "ignored_inventory_evidence": tuple(
-            item.to_dict() for item in campaign.ignored_inventory_evidence
-        ),
+        "ignored_inventory_evidence": campaign.ignored_inventory_evidence,
         "ignored_inventory_digest": campaign.ignored_inventory_digest,
         "rule_pack_version": campaign.rule_pack_version,
         "rule_pack_digest": campaign.rule_pack_digest,

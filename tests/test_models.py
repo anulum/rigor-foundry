@@ -98,6 +98,7 @@ def test_policy_round_trip_and_digest_are_deterministic(tmp_path: Path) -> None:
         ({"canonical_todo": "../TODO.md"}, "repository-relative"),
         ({"audit_domains": "all"}, "array"),
         ({"native_audits": "all"}, "array"),
+        ({"unknown_policy_field": "rejected"}, "fields do not match schema"),
     ],
 )
 def test_policy_rejects_invalid_top_level_contracts(

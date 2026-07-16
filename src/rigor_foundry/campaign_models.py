@@ -19,9 +19,17 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
-from .campaign_inputs import parse_ignored_evidence_array, validate_campaign_input
+from .campaign_inputs import (
+    campaign_git_identity,
+    campaign_git_object_format,
+    validate_campaign_input,
+)
 from .git_provenance import GitExecutableProvenance
-from .ignored_inventory import IgnoredInventoryEvidence
+from .ignored_inventory import (
+    IgnoredInventoryEvidence,
+    ignored_inventory_digest,
+    parse_ignored_evidence_array,
+)
 from .models import (
     AuditReport,
     canonical_digest,
@@ -35,6 +43,15 @@ from .sandbox_provenance import BubblewrapProvenance
 CAMPAIGN_SCHEMA_VERSION = "1.5"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
+_TOOLCHAIN_FIELDS = frozenset(
+    {
+        "python_implementation",
+        "python_version",
+        "platform",
+        "executable_digest",
+        "identity_digest",
+    }
+)
 _CAMPAIGN_FIELDS = frozenset(
     {
         "schema_version",
@@ -94,23 +111,6 @@ def _identifier(value: object, field: str) -> str:
     result = require_string(value, field)
     if _IDENTIFIER.fullmatch(result) is None:
         raise ValueError(f"{field} must be a portable identifier")
-    return result
-
-
-def _git_object_format(value: object) -> str:
-    """Return one supported Git object format."""
-    result = require_string(value, "git_object_format")
-    if result not in {"sha1", "sha256"}:
-        raise ValueError("git_object_format is unsupported")
-    return result
-
-
-def _git_identity(value: object, field: str, object_format: str) -> str:
-    """Return one Git identity matching the declared object format."""
-    result = require_string(value, field)
-    expected_length = 40 if object_format == "sha1" else 64
-    if len(result) != expected_length or re.fullmatch(r"[0-9a-f]+", result) is None:
-        raise ValueError(f"{field} contradicts git_object_format")
     return result
 
 
@@ -188,7 +188,7 @@ class ToolchainIdentity:
     def from_dict(cls, value: object) -> ToolchainIdentity:
         """Parse and integrity-check a runtime identity."""
         data = require_mapping(value, "toolchain")
-        if frozenset(data) != frozenset(cls.__dataclass_fields__):
+        if frozenset(data) != _TOOLCHAIN_FIELDS:
             raise ValueError("toolchain identity fields do not match schema")
         fields = {
             "python_implementation": require_string(
@@ -260,6 +260,10 @@ class AuditCampaign:
         expected_independent_runs: int,
     ) -> AuditCampaign:
         """Build a campaign bound to one exact report input surface."""
+        evidence = report.ignored_inventory_evidence
+        evidence_digest = ignored_inventory_digest(evidence)
+        if evidence_digest != report.ignored_inventory_digest:
+            raise ValueError("report ignored inventory digest does not match its evidence")
         fields = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "campaign_id": _identifier(campaign_id, "campaign_id"),
@@ -274,10 +278,8 @@ class AuditCampaign:
             "dirty_paths": list(report.dirty_paths),
             "tracked_file_count": report.tracked_file_count,
             "policy_digest": report.policy_digest,
-            "ignored_inventory_evidence": [
-                item.to_dict() for item in report.ignored_inventory_evidence
-            ],
-            "ignored_inventory_digest": report.ignored_inventory_digest,
+            "ignored_inventory_evidence": [item.to_dict() for item in evidence],
+            "ignored_inventory_digest": evidence_digest,
             "rule_pack_version": report.rule_pack_version,
             "rule_pack_digest": report.rule_pack_digest,
             "scanner_version": report.scanner_version,
@@ -314,11 +316,8 @@ class AuditCampaign:
             dirty_paths=tuple(cast(list[str], fields["dirty_paths"])),
             tracked_file_count=cast(int, fields["tracked_file_count"]),
             policy_digest=cast(str, fields["policy_digest"]),
-            ignored_inventory_evidence=tuple(
-                IgnoredInventoryEvidence.from_dict(item, index)
-                for index, item in enumerate(
-                    cast(list[object], fields["ignored_inventory_evidence"])
-                )
+            ignored_inventory_evidence=parse_ignored_evidence_array(
+                fields["ignored_inventory_evidence"]
             ),
             ignored_inventory_digest=cast(str, fields["ignored_inventory_digest"]),
             rule_pack_version=cast(str, fields["rule_pack_version"]),
@@ -373,7 +372,14 @@ class AuditCampaign:
             raise ValueError("audit campaign fields do not match schema")
         if data.get("schema_version") != CAMPAIGN_SCHEMA_VERSION:
             raise ValueError("unsupported audit campaign schema version")
-        object_format = _git_object_format(data.get("git_object_format"))
+        object_format = campaign_git_object_format(data.get("git_object_format"))
+        evidence = parse_ignored_evidence_array(data.get("ignored_inventory_evidence"))
+        recorded_ignored_digest = require_string(
+            data.get("ignored_inventory_digest"),
+            "ignored_inventory_digest",
+        )
+        if ignored_inventory_digest(evidence) != recorded_ignored_digest:
+            raise ValueError("campaign ignored inventory digest does not match its evidence")
         fields: dict[str, object] = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "campaign_id": _identifier(data.get("campaign_id"), "campaign_id"),
@@ -383,8 +389,8 @@ class AuditCampaign:
                 "repository_root",
             ),
             "policy_path": _relative_path(data.get("policy_path"), "policy_path"),
-            "head": _git_identity(data.get("head"), "head", object_format),
-            "head_tree": _git_identity(data.get("head_tree"), "head_tree", object_format),
+            "head": campaign_git_identity(data.get("head"), "head", object_format),
+            "head_tree": campaign_git_identity(data.get("head_tree"), "head_tree", object_format),
             "git_object_format": object_format,
             "branch": require_string(data.get("branch"), "branch"),
             "tracked_content_digest": require_string(
@@ -397,13 +403,8 @@ class AuditCampaign:
                 "tracked_file_count",
             ),
             "policy_digest": require_string(data.get("policy_digest"), "policy_digest"),
-            "ignored_inventory_evidence": parse_ignored_evidence_array(
-                data.get("ignored_inventory_evidence")
-            ),
-            "ignored_inventory_digest": require_string(
-                data.get("ignored_inventory_digest"),
-                "ignored_inventory_digest",
-            ),
+            "ignored_inventory_evidence": [item.to_dict() for item in evidence],
+            "ignored_inventory_digest": recorded_ignored_digest,
             "rule_pack_version": require_string(
                 data.get("rule_pack_version"),
                 "rule_pack_version",

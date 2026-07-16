@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -262,38 +263,29 @@ def test_campaign_rejects_ignored_inventory_mutation_during_native_adapter(
     """Post-adapter recollection rejects a real externally mutated ignored input."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/core.py", "VALUE = 1\n")
-    adapter = repository.write_text(
+    repository.write_text(
         "controls/native.py",
-        "import time\ntime.sleep(0.5)\nprint('complete')\n",
+        """
+import pathlib
+import time
+
+with pathlib.Path(".rigor/adapter-ready").open("w", encoding="utf-8") as marker:
+    marker.write("ready")
+time.sleep(0.5)
+print("complete")
+""".lstrip(),
     )
     mutator = repository.write_text(
         "controls/mutate.py",
         """
-import os
 import pathlib
 import sys
-import time
 
-watched, target = map(pathlib.Path, sys.argv[1:])
-needle = os.fsencode(os.path.relpath(watched))
-deadline = time.monotonic() + 10
-while time.monotonic() < deadline:
-    for command in pathlib.Path("/proc").glob("[0-9]*/cmdline"):
-        if command.parent.name == str(os.getpid()):
-            continue
-        try:
-            payload = command.read_bytes()
-        except OSError:
-            continue
-        if needle in payload:
-            break
-    else:
-        time.sleep(0.005)
-        continue
-    break
-else:
-    raise TimeoutError("native adapter process was not observed")
-target.write_text('changed-during-adapter', encoding='utf-8')
+ready, target = map(pathlib.Path, sys.argv[1:])
+with ready.open("r", encoding="utf-8") as marker:
+    if marker.read() != "ready":
+        raise RuntimeError("adapter readiness marker is invalid")
+target.write_text("changed-during-adapter", encoding="utf-8")
 """.lstrip(),
     )
     repository.write_policy(
@@ -328,9 +320,12 @@ target.write_text('changed-during-adapter', encoding='utf-8')
         actor="coordinator/one",
         expected_independent_runs=1,
     )
-    process = subprocess.Popen(
-        [sys.executable, str(mutator), str(adapter), str(target)],
+    ready = repository.root / ".rigor/adapter-ready"
+    os.mkfifo(ready, mode=0o666)
+    process = subprocess.Popen(  # nosec B603
+        [sys.executable, str(mutator), str(ready), str(target)],
         cwd=repository.root,
+        shell=False,
     )
     try:
         with pytest.raises(RuntimeError, match="mutated ignored inventory state"):
@@ -342,7 +337,12 @@ target.write_text('changed-during-adapter', encoding='utf-8')
                 trusted_native_audits=True,
             )
     finally:
-        process.wait(timeout=10)
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(timeout=10)
+            raise
 
 
 def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: Path) -> None:

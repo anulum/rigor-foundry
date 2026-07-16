@@ -18,6 +18,23 @@ REVIEW_SCHEMA_VERSION = "1.0"
 SCHEMA_VERSION = REPORT_SCHEMA_VERSION
 POLICY_SCHEMA_VERSION = "1.1"
 SCANNER_VERSION = "0.3.0"
+POLICY_FIELDS = frozenset(
+    {
+        "schema_version",
+        "source_line_threshold",
+        "test_line_threshold",
+        "source_roots",
+        "test_roots",
+        "production_packages",
+        "module_size_registries",
+        "canonical_todo",
+        "review_ledger",
+        "enforcement_mode",
+        "audit_domains",
+        "native_audits",
+        "ignored_inventory",
+    }
+)
 
 Category = Literal["test-authenticity", "architecture", "godfile", "governance"]
 Confidence = Literal["low", "medium", "high"]

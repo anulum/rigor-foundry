@@ -20,8 +20,11 @@ from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.git_inventory import (
     MAX_TEXT_BYTES,
+    StableReadError,
     is_git_ignored,
     load_git_inventory,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
 )
 from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
 from rigor_foundry.scanner import scan_repository
@@ -58,6 +61,98 @@ def test_inventory_classifies_real_tracked_content_and_dirty_state(tmp_path: Pat
     assert all(len(item.content_digest) == 64 for item in inventory.files)
     assert all(len(item.object_id) in {40, 64} for item in inventory.files)
     assert not any(item.path == "src/pkg/text.py" for item in inventory.text_files())
+
+
+def test_stable_reader_validates_buffer_limit_and_keeps_tracked_hardlink_compatibility(
+    tmp_path: Path,
+) -> None:
+    """The shared reader rejects invalid limits without changing tracked link policy."""
+    root = tmp_path / "root"
+    root.mkdir()
+    target = root / "target.bin"
+    target.write_bytes(b"content")
+    os.link(target, root / "second-link.bin")
+    descriptor = open_directory_no_follow(root)
+    try:
+        with pytest.raises(ValueError, match="buffer_limit"):
+            read_stable_regular_file_at(descriptor, target.name, target.name, buffer_limit=-1)
+        result = read_stable_regular_file_at(
+            descriptor,
+            target.name,
+            target.name,
+            require_single_link=False,
+        )
+        assert result.payload == b"content"
+        with pytest.raises(RuntimeError, match="multiple hard links"):
+            read_stable_regular_file_at(
+                descriptor,
+                target.name,
+                target.name,
+                require_single_link=True,
+            )
+    finally:
+        os.close(descriptor)
+
+
+def test_directory_open_rejects_relative_paths_before_traversal(tmp_path: Path) -> None:
+    """No-follow directory binding never silently changes a relative caller path."""
+    relative = Path(os.path.relpath(tmp_path, Path.cwd()))
+    assert not relative.is_absolute()
+    with pytest.raises(ValueError, match="must be absolute"):
+        open_directory_no_follow(relative)
+
+
+def test_stable_reader_reports_platform_unavailability(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing descriptor-relative open surface returns its finite reason code."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "state.bin").write_bytes(b"content")
+    descriptor = open_directory_no_follow(root)
+    monkeypatch.setattr(
+        os,
+        "supports_dir_fd",
+        frozenset(function for function in os.supports_dir_fd if function is not os.open),
+    )
+    try:
+        with pytest.raises(StableReadError, match="platform lacks stable no-follow") as error:
+            read_stable_regular_file_at(descriptor, "state.bin", "state.bin")
+        assert error.value.reason == "platform-unavailable"
+    finally:
+        os.close(descriptor)
+
+
+def test_inventory_rejects_symlinked_tracked_parent_component(tmp_path: Path) -> None:
+    """Tracked regular-file reads never follow a replaced parent directory component."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    real = repository.root / "real-src"
+    (repository.root / "src").rename(real)
+    repository.symlink("src", "real-src")
+    with pytest.raises(RuntimeError, match="tracked parent"):
+        load_git_inventory(repository.root)
+
+
+def test_failed_tracked_parent_walk_does_not_leak_descriptors(tmp_path: Path) -> None:
+    """Repeated public inventory failures close the last successfully opened parent."""
+    descriptor_directory = Path("/proc/self/fd")
+    if not descriptor_directory.is_dir():
+        pytest.skip("descriptor inventory is unavailable on this platform")
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/deep/module.py", "VALUE = 1\n")
+    repository.commit()
+    real = repository.root / "real-deep"
+    (repository.root / "src/pkg/deep").rename(real)
+    repository.symlink("src/pkg/deep", "../../real-deep")
+    before = len(tuple(descriptor_directory.iterdir()))
+    for _ in range(20):
+        with pytest.raises(RuntimeError, match="tracked parent"):
+            load_git_inventory(repository.root)
+    after = len(tuple(descriptor_directory.iterdir()))
+    assert after == before
 
 
 def test_inventory_digest_tracks_worktree_bytes_and_rename_records(tmp_path: Path) -> None:

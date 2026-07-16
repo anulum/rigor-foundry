@@ -31,7 +31,7 @@ from rigor_foundry.campaign_models import (
 from rigor_foundry.campaign_store import load_runs
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
 from rigor_foundry.git_provenance import GitTrustPolicy
-from rigor_foundry.models import AuditReport
+from rigor_foundry.models import AuditReport, canonical_digest
 from rigor_foundry.scanner import scan_repository
 
 
@@ -137,6 +137,26 @@ def test_campaign_contract_binds_git_executable_provenance(tmp_path: Path) -> No
     unrecognised["unbound"] = "discarded"
     with pytest.raises(ValueError, match="fields do not match schema"):
         AuditCampaign.from_dict(unrecognised)
+
+
+def test_campaign_recomputes_ignored_inventory_digest_before_contract_digest(
+    tmp_path: Path,
+) -> None:
+    """A recomputed outer contract cannot conceal a mismatched ignored evidence digest."""
+    campaign, _attestation, _report = _protocol_records(tmp_path)
+    changed = campaign.to_dict()
+    changed["ignored_inventory_digest"] = "0" * 64
+    changed.pop("contract_digest")
+    changed["contract_digest"] = canonical_digest(changed)
+    with pytest.raises(ValueError, match="ignored inventory digest"):
+        AuditCampaign.from_dict(changed)
+
+    malformed = campaign.to_dict()
+    malformed["ignored_inventory_evidence"] = {}
+    malformed.pop("contract_digest")
+    malformed["contract_digest"] = canonical_digest(malformed)
+    with pytest.raises(ValueError, match="must be an array"):
+        AuditCampaign.from_dict(malformed)
 
 
 def test_campaign_contract_rejects_unsafe_identifiers_paths_and_times(tmp_path: Path) -> None:

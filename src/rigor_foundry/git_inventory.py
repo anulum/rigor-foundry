@@ -15,12 +15,19 @@ import os
 import re
 import stat
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from .git_provenance import GitExecutableProvenance, GitRunner, GitTrustPolicy
 
 ContentKind = Literal["text", "binary", "non-utf8", "symlink", "missing", "gitlink", "oversize"]
+StableReadFailure = Literal[
+    "changed-while-read",
+    "inaccessible",
+    "multiple-links",
+    "not-regular-file",
+    "platform-unavailable",
+]
 MAX_TEXT_BYTES = 8 * 1024 * 1024
 
 
@@ -92,6 +99,21 @@ class StableRegularRead:
     payload: bytes | None
     content_digest: str
     git_blob_id: str | None
+
+
+class StableReadError(RuntimeError):
+    """One finite stable-file read failure suitable for bounded evidence."""
+
+    def __init__(self, reason: StableReadFailure, relative: str) -> None:
+        messages = {
+            "changed-while-read": "regular path changed while being read",
+            "inaccessible": "cannot access regular path",
+            "multiple-links": "regular path has multiple hard links",
+            "not-regular-file": "path is not one regular file",
+            "platform-unavailable": "platform lacks stable no-follow file reads",
+        }
+        super().__init__(f"{messages[reason]}: {relative}")
+        self.reason = reason
 
 
 def _run_git(
@@ -226,6 +248,7 @@ def read_stable_regular_file_at(
     *,
     object_format: str | None = None,
     buffer_limit: int = MAX_TEXT_BYTES,
+    require_single_link: bool = False,
 ) -> StableRegularRead:
     """Read one no-follow regular file once through a trusted parent descriptor.
 
@@ -237,18 +260,30 @@ def read_stable_regular_file_at(
 
     Raises
     ------
-    RuntimeError
-        If the path is not one stable regular file for the complete read.
+    ValueError
+        If a name, object format, or buffer limit is invalid.
+    StableReadError
+        If the path is inaccessible, is not one regular file, violates the
+        requested link policy, or changes during the complete read.
     """
     if "/" in name or name in {"", ".", ".."}:
         raise ValueError("stable-read name must be one path component")
     if object_format is not None and object_format not in {"sha1", "sha256"}:
         raise ValueError("unsupported Git object format")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    if isinstance(buffer_limit, bool) or not isinstance(buffer_limit, int) or buffer_limit < 0:
+        raise ValueError("buffer_limit must be an integer >= 0")
+    if (
+        not hasattr(os, "O_NOFOLLOW")
+        or os.open not in os.supports_dir_fd
+        or os.stat not in os.supports_dir_fd
+        or os.stat not in os.supports_follow_symlinks
+    ):
+        raise StableReadError("platform-unavailable", relative)
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
     try:
         descriptor = os.open(name, flags, dir_fd=parent_descriptor)
     except OSError as exc:
-        raise RuntimeError(f"cannot open regular path: {relative}") from exc
+        raise StableReadError("inaccessible", relative) from exc
     try:
         before = os.fstat(descriptor)
         path_before = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
@@ -256,7 +291,9 @@ def read_stable_regular_file_at(
             before.st_dev,
             before.st_ino,
         ):
-            raise RuntimeError(f"path is not one regular file: {relative}")
+            raise StableReadError("not-regular-file", relative)
+        if require_single_link and before.st_nlink != 1:
+            raise StableReadError("multiple-links", relative)
         content_digest = hashlib.sha256()
         blob_digest = hashlib.new(object_format) if object_format is not None else None
         if blob_digest is not None:
@@ -274,7 +311,7 @@ def read_stable_regular_file_at(
         after = os.fstat(descriptor)
         path_after = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
     except OSError as exc:
-        raise RuntimeError(f"cannot read regular path: {relative}") from exc
+        raise StableReadError("inaccessible", relative) from exc
     finally:
         os.close(descriptor)
     if (
@@ -283,7 +320,7 @@ def read_stable_regular_file_at(
         or _file_snapshot(path_before) != _file_snapshot(before)
         or _file_snapshot(path_after) != _file_snapshot(before)
     ):
-        raise RuntimeError(f"regular path changed while being read: {relative}")
+        raise StableReadError("changed-while-read", relative)
     payload = None if buffered is None else bytes(buffered)
     return StableRegularRead(
         byte_size=byte_count,
@@ -293,23 +330,75 @@ def read_stable_regular_file_at(
     )
 
 
+def open_directory_no_follow(path: Path) -> int:
+    """Open an absolute directory only through no-follow path components."""
+    if not path.is_absolute():
+        raise ValueError("directory path must be absolute")
+    if ".." in path.parts:
+        raise ValueError("directory path must not contain parent traversal")
+    if (
+        not hasattr(os, "O_DIRECTORY")
+        or not hasattr(os, "O_NOFOLLOW")
+        or os.open not in os.supports_dir_fd
+        or os.stat not in os.supports_dir_fd
+        or os.stat not in os.supports_follow_symlinks
+    ):
+        raise RuntimeError("platform lacks no-follow descriptor traversal")
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
+    descriptor = os.open("/", flags)
+    try:
+        for component in path.parts[1:]:
+            next_descriptor = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = next_descriptor
+    except OSError:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _open_tracked_parent(root: Path, relative: str) -> tuple[int, str]:
+    """Open one tracked path parent through root-relative no-follow components."""
+    parts = PurePosixPath(relative).parts
+    if not parts:
+        raise RuntimeError("tracked path is empty")
+    descriptor: int | None = None
+    try:
+        descriptor = open_directory_no_follow(root)
+        for component in parts[:-1]:
+            next_descriptor = os.open(
+                component,
+                os.O_RDONLY
+                | os.O_DIRECTORY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=descriptor,
+            )
+            os.close(descriptor)
+            descriptor = next_descriptor
+    except (OSError, RuntimeError) as exc:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise RuntimeError(f"cannot open tracked parent: {relative}") from exc
+    if descriptor is None:
+        raise RuntimeError(f"cannot open tracked parent: {relative}")
+    return descriptor, parts[-1]
+
+
 def _read_regular_bytes(
-    path: Path,
+    root: Path,
     relative: str,
     object_format: str,
 ) -> tuple[int, bytes | None, str, str]:
     """Read one tracked regular file through the shared stable-read primitive."""
-    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0)
-    try:
-        parent_descriptor = os.open(path.parent, flags)
-    except OSError as exc:
-        raise RuntimeError(f"cannot open tracked parent: {relative}") from exc
+    parent_descriptor, name = _open_tracked_parent(root, relative)
     try:
         result = read_stable_regular_file_at(
             parent_descriptor,
-            path.name,
+            name,
             relative,
             object_format=object_format,
+            require_single_link=False,
         )
     finally:
         os.close(parent_descriptor)
@@ -393,7 +482,7 @@ def _read_tracked_file(
             scanned_blob_id=None,
         )
     byte_size, payload, content_digest, scanned_blob_id = _read_regular_bytes(
-        absolute,
+        root,
         relative,
         object_format,
     )

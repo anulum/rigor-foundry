@@ -16,6 +16,7 @@ from typing import cast
 
 from .audit_primitives import (
     AUDIT_DOMAINS,
+    POLICY_FIELDS,
     POLICY_SCHEMA_VERSION,
     REVIEW_SCHEMA_VERSION,
     SCANNER_VERSION,
@@ -48,6 +49,7 @@ from .ignored_inventory import (
     IgnoredInventoryDeclaration,
     IgnoredInventoryEvidence,
     ignored_inventory_digest,
+    parse_ignored_evidence_array,
     parse_ignored_inventory,
 )
 from .rules import RULE_PACK_VERSION, rule_pack_digest
@@ -249,6 +251,8 @@ class AuditPolicy:
     def from_dict(cls, value: object) -> AuditPolicy:
         """Parse and validate a policy mapping."""
         data = _mapping(value, "policy")
+        if frozenset(data) != POLICY_FIELDS:
+            raise ValueError("repository audit-policy fields do not match schema")
         if data.get("schema_version") != POLICY_SCHEMA_VERSION:
             raise ValueError("unsupported repository audit-policy schema version")
         mode = _string(data.get("enforcement_mode", "observe"), "enforcement_mode")
@@ -518,10 +522,7 @@ class AuditReport:
             ),
             git_provenance=GitExecutableProvenance.from_dict(data.get("git_provenance")),
             policy=AuditPolicy.from_dict(data.get("policy")),
-            ignored_inventory_evidence=tuple(
-                IgnoredInventoryEvidence.from_dict(item, index)
-                for index, item in enumerate(raw_ignored)
-            ),
+            ignored_inventory_evidence=parse_ignored_evidence_array(raw_ignored),
             candidates=tuple(Candidate.from_dict(item) for item in raw_candidates),
         )
         recorded_digest = _string(data.get("report_digest"), "report.report_digest")
