@@ -9,7 +9,15 @@
 
 __version__ = "0.1.1"
 
+from .campaign_identity import (
+    INFERENCE_IDENTITY_SCHEMA_VERSION,
+    MODEL_WITNESS_SCHEMA_VERSION,
+    InferenceIdentity,
+    ModelWitness,
+    collapse_model_witnesses,
+)
 from .campaign_inputs import campaign_input_divergence, validate_campaign_input
+from .campaign_promotion import validate_promotion_campaign
 from .candidate_anchor import (
     ANCHOR_SCHEMA_VERSION,
     CandidateAnchor,
@@ -112,6 +120,8 @@ __all__ = [
     "DIGEST_NODES",
     "ED25519_SIGNATURE_MESSAGE_VERSION",
     "IGNORED_INVENTORY_SCHEMA_VERSION",
+    "INFERENCE_IDENTITY_SCHEMA_VERSION",
+    "MODEL_WITNESS_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
     "AdapterLock",
@@ -139,6 +149,8 @@ __all__ = [
     "GitTrustPolicy",
     "IgnoredInventoryDeclaration",
     "IgnoredInventoryEvidence",
+    "InferenceIdentity",
+    "ModelWitness",
     "NegativeSearch",
     "PackSelection",
     "PackSignature",
@@ -175,6 +187,7 @@ __all__ = [
     "bounded_candidate_evidence",
     "campaign_input_divergence",
     "candidate_anchor_errors",
+    "collapse_model_witnesses",
     "collect_ignored_inventory",
     "coverage_residual_errors",
     "digest_dependency_graph",
@@ -191,5 +204,6 @@ __all__ = [
     "transitive_dependents",
     "validate_campaign_input",
     "validate_digest_dependency_graph",
+    "validate_promotion_campaign",
     "validate_reviews",
 ]

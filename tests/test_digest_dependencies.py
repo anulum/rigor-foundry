@@ -159,7 +159,7 @@ def _campaign(
         toolchain=toolchain or _toolchain(),
         created_by="coordinator/one",
         created_at=created_at,
-        expected_independent_runs=1,
+        expected_runs=1,
     )
 
 

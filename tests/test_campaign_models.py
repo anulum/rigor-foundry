@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import shutil
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -17,6 +18,7 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 import rigor_foundry
+from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_inputs import (
     campaign_input_divergence,
     validate_campaign_input,
@@ -35,6 +37,16 @@ from rigor_foundry.models import AuditReport, canonical_digest
 from rigor_foundry.scanner import scan_repository
 
 
+def _inference_identity() -> InferenceIdentity:
+    """Return one explicit model correlation identity for protocol tests."""
+    return InferenceIdentity.build(
+        provider="provider.example",
+        model="model-v1",
+        model_family="model-family",
+        operator="operator-one",
+    )
+
+
 def _protocol_records(
     tmp_path: Path,
 ) -> tuple[AuditCampaign, AuditRunAttestation, AuditReport]:
@@ -50,13 +62,14 @@ def _protocol_records(
         project="SAMPLE-PROJECT",
         campaign_id="model-contract",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     _directory, attestation = execute_campaign(
         campaign_path,
         run_id="agent-one",
         agent_identity="SAMPLE-PROJECT/agent-one",
         session_identity="terminal/one",
+        inference_identity=_inference_identity(),
     )
     report = load_runs(campaign_path)[0].report
     return campaign, attestation, report
@@ -76,6 +89,7 @@ def _build_attestation(
         campaign=campaign,
         agent_identity="SAMPLE-PROJECT/agent-one",
         session_identity="terminal/one",
+        inference_identity=_inference_identity(),
         started_at=started_at,
         finished_at=finished_at,
         status=status,
@@ -113,9 +127,9 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
         ToolchainIdentity.from_dict(unrecognised)
 
 
-def test_campaign_schema_version_declares_complete_input_binding_migration() -> None:
-    """Campaign 1.4 also binds the repository Git object format."""
-    assert CAMPAIGN_SCHEMA_VERSION == "1.5"
+def test_campaign_schema_version_declares_cross_model_identity_migration() -> None:
+    """Campaign 1.6 binds explicit inference identity and promotion purpose."""
+    assert CAMPAIGN_SCHEMA_VERSION == "1.6"
     assert rigor_foundry.campaign_input_divergence is campaign_input_divergence
     assert rigor_foundry.validate_campaign_input is validate_campaign_input
 
@@ -182,6 +196,54 @@ def test_campaign_contract_rejects_unsafe_identifiers_paths_and_times(tmp_path: 
     assert AuditCampaign.from_dict(equivalent) == campaign
 
 
+def test_campaign_contract_enforces_purpose_witness_counts_and_outer_digest(
+    tmp_path: Path,
+) -> None:
+    """Promotion thresholds and the complete outer campaign digest fail closed."""
+    campaign, _attestation, report = _protocol_records(tmp_path)
+    common = {
+        "campaign_id": "promotion-contract",
+        "project": campaign.project,
+        "policy_path": campaign.policy_path,
+        "toolchain": campaign.toolchain,
+        "created_by": campaign.created_by,
+        "created_at": campaign.created_at,
+    }
+    with pytest.raises(ValueError, match="at least two runs and model witnesses"):
+        AuditCampaign.build(
+            report,
+            **common,
+            purpose="promotion",
+            expected_runs=1,
+            required_model_witnesses=1,
+        )
+    with pytest.raises(ValueError, match="must not exceed"):
+        AuditCampaign.build(
+            report,
+            **common,
+            expected_runs=1,
+            required_model_witnesses=2,
+        )
+
+    unsupported = campaign.to_dict()
+    unsupported["purpose"] = "release"
+    with pytest.raises(ValueError, match="campaign purpose"):
+        AuditCampaign.from_dict(unsupported)
+
+    changed = campaign.to_dict()
+    changed["created_by"] = "coordinator/two"
+    with pytest.raises(ValueError, match="contract digest"):
+        AuditCampaign.from_dict(changed)
+
+    inconsistent_report = replace(report, ignored_inventory_digest="0" * 64)
+    with pytest.raises(ValueError, match="ignored inventory digest"):
+        AuditCampaign.build(
+            inconsistent_report,
+            **common,
+            expected_runs=1,
+        )
+
+
 def test_attestation_build_rejects_reversed_time_and_unknown_status(tmp_path: Path) -> None:
     """Runtime construction enforces monotonic time and the closed status vocabulary."""
     campaign, _attestation, report = _protocol_records(tmp_path)
@@ -237,6 +299,7 @@ def test_attestation_parser_rejects_schema_shape_time_and_digest_tampering(
         ("schema_version", "2.0", "schema version"),
         ("status", "paused", "unsupported audit run status"),
         ("adapter_evidence", {}, "must be an array"),
+        ("inference_identity", {}, "fields do not match schema"),
     )
     for field, value, message in cases:
         changed = attestation.to_dict()

@@ -12,10 +12,12 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.adapters import AdapterResult
-from rigor_foundry.campaign_compare import compare_campaign
+from rigor_foundry.campaign_compare import AuditComparison, compare_campaign
+from rigor_foundry.campaign_identity import InferenceIdentity, ModelWitness
 from rigor_foundry.campaign_models import (
     AuditCampaign,
     AuditRunAttestation,
@@ -40,6 +42,20 @@ from rigor_foundry.sandbox_provenance import (
 )
 
 
+def _inference_identity(
+    model_family: str,
+    *,
+    operator: str | None = None,
+) -> InferenceIdentity:
+    """Return one explicit inference identity for a comparison run."""
+    return InferenceIdentity.build(
+        provider=f"provider-{model_family}",
+        model=f"{model_family}-v1",
+        model_family=model_family,
+        operator=operator or f"operator-{model_family}",
+    )
+
+
 def _campaign_runs(tmp_path: Path) -> tuple[AuditCampaign, tuple[StoredAuditRun, ...]]:
     """Create one frozen campaign and two real, integrity-verified runs."""
     repository = GitRepository.create(tmp_path / "repository")
@@ -57,7 +73,7 @@ def _campaign_runs(tmp_path: Path) -> tuple[AuditCampaign, tuple[StoredAuditRun,
         project="SAMPLE-PROJECT",
         campaign_id="campaign-divergence",
         actor="coordinator/one",
-        expected_independent_runs=2,
+        expected_runs=2,
     )
     for number in (1, 2):
         execute_campaign(
@@ -65,6 +81,7 @@ def _campaign_runs(tmp_path: Path) -> tuple[AuditCampaign, tuple[StoredAuditRun,
             run_id=f"agent-{number}",
             agent_identity=f"SAMPLE-PROJECT/agent-{number}",
             session_identity=f"terminal/{number}",
+            inference_identity=_inference_identity(f"family-{number}"),
         )
     return campaign, load_runs(campaign_path)
 
@@ -165,6 +182,7 @@ def _stored_run(
     covered_domains: tuple[str, ...] | None = None,
     omitted_domains: tuple[str, ...] = (),
     adapters: tuple[AdapterResult, ...] = (),
+    inference_identity: InferenceIdentity | None = None,
 ) -> StoredAuditRun:
     """Build a parser-valid adversarial run for comparison-only divergence tests."""
     source_campaign = AuditCampaign.build(
@@ -175,13 +193,14 @@ def _stored_run(
         toolchain=toolchain,
         created_by=campaign.created_by,
         created_at=campaign.created_at,
-        expected_independent_runs=campaign.expected_independent_runs,
+        expected_runs=campaign.expected_runs,
     )
     source_attestation = AuditRunAttestation.build(
         run_id=run_id,
         campaign=source_campaign,
         agent_identity=agent_identity,
         session_identity=f"terminal/{run_id}",
+        inference_identity=inference_identity or _inference_identity(run_id),
         started_at="2026-07-15T12:00:00Z",
         finished_at="2026-07-15T12:01:00Z",
         status=status,
@@ -222,7 +241,7 @@ def test_comparison_never_turns_absent_independent_runs_into_consensus(tmp_path:
         project="SAMPLE-PROJECT",
         campaign_id="campaign-one",
         actor="coordinator/one",
-        expected_independent_runs=2,
+        expected_runs=2,
     )
 
     comparison = compare_campaign(
@@ -237,10 +256,211 @@ def test_comparison_never_turns_absent_independent_runs_into_consensus(tmp_path:
     assert comparison.actual_run_count == 0
     assert comparison.unresolved
     assert comparison.diligence_gaps == (
-        "expected 2 independent runs, found 0",
+        "expected 1 model-family witnesses, found 0",
+        "expected 2 runs, found 0",
         "no independent review records were supplied",
     )
     assert len(comparison.comparison_digest) == 64
+
+
+def test_promotion_comparison_collapses_same_model_family_to_one_witness(
+    tmp_path: Path,
+) -> None:
+    """Agent and session diversity cannot multiply one correlated model witness."""
+    _diagnostic, runs = _campaign_runs(tmp_path)
+    baseline = runs[0]
+    campaign = AuditCampaign.build(
+        baseline.report,
+        campaign_id="promotion-correlated",
+        project="SAMPLE-PROJECT",
+        policy_path="rigor-foundry-policy.json",
+        toolchain=baseline.attestation.toolchain,
+        created_by="coordinator/one",
+        created_at="2026-07-15T12:00:00Z",
+        purpose="promotion",
+        expected_runs=2,
+        required_model_witnesses=2,
+    )
+    correlated = tuple(
+        _stored_run(
+            campaign,
+            baseline,
+            run_id=f"correlated-{index}",
+            report=baseline.report,
+            toolchain=campaign.toolchain,
+            agent_identity=f"SAMPLE-PROJECT/agent-{index}",
+            inference_identity=_inference_identity(
+                "shared-family",
+                operator=f"operator-{index}",
+            ),
+        )
+        for index in (1, 2)
+    )
+
+    comparison = compare_campaign(
+        campaign,
+        correlated,
+        ((),),
+        comparison_id="correlated-comparison",
+        created_by="coordinator/one",
+        created_at="2026-07-15T13:00:00Z",
+    )
+
+    assert comparison.actual_run_count == 2
+    assert comparison.actual_model_witnesses == 1
+    assert comparison.model_witnesses[0].run_ids == ("correlated-1", "correlated-2")
+    assert comparison.unresolved
+    assert not comparison.promotion_eligible
+    assert "expected 2 model-family witnesses, found 1" in comparison.diligence_gaps
+
+
+def test_promotion_comparison_requires_cross_model_and_operator_independence(
+    tmp_path: Path,
+) -> None:
+    """Two distinct model families and operators satisfy identity diligence."""
+    _diagnostic, runs = _campaign_runs(tmp_path)
+    baseline = runs[0]
+    campaign = AuditCampaign.build(
+        baseline.report,
+        campaign_id="promotion-independent",
+        project="SAMPLE-PROJECT",
+        policy_path="rigor-foundry-policy.json",
+        toolchain=baseline.attestation.toolchain,
+        created_by="coordinator/one",
+        created_at="2026-07-15T12:00:00Z",
+        purpose="promotion",
+        expected_runs=2,
+        required_model_witnesses=2,
+    )
+    independent = tuple(
+        _stored_run(
+            campaign,
+            baseline,
+            run_id=f"independent-{index}",
+            report=baseline.report,
+            toolchain=campaign.toolchain,
+            agent_identity=f"SAMPLE-PROJECT/agent-{index}",
+            inference_identity=_inference_identity(f"family-{index}"),
+        )
+        for index in (1, 2)
+    )
+
+    comparison = compare_campaign(
+        campaign,
+        independent,
+        ((),),
+        comparison_id="independent-comparison",
+        created_by="coordinator/one",
+        created_at="2026-07-15T13:00:00Z",
+    )
+
+    assert comparison.actual_model_witnesses == 2
+    assert not comparison.unresolved
+    assert comparison.promotion_eligible
+    assert comparison.diligence_gaps == ()
+
+
+def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
+    tmp_path: Path,
+) -> None:
+    """Durable comparisons reject malformed arrays, counts, status, and identity."""
+    campaign, runs = _campaign_runs(tmp_path)
+    comparison = compare_campaign(
+        campaign,
+        runs,
+        ((),),
+        comparison_id="parser-comparison",
+        created_by="coordinator/one",
+        created_at="2026-07-15T13:00:00Z",
+    )
+    assert AuditComparison.from_dict(comparison.to_dict()) == comparison
+
+    cases: tuple[tuple[str, object, str], ...] = (
+        ("schema_version", "2.0", "schema version"),
+        ("purpose", "release", "comparison purpose"),
+        ("model_witnesses", {}, "must be an array"),
+        ("unresolved", "false", "must be booleans"),
+        ("comparison_id", "../comparison", "portable identifier"),
+        ("created_at", "not-a-time", "ISO-8601 UTC timestamp"),
+        ("run_ids", ["agent-2", "agent-1"], "sorted and contain unique"),
+        ("promotion_eligible", True, "eligibility does not match"),
+        ("unresolved", True, "unresolved status does not match"),
+        ("actual_run_count", 1, "run count does not match"),
+        ("actual_model_witnesses", 1, "witness count does not match"),
+        ("required_model_witnesses", 3, "required witnesses exceed"),
+        ("report_digests", [], "report digests do not match"),
+        ("agent_identities", [], "agent identities do not match"),
+    )
+    for field, value, message in cases:
+        changed = comparison.to_dict()
+        changed[field] = value
+        with pytest.raises(ValueError, match=message):
+            AuditComparison.from_dict(changed)
+
+    missing_attestation = comparison.to_dict()
+    missing_attestation["attestation_digests"] = list(comparison.attestation_digests[:-1])
+    with pytest.raises(ValueError, match="run count does not match attestations"):
+        AuditComparison.from_dict(missing_attestation)
+
+    reversed_witnesses = comparison.to_dict()
+    reversed_witnesses["model_witnesses"] = list(reversed(reversed_witnesses["model_witnesses"]))
+    with pytest.raises(ValueError, match="sorted with unique model families"):
+        AuditComparison.from_dict(reversed_witnesses)
+
+    excess_witnesses = comparison.to_dict()
+    excess_witnesses["model_witnesses"] = [
+        *excess_witnesses["model_witnesses"],
+        ModelWitness.build(
+            model_family="family-3",
+            providers=("provider-family-3",),
+            models=("family-3-v1",),
+            operators=("operator-family-3",),
+            run_ids=("agent-1",),
+        ).to_dict(),
+    ]
+    excess_witnesses["actual_model_witnesses"] = 3
+    with pytest.raises(ValueError, match="model witnesses exceed actual runs"):
+        AuditComparison.from_dict(excess_witnesses)
+
+    overlapping_witnesses = comparison.to_dict()
+    witness_documents = list(overlapping_witnesses["model_witnesses"])
+    first_witness = dict(witness_documents[0])
+    first_witness["run_ids"] = ["agent-2"]
+    first_witness.pop("witness_digest")
+    first_witness["witness_digest"] = canonical_digest(first_witness)
+    witness_documents[0] = first_witness
+    overlapping_witnesses["model_witnesses"] = witness_documents
+    with pytest.raises(ValueError, match="do not partition run identifiers"):
+        AuditComparison.from_dict(overlapping_witnesses)
+
+    changed_digest = comparison.to_dict()
+    changed_digest["created_by"] = "coordinator/two"
+    with pytest.raises(ValueError, match="digest does not match"):
+        AuditComparison.from_dict(changed_digest)
+
+    unrecognised = comparison.to_dict()
+    unrecognised["extra"] = "discarded"
+    with pytest.raises(ValueError, match="fields do not match schema"):
+        AuditComparison.from_dict(unrecognised)
+
+    with pytest.raises(ValueError, match="portable identifier"):
+        compare_campaign(
+            campaign,
+            runs,
+            ((),),
+            comparison_id="../comparison",
+            created_by="coordinator/one",
+            created_at="2026-07-15T13:00:00Z",
+        )
+    with pytest.raises(ValueError, match="must use UTC"):
+        compare_campaign(
+            campaign,
+            runs,
+            ((),),
+            comparison_id="comparison-time",
+            created_by="coordinator/one",
+            created_at="2026-07-15T15:00:00+02:00",
+        )
 
 
 def test_comparison_reports_contract_domain_and_diligence_divergence(tmp_path: Path) -> None:
@@ -462,6 +682,38 @@ def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> N
 
     assert comparison.adapter_divergence == (
         "run adapter-omitted: omitted native adapters repository-check",
+    )
+
+
+def test_comparison_reports_unexpected_and_duplicate_adapter_evidence(
+    tmp_path: Path,
+) -> None:
+    """An undeclared duplicated adapter cannot inflate diligence evidence."""
+    campaign, runs = _campaign_runs(tmp_path)
+    baseline = runs[0]
+    evidence = _adapter_result(output_digest="a" * 64, returncode=0)
+    duplicated = _stored_run(
+        campaign,
+        baseline,
+        run_id="adapter-duplicate",
+        report=baseline.report,
+        toolchain=campaign.toolchain,
+        agent_identity="SAMPLE-PROJECT/adapter-duplicate",
+        adapters=(evidence, evidence),
+    )
+
+    comparison = compare_campaign(
+        campaign,
+        (duplicated,),
+        ((),),
+        comparison_id="comparison-adapter-duplicate",
+        created_by="coordinator/one",
+        created_at="2026-07-15T13:00:00Z",
+    )
+
+    assert comparison.adapter_divergence == (
+        "run adapter-duplicate: duplicated native adapters repository-check",
+        "run adapter-duplicate: reported unexpected native adapters repository-check",
     )
 
 

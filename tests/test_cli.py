@@ -15,6 +15,12 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.campaign_identity import InferenceIdentity
+from rigor_foundry.campaign_workflow import (
+    compare_campaign_runs,
+    create_campaign,
+    execute_campaign,
+)
 from rigor_foundry.cli import main, report_markdown
 from rigor_foundry.models import AuditReport
 
@@ -46,8 +52,13 @@ def _promotion_arguments(
     candidate_id: str,
     *,
     policy: Path | None = None,
+    campaign_paths: tuple[Path, Path] | None = None,
 ) -> list[str]:
     """Return the public promotion command for one prepared repository report."""
+    campaign, comparison = campaign_paths or (
+        repository.root / ".rigor/missing-campaign.json",
+        repository.root / ".rigor/missing-comparison.json",
+    )
     return [
         "promote",
         "--root",
@@ -58,11 +69,60 @@ def _promotion_arguments(
         str(report_path),
         "--review",
         str(review_path),
+        "--campaign",
+        str(campaign),
+        "--comparison",
+        str(comparison),
         "--candidate-id",
         candidate_id,
         "--todo",
         "docs/internal/work/INDEX.md",
     ]
+
+
+def _promotion_campaign(
+    report_path: Path,
+    review_path: Path,
+    *,
+    campaign_id: str,
+) -> tuple[Path, Path]:
+    """Create real durable cross-model evidence for one prepared review."""
+    report = AuditReport.from_path(report_path)
+    repository = Path(report.repository_root)
+    campaign_path, _campaign = create_campaign(
+        repository,
+        Path(_POLICY),
+        audit_root=Path(".rigor/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id=campaign_id,
+        actor="coordinator/cli",
+        expected_runs=2,
+        purpose="promotion",
+        required_model_witnesses=2,
+    )
+    for index in (1, 2):
+        execute_campaign(
+            campaign_path,
+            run_id=f"model-{index}",
+            agent_identity=f"SAMPLE-PROJECT/agent-{index}",
+            session_identity=f"terminal/{index}",
+            inference_identity=InferenceIdentity.build(
+                provider=f"provider-{index}",
+                model=f"model-family-{index}-v1",
+                model_family=f"model-family-{index}",
+                operator=f"operator-{index}",
+            ),
+        )
+    reviews_directory = campaign_path.parent / "reviews"
+    reviews_directory.mkdir()
+    (reviews_directory / "selected.json").write_bytes(review_path.read_bytes())
+    comparison_path, comparison = compare_campaign_runs(
+        campaign_path,
+        comparison_id="promotion-comparison",
+        actor="coordinator/cli",
+    )
+    assert comparison.promotion_eligible
+    return campaign_path, comparison_path
 
 
 def test_scan_is_read_only_deterministic_and_labels_candidates(tmp_path: Path) -> None:
@@ -206,6 +266,11 @@ def test_review_validation_and_explicit_promotion_use_current_tree(tmp_path: Pat
         str(review_path),
     )
     assert validated.returncode == 0, validated.stderr
+    campaign_path, comparison_path = _promotion_campaign(
+        report_path,
+        review_path,
+        campaign_id="subprocess-promotion",
+    )
 
     todo = repository.root / "docs/internal/work/INDEX.md"
     before = todo.read_text(encoding="utf-8")
@@ -219,6 +284,10 @@ def test_review_validation_and_explicit_promotion_use_current_tree(tmp_path: Pat
         str(report_path),
         "--review",
         str(review_path),
+        "--campaign",
+        str(campaign_path),
+        "--comparison",
+        str(comparison_path),
         "--candidate-id",
         selected.candidate_id,
         "--todo",
@@ -318,6 +387,14 @@ def test_source_sentinel_never_reaches_reports_cli_or_campaign_artifacts(
         "SAMPLE-PROJECT/sentinel-agent",
         "--session",
         "terminal/sentinel",
+        "--provider",
+        "provider.example",
+        "--model",
+        "model-v1",
+        "--model-family",
+        "model-family",
+        "--operator",
+        "operator-one",
     )
     assert run.returncode == 0, run.stderr
     assert sentinel not in created.stdout + created.stderr + run.stdout + run.stderr
@@ -409,6 +486,11 @@ def test_direct_cli_contracts_cover_every_command_handler(
         }
     )
     review_path.write_text(json.dumps(document), encoding="utf-8")
+    promotion_campaign = _promotion_campaign(
+        report_path,
+        review_path,
+        campaign_id="direct-promotion",
+    )
     promote = [
         "promote",
         "--root",
@@ -419,6 +501,10 @@ def test_direct_cli_contracts_cover_every_command_handler(
         str(report_path),
         "--review",
         str(review_path),
+        "--campaign",
+        str(promotion_campaign[0]),
+        "--comparison",
+        str(promotion_campaign[1]),
         "--candidate-id",
         selected.candidate_id,
         "--todo",
@@ -486,6 +572,14 @@ def test_direct_cli_contracts_cover_every_command_handler(
                 "SAMPLE-PROJECT/direct-agent",
                 "--session",
                 "terminal/direct",
+                "--provider",
+                "provider.example",
+                "--model",
+                "model-v1",
+                "--model-family",
+                "model-family",
+                "--operator",
+                "operator-one",
             ]
         )
         == 0

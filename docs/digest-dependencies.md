@@ -29,7 +29,7 @@ separately and are not misrepresented as unconditional digest edges.
 | Rule pack | `rule_pack_digest` | `rules` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
-| Toolchain | `toolchain.identity_digest` | `campaign_models` |
+| Toolchain | `toolchain.identity_digest` | `campaign_evidence` |
 | Effective profile | `lock_digest` | `effective_profile` |
 | Report | `report_digest` | `models` |
 | Review | `review_digest` | `models` |
@@ -47,7 +47,7 @@ one envelope. Existing rules retain their original introduction version.
 Git provenance binds the resolved executable path, selected root, executable
 SHA-256, observed version, complete trust policy, and trust-policy digest.
 Toolchain identity binds Python implementation/version, platform, and
-interpreter executable SHA-256. Campaign schema 1.5 embeds both complete
+interpreter executable SHA-256. Campaign schema 1.6 embeds both complete
 records plus the ignored evidence tuple and digest; effective-profile locks
 bind the toolchain digest used for profile resolution.
 
@@ -104,10 +104,12 @@ absence of cycles.
   lock that contains them.
 - Review rationale, evidence, reviewer, and time can change a review and any
   resulting task without changing the source report or campaign.
-- Comparison logic observes selected run, report, adapter-evidence, and review
-  projections. Those inputs can affect divergence text conditionally, but the
-  comparison record does not embed their complete digests. Only the campaign
-  contract is an unconditional graph edge today.
+- Comparison logic embeds the exact participating attestation, report, and
+  review digests, plus the collapsed model-witness identities. The set of
+  participating records is campaign-instance data rather than a fixed schema
+  dependency, so only the campaign contract remains an unconditional normative
+  graph edge. Promotion reconstructs these conditional bindings from durable
+  records before accepting a selected report and review.
 
 These non-edges are compatibility contracts, not omissions hidden by the
 diagram. Adding a new binding requires a schema/version migration and updated

@@ -19,6 +19,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_models import AuditCampaign, AuditRunAttestation
 from rigor_foundry.campaign_store import StoredAuditRun, load_campaign, load_runs
 from rigor_foundry.campaign_workflow import (
@@ -30,6 +31,19 @@ from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import AuditReport, ReviewRecord, reviews_to_json
 
 _POLICY = Path("rigor-foundry-policy.json")
+
+
+def _inference_identity(
+    model_family: str = "model-family",
+    operator: str = "operator-one",
+) -> InferenceIdentity:
+    """Return one explicit inference identity for campaign workflow tests."""
+    return InferenceIdentity.build(
+        provider="provider.example",
+        model=f"{model_family}-v1",
+        model_family=model_family,
+        operator=operator,
+    )
 
 
 def _repository(path: Path) -> GitRepository:
@@ -62,13 +76,14 @@ def _campaign_with_candidate(
         project="SAMPLE-PROJECT",
         campaign_id="review-campaign",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     execute_campaign(
         campaign_path,
         run_id="review-agent",
         agent_identity="SAMPLE-PROJECT/review-agent",
         session_identity="terminal/review",
+        inference_identity=_inference_identity(),
     )
     return repository, campaign_path, load_runs(campaign_path)[0]
 
@@ -104,7 +119,7 @@ def test_campaign_workflow_persists_two_independent_real_runs(tmp_path: Path) ->
         project="SAMPLE-PROJECT",
         campaign_id="audit-20260715",
         actor="coordinator/one",
-        expected_independent_runs=2,
+        expected_runs=2,
     )
     assert load_campaign(campaign_path) == created
     first_path, first = execute_campaign(
@@ -112,12 +127,14 @@ def test_campaign_workflow_persists_two_independent_real_runs(tmp_path: Path) ->
         run_id="agent-one",
         agent_identity="SAMPLE-PROJECT/agent-one",
         session_identity="terminal/one",
+        inference_identity=_inference_identity(),
     )
     second_path, second = execute_campaign(
         campaign_path,
         run_id="agent-two",
         agent_identity="SAMPLE-PROJECT/agent-two",
         session_identity="terminal/two",
+        inference_identity=_inference_identity(),
     )
     assert first_path != second_path
     assert first.report_digest == second.report_digest
@@ -143,6 +160,7 @@ def test_campaign_workflow_persists_two_independent_real_runs(tmp_path: Path) ->
             run_id="agent-one",
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
+            inference_identity=_inference_identity(),
         )
 
 
@@ -156,7 +174,7 @@ def test_campaign_rejects_changed_tracked_input_and_tampered_records(tmp_path: P
         project="SAMPLE-PROJECT",
         campaign_id="audit-20260715",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     value = campaign.to_dict()
     value["head"] = "0" * 40
@@ -170,6 +188,25 @@ def test_campaign_rejects_changed_tracked_input_and_tampered_records(tmp_path: P
             run_id="changed-input",
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
+            inference_identity=_inference_identity(),
+        )
+
+
+def test_campaign_rejects_policy_outside_repository(tmp_path: Path) -> None:
+    """A frozen campaign cannot depend on an external mutable policy file."""
+    repository = _repository(tmp_path / "repository")
+    external_policy = tmp_path / "external-policy.json"
+    external_policy.write_bytes((repository.root / _POLICY).read_bytes())
+
+    with pytest.raises(ValueError, match="tracked repository-relative path"):
+        create_campaign(
+            repository.root,
+            external_policy,
+            audit_root=Path(".coordination/audits"),
+            project="SAMPLE-PROJECT",
+            campaign_id="external-policy",
+            actor="coordinator/one",
+            expected_runs=1,
         )
 
 
@@ -183,7 +220,7 @@ def test_campaign_rejects_git_executable_provenance_divergence(tmp_path: Path) -
         project="SAMPLE-PROJECT",
         campaign_id="git-provenance",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     tools = tmp_path / "trusted-tools"
     tools.mkdir()
@@ -197,6 +234,7 @@ def test_campaign_rejects_git_executable_provenance_divergence(tmp_path: Path) -
             run_id="different-git",
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
+            inference_identity=_inference_identity(),
             git_trust_policy=policy,
         )
 
@@ -230,7 +268,7 @@ def test_campaign_requires_native_consent_and_binds_secret_free_adapter_identity
         project="SAMPLE-PROJECT",
         campaign_id="native-campaign",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     with pytest.raises(ValueError, match="explicit trusted consent"):
         execute_campaign(
@@ -238,12 +276,14 @@ def test_campaign_requires_native_consent_and_binds_secret_free_adapter_identity
             run_id="refused",
             agent_identity="SAMPLE-PROJECT/agent-one",
             session_identity="terminal/one",
+            inference_identity=_inference_identity(),
         )
     directory, attestation = execute_campaign(
         campaign_path,
         run_id="consented",
         agent_identity="SAMPLE-PROJECT/agent-one",
         session_identity="terminal/one",
+        inference_identity=_inference_identity(),
         trusted_native_audits=True,
     )
     evidence = attestation.adapter_evidence[0]
@@ -310,7 +350,7 @@ target.write_text("changed-during-adapter", encoding="utf-8")
     )
     repository.commit()
     target = repository.root / ".rigor/native-state.txt"
-    target.parent.mkdir()
+    target.parent.mkdir(exist_ok=True)
     campaign_path, _campaign = create_campaign(
         repository.root,
         _POLICY,
@@ -318,7 +358,7 @@ target.write_text("changed-during-adapter", encoding="utf-8")
         project="SAMPLE-PROJECT",
         campaign_id="ignored-mutation",
         actor="coordinator/one",
-        expected_independent_runs=1,
+        expected_runs=1,
     )
     ready = repository.root / ".rigor/adapter-ready"
     os.mkfifo(ready, mode=0o666)
@@ -334,6 +374,7 @@ target.write_text("changed-during-adapter", encoding="utf-8")
                 run_id="mutated",
                 agent_identity="SAMPLE-PROJECT/agent-one",
                 session_identity="terminal/one",
+                inference_identity=_inference_identity(),
                 trusted_native_audits=True,
             )
     finally:
@@ -343,6 +384,125 @@ target.write_text("changed-during-adapter", encoding="utf-8")
             process.terminate()
             process.wait(timeout=10)
             raise
+
+
+def test_campaign_rejects_concurrent_tracked_mutation_during_native_adapter(
+    tmp_path: Path,
+) -> None:
+    """An external tracked-file mutation during native execution rejects attestation."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text(
+        "controls/native.py",
+        """
+import pathlib
+import time
+
+with pathlib.Path(".rigor/adapter-ready").open("w", encoding="utf-8") as marker:
+    marker.write("ready")
+time.sleep(0.5)
+print("complete")
+""".lstrip(),
+    )
+    mutator = repository.write_text(
+        "controls/mutate.py",
+        """
+import pathlib
+import sys
+
+ready, target = map(pathlib.Path, sys.argv[1:])
+with ready.open("r", encoding="utf-8") as marker:
+    if marker.read() != "ready":
+        raise RuntimeError("adapter readiness marker is invalid")
+target.write_text("VALUE = 2\\n", encoding="utf-8")
+""".lstrip(),
+    )
+    repository.write_policy(
+        native_audits=[
+            {
+                "name": "native-boundary",
+                "command": ["{python}", "controls/native.py"],
+                "timeout_seconds": 10,
+                "scope": "full",
+                "working_directory": ".",
+                "required": True,
+                "domains": ["application-security"],
+            }
+        ]
+    )
+    repository.commit()
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".coordination/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="tracked-mutation",
+        actor="coordinator/one",
+        expected_runs=1,
+    )
+    ready = repository.root / ".rigor/adapter-ready"
+    ready.parent.mkdir(exist_ok=True)
+    os.mkfifo(ready, mode=0o666)
+    process = subprocess.Popen(  # nosec B603
+        [sys.executable, str(mutator), str(ready), str(repository.root / "src/pkg/core.py")],
+        cwd=repository.root,
+        shell=False,
+    )
+    try:
+        with pytest.raises(RuntimeError, match="mutated tracked repository state"):
+            execute_campaign(
+                campaign_path,
+                run_id="mutated",
+                agent_identity="SAMPLE-PROJECT/agent-one",
+                session_identity="terminal/one",
+                inference_identity=_inference_identity(),
+                trusted_native_audits=True,
+            )
+    finally:
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(timeout=10)
+            raise
+
+
+def test_campaign_freezes_ignored_evidence_after_creating_its_storage_root(
+    tmp_path: Path,
+) -> None:
+    """Campaign-owned ignored directories cannot create first-run input divergence."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_policy(
+        ignored_inventory=[
+            {
+                "evidence_id": "runtime-state",
+                "path": ".rigor/runtime-state.json",
+                "capture": "file-sha256",
+            }
+        ]
+    )
+    repository.commit()
+
+    campaign_path, campaign = create_campaign(
+        repository.root,
+        _POLICY,
+        audit_root=Path(".rigor/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id="shared-ignored-parent",
+        actor="coordinator/one",
+        expected_runs=1,
+    )
+    _directory, attestation = execute_campaign(
+        campaign_path,
+        run_id="model-one",
+        agent_identity="SAMPLE-PROJECT/agent-one",
+        session_identity="terminal/one",
+        inference_identity=_inference_identity(),
+    )
+
+    assert campaign.ignored_inventory_evidence[0].status == "missing"
+    assert attestation.report_digest == load_runs(campaign_path)[0].report.report_digest
 
 
 def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: Path) -> None:
@@ -377,6 +537,14 @@ def test_real_cli_creates_runs_and_reports_missing_independent_review(tmp_path: 
         "SAMPLE-PROJECT/cli-agent",
         "--session",
         "terminal/cli",
+        "--provider",
+        "provider.example",
+        "--model",
+        "model-v1",
+        "--model-family",
+        "model-family",
+        "--operator",
+        "operator-one",
     )
     assert run.returncode == 0, run.stderr
     compared = repository.run_audit(

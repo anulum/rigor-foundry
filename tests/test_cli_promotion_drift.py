@@ -16,6 +16,12 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.campaign_identity import InferenceIdentity
+from rigor_foundry.campaign_workflow import (
+    compare_campaign_runs,
+    create_campaign,
+    execute_campaign,
+)
 from rigor_foundry.cli import main
 from rigor_foundry.models import AuditReport, reviews_to_json
 from rigor_foundry.review import review_templates
@@ -87,6 +93,42 @@ def _promotion_arguments(
     policy: Path | None = None,
 ) -> list[str]:
     """Return the public promotion command for one prepared repository report."""
+    report = AuditReport.from_path(report_path)
+    source_root = Path(report.repository_root)
+    campaign_id = f"promotion-{report.report_digest[:16]}"
+    campaign_path, _campaign = create_campaign(
+        source_root,
+        Path(_POLICY),
+        audit_root=Path(".coordination/audits"),
+        project="SAMPLE-PROJECT",
+        campaign_id=campaign_id,
+        actor="coordinator/drift",
+        expected_runs=2,
+        purpose="promotion",
+        required_model_witnesses=2,
+    )
+    for index in (1, 2):
+        execute_campaign(
+            campaign_path,
+            run_id=f"model-{index}",
+            agent_identity=f"SAMPLE-PROJECT/agent-{index}",
+            session_identity=f"terminal/{index}",
+            inference_identity=InferenceIdentity.build(
+                provider=f"provider-{index}",
+                model=f"family-{index}-v1",
+                model_family=f"family-{index}",
+                operator=f"operator-{index}",
+            ),
+        )
+    reviews_directory = campaign_path.parent / "reviews"
+    reviews_directory.mkdir()
+    (reviews_directory / "selected.json").write_bytes(review_path.read_bytes())
+    comparison_path, comparison = compare_campaign_runs(
+        campaign_path,
+        comparison_id="promotion-comparison",
+        actor="coordinator/drift",
+    )
+    assert comparison.promotion_eligible
     return [
         "promote",
         "--root",
@@ -97,6 +139,10 @@ def _promotion_arguments(
         str(report_path),
         "--review",
         str(review_path),
+        "--campaign",
+        str(campaign_path),
+        "--comparison",
+        str(comparison_path),
         "--candidate-id",
         candidate_id,
         "--todo",
@@ -155,9 +201,15 @@ def test_cli_promotion_rejects_repository_head_content_and_policy_drift(
         == 0
     )
     head_candidate = _write_valid_review(head_report, head_review)
+    head_arguments = _promotion_arguments(
+        changed_head,
+        head_report,
+        head_review,
+        head_candidate,
+    )
     changed_head.write_text("src/pkg/new_owner.py", "VALUE = 1\n")
     changed_head.commit("test: change head")
-    assert main(_promotion_arguments(changed_head, head_report, head_review, head_candidate)) == 2
+    assert main(head_arguments) == 2
     assert "report HEAD is stale" in capsys.readouterr().err
 
     changed_content = _repository(tmp_path / "changed-content")
@@ -178,22 +230,18 @@ def test_cli_promotion_rejects_repository_head_content_and_policy_drift(
         == 0
     )
     content_candidate = _write_valid_review(content_report, content_review)
+    content_arguments = _promotion_arguments(
+        changed_content,
+        content_report,
+        content_review,
+        content_candidate,
+    )
     changed_content.write_text(
         "tests/test_optional.py",
         "import pkg.optional\n\ndef test_import() -> None:\n"
         "    assert pkg.optional.extension is None\n",
     )
-    assert (
-        main(
-            _promotion_arguments(
-                changed_content,
-                content_report,
-                content_review,
-                content_candidate,
-            )
-        )
-        == 2
-    )
+    assert main(content_arguments) == 2
     assert "tracked content is stale" in capsys.readouterr().err
 
     changed_policy = _repository(tmp_path / "changed-policy")
@@ -258,6 +306,12 @@ def test_cli_promotion_rejects_ignored_inventory_drift(
         == 0
     )
     candidate_id = _write_valid_review(report_path, review_path)
+    arguments = _promotion_arguments(
+        repository,
+        report_path,
+        review_path,
+        candidate_id,
+    )
     repository.write_text(".rigor/runtime-state.json", '{"state":"changed"}\n')
-    assert main(_promotion_arguments(repository, report_path, review_path, candidate_id)) == 2
+    assert main(arguments) == 2
     assert "ignored inventory is stale" in capsys.readouterr().err

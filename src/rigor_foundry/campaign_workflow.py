@@ -14,16 +14,19 @@ from pathlib import Path
 
 from .adapters import run_native_audits
 from .campaign_compare import AuditComparison, compare_campaign
+from .campaign_evidence import ToolchainIdentity
+from .campaign_identity import InferenceIdentity
 from .campaign_inputs import validate_campaign_input
 from .campaign_models import (
     AuditCampaign,
     AuditRunAttestation,
-    ToolchainIdentity,
+    CampaignPurpose,
 )
 from .campaign_store import (
     load_campaign,
     load_campaign_reviews,
     load_runs,
+    prepare_campaign_storage_root,
     store_campaign,
     store_comparison_record,
     store_run,
@@ -50,10 +53,17 @@ def create_campaign(
     project: str,
     campaign_id: str,
     actor: str,
-    expected_independent_runs: int,
+    expected_runs: int,
+    purpose: CampaignPurpose = "diagnostic",
+    required_model_witnesses: int | None = None,
     git_trust_policy: GitTrustPolicy | None = None,
 ) -> tuple[Path, AuditCampaign]:
     """Freeze and persist one exact multi-agent audit input contract."""
+    prepare_campaign_storage_root(
+        repository_root,
+        audit_root,
+        git_trust_policy=git_trust_policy,
+    )
     report = scan_repository(
         repository_root,
         policy_path,
@@ -69,6 +79,11 @@ def create_campaign(
         relative_policy = policy_absolute.relative_to(repository)
     except ValueError as exc:
         raise ValueError("campaign policy must be stored inside the repository") from exc
+    witness_requirement = (
+        (2 if purpose == "promotion" else 1)
+        if required_model_witnesses is None
+        else required_model_witnesses
+    )
     campaign = AuditCampaign.build(
         report,
         campaign_id=campaign_id,
@@ -77,7 +92,9 @@ def create_campaign(
         toolchain=ToolchainIdentity.current(),
         created_by=actor,
         created_at=_now(),
-        expected_independent_runs=expected_independent_runs,
+        purpose=purpose,
+        expected_runs=expected_runs,
+        required_model_witnesses=witness_requirement,
     )
     path = store_campaign(
         repository,
@@ -94,6 +111,7 @@ def execute_campaign(
     run_id: str,
     agent_identity: str,
     session_identity: str,
+    inference_identity: InferenceIdentity,
     trusted_native_audits: bool = False,
     git_trust_policy: GitTrustPolicy | None = None,
 ) -> tuple[Path, AuditRunAttestation]:
@@ -182,6 +200,7 @@ def execute_campaign(
                 for result in adapter_results
             ],
             "git_provenance": report.git_provenance.identity_digest,
+            "inference_identity": inference_identity.identity_digest,
         }
     )
     report_relative_path = f"runs/{run_id}/report.json"
@@ -190,6 +209,7 @@ def execute_campaign(
         campaign=campaign,
         agent_identity=agent_identity,
         session_identity=session_identity,
+        inference_identity=inference_identity,
         started_at=started_at,
         finished_at=_now(),
         status="complete",

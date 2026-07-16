@@ -44,9 +44,9 @@ Roadmap items are acceptance-gated; dates and versions are not release promises.
   semantic dependencies, and serialization keys.
 - Prove stale-plan, cross-repository, symlink, cancellation, and partial-failure
   behaviour without granting implicit remediation authority.
-- Extend campaign attestations with model/provider identity, collapse correlated
-  same-model runs to one evidentiary witness, and require at least one
-  independently operated model family for promotion campaigns.
+- Validate cross-model promotion campaigns against representative external
+  repositories and publish adjudicated evidence for the two-model-family,
+  two-operator threshold.
 
 ## 1.0 — Promotion candidate
 

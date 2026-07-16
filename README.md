@@ -102,7 +102,7 @@ python3 -m venv .venv
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
-| `rigor promote` | Preview or append one current verified finding. |
+| `rigor promote` | Preview or append one finding from a verified cross-model promotion campaign. |
 | `rigor gate` | Apply observe, ratchet, or zero enforcement. |
 | `rigor campaign-create` | Freeze an independent-audit input contract. |
 | `rigor campaign-run` | Execute and attest one independent run. |
@@ -127,7 +127,7 @@ these native surfaces.
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
-| Campaigns | `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare` | Independent-run provenance and divergence. |
+| Campaigns | `campaign_identity`, `campaign_evidence`, `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare`, `campaign_promotion` | Inference and toolchain identity, correlated-witness collapse, durable provenance, divergence, and promotion eligibility. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |
 | Desired state | `standard_pack`, `project_profile`, `effective_profile`, `profile_resolution`, `trust` | Versioned controls, explicit Ed25519 trust stores, adopter intent, exact pack locks, contradiction evidence, and fail-closed resolution. |
 | Assessment and planning | `control_assessment`, `review_attestation`, `remediation_plan`, `_remediation_graph` | Signed fresh evidence, cryptographically verified reviewer separation, target gaps, adapter-bound procedures, and conflict-safe batches. |

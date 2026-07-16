@@ -17,6 +17,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .adapters import run_native_audits
+from .campaign_identity import InferenceIdentity
+from .campaign_promotion import validate_promotion_campaign
 from .campaign_workflow import (
     compare_campaign_runs,
     create_campaign,
@@ -233,6 +235,12 @@ def _promote_command(args: argparse.Namespace) -> int:
     errors = validate_reviews(report, (review,))
     if errors:
         raise ValueError("review validation failed: " + "; ".join(errors))
+    validate_promotion_campaign(
+        args.campaign,
+        args.comparison,
+        report,
+        review,
+    )
     git_trust_policy = _git_trust_policy(args)
     current = scan_repository(
         args.root,
@@ -322,7 +330,9 @@ def _campaign_create_command(args: argparse.Namespace) -> int:
         project=args.project,
         campaign_id=args.campaign_id,
         actor=args.actor,
-        expected_independent_runs=args.expected_runs,
+        expected_runs=args.expected_runs,
+        purpose=args.purpose,
+        required_model_witnesses=args.required_model_witnesses,
         git_trust_policy=_git_trust_policy(args),
     )
     print(f"created audit campaign {campaign.contract_digest} at {path}")
@@ -336,6 +346,12 @@ def _campaign_run_command(args: argparse.Namespace) -> int:
         run_id=args.run_id,
         agent_identity=args.agent,
         session_identity=args.session,
+        inference_identity=InferenceIdentity.build(
+            provider=args.provider,
+            model=args.model,
+            model_family=args.model_family,
+            operator=args.operator,
+        ),
         trusted_native_audits=args.allow_native_audits,
         git_trust_policy=_git_trust_policy(args),
     )
@@ -405,6 +421,8 @@ def _parser() -> argparse.ArgumentParser:
     promote.add_argument("--policy", type=Path)
     promote.add_argument("--report", type=Path, required=True)
     promote.add_argument("--review", type=Path, required=True)
+    promote.add_argument("--campaign", type=Path, required=True)
+    promote.add_argument("--comparison", type=Path, required=True)
     promote.add_argument("--candidate-id", required=True)
     promote.add_argument("--todo", type=Path, required=True)
     promote.add_argument("--apply", action="store_true")
@@ -444,6 +462,12 @@ def _parser() -> argparse.ArgumentParser:
     campaign_create.add_argument("--campaign-id", required=True)
     campaign_create.add_argument("--actor", required=True)
     campaign_create.add_argument("--expected-runs", type=int, default=2)
+    campaign_create.add_argument(
+        "--purpose",
+        choices=("diagnostic", "promotion"),
+        default="diagnostic",
+    )
+    campaign_create.add_argument("--required-model-witnesses", type=int)
     _add_git_trust_arguments(campaign_create)
     campaign_create.set_defaults(handler=_campaign_create_command)
 
@@ -455,6 +479,10 @@ def _parser() -> argparse.ArgumentParser:
     campaign_run.add_argument("--run-id", required=True)
     campaign_run.add_argument("--agent", required=True)
     campaign_run.add_argument("--session", required=True)
+    campaign_run.add_argument("--provider", required=True)
+    campaign_run.add_argument("--model", required=True)
+    campaign_run.add_argument("--model-family", required=True)
+    campaign_run.add_argument("--operator", required=True)
     campaign_run.add_argument(
         "--allow-native-audits",
         action="store_true",

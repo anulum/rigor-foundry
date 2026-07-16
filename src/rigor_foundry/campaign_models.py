@@ -9,16 +9,20 @@
 
 from __future__ import annotations
 
-import hashlib
-import platform
 import re
-import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 
-from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
+from .adapters import AdapterResult
+from .campaign_evidence import (
+    AdapterEvidence as AdapterEvidence,
+)
+from .campaign_evidence import (
+    ToolchainIdentity as ToolchainIdentity,
+)
+from .campaign_identity import InferenceIdentity
 from .campaign_inputs import (
     campaign_git_identity,
     campaign_git_object_format,
@@ -38,20 +42,11 @@ from .models import (
     require_string,
     require_string_tuple,
 )
-from .sandbox_provenance import BubblewrapProvenance
 
-CAMPAIGN_SCHEMA_VERSION = "1.5"
+CAMPAIGN_SCHEMA_VERSION = "1.6"
 RunStatus = Literal["complete", "incomplete"]
+CampaignPurpose = Literal["diagnostic", "promotion"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
-_TOOLCHAIN_FIELDS = frozenset(
-    {
-        "python_implementation",
-        "python_version",
-        "platform",
-        "executable_digest",
-        "identity_digest",
-    }
-)
 _CAMPAIGN_FIELDS = frozenset(
     {
         "schema_version",
@@ -77,7 +72,9 @@ _CAMPAIGN_FIELDS = frozenset(
         "toolchain",
         "created_by",
         "created_at",
-        "expected_independent_runs",
+        "purpose",
+        "expected_runs",
+        "required_model_witnesses",
         "contract_digest",
     }
 )
@@ -89,6 +86,7 @@ _ATTESTATION_FIELDS = frozenset(
         "input_contract_digest",
         "agent_identity",
         "session_identity",
+        "inference_identity",
         "started_at",
         "finished_at",
         "status",
@@ -141,80 +139,24 @@ def _relative_path(value: object, field: str) -> str:
     return path.as_posix()
 
 
-def _file_digest(path: Path) -> str:
-    """Return SHA-256 for one runtime executable without loading it at once."""
-    digest = hashlib.sha256()
-    try:
-        with path.open("rb") as handle:
-            while chunk := handle.read(1024 * 1024):
-                digest.update(chunk)
-    except OSError as exc:
-        raise RuntimeError(f"cannot hash runtime executable: {path}") from exc
-    return digest.hexdigest()
+def _campaign_purpose(value: object) -> CampaignPurpose:
+    """Return one supported campaign purpose."""
+    purpose = require_string(value, "purpose")
+    if purpose not in {"diagnostic", "promotion"}:
+        raise ValueError("unsupported audit campaign purpose")
+    return cast(CampaignPurpose, purpose)
 
 
-@dataclass(frozen=True)
-class ToolchainIdentity:
-    """Runtime identity used to detect cross-agent input divergence."""
-
-    python_implementation: str
-    python_version: str
-    platform: str
-    executable_digest: str
-    identity_digest: str
-
-    @classmethod
-    def current(cls) -> ToolchainIdentity:
-        """Capture the active Python runtime and platform identity."""
-        fields = {
-            "python_implementation": platform.python_implementation(),
-            "python_version": platform.python_version(),
-            "platform": platform.platform(),
-            "executable_digest": _file_digest(Path(sys.executable).resolve(strict=True)),
-        }
-        return cls(**fields, identity_digest=canonical_digest(fields))
-
-    def to_dict(self) -> dict[str, str]:
-        """Serialise the runtime identity."""
-        return {
-            "python_implementation": self.python_implementation,
-            "python_version": self.python_version,
-            "platform": self.platform,
-            "executable_digest": self.executable_digest,
-            "identity_digest": self.identity_digest,
-        }
-
-    @classmethod
-    def from_dict(cls, value: object) -> ToolchainIdentity:
-        """Parse and integrity-check a runtime identity."""
-        data = require_mapping(value, "toolchain")
-        if frozenset(data) != _TOOLCHAIN_FIELDS:
-            raise ValueError("toolchain identity fields do not match schema")
-        fields = {
-            "python_implementation": require_string(
-                data.get("python_implementation"),
-                "toolchain.python_implementation",
-            ),
-            "python_version": require_string(
-                data.get("python_version"),
-                "toolchain.python_version",
-            ),
-            "platform": require_string(data.get("platform"), "toolchain.platform"),
-            "executable_digest": require_string(
-                data.get("executable_digest"),
-                "toolchain.executable_digest",
-            ),
-        }
-        identity = cls(
-            **fields,
-            identity_digest=require_string(
-                data.get("identity_digest"),
-                "toolchain.identity_digest",
-            ),
-        )
-        if identity.identity_digest != canonical_digest(fields):
-            raise ValueError("toolchain identity digest does not match its content")
-        return identity
+def _validate_campaign_counts(
+    purpose: CampaignPurpose,
+    expected_runs: int,
+    required_model_witnesses: int,
+) -> None:
+    """Validate raw-run and correlation-collapsed witness requirements."""
+    if required_model_witnesses > expected_runs:
+        raise ValueError("required_model_witnesses must not exceed expected_runs")
+    if purpose == "promotion" and (expected_runs < 2 or required_model_witnesses < 2):
+        raise ValueError("promotion campaigns require at least two runs and model witnesses")
 
 
 @dataclass(frozen=True)
@@ -243,7 +185,9 @@ class AuditCampaign:
     toolchain: ToolchainIdentity
     created_by: str
     created_at: str
-    expected_independent_runs: int
+    purpose: CampaignPurpose
+    expected_runs: int
+    required_model_witnesses: int
     contract_digest: str
 
     @classmethod
@@ -257,13 +201,27 @@ class AuditCampaign:
         toolchain: ToolchainIdentity,
         created_by: str,
         created_at: str,
-        expected_independent_runs: int,
+        purpose: CampaignPurpose = "diagnostic",
+        expected_runs: int,
+        required_model_witnesses: int = 1,
     ) -> AuditCampaign:
         """Build a campaign bound to one exact report input surface."""
         evidence = report.ignored_inventory_evidence
         evidence_digest = ignored_inventory_digest(evidence)
         if evidence_digest != report.ignored_inventory_digest:
             raise ValueError("report ignored inventory digest does not match its evidence")
+        parsed_purpose = _campaign_purpose(purpose)
+        parsed_expected_runs = require_integer(expected_runs, "expected_runs", minimum=1)
+        parsed_required_witnesses = require_integer(
+            required_model_witnesses,
+            "required_model_witnesses",
+            minimum=1,
+        )
+        _validate_campaign_counts(
+            parsed_purpose,
+            parsed_expected_runs,
+            parsed_required_witnesses,
+        )
         fields = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "campaign_id": _identifier(campaign_id, "campaign_id"),
@@ -292,11 +250,9 @@ class AuditCampaign:
             "toolchain": toolchain.to_dict(),
             "created_by": require_string(created_by, "created_by"),
             "created_at": _utc_timestamp(created_at, "created_at"),
-            "expected_independent_runs": require_integer(
-                expected_independent_runs,
-                "expected_independent_runs",
-                minimum=1,
-            ),
+            "purpose": parsed_purpose,
+            "expected_runs": parsed_expected_runs,
+            "required_model_witnesses": parsed_required_witnesses,
         }
         return cls._from_fields(fields, canonical_digest(fields))
 
@@ -328,7 +284,9 @@ class AuditCampaign:
             toolchain=ToolchainIdentity.from_dict(fields["toolchain"]),
             created_by=cast(str, fields["created_by"]),
             created_at=cast(str, fields["created_at"]),
-            expected_independent_runs=cast(int, fields["expected_independent_runs"]),
+            purpose=cast(CampaignPurpose, fields["purpose"]),
+            expected_runs=cast(int, fields["expected_runs"]),
+            required_model_witnesses=cast(int, fields["required_model_witnesses"]),
             contract_digest=digest,
         )
 
@@ -360,7 +318,9 @@ class AuditCampaign:
             "toolchain": self.toolchain.to_dict(),
             "created_by": self.created_by,
             "created_at": self.created_at,
-            "expected_independent_runs": self.expected_independent_runs,
+            "purpose": self.purpose,
+            "expected_runs": self.expected_runs,
+            "required_model_witnesses": self.required_model_witnesses,
             "contract_digest": self.contract_digest,
         }
 
@@ -380,6 +340,14 @@ class AuditCampaign:
         )
         if ignored_inventory_digest(evidence) != recorded_ignored_digest:
             raise ValueError("campaign ignored inventory digest does not match its evidence")
+        purpose = _campaign_purpose(data.get("purpose"))
+        expected_runs = require_integer(data.get("expected_runs"), "expected_runs", minimum=1)
+        required_model_witnesses = require_integer(
+            data.get("required_model_witnesses"),
+            "required_model_witnesses",
+            minimum=1,
+        )
+        _validate_campaign_counts(purpose, expected_runs, required_model_witnesses)
         fields: dict[str, object] = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "campaign_id": _identifier(data.get("campaign_id"), "campaign_id"),
@@ -426,82 +394,14 @@ class AuditCampaign:
             "toolchain": ToolchainIdentity.from_dict(data.get("toolchain")).to_dict(),
             "created_by": require_string(data.get("created_by"), "created_by"),
             "created_at": _utc_timestamp(data.get("created_at"), "created_at"),
-            "expected_independent_runs": require_integer(
-                data.get("expected_independent_runs"),
-                "expected_independent_runs",
-                minimum=1,
-            ),
+            "purpose": purpose,
+            "expected_runs": expected_runs,
+            "required_model_witnesses": required_model_witnesses,
         }
         recorded = require_string(data.get("contract_digest"), "contract_digest")
         if recorded != canonical_digest(fields):
             raise ValueError("campaign contract digest does not match its content")
         return cls._from_fields(fields, recorded)
-
-
-@dataclass(frozen=True)
-class AdapterEvidence:
-    """Bounded native-adapter evidence retained in one run attestation."""
-
-    name: str
-    required: bool
-    returncode: int
-    timed_out: bool
-    output_digest: str
-    output_bytes: int
-    output_truncated: bool
-    spec_digest: str
-    executable_digest: str
-    command_digest: str
-    environment_digest: str
-    sandbox_digest: str
-    sandbox_provenance: BubblewrapProvenance
-    passed: bool
-
-    @classmethod
-    def from_result(cls, result: AdapterResult) -> AdapterEvidence:
-        """Capture stable evidence from an adapter execution result."""
-        return cls(
-            name=result.name,
-            required=result.required,
-            returncode=result.returncode,
-            timed_out=result.timed_out,
-            output_digest=result.output_digest,
-            output_bytes=result.output_bytes,
-            output_truncated=result.output_truncated,
-            spec_digest=result.spec_digest,
-            executable_digest=result.executable_digest,
-            command_digest=result.command_digest,
-            environment_digest=result.environment_digest,
-            sandbox_digest=result.sandbox_digest,
-            sandbox_provenance=result.sandbox_provenance,
-            passed=result.passed,
-        )
-
-    def to_dict(self) -> dict[str, object]:
-        """Serialise one native-adapter evidence record."""
-        return {
-            "schema_version": ADAPTER_RESULT_SCHEMA_VERSION,
-            "name": self.name,
-            "required": self.required,
-            "returncode": self.returncode,
-            "timed_out": self.timed_out,
-            "output_digest": self.output_digest,
-            "output_bytes": self.output_bytes,
-            "output_truncated": self.output_truncated,
-            "spec_digest": self.spec_digest,
-            "executable_digest": self.executable_digest,
-            "command_digest": self.command_digest,
-            "environment_digest": self.environment_digest,
-            "sandbox_digest": self.sandbox_digest,
-            "sandbox_provenance": self.sandbox_provenance.to_dict(),
-            "passed": self.passed,
-        }
-
-    @classmethod
-    def from_dict(cls, value: object, index: int) -> AdapterEvidence:
-        """Parse one native-adapter evidence record."""
-        result = AdapterResult.from_dict(value, index)
-        return cls.from_result(result)
 
 
 @dataclass(frozen=True)
@@ -513,6 +413,7 @@ class AuditRunAttestation:
     input_contract_digest: str
     agent_identity: str
     session_identity: str
+    inference_identity: InferenceIdentity
     started_at: str
     finished_at: str
     status: RunStatus
@@ -535,6 +436,7 @@ class AuditRunAttestation:
         campaign: AuditCampaign,
         agent_identity: str,
         session_identity: str,
+        inference_identity: InferenceIdentity,
         started_at: str,
         finished_at: str,
         status: RunStatus,
@@ -556,6 +458,7 @@ class AuditRunAttestation:
             "input_contract_digest": campaign.contract_digest,
             "agent_identity": require_string(agent_identity, "agent_identity"),
             "session_identity": require_string(session_identity, "session_identity"),
+            "inference_identity": inference_identity.to_dict(),
             "started_at": _utc_timestamp(started_at, "started_at"),
             "finished_at": _utc_timestamp(finished_at, "finished_at"),
             "status": status,
@@ -596,6 +499,7 @@ class AuditRunAttestation:
             input_contract_digest=cast(str, fields["input_contract_digest"]),
             agent_identity=cast(str, fields["agent_identity"]),
             session_identity=cast(str, fields["session_identity"]),
+            inference_identity=InferenceIdentity.from_dict(fields["inference_identity"]),
             started_at=cast(str, fields["started_at"]),
             finished_at=cast(str, fields["finished_at"]),
             status=cast(RunStatus, fields["status"]),
@@ -622,6 +526,7 @@ class AuditRunAttestation:
             "input_contract_digest": self.input_contract_digest,
             "agent_identity": self.agent_identity,
             "session_identity": self.session_identity,
+            "inference_identity": self.inference_identity.to_dict(),
             "started_at": self.started_at,
             "finished_at": self.finished_at,
             "status": self.status,
@@ -664,6 +569,9 @@ class AuditRunAttestation:
                 data.get("session_identity"),
                 "session_identity",
             ),
+            "inference_identity": InferenceIdentity.from_dict(
+                data.get("inference_identity")
+            ).to_dict(),
             "started_at": _utc_timestamp(data.get("started_at"), "started_at"),
             "finished_at": _utc_timestamp(data.get("finished_at"), "finished_at"),
             "status": status,

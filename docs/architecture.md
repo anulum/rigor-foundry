@@ -95,3 +95,17 @@ define the native-audit sandbox.
 Remediation work is designed for exact path claims and independent worktrees
 so non-conflicting procedures can proceed concurrently without sharing a
 mutable staging area.
+
+## Campaign promotion boundary
+
+Campaign schema 1.6 binds every run to an explicit provider, exact model,
+model-correlation family, and operator. Comparison groups all runs with one
+correlation family into one model witness and binds the exact participating
+attestation, report, review, and witness digests. A promotion campaign is
+eligible only when it is otherwise resolved and contains at least two model
+witnesses operated by at least two identities.
+
+Promotion reloads the ignored durable campaign, runs, reviews, and comparison;
+revalidates their schema and campaign relations; reconstructs the comparison;
+and admits only a report and review that participated in that exact comparison.
+Diagnostic campaigns and same-family repetition cannot authorise promotion.

@@ -54,10 +54,13 @@ option-surface digest, and derived provenance identity.
 
 `campaign-create`, `campaign-run`, and `campaign-compare` freeze independent
 inputs, retain attestations, and record disagreements rather than averaging
-them away.
+them away. `campaign-create --purpose promotion` defaults to two required model
+witnesses; `--required-model-witnesses` may raise that threshold.
 
-Campaign schema 1.5 freezes the repository Git object format and ignored
-inventory in addition to the report input projection. Runs from a different
+Campaign schema 1.6 freezes the repository Git object format and ignored
+inventory in addition to the report input projection. Every `campaign-run`
+requires `--provider`, `--model`, `--model-family`, and `--operator`. The exact
+identity is content-addressed in the run attestation. Runs from a different
 object format or ignored state fail as input divergence. Evidence is collected
 again after native adapters; any mutation rejects the run before attestation.
 
@@ -71,7 +74,15 @@ identity. Missing or changed provenance fails closed.
 Custom Git trust options used for campaign creation must be repeated for every
 run. A different Git identity is reported as campaign input divergence.
 `campaign-compare` accepts the same options for its Git-ignored storage check
-but does not execute a new repository audit.
+but does not execute a new repository audit. Runs sharing one model-family
+value collapse to one witness. Promotion requires an otherwise resolved
+promotion comparison with at least two model-family witnesses and two operator
+identities.
+
+`rigor promote` requires both `--campaign` and `--comparison`. It reloads the
+durable campaign, runs, reports, and reviews, reconstructs the comparison, and
+requires the selected report and review to be members of that exact eligible
+comparison before applying the usual current-tree and explicit-write checks.
 
 ## Classified residual validation
 

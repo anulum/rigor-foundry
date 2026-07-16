@@ -154,10 +154,12 @@ execution, streaming output bounds, deadlines, and process-group termination.
 
 ### Independent campaigns
 
-`campaign_models.py`, `campaign_inputs.py`, `campaign_store.py`,
-`campaign_workflow.py`, and `campaign_compare.py` freeze campaign inputs, Git
-and sandbox provenance, independent toolchains, and limitations, and preserve
-disagreement. Campaign schema 1.4 requires every run to reproduce the complete
+`campaign_identity.py`, `campaign_evidence.py`, `campaign_models.py`,
+`campaign_inputs.py`, `campaign_store.py`, `campaign_workflow.py`,
+`campaign_compare.py`, and `campaign_promotion.py` freeze campaign inputs,
+inference identities, Git and sandbox provenance, independent toolchains, and
+limitations, and preserve disagreement. Campaign schema 1.6 requires every run
+to reproduce the complete
 frozen input projection: repository root, HEAD, tree, branch, tracked-content
 identity, Git object format, dirty paths, tracked-file count, policy, rule pack,
 scanner, required domains, Git provenance, and toolchain. One canonical validator is called by
@@ -167,9 +169,13 @@ substitution. The ignored-storage check that persists a campaign, run, or
 comparison must also reproduce that frozen identity.
 Majority agreement is not converted into truth.
 
-Distinct session or agent labels do not prove independent inference. Promotion
-campaigns must record model/provider identity, treat correlated same-model runs
-as one witness, and include at least one independently operated model family.
+Distinct session or agent labels do not prove independent inference. Each run
+attestation binds the provider, exact model, correlation family, and operator.
+All runs in one correlation family collapse into one model witness. Promotion
+campaigns require at least two model-family witnesses and at least two
+operators. Promotion reloads and reconstructs the durable comparison and
+requires the selected report and review digests to be members of that exact
+eligible comparison.
 
 ### Classified coverage residuals
 

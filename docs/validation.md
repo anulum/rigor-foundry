@@ -55,6 +55,14 @@ parents, report round trips, sentinel non-disclosure, and five deterministic
 inotify-synchronised concurrent-mutation runs. Campaign and promotion tests
 prove ignored-state drift is rejected before attestation or TODO mutation.
 
+Campaign identity tests cover strict provider, exact-model, correlation-family,
+and operator schemas plus deterministic same-family witness collapse.
+Workflow, comparison, storage, promotion, and installed-CLI tests use real
+repositories and durable records to prove cross-model eligibility, same-family
+rejection, operator separation, exact report/review membership, replay and
+tamper rejection, storage-link safety, and concurrent tracked mutation
+rejection.
+
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. The exact-tag guard uses

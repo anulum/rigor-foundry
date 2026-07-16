@@ -12,8 +12,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .campaign_inputs import validate_campaign_input
 from .campaign_models import AuditCampaign, AuditRunAttestation
@@ -21,7 +23,11 @@ from .git_inventory import is_git_ignored
 from .git_provenance import GitExecutableProvenance, GitTrustPolicy
 from .models import AuditReport, ReviewRecord, reviews_from_path
 
+if TYPE_CHECKING:
+    from .campaign_compare import AuditComparison
+
 _RECORD_IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
+_MAX_CAMPAIGN_RECORD_BYTES = 4 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -84,6 +90,75 @@ def _write_new(path: Path, text: str) -> None:
             os.close(descriptor)
 
 
+def _read_single_link_json(path: Path, *, label: str) -> object:
+    """Read one bounded inode-bound JSON record and reject concurrent mutation."""
+    parent_descriptor: int | None = None
+    descriptor: int | None = None
+    try:
+        parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        parent_flags |= getattr(os, "O_NOFOLLOW", 0)
+        parent_descriptor = os.open(path.parent, parent_flags)
+        parent_before = os.fstat(parent_descriptor)
+        file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(path.name, file_flags, dir_fd=parent_descriptor)
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_size > _MAX_CAMPAIGN_RECORD_BYTES
+        ):
+            raise ValueError(f"{label} must be a bounded single-link regular file")
+        chunks: list[bytes] = []
+        observed = 0
+        while chunk := os.read(descriptor, 1024 * 1024):
+            observed += len(chunk)
+            if observed > _MAX_CAMPAIGN_RECORD_BYTES:
+                raise ValueError(f"{label} exceeds the record size limit")
+            chunks.append(chunk)
+        after = os.fstat(descriptor)
+        parent_after = os.fstat(parent_descriptor)
+        stable_file = (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+            before.st_nlink,
+        ) == (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
+            after.st_nlink,
+        )
+        stable_parent = (parent_before.st_dev, parent_before.st_ino) == (
+            parent_after.st_dev,
+            parent_after.st_ino,
+        )
+        path_file = path.stat(follow_symlinks=False)
+        path_parent = path.parent.stat(follow_symlinks=False)
+        if (
+            not stable_file
+            or not stable_parent
+            or (path_file.st_dev, path_file.st_ino) != (before.st_dev, before.st_ino)
+            or (path_parent.st_dev, path_parent.st_ino)
+            != (parent_before.st_dev, parent_before.st_ino)
+        ):
+            raise ValueError(f"{label} changed while it was read")
+        try:
+            return json.loads(b"".join(chunks).decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"cannot parse {label} {path}") from exc
+    except OSError as exc:
+        raise ValueError(f"cannot read {label} {path}") from exc
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if parent_descriptor is not None:
+            os.close(parent_descriptor)
+
+
 def campaign_relative_path(
     audit_root: Path,
     project: str,
@@ -91,6 +166,27 @@ def campaign_relative_path(
 ) -> Path:
     """Return the canonical repository-relative campaign manifest path."""
     return audit_root / project / "campaigns" / campaign_id / "campaign.json"
+
+
+def prepare_campaign_storage_root(
+    repository_root: Path,
+    audit_root: Path,
+    *,
+    git_trust_policy: GitTrustPolicy | None = None,
+) -> Path:
+    """Create the validated ignored storage root before freezing campaign input."""
+    target = _internal_path(
+        repository_root,
+        audit_root,
+        git_trust_policy,
+    )
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise ValueError(f"cannot create campaign storage root: {target}") from exc
+    if target.is_symlink() or not target.is_dir():
+        raise ValueError("campaign storage root must be a non-symlink directory")
+    return target
 
 
 def store_campaign(
@@ -227,9 +323,25 @@ def store_comparison_record(
     git_trust_policy: GitTrustPolicy | None = None,
 ) -> Path:
     """Persist one immutable comparison below the campaign's ignored storage."""
+    from .campaign_compare import AuditComparison
+
     if _RECORD_IDENTIFIER.fullmatch(comparison_id) is None:
         raise ValueError("comparison_id must be a portable identifier")
     campaign = load_campaign(campaign_path)
+    comparison = AuditComparison.from_dict(value)
+    if comparison.comparison_id != comparison_id:
+        raise ValueError("comparison identifier does not match its storage name")
+    if (
+        comparison.campaign_id != campaign.campaign_id
+        or comparison.input_contract_digest != campaign.contract_digest
+    ):
+        raise ValueError("comparison does not match its campaign contract")
+    if (
+        comparison.purpose != campaign.purpose
+        or comparison.expected_run_count != campaign.expected_runs
+        or comparison.required_model_witnesses != campaign.required_model_witnesses
+    ):
+        raise ValueError("comparison requirements do not match its campaign contract")
     campaign_directory = campaign_path.resolve(strict=True).parent
     repository = Path(campaign.repository_root).resolve(strict=True)
     try:
@@ -244,5 +356,39 @@ def store_comparison_record(
         campaign.git_provenance,
     )
     target.parent.mkdir(parents=True, exist_ok=True)
-    _write_new(target, _json_text(value))
+    _write_new(target, _json_text(comparison.to_dict()))
     return target
+
+
+def load_comparison_record(
+    campaign_path: Path,
+    comparison_path: Path,
+) -> AuditComparison:
+    """Load one canonical comparison and verify its campaign binding."""
+    from .campaign_compare import AuditComparison
+
+    campaign = load_campaign(campaign_path)
+    campaign_directory = campaign_path.resolve(strict=True).parent
+    expected_directory = campaign_directory / "comparisons"
+    try:
+        comparison_absolute = comparison_path.resolve(strict=True)
+    except OSError as exc:
+        raise ValueError(f"cannot read audit comparison {comparison_path}") from exc
+    if comparison_absolute.parent != expected_directory:
+        raise ValueError("comparison path is outside the campaign comparison directory")
+    value = _read_single_link_json(comparison_path, label="audit comparison")
+    comparison = AuditComparison.from_dict(value)
+    if comparison_path.stem != comparison.comparison_id:
+        raise ValueError("comparison identifier does not match its storage name")
+    if (
+        comparison.campaign_id != campaign.campaign_id
+        or comparison.input_contract_digest != campaign.contract_digest
+    ):
+        raise ValueError("comparison does not match its campaign contract")
+    if (
+        comparison.purpose != campaign.purpose
+        or comparison.expected_run_count != campaign.expected_runs
+        or comparison.required_model_witnesses != campaign.required_model_witnesses
+    ):
+        raise ValueError("comparison requirements do not match its campaign contract")
+    return comparison

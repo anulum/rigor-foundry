@@ -26,7 +26,9 @@ Candidate-anchor schema 1.0 is a strict discriminated union:
 Report schema 1.3 requires one anchor on every candidate and records
 `git_object_format`. Scanner version 0.3.0 verifies all anchors against the
 inventory that produced the report. Campaign schema 1.5 carries the object
-format into independent-run input comparison. Earlier report or campaign
+format into independent-run input comparison. Campaign schema 1.6 additionally
+binds ignored inventory, campaign purpose, witness requirements, and explicit
+inference identity. Earlier report or campaign
 records must be regenerated; unknown or mixed anchor fields have no
 compatibility fallback.
 
@@ -83,7 +85,9 @@ Execution also fails closed on platforms that cannot execute the already
 validated open descriptor.
 `campaign-run` must receive the same explicit options used by
 `campaign-create`; otherwise frozen Git provenance diverges and the run is
-rejected.
+rejected. It must also receive explicit provider, exact-model,
+model-correlation-family, and operator identities. These values are evidence,
+not labels inferred from a session or agent name.
 
 Python callers pass `GitTrustPolicy` through the keyword-only
 `git_trust_policy` argument of `scan_repository`, `load_git_inventory`, campaign
@@ -210,6 +214,14 @@ in their adapter locks.
 Local campaign records, review ledgers, and optional TODO promotion default to
 `.rigor/`. The adopter must keep that directory Git-ignored; commands that
 would write there fail closed when the ignore boundary is absent.
+Campaign creation validates and prepares that ignored storage root before
+freezing the repository input projection, so the tool's own durable storage
+cannot create a post-freeze ignored-inventory divergence.
+
+Diagnostic campaigns may use one model witness. Promotion campaigns require at
+least two expected runs, at least two model-family witnesses, and at least two
+operator identities. Repeated runs from one model family remain useful for
+repeatability evidence but count as one promotion witness.
 
 Configuration schemas are versioned. Unknown schema versions, contradictory
 variables, unavailable adapters, and unresolved controls remain explicit
