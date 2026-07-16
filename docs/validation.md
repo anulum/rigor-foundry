@@ -55,3 +55,8 @@ and first verifies an existing published GitHub Release. The protected
 publication environments admit only `v*` tags and retain required owner review.
 See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
+
+Secret-scan failures are log-safe: the standalone guard prints no
+repository-derived finding details, and composed audit findings replace raw
+paths with full SHA-256 identifiers. Candidate values and adversarial filenames
+therefore do not enter CI output.

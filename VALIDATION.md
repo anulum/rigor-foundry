@@ -210,6 +210,12 @@ release, and publication workflows remain remote-only gates. Green `main`
 workflows establish landing evidence; tag-triggered release and publication
 remain separate gates.
 
+The repository secret guard never emits candidate values or raw repository
+paths. Programmatic audit findings identify paths only by full SHA-256, while
+the standalone CLI emits no repository-derived finding detail at all. This
+keeps CI logs redacted even when an adversarial path itself contains credential
+material.
+
 Version `v0.1.0` is published as a GitHub Release and GHCR image without a PyPI
 counterpart. Its immutable wheel retained pre-publication-only status text, so
 uploading that artefact to a permanent public index was rejected instead of

@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -26,8 +27,13 @@ RULES = {
 REFERENCE_MARKERS = ("${{ secrets.", "${", "$ENV", "secret-provider", "example", "redacted")
 
 
+def _path_fingerprint(path: Path) -> str:
+    """Return a stable opaque identifier for a repository path."""
+    return hashlib.sha256(path.as_posix().encode("utf-8")).hexdigest()
+
+
 def secret_errors(root: Path = ROOT) -> list[str]:
-    """Return rule identifiers and paths, never candidate secret values."""
+    """Return rule identifiers and opaque locations, never values or raw paths."""
     errors: list[str] = []
     for path in visible_files(root):
         if path in SKIPPED_PATHS or path.parts[:2] == ("docs", "assets"):
@@ -43,17 +49,14 @@ def secret_errors(root: Path = ROOT) -> list[str]:
                 if any(marker.lower() in line.lower() for marker in REFERENCE_MARKERS):
                     continue
                 line_number = text.count("\n", 0, match.start()) + 1
-                errors.append(f"{path.as_posix()}:{line_number}: {rule_id}")
+                errors.append(f"path-sha256:{_path_fingerprint(path)}:{line_number}: {rule_id}")
     return errors
 
 
-def main() -> int:
-    """Scan visible files and return a process exit code."""
-    errors = secret_errors()
-    if errors:
-        print("Secret guard failed; candidate values are intentionally redacted:")
-        for error in errors:
-            print(f"- {error}")
+def main(root: Path = ROOT) -> int:
+    """Scan visible files without emitting repository-derived finding data."""
+    if secret_errors(root):
+        print("Secret guard failed; finding details are redacted from process output.")
         return 1
     print("Secret guard passed")
     return 0
