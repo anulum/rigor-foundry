@@ -15,6 +15,22 @@ generator.
 6. Gap records become dependency-ordered remediation plans only after evidence
    and approval gates pass.
 
+Portable scanner scope is projected from one typed language-capability
+registry. The registry separately records unreadable-content scope,
+responsibility metrics, polyglot ownership, dependency-parser families, and
+deterministic extensionless/index resolution order. This keeps deliberate
+differences explicit: YAML is scope-only; Python, stubs, and shell participate
+in responsibility review but not polyglot ownership; native languages without
+a relative-import parser still participate in dedicated-test ownership.
+
+Repository-relative source roots use whole-component prefix containment and
+choose the most specific overlapping owner. Test roots use whole contiguous
+components at any repository depth. Common test names are shared, while
+singular and plural native suffixes are a deliberate polyglot-only extension.
+Resolved filesystem containment is available for non-security-sensitive path
+classification; descriptor-bound no-follow inventory remains authoritative at
+filesystem trust boundaries.
+
 Pack resolution and reviewer clearance cross an explicit cryptographic trust
 boundary. Detached Ed25519 signatures cover a versioned framed message with a
 length-prefixed protocol domain and canonical digest bytes. Standard packs use

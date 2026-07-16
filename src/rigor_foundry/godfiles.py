@@ -18,31 +18,10 @@ from typing import cast
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
+from .language_capabilities import is_test_path, suffixes_with
 from .models import AuditPolicy, Candidate
 
-_CODE_EXTENSIONS = frozenset(
-    {
-        ".c",
-        ".cc",
-        ".cpp",
-        ".go",
-        ".h",
-        ".hpp",
-        ".jl",
-        ".js",
-        ".jsx",
-        ".lean",
-        ".mojo",
-        ".py",
-        ".pyi",
-        ".rs",
-        ".sh",
-        ".sv",
-        ".ts",
-        ".tsx",
-        ".v",
-    }
-)
+_CODE_EXTENSIONS = suffixes_with("responsibility")
 
 _DEFINITION_PATTERNS = (
     re.compile(r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)"),
@@ -90,19 +69,6 @@ def _physical_lines(text: str) -> int:
         return 0
     encoded = text.encode("utf-8")
     return encoded.count(b"\n") + int(not encoded.endswith(b"\n"))
-
-
-def _is_test_path(path: str, policy: AuditPolicy) -> bool:
-    """Return whether a path belongs to the configured test surface."""
-    pure = PurePosixPath(path)
-    name = pure.name.lower()
-    return (
-        any(root in pure.parts for root in policy.test_roots)
-        or name.startswith("test_")
-        or name.endswith("_test.py")
-        or ".test." in name
-        or ".spec." in name
-    )
 
 
 def _split_symbol(symbol: str) -> tuple[str, ...]:
@@ -173,7 +139,7 @@ def _large_file_candidates(
     for item in inventory.files:
         if item.text is None or PurePosixPath(item.path).suffix.lower() not in _CODE_EXTENSIONS:
             continue
-        is_test = _is_test_path(item.path, policy)
+        is_test = is_test_path(item.path, policy.test_roots)
         threshold = policy.test_line_threshold if is_test else policy.source_line_threshold
         lines = _physical_lines(item.text)
         if lines <= threshold:

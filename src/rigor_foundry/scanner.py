@@ -23,6 +23,7 @@ from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitRunner, GitTrustPolicy
 from .godfiles import scan_godfiles
 from .ignored_inventory import collect_ignored_inventory
+from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
 from .polyglot_architecture import scan_polyglot_architecture
 from .test_authenticity import scan_test_authenticity
@@ -32,31 +33,7 @@ _DEFAULT_POLICY_PATHS = (
     Path("config/rigor-foundry/policy.json"),
 )
 
-_SCANNABLE_EXTENSIONS = frozenset(
-    {
-        ".c",
-        ".cc",
-        ".cpp",
-        ".go",
-        ".h",
-        ".hpp",
-        ".jl",
-        ".js",
-        ".jsx",
-        ".lean",
-        ".mojo",
-        ".py",
-        ".pyi",
-        ".rs",
-        ".sh",
-        ".sv",
-        ".ts",
-        ".tsx",
-        ".v",
-        ".yaml",
-        ".yml",
-    }
-)
+_SCANNABLE_EXTENSIONS = suffixes_with("scope")
 
 
 def _governance_candidate(

@@ -95,6 +95,24 @@ def test_polyglot_scanner_rejects_escaping_unresolved_and_self_edges(tmp_path: P
     assert not any(item.rule_id == "AR007-relative-dependency-cycle" for item in candidates)
 
 
+def test_extensionless_resolution_preserves_language_priority(tmp_path: Path) -> None:
+    """An ambiguous extensionless import keeps the established TypeScript-first owner."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("web/entry.ts", "import './shared';\nexport const entry = 1;\n")
+    repository.write_text("web/shared.ts", "import './entry';\nexport const shared = 1;\n")
+    repository.write_text("web/shared.js", "export const shared = 2;\n")
+    repository.commit()
+
+    candidates = scan_polyglot_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(),
+    )
+    cycle = next(item for item in candidates if item.rule_id == "AR007-relative-dependency-cycle")
+    assert "web/entry.ts" in cycle.evidence
+    assert "web/shared.ts" in cycle.evidence
+    assert "web/shared.js" not in cycle.evidence
+
+
 def test_polyglot_test_suffix_owns_matching_source(tmp_path: Path) -> None:
     """A language-native plural test suffix is recognised as the source's owner."""
     repository = GitRepository.create(tmp_path / "repository")

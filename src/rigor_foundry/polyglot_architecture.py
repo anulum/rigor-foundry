@@ -19,28 +19,16 @@ from .candidate_anchor import (
     bounded_candidate_evidence,
 )
 from .git_inventory import GitInventory, TrackedFile
+from .language_capabilities import (
+    dependency_family_for,
+    extensionless_dependency_suffixes,
+    index_dependency_suffixes,
+    is_test_path,
+    suffixes_with,
+)
 from .models import AuditPolicy, Candidate
 
-_SOURCE_EXTENSIONS = frozenset(
-    {
-        ".c",
-        ".cc",
-        ".cpp",
-        ".go",
-        ".h",
-        ".hpp",
-        ".jl",
-        ".js",
-        ".jsx",
-        ".lean",
-        ".mojo",
-        ".rs",
-        ".sv",
-        ".ts",
-        ".tsx",
-        ".v",
-    }
-)
+_SOURCE_EXTENSIONS = suffixes_with("polyglot")
 
 _JS_IMPORT = re.compile(
     r"(?:\bfrom\s*|\bimport\s*|\brequire\s*\()"
@@ -49,19 +37,6 @@ _JS_IMPORT = re.compile(
 _C_INCLUDE = re.compile(r"^\s*#\s*include\s*[\"<](?P<path>[^\">]+)[\">]")
 _JULIA_INCLUDE = re.compile(r"\binclude\s*\(\s*[\"'](?P<path>[^\"']+)[\"']\s*\)")
 _RUST_MODULE = re.compile(r"^\s*(?:pub\s+)?mod\s+(?P<path>[A-Za-z_][A-Za-z0-9_]*)\s*;")
-
-
-def _is_test_path(path: str, policy: AuditPolicy) -> bool:
-    """Return whether a non-Python path belongs to a recognised test surface."""
-    pure = PurePosixPath(path)
-    name = pure.name.lower()
-    return (
-        any(root in pure.parts for root in policy.test_roots)
-        or ".test." in name
-        or ".spec." in name
-        or name.startswith("test_")
-        or name.endswith(("_test" + pure.suffix.lower(), "_tests" + pure.suffix.lower()))
-    )
 
 
 def _candidate_paths(owner: str, dependency: str) -> tuple[str, ...]:
@@ -74,11 +49,8 @@ def _candidate_paths(owner: str, dependency: str) -> tuple[str, ...]:
     if pure.suffix:
         return (pure.as_posix(),)
     return (
-        tuple(
-            f"{pure.as_posix()}{suffix}"
-            for suffix in (".ts", ".tsx", ".js", ".jsx", ".rs", ".jl", ".c", ".cpp", ".h", ".hpp")
-        )
-        + tuple(f"{pure.as_posix()}/index{suffix}" for suffix in (".ts", ".tsx", ".js", ".jsx"))
+        tuple(f"{pure.as_posix()}{suffix}" for suffix in extensionless_dependency_suffixes())
+        + tuple(f"{pure.as_posix()}/index{suffix}" for suffix in index_dependency_suffixes())
         + (f"{pure.as_posix()}/mod.rs",)
     )
 
@@ -87,18 +59,18 @@ def _relative_dependencies(item: TrackedFile) -> tuple[str, ...]:
     """Return textual relative dependency references from one source file."""
     if item.text is None:
         return ()
-    suffix = PurePosixPath(item.path).suffix.lower()
+    family = dependency_family_for(item.path)
     references: list[str] = []
     for line in item.text.splitlines():
-        if suffix in {".js", ".jsx", ".ts", ".tsx"}:
+        if family == "javascript":
             references.extend(match.group("path") for match in _JS_IMPORT.finditer(line))
-        elif suffix in {".c", ".cc", ".cpp", ".h", ".hpp"}:
+        elif family == "c":
             match = _C_INCLUDE.match(line)
             if match is not None and not match.group("path").startswith(("/", "sys/")):
                 references.append(match.group("path"))
-        elif suffix == ".jl":
+        elif family == "julia":
             references.extend(match.group("path") for match in _JULIA_INCLUDE.finditer(line))
-        elif suffix == ".rs":
+        elif family == "rust":
             match = _RUST_MODULE.match(line)
             if match is not None:
                 references.append(match.group("path"))
@@ -191,7 +163,11 @@ def _normalised_test_stems(inventory: GitInventory, policy: AuditPolicy) -> froz
     stems: set[str] = set()
     for item in inventory.files:
         pure = PurePosixPath(item.path)
-        if pure.suffix.lower() not in _SOURCE_EXTENSIONS or not _is_test_path(item.path, policy):
+        if pure.suffix.lower() not in _SOURCE_EXTENSIONS or not is_test_path(
+            item.path,
+            policy.test_roots,
+            profile="polyglot",
+        ):
             continue
         stem = pure.stem.lower()
         for prefix in ("test_", "tests_"):
@@ -216,7 +192,7 @@ def _ownership_candidates(
         if (
             item.text is None
             or pure.suffix.lower() not in _SOURCE_EXTENSIONS
-            or _is_test_path(item.path, policy)
+            or is_test_path(item.path, policy.test_roots, profile="polyglot")
             or pure.stem.lower() in test_stems
         ):
             continue

@@ -38,6 +38,17 @@ adapters. The desired-state API adds typed adopter variables, namespaced custom
 controls, applicability decisions, exact standard-pack selections, and
 secret-provider references.
 
+Source and test roots are interpreted as repository-relative component
+sequences; absolute and parent-traversing values never match. A source root
+must prefix a path by whole components; when roots overlap, the longest
+component sequence owns the module. A test root may occur
+below a workspace prefix, but it must match complete contiguous components, so
+`tests` does not match `contest` or `tests-old`. Common `test_`, `_test.py`,
+`.test.`, and `.spec.` conventions apply to the generic scanners. Polyglot
+ownership additionally recognises native `_test.<suffix>` and
+`_tests.<suffix>` names. These naming profiles are fixed scanner capabilities,
+not policy-controlled aliases.
+
 ## Declared ignored inventory
 
 Policy schema 1.1 accepts an `ignored_inventory` array sorted by

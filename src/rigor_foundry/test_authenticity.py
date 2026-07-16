@@ -17,6 +17,7 @@ from pathlib import PurePosixPath
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
+from .language_capabilities import is_test_path
 from .models import AuditPolicy, Candidate, Confidence
 
 
@@ -151,20 +152,6 @@ _BEHAVIOURAL_CALLS = frozenset(
 )
 
 
-def _is_test_path(path: str, policy: AuditPolicy) -> bool:
-    """Return whether a tracked path is a recognised test owner."""
-    pure = PurePosixPath(path)
-    parts = set(pure.parts)
-    name = pure.name.lower()
-    return (
-        any(root in parts for root in policy.test_roots)
-        or name.startswith("test_")
-        or name.endswith("_test.py")
-        or ".test." in name
-        or ".spec." in name
-    )
-
-
 def _line_matches(text: str, expression: re.Pattern[str]) -> tuple[int, ...]:
     """Return one-based locations matching a textual rule without source content."""
     return tuple(
@@ -186,7 +173,7 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
     """Collect file-level text-rule candidates."""
     if item.text is None:
         return ()
-    is_test = _is_test_path(item.path, policy)
+    is_test = is_test_path(item.path, policy.test_roots)
     suffix = PurePosixPath(item.path).suffix.lower()
     candidates: list[Candidate] = []
     for rule in _TEXT_RULES:
@@ -309,7 +296,11 @@ def _python_candidates(
     packages: frozenset[str],
 ) -> tuple[Candidate, ...]:
     """Collect AST-backed candidates from one Python test module."""
-    if item.text is None or not item.path.endswith(".py") or not _is_test_path(item.path, policy):
+    if (
+        item.text is None
+        or not item.path.endswith(".py")
+        or not is_test_path(item.path, policy.test_roots)
+    ):
         return ()
     try:
         tree = ast.parse(item.text, filename=item.path)

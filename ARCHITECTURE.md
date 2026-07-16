@@ -65,6 +65,11 @@ Missing Git state and unsafe path states fail closed.
 
 ### Candidate collection
 
+- `language_capabilities.py` is the typed source of truth for suffix ownership,
+  relative-dependency parser families, resolution priority, test naming, and
+  component-aware repository/filesystem containment. Scanner projections are
+  derived from this registry; YAML remains scope-only, while Python and shell
+  remain outside non-Python ownership analysis.
 - `architecture.py` collects Python import-cycle, layer, facade, ownership, and
   duplication signals.
 - `polyglot_architecture.py` collects relative-cycle and dedicated-test-owner
@@ -77,6 +82,14 @@ Missing Git state and unsafe path states fail closed.
   evidence across mandatory audit domains.
 
 Every signal is a candidate. None is permission to edit code.
+
+Configured source roots are repository-prefix contracts over whole path
+components. Test roots may occur below workspace prefixes but must still match
+complete contiguous components. The shared classifier rejects lexical prefix
+collisions such as `src-old` for `src`, selects the most specific overlapping
+source root, and preserves scanner-specific naming: plural native
+`*_tests.<suffix>` owners are recognised by the polyglot scanner but do not
+change the generic GodFile or authenticity thresholds.
 
 `candidate_anchor.py` owns the strict candidate-evidence boundary:
 

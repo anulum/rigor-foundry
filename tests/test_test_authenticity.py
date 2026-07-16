@@ -96,3 +96,20 @@ def test_authenticity_scanner_accepts_real_observable_contract_forms(tmp_path: P
         AuditPolicy.from_path(policy_path),
     )
     assert not any(item.rule_id == "TA010-smoke-only-test" for item in candidates)
+
+
+def test_authenticity_nested_test_roots_reject_component_prefix_collisions(
+    tmp_path: Path,
+) -> None:
+    """Only the complete nested test-root sequence activates test-only rules."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("workspace/quality/tests/check.rs", "let value = Mock::new();\n")
+    repository.write_text("workspace/quality/testsuite/check.rs", "let value = Mock::new();\n")
+    repository.commit()
+
+    candidates = scan_test_authenticity(
+        load_git_inventory(repository.root),
+        AuditPolicy(test_roots=("quality/tests",)),
+    )
+    doubled_paths = {item.path for item in candidates if item.rule_id == "TA001-test-double"}
+    assert doubled_paths == {"workspace/quality/tests/check.rs"}

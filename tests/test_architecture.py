@@ -105,6 +105,24 @@ def test_nested_src_root_resolves_package_names_and_test_owners(tmp_path: Path) 
     )
 
 
+def test_overlapping_source_roots_choose_the_most_specific_component_owner(
+    tmp_path: Path,
+) -> None:
+    """Nested src-layout ownership is based on components rather than string length."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("engine/src/pkg/core.py", "def value() -> int:\n    return 1\n")
+    repository.commit()
+
+    candidates = scan_architecture(
+        load_git_inventory(repository.root),
+        AuditPolicy(source_roots=("engine", "engine/src"), test_roots=("tests",)),
+    )
+    missing = next(
+        item for item in candidates if item.rule_id == "AR005-no-module-named-test-owner"
+    )
+    assert missing.symbol == "pkg.core"
+
+
 def test_syntax_error_in_production_is_skipped_without_false_clean_scope_claim(
     tmp_path: Path,
 ) -> None:

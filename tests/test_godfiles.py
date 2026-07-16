@@ -102,6 +102,28 @@ def test_non_code_and_below_threshold_files_do_not_open_size_review(tmp_path: Pa
     )
 
 
+def test_nested_test_roots_use_components_without_prefix_collisions(tmp_path: Path) -> None:
+    """Nested test roots select test thresholds without matching sibling prefixes."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("workspace/quality/tests/kernel.rs", "one\ntwo\nthree\n")
+    repository.write_text("workspace/quality/testsuite/kernel.rs", "one\ntwo\nthree\n")
+    repository.commit()
+
+    candidates = scan_godfiles(
+        load_git_inventory(repository.root),
+        AuditPolicy(
+            source_line_threshold=1,
+            test_line_threshold=10,
+            test_roots=("quality/tests",),
+        ),
+    )
+    large_paths = {
+        item.path for item in candidates if item.rule_id == "GF001-large-responsibility-owner"
+    }
+    assert "workspace/quality/tests/kernel.rs" not in large_paths
+    assert "workspace/quality/testsuite/kernel.rs" in large_paths
+
+
 def test_cross_language_metrics_bind_real_definitions_and_dependencies(tmp_path: Path) -> None:
     """Structural evidence reflects tracked TypeScript, Rust, Go, and Julia owners."""
     repository = GitRepository.create(tmp_path / "repository")

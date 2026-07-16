@@ -33,6 +33,15 @@ inventory and scan APIs; dangling-symlink rejection; deleted registered-owner
 tree anchoring; and anchor drift rejection. The candidate-anchor module must
 retain at least 95% branch-aware isolated coverage.
 
+Language-capability tests assert the exact scope, responsibility, and polyglot
+suffix projections; dependency parser and resolution order; nested and
+overlapping roots; prefix-collision rejection; case-normalised test naming;
+polyglot-only plural native tests; and resolved filesystem containment. A real
+multi-language Git fixture pins the complete `(rule_id, path, candidate_id)`
+tuple digest captured before registry wiring, preventing a classifier refactor
+from silently changing candidate identity. YAML remains scope-only and Python
+never enters non-Python ownership analysis.
+
 The Git provenance owner tests use real executable files and temporary Git
 repositories. They cover fixed-root selection under hostile `PATH`, symlinked
 roots and executables, post-capture replacement, unsupported versions, durable

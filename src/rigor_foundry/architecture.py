@@ -21,6 +21,11 @@ from .candidate_anchor import (
     bounded_candidate_evidence,
 )
 from .git_inventory import GitInventory, TrackedFile
+from .language_capabilities import (
+    is_test_path,
+    owning_repository_root,
+    repository_path_under_roots,
+)
 from .models import AuditPolicy, Candidate
 
 
@@ -47,28 +52,13 @@ class _PythonModule:
     has_imports: bool
 
 
-def _under_roots(path: str, roots: tuple[str, ...]) -> bool:
-    """Return whether a repository-relative path belongs to configured roots."""
-    return any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots)
-
-
-def _owning_root(path: str, roots: tuple[str, ...]) -> str | None:
-    """Return the longest configured source root containing ``path``."""
-    matches = tuple(
-        root.rstrip("/")
-        for root in roots
-        if path == root.rstrip("/") or path.startswith(root.rstrip("/") + "/")
-    )
-    return max(matches, key=len) if matches else None
-
-
 def _module_name(path: str, policy: AuditPolicy) -> str | None:
     """Return the import name represented by one Python path."""
     pure = PurePosixPath(path)
-    if pure.suffix != ".py" or not _under_roots(path, policy.source_roots):
+    if pure.suffix != ".py" or not repository_path_under_roots(path, policy.source_roots):
         return None
     parts = list(pure.with_suffix("").parts)
-    root = _owning_root(path, policy.source_roots)
+    root = owning_repository_root(path, policy.source_roots)
     if root is not None and (root == "src" or root.endswith("/src")):
         parts = parts[len(PurePosixPath(root).parts) :]
     if not parts:
@@ -383,7 +373,7 @@ def _test_stems(inventory: GitInventory, policy: AuditPolicy) -> frozenset[str]:
         if not (
             pure.name.startswith("test_")
             or pure.name.endswith("_test.py")
-            or _under_roots(item.path, policy.test_roots)
+            or is_test_path(item.path, policy.test_roots)
         ):
             continue
         stem = pure.stem
@@ -405,7 +395,7 @@ def _ownership_candidates(
     candidates: list[Candidate] = []
     for module in modules:
         pure = PurePosixPath(module.file.path)
-        if _owning_root(module.file.path, policy.source_roots) is None:
+        if owning_repository_root(module.file.path, policy.source_roots) is None:
             continue
         if pure.name == "__init__.py":
             continue

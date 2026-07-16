@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.models import canonical_digest
 from rigor_foundry.scanner import scan_repository
 
 
@@ -82,3 +83,42 @@ def test_scan_always_reports_uninitialised_gitlink(tmp_path: Path) -> None:
     candidate = next(item for item in report.candidates if item.path == "vendor")
     assert candidate.rule_id == "GV002-unscanned-tracked-code"
     assert "content_kind=gitlink" in candidate.evidence
+
+
+def test_language_registry_refactor_preserves_candidate_identity(tmp_path: Path) -> None:
+    """A real multi-language repository retains the pre-refactor candidate tuple digest."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "def value() -> int:\n    return 1\n")
+    repository.write_text(
+        "tests/test_core.py",
+        "from pkg.core import value\n\ndef test_value() -> None:\n    assert value() == 1\n",
+    )
+    repository.write_text(
+        "web/widget.ts",
+        "export function widget(): number {\n  return 1;\n}\n",
+    )
+    repository.write_text(
+        "web/widget.spec.ts",
+        "import { widget } from './widget';\nif (widget() !== 1) throw Error();\n",
+    )
+    repository.write_text("native/kernel.rs", "pub fn kernel() -> i32 { 1 }\n")
+    repository.write_text(
+        "native/kernel_tests.rs",
+        "#[test]\nfn kernel_returns_one() { assert_eq!(1, 1); }\n",
+    )
+    repository.write_bytes("config/settings.yaml", b"\xff\xfe")
+    repository.write_policy(source_threshold=1, test_threshold=2)
+    repository.commit()
+
+    report = scan_repository(repository.root)
+    candidate_identity = canonical_digest(
+        [(item.rule_id, item.path, item.candidate_id) for item in report.candidates]
+    )
+
+    assert candidate_identity == "e236ad9c2deb0eb830f7ffbdc06dbdf288526553bcc68c730dbf8dab90381be9"
+    yaml_candidate = next(item for item in report.candidates if item.path.endswith(".yaml"))
+    assert yaml_candidate.rule_id == "GV002-unscanned-tracked-code"
+    assert not any(
+        item.path.endswith(".yaml") and item.rule_id.startswith(("GF", "AR"))
+        for item in report.candidates
+    )
