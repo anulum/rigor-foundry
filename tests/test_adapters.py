@@ -18,8 +18,13 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+import rigor_foundry.adapters as adapters_module
 from rigor_foundry.adapters import AdapterResult, run_adapter, run_native_audits
 from rigor_foundry.models import AdapterSpec
+from rigor_foundry.sandbox_provenance import (
+    BubblewrapCompatibilityPolicy,
+    BubblewrapProvenance,
+)
 
 
 def _spec(name: str, script: str, *, scope: str = "full", timeout: int = 3) -> AdapterSpec:
@@ -60,6 +65,9 @@ def test_adapter_records_real_success_failure_and_bounded_output(tmp_path: Path)
     assert len(passed.output_digest) == 64
     assert len(passed.executable_digest) == 64
     assert len(passed.command_digest) == 64
+    assert passed.sandbox_provenance.package_name == "bubblewrap"
+    assert passed.sandbox_provenance.semantic_version.startswith("0.9.")
+    assert len(passed.sandbox_provenance.identity_digest) == 64
     assert "command" not in passed.to_dict()
 
     failed = run_adapter(repository.root, _spec("fail", "controls/fail.py"), trusted=True)
@@ -176,6 +184,28 @@ def test_native_audit_selection_is_scope_exact_and_names_are_unique(tmp_path: Pa
         run_native_audits(repository.root, (staged, staged), "staged", trusted=True)
 
 
+def test_sandbox_identity_binds_the_complete_bubblewrap_argument_contract(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Changing one launcher argument changes the durable sandbox identity."""
+    repository = GitRepository.create(tmp_path / "repository")
+    executable = repository.write_text("controls/pass.py", "print('pass')\n")
+    repository.commit()
+    first = adapters_module._sandbox_contract(repository.root, executable, repository.root)
+    first[4].close()
+    original = adapters_module._mount_parent_arguments
+    monkeypatch.setattr(
+        adapters_module,
+        "_mount_parent_arguments",
+        lambda mounts: (*original(mounts), "--dir", "/argument-contract-regression"),
+    )
+    second = adapters_module._sandbox_contract(repository.root, executable, repository.root)
+    second[4].close()
+
+    assert first[3] != second[3]
+
+
 def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path) -> None:
     """Digest, Boolean, and derived pass fields cannot be altered after execution."""
     repository = GitRepository.create(tmp_path / "repository")
@@ -198,6 +228,23 @@ def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path
     inconsistent_pass["passed"] = False
     with pytest.raises(ValueError, match="passed does not match"):
         AdapterResult.from_dict(inconsistent_pass)
+
+    changed_provenance = result.to_dict()
+    provenance = dict(changed_provenance["sandbox_provenance"])
+    provenance["package_version"] = "0.9.0-tampered"
+    changed_provenance["sandbox_provenance"] = provenance
+    with pytest.raises(ValueError, match="identity digest"):
+        AdapterResult.from_dict(changed_provenance)
+
+    unknown_field = result.to_dict()
+    unknown_field["implicit_default"] = True
+    with pytest.raises(ValueError, match="fields are invalid"):
+        AdapterResult.from_dict(unknown_field)
+
+    unsupported_schema = result.to_dict()
+    unsupported_schema["schema_version"] = "2.0"
+    with pytest.raises(ValueError, match="schema version is unsupported"):
+        AdapterResult.from_dict(unsupported_schema)
 
 
 def test_adapter_resolves_repository_executables_and_rejects_unsafe_paths(
@@ -265,3 +312,58 @@ def test_adapter_waits_for_process_after_output_pipes_close(tmp_path: Path) -> N
     assert result.passed
     assert result.returncode == 0
     assert result.output_bytes == 0
+
+
+def test_adapter_timeout_kills_tree_after_output_pipes_close(tmp_path: Path) -> None:
+    """Closed pipes cannot bypass the deadline or leave a descendant running."""
+    repository = GitRepository.create(tmp_path / "repository")
+    marker = "RIGOR_CLOSED_PIPE_CHILD_18e5b83d"
+    repository.write_text(
+        "controls/close_output_slow.py",
+        "import os\nimport subprocess\nimport sys\nimport time\n"
+        f"subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)', '{marker}'])\n"
+        "os.close(1)\nos.close(2)\ntime.sleep(30)\n",
+    )
+    repository.commit()
+
+    result = run_adapter(
+        repository.root,
+        _spec("closed-output-timeout", "controls/close_output_slow.py", timeout=1),
+        trusted=True,
+    )
+
+    assert result.timed_out
+    assert result.returncode == 124
+    processes = subprocess.run(  # nosec B603
+        ["/usr/bin/ps", "-eo", "args"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert marker not in processes.stdout
+
+
+def test_adapter_rejects_sandbox_provenance_change_during_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An OS package change during a native audit prevents attestation."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("controls/pass.py", "print('pass')\n")
+    repository.commit()
+    observed = adapters_module.inspect_bubblewrap()
+    calls = 0
+
+    def changing_provenance(
+        policy: BubblewrapCompatibilityPolicy | None = None,
+    ) -> BubblewrapProvenance:
+        nonlocal calls
+        assert policy is None or isinstance(policy, BubblewrapCompatibilityPolicy)
+        calls += 1
+        if calls == 1:
+            return observed
+        return replace(observed, identity_digest="0" * 64)
+
+    monkeypatch.setattr(adapters_module, "inspect_bubblewrap", changing_provenance)
+    with pytest.raises(RuntimeError, match="changed during native audit execution"):
+        run_adapter(repository.root, _spec("pass", "controls/pass.py"), trusted=True)

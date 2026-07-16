@@ -16,6 +16,7 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.campaign_models import (
+    CAMPAIGN_SCHEMA_VERSION,
     AuditCampaign,
     AuditRunAttestation,
     RunStatus,
@@ -98,6 +99,16 @@ def test_toolchain_identity_round_trip_binds_the_runtime_executable() -> None:
     else:
         raise AssertionError("altered toolchain evidence was accepted")
 
+    unrecognised = identity.to_dict()
+    unrecognised["unbound"] = "discarded"
+    with pytest.raises(ValueError, match="fields do not match schema"):
+        ToolchainIdentity.from_dict(unrecognised)
+
+
+def test_campaign_schema_version_declares_sandbox_provenance_migration() -> None:
+    """Campaign 1.2 makes structured sandbox provenance mandatory."""
+    assert CAMPAIGN_SCHEMA_VERSION == "1.2"
+
 
 def test_campaign_contract_binds_git_executable_provenance(tmp_path: Path) -> None:
     """Campaign identity changes or fails parsing when Git evidence is altered."""
@@ -111,6 +122,11 @@ def test_campaign_contract_binds_git_executable_provenance(tmp_path: Path) -> No
     changed["git_provenance"] = provenance
     with pytest.raises(ValueError, match="identity digest"):
         AuditCampaign.from_dict(changed)
+
+    unrecognised = campaign.to_dict()
+    unrecognised["unbound"] = "discarded"
+    with pytest.raises(ValueError, match="fields do not match schema"):
+        AuditCampaign.from_dict(unrecognised)
 
 
 def test_campaign_contract_rejects_unsafe_identifiers_paths_and_times(tmp_path: Path) -> None:
@@ -184,3 +200,8 @@ def test_attestation_parser_rejects_schema_shape_time_and_digest_tampering(
     changed_digest["command_digest"] = "f" * 64
     with pytest.raises(ValueError, match="digest does not match"):
         AuditRunAttestation.from_dict(changed_digest)
+
+    unrecognised = attestation.to_dict()
+    unrecognised["unbound"] = "discarded"
+    with pytest.raises(ValueError, match="fields do not match schema"):
+        AuditRunAttestation.from_dict(unrecognised)

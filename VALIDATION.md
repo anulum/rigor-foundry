@@ -29,6 +29,7 @@ execution, or production promotion.
 | Security | Bandit and dependency audit | CodeQL, pip-audit, Scorecard, secret scan |
 | Repository self-audit | Immutable temporary-commit scan for authoring evidence | Full policy scan, native-control gate, and 30-day evidence artifact |
 | Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
+| Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
 
 ## Local integration evidence
 
@@ -97,6 +98,33 @@ dependency audits passed with only the existing machine-checked
 `PYSEC-2026-2132` security-tool exception. Three packaging-contract tests, a
 fresh wheel and source distribution, Twine checks, and an external wheel import
 smoke also passed. Hosted CI remains required after an authorised push.
+
+Bubblewrap provenance has a dedicated real-process contract. Repository-owned
+tests must exercise the installed `/usr/bin/bwrap` and `/usr/bin/dpkg-query`,
+complete policy and provenance round trips, unsupported versions and required
+options, symlink/hardlink/mode/owner rejection, package-record drift, metadata
+command bounds, and replacement during inspection. Adapter tests must execute
+the real read-only sandbox with nested user namespaces disabled and reject provenance
+changes between preflight and completed execution. Workflow regressions pin
+Ubuntu 24.04, preserve global AppArmor user-namespace mediation, constrain the
+profile body to `userns,`, record the dpkg association, and run a compatibility
+smoke without disabling the host-wide restriction.
+
+On 2026-07-16, 55 provenance and trusted-runner tests passed. The provenance
+module reached 100% statement and branch coverage; combined provenance and
+trusted-runner coverage reached 97.45%, with the trusted runner at 94%. The
+complete affected surface passed 108 focused tests across nine explicitly named
+files; the prohibited aggregate local suite was not run. Ruff lint and format
+passed all 95 source, test, and tool files; strict MyPy passed 48 source/tool
+modules. Bandit and Semgrep reported zero findings, the repository audit and
+strict authoring audit passed, and the strict documentation build completed.
+Actionlint, typos, REUSE (166/166), dependency-waiver, secret, and both
+hash-locked dependency audits passed; the security-tool audit retained only the
+existing exact `PYSEC-2026-2132` exception. A fresh wheel and source
+distribution passed Twine checks, contained both provenance modules, and passed
+an external installed-wheel provenance round trip with hash-locked runtime
+dependencies. The exact outer-sandbox smoke succeeded and the nested-userns
+probe failed as required. Hosted CI remains required after an authorised push.
 
 ## Security-boundary remediation evidence
 

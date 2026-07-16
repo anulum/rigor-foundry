@@ -94,9 +94,11 @@ yet.
 
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,
-hard output and time bounds, process-tree termination, and digest-only durable
-evidence. Native execution currently requires Linux bubblewrap at
-`/usr/bin/bwrap`; passive scans and report review do not.
+hard output and time bounds, process-tree termination, and structured durable
+evidence. Native execution currently requires Bubblewrap at
+`/usr/bin/bwrap` on a dpkg-based host, `/usr/bin/dpkg-query`, and a compatible
+Bubblewrap 0.9.x installation. Passive scans and report review do not require
+these native surfaces.
 
 ## Module ownership
 
@@ -107,7 +109,7 @@ evidence. Native execution currently requires Linux bubblewrap at
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
-| Native boundaries | `adapters` | Time-bounded repository commands without a shell. |
+| Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
 | Campaigns | `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare` | Independent-run provenance and divergence. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |
 | Desired state | `standard_pack`, `project_profile`, `effective_profile`, `profile_resolution`, `trust` | Versioned controls, explicit Ed25519 trust stores, adopter intent, exact pack locks, contradiction evidence, and fail-closed resolution. |

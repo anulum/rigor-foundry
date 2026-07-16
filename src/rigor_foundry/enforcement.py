@@ -26,7 +26,26 @@ from .models import (
 )
 from .review import validate_reviews
 
-ENFORCEMENT_SCHEMA_VERSION = "1.0"
+ENFORCEMENT_SCHEMA_VERSION = "1.1"
+_ENFORCEMENT_FIELDS = frozenset(
+    {
+        "schema_version",
+        "mode",
+        "head",
+        "head_tree",
+        "tracked_content_digest",
+        "policy_digest",
+        "report_digest",
+        "candidate_count",
+        "reviewed_count",
+        "valid_debt_count",
+        "adapter_results",
+        "adapter_evidence_digest",
+        "blockers",
+        "passed",
+        "gate_digest",
+    }
+)
 
 
 def _digest(value: object, field: str, *, lengths: tuple[int, ...] = (64,)) -> str:
@@ -139,6 +158,8 @@ class EnforcementResult:
     def from_dict(cls, value: object) -> EnforcementResult:
         """Parse an enforcement artifact and reject any content tampering."""
         data = require_mapping(value, "enforcement")
+        if frozenset(data) != _ENFORCEMENT_FIELDS:
+            raise ValueError("enforcement artifact fields do not match schema")
         if data.get("schema_version") != ENFORCEMENT_SCHEMA_VERSION:
             raise ValueError("unsupported enforcement schema version")
         mode = require_string(data.get("mode"), "enforcement.mode")

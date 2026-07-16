@@ -254,6 +254,9 @@ def test_campaign_requires_native_consent_and_binds_secret_free_adapter_identity
     evidence = attestation.adapter_evidence[0]
     assert len(evidence.executable_digest) == 64
     assert len(evidence.environment_digest) == 64
+    assert evidence.sandbox_provenance.package_name == "bubblewrap"
+    assert evidence.sandbox_provenance.semantic_version == "0.9.0"
+    assert len(evidence.sandbox_provenance.identity_digest) == 64
     serialised = json.dumps(attestation.to_dict(), sort_keys=True)
     assert sentinel not in serialised
     assert sentinel not in (directory / "attestation.json").read_text(encoding="utf-8")

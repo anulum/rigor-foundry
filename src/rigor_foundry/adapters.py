@@ -28,13 +28,16 @@ from .models import (
     require_mapping,
     require_string,
 )
+from .sandbox_provenance import BubblewrapProvenance, inspect_bubblewrap
+from .trusted_executable import TrustedExecutable, open_trusted_executable
 
 ExecutionScope = Literal["staged", "full"]
+ADAPTER_RESULT_SCHEMA_VERSION = "1.0"
 _OUTPUT_LIMIT = 65_536
 _READ_SIZE = 8_192
 _BWRAP = Path("/usr/bin/bwrap")
 _PACKAGE_SOURCE = Path(__file__).resolve().parents[1]
-_SANDBOX_VERSION = "rigor-foundry-bwrap-v1"
+_SANDBOX_VERSION = "rigor-foundry-bwrap-v2"
 # This path is a private tmpfs created inside the bubblewrap mount namespace.
 _SANDBOX_TMP = "/tmp"  # nosec B108
 _CHILD_ENVIRONMENT = {
@@ -83,6 +86,7 @@ class AdapterResult:
     command_digest: str
     environment_digest: str
     sandbox_digest: str
+    sandbox_provenance: BubblewrapProvenance
 
     @property
     def passed(self) -> bool:
@@ -90,8 +94,9 @@ class AdapterResult:
         return self.returncode == 0 and not self.timed_out and not self.output_truncated
 
     def to_dict(self) -> dict[str, object]:
-        """Serialise evidence without argv, paths, environment, or raw output."""
+        """Serialise without adapter argv, repository paths, environment, or raw output."""
         return {
+            "schema_version": ADAPTER_RESULT_SCHEMA_VERSION,
             "name": self.name,
             "returncode": self.returncode,
             "output_digest": self.output_digest,
@@ -104,6 +109,7 @@ class AdapterResult:
             "command_digest": self.command_digest,
             "environment_digest": self.environment_digest,
             "sandbox_digest": self.sandbox_digest,
+            "sandbox_provenance": self.sandbox_provenance.to_dict(),
             "passed": self.passed,
         }
 
@@ -112,6 +118,27 @@ class AdapterResult:
         """Parse and validate one secret-free native evidence record."""
         field = f"adapter_results[{index}]"
         data = require_mapping(value, field)
+        expected = {
+            "schema_version",
+            "name",
+            "returncode",
+            "output_digest",
+            "output_bytes",
+            "output_truncated",
+            "timed_out",
+            "required",
+            "spec_digest",
+            "executable_digest",
+            "command_digest",
+            "environment_digest",
+            "sandbox_digest",
+            "sandbox_provenance",
+            "passed",
+        }
+        if set(data) != expected:
+            raise ValueError(f"{field} fields are invalid")
+        if data.get("schema_version") != ADAPTER_RESULT_SCHEMA_VERSION:
+            raise ValueError(f"{field} schema version is unsupported")
         boolean_names = ("output_truncated", "timed_out", "required", "passed")
         if not all(isinstance(data.get(name), bool) for name in boolean_names):
             raise ValueError(f"{field} boolean fields are invalid")
@@ -138,6 +165,7 @@ class AdapterResult:
                 f"{field}.environment_digest",
             ),
             sandbox_digest=_digest(data.get("sandbox_digest"), f"{field}.sandbox_digest"),
+            sandbox_provenance=BubblewrapProvenance.from_dict(data.get("sandbox_provenance")),
         )
         if result.passed is not data["passed"]:
             raise ValueError(f"{field}.passed does not match native evidence")
@@ -232,75 +260,112 @@ def _sandbox_contract(
     repository: Path,
     executable: Path,
     cwd: Path,
-) -> tuple[tuple[str, ...], dict[str, str], str]:
+) -> tuple[
+    tuple[str, ...],
+    dict[str, str],
+    BubblewrapProvenance,
+    str,
+    TrustedExecutable,
+]:
     """Build a fixed bubblewrap contract and its canonical identity digest."""
     if not _BWRAP.is_file() or not os.access(_BWRAP, os.X_OK):
         raise RuntimeError("native audits require /usr/bin/bwrap for read-only isolation")
+    provenance = inspect_bubblewrap()
+    if provenance.executable_path != str(_BWRAP):
+        raise RuntimeError("Bubblewrap provenance does not match the sandbox launcher")
     mounts = _minimal_mounts((repository, Path(sys.prefix), _PACKAGE_SOURCE))
     child_environment = {
         **_CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
     }
-    arguments: list[str] = [
-        str(_BWRAP),
-        "--die-with-parent",
-        "--new-session",
-        "--unshare-all",
-        "--uid",
-        "65534",
-        "--gid",
-        "65534",
-        "--ro-bind",
-        "/usr",
-        "/usr",
-        "--symlink",
-        "usr/bin",
-        "/bin",
-        "--symlink",
-        "usr/lib",
-        "/lib",
-        "--symlink",
-        "usr/lib64",
-        "/lib64",
-        "--proc",
-        "/proc",
-        "--dev",
-        "/dev",
-        "--tmpfs",
-        _SANDBOX_TMP,
-        *_mount_parent_arguments(mounts),
-    ]
-    for mount in mounts:
-        arguments.extend(("--ro-bind", str(mount), str(mount)))
-    arguments.extend(("--chdir", str(cwd), "--clearenv"))
-    for key, value in sorted(child_environment.items()):
-        arguments.extend(("--setenv", key, value))
-    sandbox_body = {
-        "version": _SANDBOX_VERSION,
-        "bubblewrap_digest": _file_digest(_BWRAP),
-        "mounts_digest": canonical_digest([str(item) for item in mounts]),
-        "working_directory_digest": canonical_digest(str(cwd)),
-        "executable_digest": _file_digest(executable),
-        "environment_digest": canonical_digest(child_environment),
-        "network": "unshared",
-        "repository": "read-only",
-        "uid": 65534,
-        "gid": 65534,
-    }
-    launcher_environment = {"LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "PATH": "/usr/bin:/bin"}
-    return tuple(arguments), launcher_environment, canonical_digest(sandbox_body)
+    policy = provenance.policy
+    launcher = open_trusted_executable(
+        _BWRAP,
+        required_owner_uid=policy.required_owner_uid,
+        forbidden_mode_bits=policy.forbidden_mode_bits,
+        require_single_link=policy.require_single_link,
+    )
+    try:
+        if launcher.snapshot.digest != provenance.executable_digest:
+            raise RuntimeError("Bubblewrap executable changed after provenance inspection")
+        arguments: list[str] = [
+            launcher.execution_path,
+            "--die-with-parent",
+            "--new-session",
+            "--unshare-all",
+            "--unshare-user",
+            "--disable-userns",
+            "--assert-userns-disabled",
+            "--uid",
+            "65534",
+            "--gid",
+            "65534",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--symlink",
+            "usr/bin",
+            "/bin",
+            "--symlink",
+            "usr/lib",
+            "/lib",
+            "--symlink",
+            "usr/lib64",
+            "/lib64",
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--tmpfs",
+            _SANDBOX_TMP,
+            *_mount_parent_arguments(mounts),
+        ]
+        for mount in mounts:
+            arguments.extend(("--ro-bind", str(mount), str(mount)))
+        arguments.extend(("--chdir", str(cwd), "--clearenv"))
+        for key, value in sorted(child_environment.items()):
+            arguments.extend(("--setenv", key, value))
+        sandbox_body = {
+            "version": _SANDBOX_VERSION,
+            "bubblewrap_provenance_identity": provenance.identity_digest,
+            "bubblewrap_policy_digest": provenance.policy_digest,
+            "bubblewrap_arguments_digest": canonical_digest(arguments[1:]),
+            "mounts_digest": canonical_digest([str(item) for item in mounts]),
+            "working_directory_digest": canonical_digest(str(cwd)),
+            "executable_digest": _file_digest(executable),
+            "environment_digest": canonical_digest(child_environment),
+            "network": "unshared",
+            "repository": "read-only",
+            "uid": 65534,
+            "gid": 65534,
+        }
+        launcher_environment = {
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "PATH": "/usr/bin:/bin",
+        }
+        return (
+            tuple(arguments),
+            launcher_environment,
+            provenance,
+            canonical_digest(sandbox_body),
+            launcher,
+        )
+    except Exception:
+        launcher.close()
+        raise
 
 
 def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
     """Terminate the bubblewrap process group, escalating if it does not exit."""
-    if process.poll() is not None:
-        return
-    try:
+    with suppress(ProcessLookupError):
         os.killpg(process.pid, signal.SIGTERM)
-        process.wait(timeout=0.5)
-    except (ProcessLookupError, subprocess.TimeoutExpired):
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
+    if process.poll() is None:
+        with suppress(subprocess.TimeoutExpired):
+            process.wait(timeout=0.5)
+    with suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGKILL)
+    if process.poll() is None:
         process.wait(timeout=2)
 
 
@@ -309,6 +374,7 @@ def _stream_process(
     *,
     environment: dict[str, str],
     timeout_seconds: int,
+    pass_fds: tuple[int, ...] = (),
 ) -> tuple[int, str, int, bool, bool]:
     """Execute one process with a streaming aggregate output hard cap."""
     process = subprocess.Popen(  # nosec B603
@@ -318,6 +384,7 @@ def _stream_process(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         start_new_session=True,
+        pass_fds=pass_fds,
     )
     if process.stdout is None or process.stderr is None:
         _terminate_process_tree(process)
@@ -355,7 +422,16 @@ def _stream_process(
             if truncated:
                 break
         if process.poll() is None:
-            process.wait(timeout=2)
+            remaining_time = deadline - time.monotonic()
+            if remaining_time <= 0:
+                timed_out = True
+                _terminate_process_tree(process)
+            else:
+                try:
+                    process.wait(timeout=remaining_time)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    _terminate_process_tree(process)
     finally:
         selector.close()
         process.stdout.close()
@@ -388,12 +464,23 @@ def run_adapter(root: Path, spec: AdapterSpec, *, trusted: bool = False) -> Adap
     executable = _resolved_executable(repository, spec.command[0])
     command = (str(executable), *spec.command[1:])
     cwd = _working_directory(repository, spec.working_directory)
-    sandbox, environment, sandbox_digest = _sandbox_contract(repository, executable, cwd)
-    returncode, output_digest, output_bytes, truncated, timed_out = _stream_process(
-        (*sandbox, "--", *command),
-        environment=environment,
-        timeout_seconds=spec.timeout_seconds,
+    sandbox, environment, sandbox_provenance, sandbox_digest, launcher = _sandbox_contract(
+        repository,
+        executable,
+        cwd,
     )
+    try:
+        returncode, output_digest, output_bytes, truncated, timed_out = _stream_process(
+            (*sandbox, "--", *command),
+            environment=environment,
+            timeout_seconds=spec.timeout_seconds,
+            pass_fds=(launcher.descriptor,),
+        )
+    finally:
+        launcher.close()
+    observed_after = inspect_bubblewrap(sandbox_provenance.policy)
+    if observed_after.identity_digest != sandbox_provenance.identity_digest:
+        raise RuntimeError("Bubblewrap provenance changed during native audit execution")
     child_environment = {
         **_CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
@@ -411,6 +498,7 @@ def run_adapter(root: Path, spec: AdapterSpec, *, trusted: bool = False) -> Adap
         command_digest=canonical_digest(command),
         environment_digest=canonical_digest(child_environment),
         sandbox_digest=sandbox_digest,
+        sandbox_provenance=sandbox_provenance,
     )
 
 

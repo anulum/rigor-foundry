@@ -49,6 +49,7 @@ from .remediation_plan import (
 )
 from .review import render_todo_entry, review_errors, review_templates, validate_reviews
 from .review_attestation import ReviewerAttestation
+from .sandbox_provenance import BubblewrapCompatibilityPolicy, BubblewrapProvenance
 from .scanner import scan_repository
 from .standard_pack import (
     ControlDefinition,
@@ -65,6 +66,8 @@ __all__ = [
     "ApplicabilityDecision",
     "AuditPolicy",
     "AuditReport",
+    "BubblewrapCompatibilityPolicy",
+    "BubblewrapProvenance",
     "Candidate",
     "ConditionExpression",
     "ControlAssessment",

@@ -45,10 +45,26 @@ def test_hash_locks_cover_each_resolved_distribution() -> None:
 
 
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
-    """Ubuntu CI keeps its global restriction and profiles only Bubblewrap."""
+    """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert workflow.count("runs-on: ubuntu-24.04") == 3
     assert workflow.count("profile bwrap /usr/bin/bwrap flags=(unconfined)") == 2
     assert workflow.count("sudo apparmor_parser --replace /etc/apparmor.d/bwrap") == 2
-    assert workflow.count("    userns,") == 2
+    profiles = re.findall(
+        r"profile bwrap /usr/bin/bwrap flags=\(unconfined\) \{\n(?P<body>.*?)\n          \}",
+        workflow,
+        re.DOTALL,
+    )
+    assert profiles == ["            userns,", "            userns,"]
+    assert workflow.count('apparmor_restrict_unprivileged_userns)" = 1') == 2
+    assert workflow.count("/usr/bin/bwrap --version") == 2
+    assert workflow.count("/usr/bin/dpkg-query --show") == 2
+    assert workflow.count("--disable-userns --assert-userns-disabled") == 4
+    assert workflow.count("/usr/bin/unshare --user -- /usr/bin/true") == 2
+    assert workflow.count("--symlink usr/bin /bin --symlink usr/lib /lib") == 4
+    assert workflow.count("--symlink usr/lib64 /lib64") == 4
+    assert workflow.count("--clearenv -- /usr/bin/true") == 2
     assert "apparmor_restrict_unprivileged_userns=0" not in workflow
+    assert "sysctl -w" not in workflow
+    assert "apparmor_parser --remove" not in workflow

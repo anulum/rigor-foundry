@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 
-from .adapters import AdapterResult
+from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
 from .git_provenance import GitExecutableProvenance
 from .models import (
     AuditReport,
@@ -28,10 +28,68 @@ from .models import (
     require_string,
     require_string_tuple,
 )
+from .sandbox_provenance import BubblewrapProvenance
 
-CAMPAIGN_SCHEMA_VERSION = "1.1"
+CAMPAIGN_SCHEMA_VERSION = "1.2"
 RunStatus = Literal["complete", "incomplete"]
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
+_TOOLCHAIN_FIELDS = frozenset(
+    {
+        "python_implementation",
+        "python_version",
+        "platform",
+        "executable_digest",
+        "identity_digest",
+    }
+)
+_CAMPAIGN_FIELDS = frozenset(
+    {
+        "schema_version",
+        "campaign_id",
+        "project",
+        "repository_root",
+        "policy_path",
+        "head",
+        "head_tree",
+        "branch",
+        "tracked_content_digest",
+        "dirty_paths",
+        "policy_digest",
+        "rule_pack_version",
+        "rule_pack_digest",
+        "scanner_version",
+        "required_domains",
+        "git_provenance",
+        "toolchain",
+        "created_by",
+        "created_at",
+        "expected_independent_runs",
+        "contract_digest",
+    }
+)
+_ATTESTATION_FIELDS = frozenset(
+    {
+        "schema_version",
+        "run_id",
+        "campaign_id",
+        "input_contract_digest",
+        "agent_identity",
+        "session_identity",
+        "started_at",
+        "finished_at",
+        "status",
+        "report_relative_path",
+        "report_digest",
+        "candidate_count",
+        "covered_domains",
+        "omitted_domains",
+        "adapter_evidence",
+        "toolchain",
+        "command_digest",
+        "limitations",
+        "attestation_digest",
+    }
+)
 
 
 def _identifier(value: object, field: str) -> str:
@@ -116,6 +174,8 @@ class ToolchainIdentity:
     def from_dict(cls, value: object) -> ToolchainIdentity:
         """Parse and integrity-check a runtime identity."""
         data = require_mapping(value, "toolchain")
+        if frozenset(data) != _TOOLCHAIN_FIELDS:
+            raise ValueError("toolchain identity fields do not match schema")
         fields = {
             "python_implementation": require_string(
                 data.get("python_implementation"),
@@ -270,6 +330,8 @@ class AuditCampaign:
     def from_dict(cls, value: object) -> AuditCampaign:
         """Parse and integrity-check an immutable campaign contract."""
         data = require_mapping(value, "campaign")
+        if frozenset(data) != _CAMPAIGN_FIELDS:
+            raise ValueError("audit campaign fields do not match schema")
         if data.get("schema_version") != CAMPAIGN_SCHEMA_VERSION:
             raise ValueError("unsupported audit campaign schema version")
         fields: dict[str, object] = {
@@ -339,6 +401,7 @@ class AdapterEvidence:
     command_digest: str
     environment_digest: str
     sandbox_digest: str
+    sandbox_provenance: BubblewrapProvenance
     passed: bool
 
     @classmethod
@@ -357,12 +420,14 @@ class AdapterEvidence:
             command_digest=result.command_digest,
             environment_digest=result.environment_digest,
             sandbox_digest=result.sandbox_digest,
+            sandbox_provenance=result.sandbox_provenance,
             passed=result.passed,
         )
 
     def to_dict(self) -> dict[str, object]:
         """Serialise one native-adapter evidence record."""
         return {
+            "schema_version": ADAPTER_RESULT_SCHEMA_VERSION,
             "name": self.name,
             "required": self.required,
             "returncode": self.returncode,
@@ -375,6 +440,7 @@ class AdapterEvidence:
             "command_digest": self.command_digest,
             "environment_digest": self.environment_digest,
             "sandbox_digest": self.sandbox_digest,
+            "sandbox_provenance": self.sandbox_provenance.to_dict(),
             "passed": self.passed,
         }
 
@@ -521,6 +587,8 @@ class AuditRunAttestation:
     def from_dict(cls, value: object) -> AuditRunAttestation:
         """Parse and integrity-check one run attestation."""
         data = require_mapping(value, "attestation")
+        if frozenset(data) != _ATTESTATION_FIELDS:
+            raise ValueError("audit attestation fields do not match schema")
         if data.get("schema_version") != CAMPAIGN_SCHEMA_VERSION:
             raise ValueError("unsupported audit attestation schema version")
         status = require_string(data.get("status"), "status")

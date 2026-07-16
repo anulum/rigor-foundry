@@ -153,24 +153,40 @@ def _scanner_divergence(runs: tuple[StoredAuditRun, ...]) -> tuple[str, ...]:
 
 
 def _adapter_divergence(runs: tuple[StoredAuditRun, ...]) -> tuple[str, ...]:
-    """Return native-adapter result or output-evidence differences."""
-    by_name: dict[str, dict[tuple[bool, int, bool, str], list[str]]] = {}
+    """Return missing, extra, duplicate, or divergent native-adapter evidence."""
+    by_name: dict[str, dict[str, list[str]]] = {}
+    problems: list[str] = []
     for stored in runs:
-        for evidence in stored.attestation.adapter_evidence:
-            signature = (
-                evidence.passed,
-                evidence.returncode,
-                evidence.timed_out,
-                evidence.output_digest,
+        run_id = stored.attestation.run_id
+        expected = {
+            adapter.name
+            for adapter in stored.report.policy.native_audits
+            if adapter.scope in {"full", "both"}
+        }
+        observed_names = [item.name for item in stored.attestation.adapter_evidence]
+        observed = set(observed_names)
+        missing = sorted(expected - observed)
+        extra = sorted(observed - expected)
+        duplicates = sorted(name for name in observed if observed_names.count(name) > 1)
+        if missing:
+            problems.append(f"run {run_id}: omitted native adapters {', '.join(missing)}")
+        if extra:
+            problems.append(
+                f"run {run_id}: reported unexpected native adapters {', '.join(extra)}"
             )
+        if duplicates:
+            problems.append(f"run {run_id}: duplicated native adapters {', '.join(duplicates)}")
+        for evidence in stored.attestation.adapter_evidence:
+            signature = canonical_digest(evidence.to_dict())
             by_name.setdefault(evidence.name, {}).setdefault(signature, []).append(
                 stored.attestation.run_id
             )
-    problems: list[str] = []
     for name, signatures in sorted(by_name.items()):
         if len(signatures) > 1:
-            problems.append(f"native adapter {name} produced divergent status/output evidence")
-    return tuple(problems)
+            problems.append(
+                f"native adapter {name} produced divergent execution/status/output evidence"
+            )
+    return tuple(sorted(problems))
 
 
 def _review_divergence(

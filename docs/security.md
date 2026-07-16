@@ -22,9 +22,18 @@ and archive members as adversarial input.
 - Native processes require explicit consent and use fixed-root executable
   resolution, argv-only invocation, a credential-free environment, a
   no-network read-only bubblewrap sandbox, mandatory timeouts, process-tree
-  termination, and a streaming aggregate output hard cap.
-- Reports retain only native execution digests and bounded counts; raw argv,
-  environment values, source excerpts, and process output are excluded.
+  termination, disabled nested user namespaces, and a streaming aggregate
+  output hard cap. Bubblewrap must satisfy a versioned compatibility policy;
+  evidence records its semantic version, executable digest, dpkg-reported
+  package association/version/architecture/status, package-query executable
+  digest, required-option surface, and policy identity, then verifies the same
+  identity after execution.
+- Gate and campaign artifacts retain native execution digests, bounded counts,
+  and structured secret-free sandbox provenance; raw argv, environment values,
+  source excerpts, command output, and package-manager output are excluded.
+  The dpkg association is package-database evidence, not proof of a repository
+  signature or installed-payload checksum; the executable digest identifies
+  the inspected and executed binary bytes.
 - Repository policies must be tracked, non-symlink UTF-8 files inside the
   audited root, and Git index modes and object ids bind every tracked entry.
 - Writes require an explicit command and a validated ignored destination.
@@ -39,6 +48,30 @@ and archive members as adversarial input.
 - CI actions, Python dependencies, and the base image are immutably pinned.
 - Package publication uses a protected OIDC environment rather than a stored
   package credential.
+
+## GitHub-hosted AppArmor boundary
+
+Ubuntu 24.04 mediates unprivileged user namespaces and requires applications
+that need them to be explicitly allowed by an AppArmor profile. The CI runner
+therefore retains a path-specific `/usr/bin/bwrap` profile with
+`flags=(unconfined)` and one `userns,` rule. This profile is deliberately not
+claimed as the native-audit sandbox: it is only the compatibility attachment
+that lets the root-owned Bubblewrap executable create the initial namespace.
+The audited Bubblewrap argument contract supplies the read-only, no-network,
+credential-free boundary and disables nested user namespaces. See Ubuntu's
+[unprivileged user namespace restriction](https://documentation.ubuntu.com/security/security-features/privilege-restriction/apparmor/#apparmor-unprivileged-user-namespace-restrictions)
+and Bubblewrap's
+[sandbox security contract](https://github.com/containers/bubblewrap#sandbox-security).
+
+CI remains pinned to the Ubuntu 24.04 runner family, asserts that the global
+restriction is still enabled, loads only the path-specific profile, records
+the installed package/version, and executes the same compatibility flags in a
+smoke sandbox. Regression tests reject a global sysctl disable, additional
+AppArmor permissions, profile removal, or omission of nested-userns disabling.
+A compromised runner administrator, kernel, root-owned package database, or
+root-owned launcher is outside this boundary; RigorFoundry detects identity or
+package drift during an audit but does not claim to withstand a compromised
+host root.
 
 Do not disclose a suspected vulnerability in a public issue. Follow the
 [security policy](https://github.com/anulum/RIGOR-FOUNDRY/security/policy) and

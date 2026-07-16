@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from repository_audit_git_repository import GitRepository
@@ -24,12 +25,17 @@ from rigor_foundry.campaign_models import (
 from rigor_foundry.campaign_store import StoredAuditRun, load_runs
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
 from rigor_foundry.models import (
+    AdapterSpec,
     AuditReport,
     Candidate,
     Decision,
     ReviewRecord,
     Severity,
     canonical_digest,
+)
+from rigor_foundry.sandbox_provenance import (
+    BubblewrapCompatibilityPolicy,
+    BubblewrapProvenance,
 )
 
 
@@ -67,6 +73,7 @@ def _report_with(
     *,
     head: str | None = None,
     candidates: tuple[Candidate, ...] | None = None,
+    native_audits: tuple[AdapterSpec, ...] | None = None,
 ) -> AuditReport:
     """Rebuild a digest-consistent report with selected changed observations."""
     return AuditReport.build(
@@ -78,7 +85,11 @@ def _report_with(
         dirty_paths=report.dirty_paths,
         tracked_file_count=report.tracked_file_count,
         git_provenance=report.git_provenance,
-        policy=report.policy,
+        policy=(
+            report.policy
+            if native_audits is None
+            else replace(report.policy, native_audits=native_audits)
+        ),
         candidates=report.candidates if candidates is None else candidates,
     )
 
@@ -94,7 +105,13 @@ def _toolchain_with_changed_platform(toolchain: ToolchainIdentity) -> ToolchainI
     return ToolchainIdentity(**fields, identity_digest=canonical_digest(fields))
 
 
-def _adapter_result(*, output_digest: str, returncode: int) -> AdapterResult:
+def _adapter_result(
+    *,
+    output_digest: str,
+    returncode: int,
+    package_version: str = "0.9.0-1ubuntu0.1",
+    command_digest: str = "3" * 64,
+) -> AdapterResult:
     """Build bounded native evidence for comparison protocol tests."""
     return AdapterResult(
         name="repository-check",
@@ -106,9 +123,20 @@ def _adapter_result(*, output_digest: str, returncode: int) -> AdapterResult:
         required=True,
         spec_digest="1" * 64,
         executable_digest="2" * 64,
-        command_digest="3" * 64,
+        command_digest=command_digest,
         environment_digest="4" * 64,
         sandbox_digest="5" * 64,
+        sandbox_provenance=BubblewrapProvenance.build(
+            policy=BubblewrapCompatibilityPolicy(),
+            executable_digest="6" * 64,
+            semantic_version="0.9.0",
+            package_query_digest="7" * 64,
+            package_name="bubblewrap",
+            package_version=package_version,
+            package_architecture="amd64",
+            package_status="install ok installed",
+            capability_digest="8" * 64,
+        ),
     )
 
 
@@ -281,14 +309,27 @@ def test_comparison_distinguishes_candidate_and_report_digest_changes(tmp_path: 
 
 
 def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -> None:
-    """The same adapter name cannot conceal different status or output evidence."""
+    """The same adapter cannot conceal status, output, or sandbox provenance drift."""
     campaign, runs = _campaign_runs(tmp_path)
     baseline = runs[0]
+    expected_adapter = AdapterSpec.from_dict(
+        {
+            "name": "repository-check",
+            "command": ["{python}", "controls/check.py"],
+            "timeout_seconds": 30,
+            "scope": "full",
+            "working_directory": ".",
+            "required": True,
+            "domains": ["application-security"],
+        },
+        0,
+    )
+    report = _report_with(baseline.report, native_audits=(expected_adapter,))
     passed = _stored_run(
         campaign,
         baseline,
         run_id="adapter-pass",
-        report=baseline.report,
+        report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-pass",
         adapters=(_adapter_result(output_digest="a" * 64, returncode=0),),
@@ -297,15 +338,45 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
         campaign,
         baseline,
         run_id="adapter-fail",
-        report=baseline.report,
+        report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-fail",
         adapters=(_adapter_result(output_digest="b" * 64, returncode=1),),
     )
+    changed_sandbox = _stored_run(
+        campaign,
+        baseline,
+        run_id="adapter-package-drift",
+        report=report,
+        toolchain=campaign.toolchain,
+        agent_identity="SAMPLE-PROJECT/adapter-package-drift",
+        adapters=(
+            _adapter_result(
+                output_digest="a" * 64,
+                returncode=0,
+                package_version="0.9.0-1ubuntu0.2",
+            ),
+        ),
+    )
+    changed_contract = _stored_run(
+        campaign,
+        baseline,
+        run_id="adapter-contract-drift",
+        report=report,
+        toolchain=campaign.toolchain,
+        agent_identity="SAMPLE-PROJECT/adapter-contract-drift",
+        adapters=(
+            _adapter_result(
+                output_digest="a" * 64,
+                returncode=0,
+                command_digest="9" * 64,
+            ),
+        ),
+    )
 
     comparison = compare_campaign(
         campaign,
-        (passed, failed),
+        (passed, failed, changed_sandbox, changed_contract),
         (),
         comparison_id="comparison-adapter",
         created_by="coordinator/one",
@@ -313,7 +384,56 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
     )
 
     assert comparison.adapter_divergence == (
-        "native adapter repository-check produced divergent status/output evidence",
+        "native adapter repository-check produced divergent execution/status/output evidence",
+    )
+
+
+def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> None:
+    """Campaign comparison rejects a required full-scope adapter omitted by one run."""
+    campaign, runs = _campaign_runs(tmp_path)
+    baseline = runs[0]
+    expected_adapter = AdapterSpec.from_dict(
+        {
+            "name": "repository-check",
+            "command": ["{python}", "controls/check.py"],
+            "timeout_seconds": 30,
+            "scope": "both",
+            "working_directory": ".",
+            "required": True,
+            "domains": ["application-security"],
+        },
+        0,
+    )
+    report = _report_with(baseline.report, native_audits=(expected_adapter,))
+    complete = _stored_run(
+        campaign,
+        baseline,
+        run_id="adapter-complete",
+        report=report,
+        toolchain=campaign.toolchain,
+        agent_identity="SAMPLE-PROJECT/adapter-complete",
+        adapters=(_adapter_result(output_digest="a" * 64, returncode=0),),
+    )
+    omitted = _stored_run(
+        campaign,
+        baseline,
+        run_id="adapter-omitted",
+        report=report,
+        toolchain=campaign.toolchain,
+        agent_identity="SAMPLE-PROJECT/adapter-omitted",
+    )
+
+    comparison = compare_campaign(
+        campaign,
+        (complete, omitted),
+        (),
+        comparison_id="comparison-adapter-omission",
+        created_by="coordinator/one",
+        created_at="2026-07-15T13:00:00Z",
+    )
+
+    assert comparison.adapter_divergence == (
+        "run adapter-omitted: omitted native adapters repository-check",
     )
 
 

@@ -88,7 +88,18 @@ Declared native adapters are executable policy, not passive configuration.
 `gate` and `campaign-run` refuse to run them unless the operator supplies
 `--allow-native-audits`. Consent still uses a fixed credential-free
 environment, a no-network read-only bubblewrap sandbox, mandatory timeouts,
-process-tree termination, and a streaming output hard cap.
+process-tree termination, disabled nested user namespaces, and a streaming
+output hard cap. Native execution currently requires the Debian-family
+`/usr/bin/bwrap` and `/usr/bin/dpkg-query` surfaces, a root-owned single-link
+launcher and query executable without group/world-write, set-user-ID, or
+set-group-ID bits, Bubblewrap version 0.9.0 or newer and lower
+than 1.0.0, an installed `bubblewrap` package,
+and every option named by `BubblewrapCompatibilityPolicy`. Missing dpkg
+association, an unsupported version, option drift, or identity change during
+an adapter run fails closed. Gate and campaign records embed the complete
+policy and observed secret-free package-database evidence. The dpkg fields do
+not prove repository signatures or installed-payload checksums; the executable
+SHA-256 identifies the bytes inspected and executed.
 
 Conditions use a bounded declarative expression tree. They can read declared
 context values and combine supported comparisons and boolean operations; they

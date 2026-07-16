@@ -35,6 +35,22 @@ No-follow descriptor-relative component walks bind validation to hashing and
 execution; a platform without descriptor execution fails closed.
 
 Native tools execute with resolved binaries, argv-only invocation, bounded
-output, and timeouts. Remediation work is designed for exact path claims and
-independent worktrees so non-conflicting procedures can proceed concurrently
-without sharing a mutable staging area.
+output, and timeouts. Bubblewrap itself crosses a separate host-trust boundary:
+a versioned policy constrains its fixed path, owner/mode/link state, semantic
+version, dpkg-reported package association/version/architecture/status,
+package-query executable, and required option surface. The dpkg fields are not
+a repository-signature or payload-checksum proof; the executable SHA-256 is the
+observed binary identity. Enforcement and campaign artifacts retain the
+complete provenance, and pre/post execution inspection rejects drift. The
+sandbox disables nested
+user namespaces in addition to unsharing the initial network and mount state.
+
+On GitHub's Ubuntu 24.04 runners, the path-specific AppArmor profile only
+permits `/usr/bin/bwrap` to create the initial user namespace while the global
+restriction remains enabled. `flags=(unconfined)` is an explicit compatibility
+attachment, not a claimed confinement layer; the attested Bubblewrap arguments
+define the native-audit sandbox.
+
+Remediation work is designed for exact path claims and independent worktrees
+so non-conflicting procedures can proceed concurrently without sharing a
+mutable staging area.

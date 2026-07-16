@@ -17,13 +17,17 @@ import pytest
 from repository_audit_git_repository import sample_git_provenance
 
 from rigor_foundry.adapters import AdapterResult
-from rigor_foundry.enforcement import evaluate_enforcement
+from rigor_foundry.enforcement import ENFORCEMENT_SCHEMA_VERSION, evaluate_enforcement
 from rigor_foundry.models import (
     AuditPolicy,
     AuditReport,
     Candidate,
     EnforcementMode,
     ReviewRecord,
+)
+from rigor_foundry.sandbox_provenance import (
+    BubblewrapCompatibilityPolicy,
+    BubblewrapProvenance,
 )
 
 
@@ -102,6 +106,17 @@ def _adapter_result(*, returncode: int = 0) -> AdapterResult:
         command_digest="6" * 64,
         environment_digest="7" * 64,
         sandbox_digest="8" * 64,
+        sandbox_provenance=BubblewrapProvenance.build(
+            policy=BubblewrapCompatibilityPolicy(),
+            executable_digest="9" * 64,
+            semantic_version="0.9.0",
+            package_query_digest="a" * 64,
+            package_name="bubblewrap",
+            package_version="0.9.0-1ubuntu0.1",
+            package_architecture="amd64",
+            package_status="install ok installed",
+            capability_digest="b" * 64,
+        ),
     )
 
 
@@ -120,6 +135,11 @@ def test_observe_records_candidates_but_native_required_failure_blocks() -> None
     )
     assert not blocked.passed
     assert "native audit security failed" in blocked.blockers[0]
+
+
+def test_enforcement_schema_version_declares_sandbox_provenance_migration() -> None:
+    """Enforcement 1.1 requires the structured native sandbox identity."""
+    assert ENFORCEMENT_SCHEMA_VERSION == "1.1"
 
 
 def test_ratchet_requires_current_unexpired_unique_review() -> None:
@@ -178,6 +198,11 @@ def test_gate_artifact_binds_exact_report_and_rejects_tampering() -> None:
     stale = replace(report, head="a" * 40)
     with pytest.raises(ValueError, match="different repository report"):
         recovered.assert_report(stale)
+
+    unrecognised = gate.to_dict()
+    unrecognised["unbound"] = "discarded"
+    with pytest.raises(ValueError, match="fields do not match schema"):
+        type(gate).from_dict(unrecognised)
 
 
 @pytest.mark.parametrize(

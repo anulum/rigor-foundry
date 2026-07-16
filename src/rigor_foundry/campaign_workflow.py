@@ -195,6 +195,7 @@ def execute_campaign(
                     "command_digest": result.command_digest,
                     "environment_digest": result.environment_digest,
                     "sandbox_digest": result.sandbox_digest,
+                    "sandbox_provenance_identity": (result.sandbox_provenance.identity_digest),
                 }
                 for result in adapter_results
             ],

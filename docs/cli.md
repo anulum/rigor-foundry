@@ -31,7 +31,10 @@ When policy declares native adapters, `gate` requires the explicit
 `--allow-native-audits` consent flag. Adapters run in the read-only sandbox and
 the resulting gate artifact binds HEAD, tree, tracked content, policy, report,
 executable, command, environment, sandbox, and output digests. Raw argv and
-output are not retained.
+output are not retained. The structured sandbox evidence records the complete
+Bubblewrap compatibility policy, semantic version, binary digest, Debian
+package version/architecture/status, package-query binary digest, supported
+option-surface digest, and derived provenance identity.
 
 ## Independent campaigns
 
@@ -41,7 +44,11 @@ them away.
 
 `campaign-run` uses the same native consent flag and sandbox boundary. A run
 without declared native adapters remains passive and does not require consent.
-Native execution currently requires Linux bubblewrap at `/usr/bin/bwrap`.
+Native execution currently requires Debian-family Bubblewrap 0.9.x at
+`/usr/bin/bwrap`, with an installed `bubblewrap` association reported by
+`/usr/bin/dpkg-query`. That database association is not a repository-signature
+or payload-checksum proof; the executable SHA-256 records the actual binary
+identity. Missing or changed provenance fails closed.
 Custom Git trust options used for campaign creation must be repeated for every
 run. A different Git identity is reported as campaign input divergence.
 `campaign-compare` accepts the same options for its Git-ignored storage check

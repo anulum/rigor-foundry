@@ -48,8 +48,12 @@ reviews prioritise:
 - Native output is streamed into a hard aggregate byte cap; raw command text,
   environment values, and output are never serialized. Timeout or output-cap
   breaches terminate the process tree and fail closed.
-- Native evidence binds specification, executable, command, environment, and
-  sandbox digests to the exact report and gate digest.
+- Native evidence binds specification, executable, command, environment, the
+  complete Bubblewrap argument contract, compatibility policy, executable
+  SHA-256, semantic version, and dpkg-reported association to the exact report
+  and gate digest. The dpkg fields are package-database evidence, not a
+  repository-signature or installed-payload checksum; the executable digest is
+  the observed binary identity.
 - Missing evidence cannot become pass.
 - Writes require an explicit command and stay within validated ignored paths.
 - Secret profile variables store provider references, never secret values.

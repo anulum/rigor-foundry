@@ -104,15 +104,19 @@ may strengthen but cannot weaken the repository policy.
 before execution; the `{python}` token preserves the active virtual-environment
 launcher so native controls cannot silently escape the locked toolchain.
 Shells are disabled, timeouts are mandatory, outputs are bounded, and results
-include executable and input identity.
+include executable and input identity. `sandbox_provenance.py` defines the
+versioned Bubblewrap compatibility and dpkg-database association record;
+`trusted_executable.py` performs no-follow component walks, descriptor-pinned
+execution, streaming output bounds, deadlines, and process-group termination.
 
 ### Independent campaigns
 
 `campaign_models.py`, `campaign_store.py`, `campaign_workflow.py`, and
-`campaign_compare.py` freeze campaign inputs, Git provenance, independent
-toolchains, and limitations, and preserve disagreement. Campaign schema 1.1
-requires every run to reproduce the frozen Git identity; a different trusted
-binary is input divergence, not an equivalent unrecorded substitution. The
+`campaign_compare.py` freeze campaign inputs, Git and sandbox provenance,
+independent toolchains, and limitations, and preserve disagreement. Campaign
+schema 1.2 requires every run to reproduce the frozen Git identity and retain
+complete native-adapter provenance; a different trusted binary or omitted
+adapter is divergence, not an equivalent unrecorded substitution. The
 ignored-storage check that persists a campaign, run, or comparison must also
 reproduce that frozen identity.
 Majority agreement is not converted into truth.
