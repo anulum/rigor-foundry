@@ -15,7 +15,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from tools._repository import ROOT
+from tools._repository import ROOT, redacted_guard_exit_code
 
 WAIVER_PATH = Path(".github/dependency-waivers.json")
 SECURITY_LOCK = Path("requirements/security.txt")
@@ -149,13 +149,7 @@ def dependency_waiver_errors(root: Path = ROOT, *, today: date | None = None) ->
 def main() -> int:
     """Validate the dependency waiver and return a process exit code."""
     errors = dependency_waiver_errors()
-    if errors:
-        print("Dependency-waiver guard failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Dependency-waiver guard passed")
-    return 0
+    return redacted_guard_exit_code("Dependency-waiver guard", errors)
 
 
 if __name__ == "__main__":

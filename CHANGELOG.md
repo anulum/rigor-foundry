@@ -19,9 +19,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pre-publication status text.
 - Public status and installation documentation now distinguish the immutable
   GitHub/GHCR-only `v0.1.0` release from registry-verified Python packages.
-- Secret-scan failures no longer emit repository-derived finding details from
-  the standalone CLI; composed audit findings replace raw paths with SHA-256
-  identifiers so candidate values and adversarial filenames stay out of logs.
+- CI-facing repository guards and the composed self-audit now emit only fixed
+  pass/fail status. Secret findings retain full SHA-256 path identifiers for
+  trusted in-process consumers without exposing candidate values or
+  adversarial filenames through guard output.
 
 ## [0.1.0] - 2026-07-16
 

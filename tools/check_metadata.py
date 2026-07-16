@@ -16,7 +16,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from tools._repository import ROOT
+from tools._repository import ROOT, redacted_guard_exit_code
 
 EXPECTED_NAME = "rigor-foundry"
 EXPECTED_LICENSE = "Apache-2.0"
@@ -99,13 +99,7 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
 def main() -> int:
     """Validate distribution metadata and return a process exit code."""
     errors = metadata_errors()
-    if errors:
-        print("Metadata guard failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Metadata guard passed")
-    return 0
+    return redacted_guard_exit_code("Metadata guard", errors)
 
 
 if __name__ == "__main__":

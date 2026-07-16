@@ -13,7 +13,7 @@ import hashlib
 import re
 from pathlib import Path
 
-from tools._repository import ROOT, read_text, visible_files
+from tools._repository import ROOT, read_text, redacted_guard_exit_code, visible_files
 
 SKIPPED_PATHS = {Path(".gitleaks.toml"), Path("tools/check_secrets.py")}
 RULES = {
@@ -55,11 +55,7 @@ def secret_errors(root: Path = ROOT) -> list[str]:
 
 def main(root: Path = ROOT) -> int:
     """Scan visible files without emitting repository-derived finding data."""
-    if secret_errors(root):
-        print("Secret guard failed; finding details are redacted from process output.")
-        return 1
-    print("Secret guard passed")
-    return 0
+    return redacted_guard_exit_code("Secret guard", secret_errors(root))
 
 
 if __name__ == "__main__":

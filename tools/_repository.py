@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Collection
 from pathlib import Path
 
 from rigor_foundry.git_provenance import GitRunner
@@ -19,6 +20,28 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class RepositoryError(RuntimeError):
     """Report an inability to establish repository state."""
+
+
+def redacted_guard_exit_code(label: str, errors: Collection[object]) -> int:
+    """Render a fixed guard status without disclosing finding content.
+
+    Parameters
+    ----------
+    label:
+        Fixed human-readable guard name supplied by the caller.
+    errors:
+        Findings whose content must remain inside the current process.
+
+    Returns
+    -------
+    int
+        Zero when no findings exist; otherwise one.
+    """
+    if errors:
+        print(f"{label} failed; finding details are redacted from process output.")
+        return 1
+    print(f"{label} passed")
+    return 0
 
 
 def run(*argv: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:

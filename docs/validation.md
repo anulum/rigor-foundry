@@ -56,7 +56,8 @@ publication environments admit only `v*` tags and retain required owner review.
 See the repository
 [validation matrix](https://github.com/anulum/rigor-foundry/blob/main/VALIDATION.md).
 
-Secret-scan failures are log-safe: the standalone guard prints no
-repository-derived finding details, and composed audit findings replace raw
-paths with full SHA-256 identifiers. Candidate values and adversarial filenames
-therefore do not enter CI output.
+CI-facing repository guards and the composed self-audit print only fixed
+pass/fail status, so their diagnostics cannot disclose credential-bearing
+filenames or inject forged log lines. Trusted in-process secret findings retain
+full SHA-256 path identifiers without candidate values. Third-party analyser
+output follows the analyser's own reporting contract.

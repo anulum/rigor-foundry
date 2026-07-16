@@ -13,7 +13,7 @@ import ast
 import tomllib
 from pathlib import Path
 
-from tools._repository import ROOT
+from tools._repository import ROOT, redacted_guard_exit_code
 
 _NETWORK_MODULES = frozenset(
     {
@@ -73,13 +73,7 @@ def data_boundary_errors(root: Path = ROOT) -> list[str]:
 def main() -> int:
     """Validate the local-only core data boundary and return a process exit code."""
     errors = data_boundary_errors()
-    if errors:
-        print("Data-boundary guard failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Data-boundary guard passed")
-    return 0
+    return redacted_guard_exit_code("Data-boundary guard", errors)
 
 
 if __name__ == "__main__":

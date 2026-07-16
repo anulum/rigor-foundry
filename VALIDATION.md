@@ -211,10 +211,12 @@ workflows establish landing evidence; tag-triggered release and publication
 remain separate gates.
 
 The repository secret guard never emits candidate values or raw repository
-paths. Programmatic audit findings identify paths only by full SHA-256, while
-the standalone CLI emits no repository-derived finding detail at all. This
-keeps CI logs redacted even when an adversarial path itself contains credential
-material.
+paths. Its programmatic findings identify paths only by full SHA-256. Every
+CI-facing repository guard, including the composed self-audit, emits only a
+fixed pass/fail status and keeps precise diagnostics inside the process. This
+prevents those guard CLIs from disclosing credential-bearing filenames or
+accepting newline-bearing paths as forged log records. Third-party analyser
+output remains governed by each analyser's own reporting contract.
 
 Version `v0.1.0` is published as a GitHub Release and GHCR image without a PyPI
 counterpart. Its immutable wheel retained pre-publication-only status text, so

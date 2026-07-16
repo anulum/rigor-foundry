@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tools._repository import ROOT, read_text, visible_files
+from tools._repository import ROOT, read_text, redacted_guard_exit_code, visible_files
 
 SPDX_HEADER = "".join(("# SPDX-License-", "Identifier: Apache-2.0"))
 HEADER_LINES = (
@@ -66,13 +66,7 @@ def header_errors(root: Path = ROOT) -> list[str]:
 def main() -> int:
     """Validate direct headers and return a process exit code."""
     errors = header_errors()
-    if errors:
-        print("Header guard failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Header guard passed")
-    return 0
+    return redacted_guard_exit_code("Header guard", errors)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tools._repository import ROOT
+from tools._repository import ROOT, redacted_guard_exit_code
 
 ACTION_PATTERN = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)", re.MULTILINE)
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -68,13 +68,7 @@ def action_pin_errors(root: Path = ROOT) -> list[str]:
 def main() -> int:
     """Validate workflows and return a process exit code."""
     errors = action_pin_errors()
-    if errors:
-        print("Action pin guard failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Action pin guard passed")
-    return 0
+    return redacted_guard_exit_code("Action pin guard", errors)
 
 
 if __name__ == "__main__":

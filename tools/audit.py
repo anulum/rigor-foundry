@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 
 from rigor_foundry.coverage_residuals import coverage_residual_errors
-from tools._repository import ROOT, read_text, run, visible_files
+from tools._repository import ROOT, read_text, redacted_guard_exit_code, run, visible_files
 from tools.check_action_pins import action_pin_errors
 from tools.check_data_boundary import data_boundary_errors
 from tools.check_dependency_waivers import dependency_waiver_errors
@@ -165,13 +165,7 @@ def main() -> int:
     parser.add_argument("--strict-authoring", action="store_true")
     arguments = parser.parse_args()
     errors = audit_errors(strict_authoring=arguments.strict_authoring)
-    if errors:
-        print("Repository audit failed:")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("Repository audit passed")
-    return 0
+    return redacted_guard_exit_code("Repository audit", errors)
 
 
 if __name__ == "__main__":
