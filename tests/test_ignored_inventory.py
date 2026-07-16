@@ -379,102 +379,73 @@ def test_public_scan_rejects_raced_ignored_hardlink_metadata_oracle(
     assert evidence.content_sha256 is None
 
 
-@pytest.mark.parametrize("attempt", range(5))
-def test_public_scan_fails_closed_on_ignored_final_replacement(
+def test_public_scan_fails_closed_on_ignored_parent_replacement(
     tmp_path: Path,
-    attempt: int,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A real final-path replacement after open cannot authenticate stale bytes."""
-    repository = GitRepository.create(tmp_path / f"replacement-{attempt}")
+    """A real parent replacement before revalidation invalidates its evidence."""
+    repository = GitRepository.create(tmp_path / "repository")
     repository.write_policy(
-        ignored_inventory=[_declaration("state", ".rigor/state.bin", "file-sha256")]
-    )
-    mutator = repository.write_text(
-        "controls/replace.py",
-        """
-import ctypes
-import os
-import pathlib
-import signal
-import sys
-
-target, replacement, ready, primed, changed = map(pathlib.Path, sys.argv[1:6])
-scanner_pid = int(sys.argv[6])
-libc = ctypes.CDLL(None, use_errno=True)
-notify = libc.inotify_init1(os.O_CLOEXEC)
-if notify < 0:
-    raise OSError(ctypes.get_errno(), "inotify_init1")
-if libc.inotify_add_watch(notify, os.fsencode(target), 0x20) < 0:
-    raise OSError(ctypes.get_errno(), "inotify_add_watch")
-temporary = ready.with_suffix(".tmp")
-temporary.write_text("ready", encoding="utf-8")
-os.replace(temporary, ready)
-os.read(notify, 4096)
-temporary = primed.with_suffix(".tmp")
-temporary.write_text("primed", encoding="utf-8")
-os.replace(temporary, primed)
-os.read(notify, 4096)
-os.kill(scanner_pid, signal.SIGSTOP)
-try:
-    target.rename(target.with_suffix(".old"))
-    os.replace(replacement, target)
-    temporary = changed.with_suffix(".tmp")
-    temporary.write_text("changed", encoding="utf-8")
-    os.replace(temporary, changed)
-finally:
-    os.kill(scanner_pid, signal.SIGCONT)
-    os.close(notify)
-""".lstrip(),
+        ignored_inventory=[_declaration("state", ".rigor/runtime/state.bin", "file-sha256")]
     )
     repository.write_text("src/pkg/module.py", "VALUE = 1\n")
     repository.commit()
-    target = repository.write_bytes(".rigor/state.bin", b"A" * (32 * 1024 * 1024))
-    replacement = repository.write_bytes(".rigor/replacement.bin", b"B" * (32 * 1024 * 1024))
-    ready = repository.root / ".rigor/ready"
-    primed = repository.root / ".rigor/primed"
-    changed = repository.root / ".rigor/changed"
-    original_affinity = os.sched_getaffinity(0)
-    os.sched_setaffinity(0, {min(original_affinity)})
-    process = subprocess.Popen(  # nosec B603
-        [
-            sys.executable,
-            str(mutator),
-            str(target),
-            str(replacement),
-            str(ready),
-            str(primed),
-            str(changed),
-            str(os.getpid()),
-        ],
-        cwd=repository.root,
-        shell=False,
+    target = repository.write_bytes(
+        ".rigor/runtime/state.bin",
+        b"authenticated-state",
     )
-    try:
-        deadline = time.monotonic() + 10
-        while not ready.is_file() and time.monotonic() < deadline:
-            time.sleep(0.005)
-        assert ready.read_text(encoding="utf-8") == "ready"
-        descriptor = os.open(target, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0))
-        os.close(descriptor)
-        deadline = time.monotonic() + 10
-        while not primed.is_file() and time.monotonic() < deadline:
-            time.sleep(0.005)
-        assert primed.read_text(encoding="utf-8") == "primed"
-        report = rigor_foundry.scan_repository(repository.root)
-        assert changed.read_text(encoding="utf-8") == "changed"
-        evidence = report.ignored_inventory_evidence[0]
-        assert evidence.status == "unavailable"
-        assert evidence.reason == "changed-while-read"
-        assert evidence.content_sha256 is None
-    finally:
-        try:
-            process.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            process.terminate()
-            process.wait(timeout=10)
-            raise
-        finally:
-            os.sched_setaffinity(0, original_affinity)
+    parent = target.parent
+    displaced = parent.with_name("runtime-displaced")
+    real_stat = os.stat
+    target_stats = 0
+    replaced = False
+
+    def replace_parent_before_revalidation(
+        path: os.PathLike[str] | str | bytes | int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        nonlocal replaced, target_stats
+        if path == target.name and dir_fd is not None and not follow_symlinks:
+            target_stats += 1
+        if (
+            path == parent.name
+            and dir_fd is not None
+            and not follow_symlinks
+            and target_stats == 3
+            and not replaced
+        ):
+            parent.rename(displaced)
+            parent.mkdir()
+            replaced = True
+        return real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "stat", replace_parent_before_revalidation)
+    monkeypatch.setattr(
+        os,
+        "supports_dir_fd",
+        frozenset(
+            replace_parent_before_revalidation if function is real_stat else function
+            for function in os.supports_dir_fd
+        ),
+    )
+    monkeypatch.setattr(
+        os,
+        "supports_follow_symlinks",
+        frozenset(
+            replace_parent_before_revalidation if function is real_stat else function
+            for function in os.supports_follow_symlinks
+        ),
+    )
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert replaced
+    assert target_stats == 3
+    assert displaced.joinpath(target.name).read_bytes() == b"authenticated-state"
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "changed-while-read"
+    assert evidence.byte_size is None
+    assert evidence.content_sha256 is None
 
 
 def test_collection_rejects_symlinked_repository_root(tmp_path: Path) -> None:

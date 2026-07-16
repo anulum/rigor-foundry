@@ -242,6 +242,9 @@ finally:
                     scan_repository(repository.root)
                 else:
                     load_git_inventory(repository.root)
+            deadline = time.monotonic() + 5.0
+            while not mutated.exists() and time.monotonic() < deadline:
+                time.sleep(0.01)
             assert mutated.read_text(encoding="utf-8") == "changed"
         finally:
             stop.write_text("stop", encoding="utf-8")
