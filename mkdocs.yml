@@ -41,6 +41,7 @@ nav:
   - SARIF export: sarif.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md
+  - Claim isolation and fleet views: claim-isolation.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
