@@ -53,10 +53,15 @@ def test_static_public_imports_and_allowed_dynamic_syntax_remain_clear() -> None
         "eval('public')",
         "exec('pass')",
         "compile('pass', '<test>', 'exec')",
+        "runner = eval",
+        "runner = runtime.exec",
+        "runner = compile",
         "getattr(loader, '__import__')",
         "getattr(loader, name='import_' + 'module')",
+        "getattr(runtime, 'eval')",
         "globals()['__' + 'import__']",
         "registry['import_module']",
+        "registry['ex' + 'ec']",
     ],
 )
 def test_forbid_syntax_reports_reserved_dynamic_import_surfaces(source: str) -> None:
@@ -77,7 +82,6 @@ def test_forbid_syntax_reports_reserved_dynamic_import_surfaces(source: str) -> 
         "getattr(loader)",
         "registry['public']",
         "registry[prefix + name]",
-        "public.compile",
     ],
 )
 def test_forbid_syntax_ignores_comments_plain_strings_and_other_names(source: str) -> None:

@@ -16,6 +16,7 @@ DynamicImportPolicy = Literal["allow", "forbid-syntax"]
 _DYNAMIC_MODULES: Final = frozenset({"builtins", "importlib"})
 _DYNAMIC_NAMES: Final = frozenset({"__import__", "import_module"})
 _CODE_CALLS: Final = frozenset({"compile", "eval", "exec"})
+_RESERVED_NAMES: Final = _DYNAMIC_NAMES | _CODE_CALLS
 
 
 def _constant_string(node: ast.AST) -> str | None:
@@ -87,7 +88,7 @@ def _reflective_name(node: ast.Call) -> str | None:
     if len(candidates) != 1:
         return None
     value = _constant_string(candidates[0])
-    return value if value in _DYNAMIC_NAMES else None
+    return value if value in _RESERVED_NAMES else None
 
 
 def forbidden_imports(
@@ -118,16 +119,14 @@ def forbidden_imports(
         if dynamic_import_policy != "forbid-syntax":
             continue
         if isinstance(node, (ast.Name, ast.Attribute)):
-            if (name := _symbol_name(node)) in _DYNAMIC_NAMES:
+            if (name := _symbol_name(node)) in _RESERVED_NAMES:
                 matches.add((f"reserved-name:{name}", node.lineno))
         elif isinstance(node, ast.Call):
-            if (name := _symbol_name(node.func)) in _CODE_CALLS:
-                matches.add((f"reserved-code-call:{name}", node.lineno))
             if name := _reflective_name(node):
                 matches.add((f"reserved-reflection:{name}", node.lineno))
         elif (
             isinstance(node, ast.Subscript)
-            and (name := _constant_string(node.slice)) in _DYNAMIC_NAMES
+            and (name := _constant_string(node.slice)) in _RESERVED_NAMES
         ):
             matches.add((f"reserved-subscript:{name}", node.lineno))
     return tuple(sorted(matches, key=lambda item: (item[1], item[0])))
