@@ -271,6 +271,15 @@ jobs:
             '    hooks:' \
             '      - id: rigor-foundry' \
             '        args:' \
+            '          - gate' \
+            '          - --root' \
+            '          - .' \
+            '          - --policy' \
+            '          - rigor-foundry-policy.json' \
+            '          - --mode' \
+            '          - observe' \
+            '          - --scope' \
+            '          - staged' \
             '          - --output' \
             '          - reports/pre-commit-gate.json' \
             > .pre-commit-config.yaml

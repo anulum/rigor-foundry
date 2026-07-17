@@ -86,6 +86,8 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     assert "Install and run distributable hook in external fixture" in workflow
     assert '"  - repo: file://${SOURCE_REPOSITORY}"' in workflow
     assert '"    rev: ${SOURCE_REVISION}"' in workflow
+    for argument in ("gate", "--root", "--policy", "--mode", "--scope", "--output"):
+        assert f"'          - {argument}'" in workflow
     assert "python -m pre_commit run --all-files" in workflow
     for output in (
         "reports/pre-commit-gate.json",

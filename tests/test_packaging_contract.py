@@ -21,7 +21,13 @@ def test_build_backend_and_base_image_are_immutable() -> None:
 
     with (ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
-    assert project["build-system"]["requires"] == ["hatchling==1.31.0"]
+    assert project["build-system"]["requires"] == [
+        "hatchling==1.31.0",
+        "packaging==26.2",
+        "pathspec==1.1.1",
+        "pluggy==1.6.0",
+        "trove-classifiers==2026.6.1.19",
+    ]
     assert project["project"]["license"] == "Apache-2.0"
     assert project["project"]["license-files"] == ["LICENSE", "NOTICE"]
     assert project["project"]["version"] == __version__
