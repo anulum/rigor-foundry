@@ -352,7 +352,7 @@ def test_report_rejects_duplicate_direct_constructed_and_tampered_records() -> N
         RuleMaturityReport.build(_policy(), ()).assessment_for("AR999-unknown")
 
     report = RuleMaturityReport.build(_policy(), _active_evidence())
-    mutations = (
+    mutations: tuple[tuple[str, object, str], ...] = (
         ("schema_version", "2.0", "unsupported rule maturity schema"),
         ("rule_pack_version", "rigor-foundry/9.0.0", "unsupported rule-pack version"),
         ("rule_pack_digest", "0" * 64, "rule-pack digest"),

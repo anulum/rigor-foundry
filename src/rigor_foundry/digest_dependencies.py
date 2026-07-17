@@ -83,11 +83,11 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
         "git_provenance.identity_digest",
         "git_provenance",
     ),
-    DigestNodeSpec("policy", "policy_digest", "models"),
+    DigestNodeSpec("policy", "policy_digest", "policy_models"),
     DigestNodeSpec("rule-pack", "rule_pack_digest", "rules"),
     DigestNodeSpec(
         "maturity-policy",
-        "maturity_policy_digest",
+        "policy_digest",
         "rule_maturity",
     ),
     DigestNodeSpec("rule-maturity", "maturity_digest", "rule_maturity"),
@@ -219,9 +219,9 @@ def validate_digest_dependency_graph(
     names = tuple(node.name for node in nodes)
     if len(names) != len(set(names)):
         errors.append("digest node names must be unique")
-    identities = tuple(node.identity_field for node in nodes)
+    identities = tuple((node.owner_module, node.identity_field) for node in nodes)
     if len(identities) != len(set(identities)):
-        errors.append("digest identity fields must be unique")
+        errors.append("digest owner-qualified identity fields must be unique")
     node_index = {name: index for index, name in enumerate(names)}
     edge_pairs = tuple((edge.upstream, edge.downstream) for edge in dependencies)
     if len(edge_pairs) != len(set(edge_pairs)):

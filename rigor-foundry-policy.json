@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "source_line_threshold": 700,
   "test_line_threshold": 700,
   "source_roots": [
@@ -19,6 +19,7 @@
   "canonical_todo": ".rigor/TODO.md",
   "review_ledger": ".rigor/reviews.json",
   "enforcement_mode": "observe",
+  "maturity_policy_digest": null,
   "ignored_inventory": [],
   "audit_domains": [
     {

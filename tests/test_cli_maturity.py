@@ -25,6 +25,16 @@ from rigor_foundry.rule_maturity_manifest import MATURITY_CASE_MANIFEST_SCHEMA_V
 def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path) -> None:
     """Real scan/review files activate one rule without laundering probation candidates."""
     repository = cli_repository(tmp_path / "repository")
+    policy = RuleMaturityPolicy.build(
+        minimum_adjudicated_reviews=1,
+        minimum_distinct_repositories=1,
+        minimum_distinct_reviewers=1,
+        minimum_positive_reviews=1,
+        maximum_false_positive_basis_points=10_000,
+        maximum_median_effort_seconds=300,
+        maximum_p90_effort_seconds=300,
+    )
+    repository.write_policy(maturity_policy_digest=policy.policy_digest)
     report_path = repository.root / ".coordination/report.json"
     review_path = repository.root / ".coordination/reviews.json"
     assert (
@@ -75,15 +85,6 @@ def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path
     )
     review_path.write_text(json.dumps(review_document), encoding="utf-8")
 
-    policy = RuleMaturityPolicy.build(
-        minimum_adjudicated_reviews=1,
-        minimum_distinct_repositories=1,
-        minimum_distinct_reviewers=1,
-        minimum_positive_reviews=1,
-        maximum_false_positive_basis_points=10_000,
-        maximum_median_effort_seconds=300,
-        maximum_p90_effort_seconds=300,
-    )
     case_path = repository.root / ".coordination/maturity-cases.json"
     maturity_path = repository.root / ".coordination/maturity.json"
     case_path.write_text(
@@ -167,6 +168,7 @@ def test_cli_rejects_changed_maturity_and_repeats_deterministically(tmp_path: Pa
         maximum_median_effort_seconds=60,
         maximum_p90_effort_seconds=60,
     )
+    repository.write_policy(maturity_policy_digest=policy.policy_digest)
     cases = repository.root / ".coordination/empty-cases.json"
     output = repository.root / ".coordination/maturity.json"
     cases.write_text(

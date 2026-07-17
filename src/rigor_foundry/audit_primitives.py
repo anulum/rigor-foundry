@@ -16,7 +16,7 @@ from typing import Literal, cast
 REPORT_SCHEMA_VERSION = "1.3"
 REVIEW_SCHEMA_VERSION = "1.0"
 SCHEMA_VERSION = REPORT_SCHEMA_VERSION
-POLICY_SCHEMA_VERSION = "1.1"
+POLICY_SCHEMA_VERSION = "1.2"
 SCANNER_VERSION = "0.3.0"
 POLICY_FIELDS = frozenset(
     {
@@ -30,6 +30,7 @@ POLICY_FIELDS = frozenset(
         "canonical_todo",
         "review_ledger",
         "enforcement_mode",
+        "maturity_policy_digest",
         "audit_domains",
         "native_audits",
         "ignored_inventory",

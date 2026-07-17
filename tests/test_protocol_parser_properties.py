@@ -66,7 +66,7 @@ def test_policy_parser_ignores_field_insertion_order(order: tuple[str, ...]) -> 
 @_PROPERTY_SETTINGS
 @given(st.sampled_from(tuple(AuditPolicy().to_dict())))
 def test_policy_parser_rejects_every_missing_field(field: str) -> None:
-    """Every top-level policy field is mandatory under schema 1.1."""
+    """Every top-level policy field is mandatory under schema 1.2."""
     value = AuditPolicy().to_dict()
     del value[field]
     with pytest.raises(ValueError, match="fields"):

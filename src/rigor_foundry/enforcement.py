@@ -26,8 +26,9 @@ from .models import (
 )
 from .review import validate_reviews
 from .rule_maturity import RuleMaturityReport
+from .rules import RULES_BY_ID
 
-ENFORCEMENT_SCHEMA_VERSION = "1.2"
+ENFORCEMENT_SCHEMA_VERSION = "1.3"
 _ENFORCEMENT_FIELDS = frozenset(
     {
         "schema_version",
@@ -43,6 +44,7 @@ _ENFORCEMENT_FIELDS = frozenset(
         "active_candidate_count",
         "probation_candidate_count",
         "probation_rule_ids",
+        "maturity_policy_digest",
         "maturity_digest",
         "adapter_results",
         "adapter_evidence_digest",
@@ -79,6 +81,7 @@ class EnforcementResult:
     active_candidate_count: int
     probation_candidate_count: int
     probation_rule_ids: tuple[str, ...]
+    maturity_policy_digest: str | None
     maturity_digest: str | None
     adapter_results: tuple[AdapterResult, ...]
     adapter_evidence_digest: str
@@ -96,6 +99,7 @@ class EnforcementResult:
         active_candidate_count: int,
         probation_candidate_count: int,
         probation_rule_ids: tuple[str, ...],
+        maturity_policy_digest: str | None,
         maturity_digest: str | None,
         adapter_results: tuple[AdapterResult, ...],
         blockers: tuple[str, ...],
@@ -116,6 +120,7 @@ class EnforcementResult:
             "active_candidate_count": active_candidate_count,
             "probation_candidate_count": probation_candidate_count,
             "probation_rule_ids": list(probation_rule_ids),
+            "maturity_policy_digest": maturity_policy_digest,
             "maturity_digest": maturity_digest,
             "adapter_results": adapter_evidence,
             "adapter_evidence_digest": canonical_digest(adapter_evidence),
@@ -141,6 +146,7 @@ class EnforcementResult:
             active_candidate_count=cast(int, fields["active_candidate_count"]),
             probation_candidate_count=cast(int, fields["probation_candidate_count"]),
             probation_rule_ids=tuple(cast(list[str], fields["probation_rule_ids"])),
+            maturity_policy_digest=cast(str | None, fields["maturity_policy_digest"]),
             maturity_digest=cast(str | None, fields["maturity_digest"]),
             adapter_results=tuple(
                 AdapterResult.from_dict(item, index) for index, item in enumerate(raw_results)
@@ -171,6 +177,7 @@ class EnforcementResult:
             "active_candidate_count": self.active_candidate_count,
             "probation_candidate_count": self.probation_candidate_count,
             "probation_rule_ids": list(self.probation_rule_ids),
+            "maturity_policy_digest": self.maturity_policy_digest,
             "maturity_digest": self.maturity_digest,
             "adapter_results": [item.to_dict() for item in self.adapter_results],
             "adapter_evidence_digest": self.adapter_evidence_digest,
@@ -212,6 +219,18 @@ class EnforcementResult:
         )
         if probation_rule_ids != sorted(set(probation_rule_ids)):
             raise ValueError("enforcement.probation_rule_ids must be sorted and unique")
+        unknown_probation_rules = set(probation_rule_ids).difference(RULES_BY_ID)
+        if unknown_probation_rules:
+            raise ValueError("enforcement.probation_rule_ids contain an unknown rule")
+        raw_maturity_policy_digest = data.get("maturity_policy_digest")
+        maturity_policy_digest = (
+            None
+            if raw_maturity_policy_digest is None
+            else _digest(
+                raw_maturity_policy_digest,
+                "enforcement.maturity_policy_digest",
+            )
+        )
         raw_maturity_digest = data.get("maturity_digest")
         maturity_digest = (
             None
@@ -262,6 +281,7 @@ class EnforcementResult:
                 minimum=0,
             ),
             "probation_rule_ids": probation_rule_ids,
+            "maturity_policy_digest": maturity_policy_digest,
             "maturity_digest": maturity_digest,
             "adapter_results": adapter_results,
             "adapter_evidence_digest": recorded_adapter_digest,
@@ -274,6 +294,10 @@ class EnforcementResult:
         )
         if recorded_gate_digest != canonical_digest(fields):
             raise ValueError("gate digest does not match enforcement content")
+        if (maturity_policy_digest is None) is not (maturity_digest is None):
+            raise ValueError("enforcement maturity policy and report digests must occur together")
+        if mode != "observe" and maturity_digest is None:
+            raise ValueError("ratchet and zero enforcement require rule maturity evidence")
         if maturity_digest is None:
             if (
                 fields["active_candidate_count"] != 0
@@ -281,10 +305,19 @@ class EnforcementResult:
                 or probation_rule_ids
             ):
                 raise ValueError("enforcement maturity counts require a maturity artifact")
-        elif cast(int, fields["active_candidate_count"]) + cast(
-            int, fields["probation_candidate_count"]
-        ) != cast(int, fields["candidate_count"]):
-            raise ValueError("enforcement maturity candidate counts do not match candidate_count")
+        else:
+            active_count = cast(int, fields["active_candidate_count"])
+            probation_count = cast(int, fields["probation_candidate_count"])
+            if active_count + probation_count != cast(int, fields["candidate_count"]):
+                raise ValueError(
+                    "enforcement maturity candidate counts do not match candidate_count"
+                )
+            if (probation_count == 0) is not (not probation_rule_ids):
+                raise ValueError(
+                    "enforcement probation_rule_ids do not match probation candidate count"
+                )
+            if len(probation_rule_ids) > probation_count:
+                raise ValueError("enforcement probation_rule_ids exceed probation candidate count")
         return cls._from_fields(fields, recorded_gate_digest)
 
     def assert_report(self, report: AuditReport) -> None:
@@ -307,6 +340,14 @@ class EnforcementResult:
         )
         if observed != expected:
             raise ValueError("enforcement artifact belongs to a different repository report")
+        expected_maturity_policy = report.policy.maturity_policy_digest
+        if self.mode != "observe" and expected_maturity_policy != self.maturity_policy_digest:
+            raise ValueError("enforcement artifact uses a different maturity policy")
+        if (
+            expected_maturity_policy is not None
+            and expected_maturity_policy != self.maturity_policy_digest
+        ):
+            raise ValueError("enforcement artifact uses a different maturity policy")
 
 
 def _parse_utc(value: str) -> datetime:
@@ -376,11 +417,22 @@ def evaluate_enforcement(
     )
     if mode != "observe" and validated_maturity is None:
         raise ValueError("ratchet and zero enforcement require rule maturity evidence")
+    expected_maturity_policy = report.policy.maturity_policy_digest
+    if mode != "observe" and expected_maturity_policy is None:
+        raise ValueError("ratchet and zero enforcement require a repository maturity policy")
     if validated_maturity is not None and (
         validated_maturity.rule_pack_version != report.rule_pack_version
         or validated_maturity.rule_pack_digest != report.rule_pack_digest
     ):
         raise ValueError("rule maturity evidence belongs to a different rule pack")
+    observed_maturity_policy = (
+        validated_maturity.policy.policy_digest if validated_maturity is not None else None
+    )
+    if (
+        expected_maturity_policy is not None
+        and observed_maturity_policy != expected_maturity_policy
+    ):
+        raise ValueError("rule maturity evidence uses a different repository maturity policy")
     validation_errors = validate_reviews(report, reviews)
     blockers = list(validation_errors)
     completed = _completed_review_by_candidate(reviews)
@@ -436,6 +488,7 @@ def evaluate_enforcement(
         active_candidate_count=len(active_candidates),
         probation_candidate_count=len(probation_candidates),
         probation_rule_ids=probation_rule_ids,
+        maturity_policy_digest=observed_maturity_policy,
         maturity_digest=(
             validated_maturity.maturity_digest if validated_maturity is not None else None
         ),

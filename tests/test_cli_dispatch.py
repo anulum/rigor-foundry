@@ -180,6 +180,7 @@ def test_cli_rejects_invalid_outputs_reviews_selection_and_weaker_mode(
 
     policy_document = json.loads(policy_path.read_text(encoding="utf-8"))
     policy_document["enforcement_mode"] = "zero"
+    policy_document["maturity_policy_digest"] = "a" * 64
     policy_path.write_text(json.dumps(policy_document), encoding="utf-8")
     assert (
         main(

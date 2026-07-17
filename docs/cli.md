@@ -49,7 +49,7 @@ location, anchor kind, object identity, and digest beside the bounded evidence
 excerpt.
 
 Ignored evidence is collected only for exact paths declared by policy schema
-1.1. JSON never includes ignored file content, link targets, environment
+1.2. JSON never includes ignored file content, link targets, environment
 values, or recursive directory members. `missing` and `unavailable` remain
 evidence states and do not create findings by themselves.
 
@@ -96,10 +96,14 @@ false positives, while `valid` and `accepted-boundary` decisions count as
 positive adjudications.
 
 `rigor gate --mode ratchet` and `--mode zero` require `--maturity`. The gate
-binds the maturity digest, counts active and probationary candidates separately,
-and lists every probationary rule present in the current report. Probationary
-candidates cannot block and cannot be omitted from the artifact. Observe mode
-may run without a maturity report and makes no rule-activation claim.
+also requires repository policy schema 1.2 to bind the maturity report's exact
+`policy_digest` as `maturity_policy_digest`. It binds both the maturity-policy
+and maturity-report digests, counts active and probationary candidates
+separately, and lists every probationary rule present in the current report.
+Probationary candidates cannot block and cannot be omitted from the artifact.
+Observe mode may run without a maturity report and makes no rule-activation
+claim. A command-line mode cannot supply an unbound calibration policy while
+strengthening repository enforcement.
 
 Repository and reviewer identifiers, measured duration, and effort references
 are operator declarations. Schema validation and content addressing detect

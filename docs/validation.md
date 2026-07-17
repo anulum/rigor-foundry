@@ -53,7 +53,7 @@ source-bound evidence, conservative median and nearest-rank p90 calculations,
 finite probation reasons, complete-pack assessment, strict parsing, duplicate
 rejection, and digest recomputation. The CLI owner scans a real Git repository,
 builds and adjudicates a real review ledger, evaluates an explicit case
-manifest, and proves that ratchet requires the exact maturity artifact while
+manifest, and proves that ratchet requires the exact repository-bound maturity artifact while
 keeping probationary candidates visible and non-blocking.
 
 Candidate anchors have a dedicated real-repository contract. The focused owner

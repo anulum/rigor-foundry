@@ -42,8 +42,8 @@ records must be regenerated; unknown or mixed anchor fields have no
 compatibility fallback.
 
 Repository policy controls source and test roots, production packages,
-mandatory audit domains, size registries, enforcement mode, and declared native
-adapters. The desired-state API adds typed adopter variables, namespaced custom
+mandatory audit domains, size registries, enforcement mode, the expected
+rule-maturity policy digest, and declared native adapters. The desired-state API adds typed adopter variables, namespaced custom
 controls, applicability decisions, exact standard-pack selections, and
 secret-provider references.
 
@@ -62,7 +62,7 @@ prefixes, and only `test_`/`_test.py` names apply outside them.
 
 ## Declared ignored inventory
 
-Policy schema 1.1 accepts an `ignored_inventory` array sorted by
+Policy schema 1.2 accepts an `ignored_inventory` array sorted by
 `evidence_id`, `path`, and `capture`. Every declaration contains a unique
 portable `evidence_id`, a unique exact normalised repository-relative path,
 and either `presence` or `file-sha256`. Globs, absolute paths, parent traversal,
@@ -95,6 +95,14 @@ All minima are at least one, positive reviews cannot exceed the total review
 minimum, and the median limit cannot exceed the p90 limit. RigorFoundry supplies
 no universal threshold values; adopters must justify them against their corpus
 and operating costs.
+
+Repository policy schema 1.2 binds that separate calibration through
+`maturity_policy_digest`. Observe mode may leave it `null`, but a repository
+whose `enforcement_mode` is `ratchet` or `zero` must name the exact 64-character
+lowercase policy digest. A CLI request may strengthen observe mode only when
+the repository already binds the supplied maturity report's policy digest.
+Consequently an operator cannot select an empty or weaker calibration report
+at gate time and silently turn repository candidates into probation.
 
 The case manifest has exact top-level fields `schema_version`, `policy`, and
 `cases`. Every case has `repository_id`, `report`, `review`, `candidate_id`,

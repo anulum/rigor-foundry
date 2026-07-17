@@ -32,6 +32,11 @@ The current stable top-level import names are:
 - `scan_repository`
 - `validate_reviews`
 
+`AuditPolicy` is implemented by the cohesive `policy_models` owner, while the
+established `rigor_foundry.models.AuditPolicy` import and runtime module identity
+remain unchanged. This split is an internal ownership change, not a public API
+migration.
+
 Within the same major release, these names will not be removed or silently
 rebound to an incompatible kind of object. Record fields and serialized
 protocols retain their own explicit schema/version contracts; stable import

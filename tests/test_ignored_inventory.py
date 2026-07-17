@@ -49,7 +49,7 @@ def _declaration(
 
 
 def test_policy_declarations_are_exact_sorted_unique_and_versioned() -> None:
-    """Policy schema 1.1 rejects ambiguous or duplicate ignored-path declarations."""
+    """Policy schema 1.2 rejects ambiguous or duplicate ignored-path declarations."""
     assert IGNORED_INVENTORY_SCHEMA_VERSION == "1.0"
     declarations = parse_ignored_inventory(
         [
@@ -471,7 +471,7 @@ def test_public_scan_fails_closed_on_repository_root_replacement(
             repository.root.rename(displaced)
             repository.root.mkdir()
             replaced = True
-        return open_directory_no_follow(path)
+        return cast(int, open_directory_no_follow(path))
 
     monkeypatch.setattr(
         "rigor_foundry.ignored_inventory.open_directory_no_follow",

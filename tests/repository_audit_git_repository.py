@@ -137,10 +137,12 @@ class GitRepository:
         ),
         registries: list[str] | None = None,
         ignored_inventory: list[dict[str, str]] | None = None,
+        enforcement_mode: str = "observe",
+        maturity_policy_digest: str | None = None,
     ) -> Path:
         """Write a complete internal repository policy for this worktree."""
         policy: dict[str, object] = {
-            "schema_version": "1.1",
+            "schema_version": "1.2",
             "source_line_threshold": source_threshold,
             "test_line_threshold": test_threshold,
             "source_roots": ["src", "tools"],
@@ -149,7 +151,8 @@ class GitRepository:
             "module_size_registries": registries or [],
             "canonical_todo": "docs/internal/work/INDEX.md",
             "review_ledger": "docs/internal/audit/reviews.json",
-            "enforcement_mode": "observe",
+            "enforcement_mode": enforcement_mode,
+            "maturity_policy_digest": maturity_policy_digest,
             "ignored_inventory": ignored_inventory or [],
             "audit_domains": [
                 {

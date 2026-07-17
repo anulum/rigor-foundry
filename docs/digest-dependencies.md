@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.2 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.3 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -25,9 +25,9 @@ separately and are not misrepresented as unconditional digest edges.
 | Inventory | `tracked_content_digest` | `git_inventory` |
 | Ignored inventory | `ignored_inventory_digest` | `ignored_inventory` |
 | Git provenance | `git_provenance.identity_digest` | `git_provenance` |
-| Policy | `policy_digest` | `models` |
+| Policy | `policy_digest` | `policy_models` |
 | Rule pack | `rule_pack_digest` | `rules` |
-| Maturity policy | `maturity_policy_digest` | `rule_maturity` |
+| Maturity policy | `policy_digest` | `rule_maturity` |
 | Rule maturity | `maturity_digest` | `rule_maturity` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
@@ -39,6 +39,10 @@ separately and are not misrepresented as unconditional digest edges.
 | Comparison | `comparison_digest` | `campaign_compare` |
 | Task | `definition_digest` | `work_models` |
 | Closure | `closure_digest` | `work_closure` |
+
+Identity-field names are scoped by their owning protocol record. Two distinct
+owners may expose the same real field name, such as `policy_digest`; only a
+duplicate owner/field pair is ambiguous.
 
 `policy_digest` and `review_digest` are first-class properties over the entire
 canonical serialisation. They remove caller-specific hashing conventions.

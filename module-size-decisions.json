@@ -9,7 +9,7 @@
     },
     {
       "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, rule-maturity policy and assessment, report, review, campaign, comparison, adapter, standard pack, effective profile, task, event, and closure. Test construction also directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
-      "lines": 834,
+      "lines": 836,
       "path": "tests/test_digest_dependencies.py",
       "reassess_when": "The file exceeds 900 lines, the normative graph partitions into independently versioned subgraphs, a new node family has a separate schema owner, or another test-owner fixture dependency is introduced.",
       "responsibility": "Normative digest-dependency graph owner proving schema completeness, acyclicity, exact mutation propagation, stable non-edges, canonical identities, and runtime graph queries."

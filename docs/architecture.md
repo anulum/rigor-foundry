@@ -21,11 +21,14 @@ generator.
 Rule maturity is an enforcement-admission boundary, not a scanner verdict.
 Every built-in rule has exactly one derived `probation` or `active` assessment.
 Ratchet and zero modes require the maturity artifact and evaluate only active
-rules; probationary candidates remain explicitly counted and named. Thresholds
-are supplied by the adopter. RigorFoundry does not claim that one false-positive
-or effort limit fits every repository. Case records bind exact report,
-candidate, review, repository, reviewer, and retained effort-source references.
-Repository and reviewer labels are declarations, not cryptographic identities.
+rules; probationary candidates remain explicitly counted and named. Repository
+policy schema 1.2 must bind the exact threshold-policy digest before either
+mode can run, so a CLI caller cannot substitute an empty or weaker calibration.
+Thresholds are supplied by the adopter. RigorFoundry does not claim that one
+false-positive or effort limit fits every repository. Case records bind exact
+report, candidate, review, repository, reviewer, and retained effort-source
+references. Repository and reviewer labels are declarations, not cryptographic
+identities.
 
 The SARIF projection is read-only. It takes the versioned rule registry and an
 integrity-verified report, validates optional reviews, and emits stable rule

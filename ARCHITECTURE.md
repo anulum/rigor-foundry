@@ -156,8 +156,9 @@ fails closed as unavailable evidence and can never produce a mixed digest.
 `rules.py` defines the versioned portable rule registry.
 `audit_primitives.py` owns protocol versions, canonical digests, strict field
 validators, and shared type contracts. `candidate_anchor.py` defines candidate
-and anchor records. `models.py` defines policy, report, adapter, and review
-records while preserving the original public primitive imports. Callers must
+and anchor records. `policy_models.py` owns repository policy, domain, and
+native-adapter declarations; `models.py` owns report and review records while
+preserving the original public policy and primitive imports. Callers must
 verify digests during load; silent repair is not permitted. Report schema 1.3
 includes `GitExecutableProvenance`, the Git object format, ignored-inventory
 evidence, and strict anchored candidates; changing any bound input changes the
@@ -208,9 +209,11 @@ cryptographic authentication.
 
 `enforcement.py` supports observe, ratchet, and zero modes. A command-line mode
 may strengthen but cannot weaken the repository policy. Ratchet and zero
-require an exact maturity report and evaluate active rules only. Probationary
+require an exact maturity report whose threshold-policy digest is already bound
+by repository policy schema 1.2, and evaluate active rules only. Probationary
 candidates remain counted and named in the gate artifact instead of becoming
-silent pass state.
+silent pass state. This repository binding prevents an operator-selected empty
+or weaker calibration report from silently weakening ratchet enforcement.
 
 ### Native audit adapters
 

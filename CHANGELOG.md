@@ -50,8 +50,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Ratchet and zero enforcement require an exact maturity report. Candidates
   from probationary rules remain counted and identified in the gate artifact
-  but cannot silently become blocking debt; enforcement schema advances to
-  1.2 and the normative digest graph advances to 1.3.
+  but cannot silently become blocking debt. Repository policy schema 1.2 binds
+  the exact calibration-policy digest so an operator cannot weaken enforcement
+  with an unbound probation report; enforcement schema advances to 1.3 and the
+  normative digest graph advances to 1.3.
 - CLI integration construction and cross-command rejection routing now have
   separate bounded test owners instead of one oversized mixed test module.
 - `rigor --version`, package `__version__`, and distribution metadata now share

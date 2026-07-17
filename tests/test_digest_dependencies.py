@@ -395,7 +395,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     )
     assert (
         digest_dependency_graph_digest()
-        == "3d3712c8aab75201997a75c6fb67a13760306fe8b6f086226b6b944109c15f07"
+        == "7d050f9c2aa6ca636a71f18ccb89bf7a308c15eb5c586477f9ba24f6b138a8b8"
     )
 
 
@@ -438,7 +438,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         (
             (
                 DigestNodeSpec("inventory", "shared_digest", "one"),
-                DigestNodeSpec("policy", "shared_digest", "two"),
+                DigestNodeSpec("policy", "shared_digest", "one"),
             ),
             (),
             ("identity fields",),
@@ -810,13 +810,15 @@ def test_maturity_policy_mutation_rebinds_the_complete_rule_assessment() -> None
     before_policy = _maturity_policy()
     after_policy = _maturity_policy(maximum_p90_effort_seconds=120)
     adapter, pack, lock = _effective_records()
-    stable = {
+    stable: dict[str, str] = {
         "adapter-lock": adapter.adapter_digest,
         "standard-pack": pack.pack_digest,
         "effective-profile": lock.lock_digest,
     }
-    before = {**stable, **_maturity_snapshot(before_policy)}
-    after = {**stable, **_maturity_snapshot(after_policy)}
+    before: dict[str, str] = dict(stable)
+    before.update(_maturity_snapshot(before_policy))
+    after: dict[str, str] = dict(stable)
+    after.update(_maturity_snapshot(after_policy))
 
     _assert_transition("maturity-policy", before, after)
 
