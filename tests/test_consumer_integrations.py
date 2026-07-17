@@ -14,7 +14,7 @@ import re
 from tools._repository import ROOT
 from tools.check_action_pins import action_metadata_errors
 
-_INTEGRATION_REVISION = "4e2d758b4c21a12531bca0e45a6681f7ebed2d30"
+_INTEGRATION_REVISION = "cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2"
 
 
 def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
@@ -42,6 +42,8 @@ def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
     assert "maturity-path is required for ratchet and zero modes" in action
     assert "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1" in action
     assert 'python-version: "3.12.11"' in action
+    assert "Tracked policy path relative to repository-root." in action
+    assert "absolute or relative to repository-root" not in action
     assert "--require-hashes" in action
     assert 'requirements/build.txt"' in action
     assert 'requirements/runtime.txt"' in action
@@ -106,10 +108,10 @@ def test_public_integration_examples_use_the_immutable_successor_revision() -> N
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     navigation = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
-    assert f"anulum/rigor-foundry@{_INTEGRATION_REVISION}" in guide
+    assert f"anulum/RIGOR-FOUNDRY@{_INTEGRATION_REVISION}" in guide
     assert f"rev: {_INTEGRATION_REVISION}" in guide
-    assert "anulum/rigor-foundry@main" not in guide
-    assert "anulum/rigor-foundry@v" not in guide
+    assert "anulum/RIGOR-FOUNDRY@main" not in guide
+    assert "anulum/RIGOR-FOUNDRY@v" not in guide
     assert re.search(r"rev:\s+(?:main|v\d|HEAD)", guide) is None
     assert "consumer integration guide](docs/integrations.md)" in readme
     assert "Consumer integrations: integrations.md" in navigation

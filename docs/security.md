@@ -81,7 +81,7 @@ and archive members as adversarial input.
 - GitHub-hosted `ubuntu-24.04` and official `setup-python` provisioning retain
   a bounded provider-managed manifest residual. Runner labels, action commits,
   and Python patch releases are exact; cache identity is repository- and
-  lockfile-scoped. [Issue 9](https://github.com/anulum/rigor-foundry/issues/9)
+  lockfile-scoped. [Issue 9](https://github.com/anulum/RIGOR-FOUNDRY/issues/9)
   tracks the remaining per-artifact identity gap.
 - The consumer Action pins its nested action and hash-locks build/runtime
   installation. Inputs cross the shell boundary only through quoted
@@ -117,5 +117,5 @@ package drift during an audit but does not claim to withstand a compromised
 host root.
 
 Do not disclose a suspected vulnerability in a public issue. Follow the
-[security policy](https://github.com/anulum/rigor-foundry/security/policy) and
+[security policy](https://github.com/anulum/RIGOR-FOUNDRY/security/policy) and
 use private vulnerability reporting.

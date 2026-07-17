@@ -34,7 +34,7 @@ jobs:
       - name: Prepare explicit ignored output parent
         run: mkdir -p .rigor/reports
       - name: Run read-only evidence gate
-        uses: anulum/rigor-foundry@4e2d758b4c21a12531bca0e45a6681f7ebed2d30
+        uses: anulum/RIGOR-FOUNDRY@cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
         with:
           repository-root: .
           policy-path: rigor-foundry-policy.json
@@ -54,7 +54,7 @@ PEP 517 backend and all four of its build dependencies are exact requirements
 as well. Nested `setup-python` is itself pinned to a full commit. Inputs enter
 Bash only through quoted environment variables.
 
-`repository-root`, `policy-path`, `report-path`, and `gate-report-path` are
+`repository-root`, repository-relative tracked `policy-path`, `report-path`, and `gate-report-path` are
 mandatory. `mode` accepts only `observe`, `ratchet`, or `zero`; `scope` accepts
 only `staged` or `full`. Ratchet and zero require an explicit `maturity-path`
 whose policy identity is already bound by the repository policy. An optional
@@ -76,8 +76,8 @@ replace, rather than extend, the manifest defaults:
 ```yaml
 minimum_pre_commit_version: 4.6.0
 repos:
-  - repo: https://github.com/anulum/rigor-foundry
-    rev: 4e2d758b4c21a12531bca0e45a6681f7ebed2d30
+  - repo: https://github.com/anulum/RIGOR-FOUNDRY
+    rev: cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
     hooks:
       - id: rigor-foundry
         entry: .rigor/rigor-venv/bin/rigor
