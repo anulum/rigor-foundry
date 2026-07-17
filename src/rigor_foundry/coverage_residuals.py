@@ -20,7 +20,7 @@ from typing import Final, Literal, cast
 
 from .audit_primitives import require_mapping, require_string, require_string_tuple
 
-COVERAGE_RESIDUAL_SCHEMA_VERSION: Final = "1.0"
+COVERAGE_RESIDUAL_SCHEMA_VERSION: Final = "1.1"
 DEFAULT_COVERAGE_RESIDUAL_MANIFEST: Final = Path("coverage-residuals.json")
 MAX_REVIEW_WINDOW: Final = timedelta(days=90)
 
@@ -33,6 +33,7 @@ _CLASSIFICATIONS: Final = frozenset({"platform-primitive", "runtime-invariant", 
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _IDENTIFIER = re.compile(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\Z")
 _SYMBOL = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\Z")
+_IMPORT_PREFIX = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+\Z")
 
 
 def _strict_fields(
@@ -189,6 +190,7 @@ class NegativeSearch:
 
     search_id: str
     include: tuple[str, ...]
+    forbidden_import_prefixes: tuple[str, ...]
     patterns: tuple[str, ...]
     rationale: str
 
@@ -199,7 +201,15 @@ class NegativeSearch:
         data = require_mapping(value, field)
         _strict_fields(
             data,
-            frozenset({"search_id", "include", "patterns", "rationale"}),
+            frozenset(
+                {
+                    "search_id",
+                    "include",
+                    "forbidden_import_prefixes",
+                    "patterns",
+                    "rationale",
+                }
+            ),
             field,
         )
         search_id = require_string(data.get("search_id"), f"{field}.search_id")
@@ -209,6 +219,15 @@ class NegativeSearch:
             _relative_path(path, f"{field}.include")
             for path in require_string_tuple(data.get("include"), f"{field}.include")
         )
+        forbidden_import_prefixes = _ordered_nonempty(
+            require_string_tuple(
+                data.get("forbidden_import_prefixes"),
+                f"{field}.forbidden_import_prefixes",
+            ),
+            f"{field}.forbidden_import_prefixes",
+        )
+        if any(_IMPORT_PREFIX.fullmatch(prefix) is None for prefix in forbidden_import_prefixes):
+            raise ValueError(f"{field}.forbidden_import_prefixes contains an invalid prefix")
         patterns = _ordered_nonempty(
             require_string_tuple(data.get("patterns"), f"{field}.patterns"),
             f"{field}.patterns",
@@ -221,6 +240,7 @@ class NegativeSearch:
         return cls(
             search_id=search_id,
             include=_ordered_nonempty(include, f"{field}.include"),
+            forbidden_import_prefixes=forbidden_import_prefixes,
             patterns=patterns,
             rationale=require_string(data.get("rationale"), f"{field}.rationale"),
         )
@@ -230,6 +250,7 @@ class NegativeSearch:
         return {
             "search_id": self.search_id,
             "include": list(self.include),
+            "forbidden_import_prefixes": list(self.forbidden_import_prefixes),
             "patterns": list(self.patterns),
             "rationale": self.rationale,
         }
@@ -291,6 +312,33 @@ class CoverageResidualManifest:
             "residuals": [item.to_dict() for item in self.residuals],
             "negative_searches": [item.to_dict() for item in self.negative_searches],
         }
+
+
+def _forbidden_imports(
+    text: str,
+    prefixes: tuple[str, ...],
+) -> tuple[tuple[str, int], ...]:
+    """Return structurally matched import prefixes and source lines."""
+    tree = ast.parse(text)
+    matches: set[tuple[str, int]] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported = tuple(alias.name for alias in node.names)
+            for prefix in prefixes:
+                if any(name.startswith(prefix) for name in imported):
+                    matches.add((prefix, node.lineno))
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            for prefix in prefixes:
+                package, separator, member_prefix = prefix.rpartition(".")
+                imports_private_module = node.module.startswith(prefix)
+                imports_private_member = (
+                    bool(separator)
+                    and node.module == package
+                    and any(alias.name.startswith(member_prefix) for alias in node.names)
+                )
+                if imports_private_module or imports_private_member:
+                    matches.add((prefix, node.lineno))
+    return tuple(sorted(matches, key=lambda item: (item[1], item[0])))
 
 
 def _symbol_source(text: str, symbol: str, path: Path) -> str:
@@ -409,6 +457,23 @@ def coverage_residual_errors(
                     f"{search.search_id}: negative-search file is unavailable: {path_text}"
                 )
                 continue
+            if path.suffix == ".py":
+                try:
+                    import_matches = _forbidden_imports(
+                        text,
+                        search.forbidden_import_prefixes,
+                    )
+                except SyntaxError as exc:
+                    errors.append(
+                        f"{search.search_id}: negative-search Python file is unparseable: "
+                        f"{path_text}:{exc.lineno or 1}"
+                    )
+                else:
+                    errors.extend(
+                        f"{search.search_id}: prohibited import prefix matches "
+                        f"{path_text}:{line}: {prefix}"
+                        for prefix, line in import_matches
+                    )
             for pattern in search.patterns:
                 match = re.search(pattern, text, re.MULTILINE)
                 if match is not None:

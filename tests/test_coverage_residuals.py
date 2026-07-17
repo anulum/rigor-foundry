@@ -90,7 +90,7 @@ def test_tracked_manifest_round_trips_and_passes_public_cli(
     manifest = CoverageResidualManifest.from_path(ROOT / MANIFEST)
 
     assert manifest.to_dict() == _document()
-    assert COVERAGE_RESIDUAL_SCHEMA_VERSION == "1.0"
+    assert COVERAGE_RESIDUAL_SCHEMA_VERSION == "1.1"
     assert coverage_residual_errors(ROOT) == ()
     assert main(["residuals-check", "--root", str(ROOT)]) == 0
     assert capsys.readouterr().out == "coverage residuals: PASS\n"
@@ -174,6 +174,8 @@ def test_residual_parser_rejects_ambiguous_dispositions(
         ("search_id", "lowercase", "search_id is invalid"),
         ("include", ["/absolute.py"], "repository-relative path"),
         ("include", [], "sorted, unique, and non-empty"),
+        ("forbidden_import_prefixes", [], "sorted, unique, and non-empty"),
+        ("forbidden_import_prefixes", ["not dotted"], "invalid prefix"),
         ("patterns", [], "sorted, unique, and non-empty"),
         ("patterns", ["["], "invalid regular expression"),
     ],
@@ -242,23 +244,66 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
     )
 
 
-def test_negative_search_rejects_private_production_imports(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "from rigor_foundry import _remediation_graph",
+        "from rigor_foundry import (\n    _remediation_graph as graph,\n)",
+        "from rigor_foundry._remediation_graph import argv_digest",
+        "import rigor_foundry._remediation_graph as graph",
+    ],
+)
+def test_negative_search_rejects_private_production_imports(
+    tmp_path: Path,
+    statement: str,
+) -> None:
     """Protocol tests cannot reconstruct evidence with private production helpers."""
     root = _copy_contract(tmp_path)
     remediation_test = root / "tests/test_remediation_plan.py"
     remediation_test.write_text(
-        remediation_test.read_text(encoding="utf-8")
-        + "\nfrom rigor_foundry._remediation_graph import argv_digest\n",
+        remediation_test.read_text(encoding="utf-8") + f"\n{statement}\n",
         encoding="utf-8",
     )
 
     errors = coverage_residual_errors(root)
 
     assert any(
-        "NS-NO-PRIVATE-SIMULATION: prohibited test simulation matches "
+        "NS-NO-PRIVATE-SIMULATION: prohibited import prefix matches "
         "tests/test_remediation_plan.py" in error
         for error in errors
     )
+
+
+def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> None:
+    """Structural import validation cannot silently skip invalid Python."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8") + "\nfrom rigor_foundry import (\n",
+        encoding="utf-8",
+    )
+
+    errors = coverage_residual_errors(root)
+
+    assert any(
+        "NS-NO-PRIVATE-SIMULATION: negative-search Python file is unparseable: "
+        "tests/test_remediation_plan.py" in error
+        for error in errors
+    )
+
+
+def test_negative_search_keeps_regex_support_for_non_python_files(tmp_path: Path) -> None:
+    """Structural import checks do not displace generic text searches."""
+    root = _copy_contract(tmp_path)
+    document = _document()
+    search = _first_search(document)
+    include = cast(list[str], search["include"])
+    include.append("tests/negative-search.txt")
+    include.sort()
+    (root / "tests/negative-search.txt").write_text("public evidence\n", encoding="utf-8")
+    _write_document(root, document)
+
+    assert coverage_residual_errors(root) == ()
 
 
 def test_missing_public_verification_reference_blocks_manifest(tmp_path: Path) -> None:
