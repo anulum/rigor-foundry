@@ -432,7 +432,7 @@ def test_real_semgrep_profile_scans_safe_and_vulnerable_commits(tmp_path: Path) 
     )
 
     clean = run_adapter(repository.root, spec, trusted=True)
-    assert clean.passed
+    assert clean.passed, json.dumps(clean.to_dict(), indent=2, sort_keys=True)
     assert clean.complete
     assert clean.profile_evidence is not None
     assert clean.profile_evidence.status == "clean"
