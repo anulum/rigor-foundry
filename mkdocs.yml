@@ -39,6 +39,7 @@ nav:
   - CLI: cli.md
   - Built-in adapter profiles: adapter-profiles.md
   - SARIF export: sarif.md
+  - Compliance maps and OSCAL: compliance-maps.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
