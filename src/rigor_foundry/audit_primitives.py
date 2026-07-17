@@ -64,7 +64,13 @@ AUDIT_DOMAINS: tuple[str, ...] = (
 
 def _canonical_json(value: object) -> str:
     """Return deterministic compact JSON for identifiers and digests."""
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return json.dumps(
+        value,
+        allow_nan=False,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _sha256(value: object) -> str:

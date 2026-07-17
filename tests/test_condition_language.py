@@ -13,6 +13,7 @@ from copy import deepcopy
 
 import pytest
 
+from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.condition_language import ConditionExpression
 
 
@@ -119,8 +120,20 @@ def test_parser_and_remaining_shape_branches_fail_closed() -> None:
         ConditionExpression.build("not", reference="project.enabled", children=(leaf,))
     with pytest.raises(ValueError, match="unsupported"):
         ConditionExpression.build("execute")
+
+    overdeep_child = leaf
+    for _ in range(7):
+        overdeep_child = ConditionExpression.build("not", children=(overdeep_child,))
+    overdeep_body: dict[str, object] = {
+        "schema_version": "1.0",
+        "op": "not",
+        "ref": "",
+        "value": None,
+        "children": [overdeep_child.to_dict()],
+    }
+    overdeep_body["expression_digest"] = canonical_digest(overdeep_body)
     with pytest.raises(ValueError, match="bounded tree budget"):
-        ConditionExpression._from_dict(leaf.to_dict(), depth=9, remaining=1)
+        ConditionExpression.from_dict(overdeep_body)
 
     malformed = leaf.to_dict()
     malformed["op"] = "execute"
@@ -135,3 +148,26 @@ def test_parser_and_remaining_shape_branches_fail_closed() -> None:
     malformed["value"] = 1
     with pytest.raises(ValueError, match="array"):
         ConditionExpression.from_dict(malformed)
+    malformed = leaf.to_dict()
+    malformed["unexpected"] = True
+    with pytest.raises(ValueError, match="fields"):
+        ConditionExpression.from_dict(malformed)
+
+
+def test_boolean_and_numeric_condition_values_are_not_aliases() -> None:
+    """JSON booleans remain distinct from numerically equal integers."""
+    assert not ConditionExpression.build("eq", reference="value", value=1).evaluate(
+        {"value": True}
+    )
+    assert ConditionExpression.build("ne", reference="value", value=1).evaluate({"value": True})
+    assert not ConditionExpression.build("one-of", reference="value", value=(1,)).evaluate(
+        {"value": True}
+    )
+    assert not ConditionExpression.build("contains", reference="values", value=1).evaluate(
+        {"values": [True]}
+    )
+    expression = ConditionExpression.build("one-of", reference="value", value=(True, 1))
+    assert expression.evaluate({"value": True})
+    assert expression.evaluate({"value": 1})
+    assert ConditionExpression.from_dict(expression.to_dict()) == expression
+    assert not ConditionExpression.build("eq", reference="value", value=1).evaluate({"value": [1]})

@@ -40,6 +40,9 @@ MAX_GROUP_CHILDREN = 16
 _REFERENCE = re.compile(r"[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*){0,15}\Z")
 _COMPARISONS = frozenset({"eq", "ne", "lt", "lte", "gt", "gte", "contains"})
 _GROUPS = frozenset({"all", "any"})
+_SERIALISED_FIELDS = frozenset(
+    {"schema_version", "op", "ref", "value", "children", "expression_digest"}
+)
 _MISSING = object()
 
 
@@ -62,6 +65,21 @@ def _numeric(value: object, field: str) -> int | float:
     if isinstance(scalar, bool) or not isinstance(scalar, (int, float)):
         raise ValueError(f"{field} must be numeric for ordered comparison")
     return scalar
+
+
+def _scalar_identity(value: JsonScalar) -> tuple[type[object], JsonScalar]:
+    """Return a JSON-scalar identity that keeps booleans distinct from numbers."""
+    numeric_type: type[object] = float if isinstance(value, (int, float)) else type(value)
+    if isinstance(value, bool):
+        numeric_type = bool
+    return numeric_type, value
+
+
+def _scalar_equal(left: object, right: JsonScalar) -> bool:
+    """Compare JSON scalars without Python's boolean/integer aliasing."""
+    if not isinstance(left, (str, int, float, bool)) and left is not None:
+        return False
+    return _scalar_identity(left) == _scalar_identity(right)
 
 
 @dataclass(frozen=True)
@@ -99,7 +117,7 @@ class ConditionExpression:
                 raise ValueError("one-of requires a non-empty scalar tuple")
             for index, item in enumerate(value):
                 require_json_scalar(item, f"condition.value[{index}]")
-            if len(value) != len(set(value)):
+            if len(value) != len({_scalar_identity(item) for item in value}):
                 raise ValueError("one-of values must be unique")
         elif operator in _GROUPS:
             if reference or value is not None:
@@ -147,6 +165,8 @@ class ConditionExpression:
         if depth > MAX_CONDITION_DEPTH or remaining < 1:
             raise ValueError("condition exceeds the bounded tree budget")
         data = require_mapping(value, "condition")
+        if frozenset(data) != _SERIALISED_FIELDS:
+            raise ValueError("condition fields do not match the schema")
         if data.get("schema_version") != "1.0":
             raise ValueError("unsupported condition schema version")
         raw_operator = require_string(data.get("op"), "condition.op")
@@ -240,16 +260,19 @@ class ConditionExpression:
         if actual is _MISSING:
             return False
         if self.operator == "eq":
-            return actual == self.value
+            return _scalar_equal(actual, cast(JsonScalar, self.value))
         if self.operator == "ne":
-            return actual != self.value
+            return not _scalar_equal(actual, cast(JsonScalar, self.value))
         if self.operator == "one-of":
-            return actual in cast(tuple[JsonScalar, ...], self.value)
+            return any(
+                _scalar_equal(actual, expected)
+                for expected in cast(tuple[JsonScalar, ...], self.value)
+            )
         if self.operator == "contains":
             if isinstance(actual, str) and isinstance(self.value, str):
                 return self.value in actual
             if isinstance(actual, (list, tuple)):
-                return self.value in actual
+                return any(_scalar_equal(item, cast(JsonScalar, self.value)) for item in actual)
             raise ValueError("contains requires a string or array context value")
         left = _numeric(actual, "condition context value")
         right = _numeric(self.value, "condition.value")

@@ -239,4 +239,4 @@ def validate_digest_dependency_graph(
             pending.extend(adjacency[current])
         if name in reached:
             errors.append(f"digest dependency cycle reaches {name}")
-    return tuple(errors)
+    return tuple(sorted(set(errors)))

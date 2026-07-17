@@ -141,10 +141,21 @@ includes ignored inventory, Git provenance, and toolchain identities in
 addition to the tracked inventory, policy, rule-pack, desired-state, report,
 review, campaign, comparison, task, and closure records. Policy and review
 records expose one canonical identity each. Rule-pack version 1.1.0 binds its
-schema, registry version, ordered
-definitions, and definition fields into the pack digest. Conditional
-comparison inputs and deliberate stable non-edges are documented explicitly
-rather than presented as full bindings.
+schema, registry version, ordered definitions, and definition fields into the
+pack digest. Conditional comparison inputs and deliberate stable non-edges are
+documented explicitly rather than presented as full bindings.
+
+Canonical identities use finite, interoperable JSON only; NaN and infinities
+fail before hashing. Strict parsers require their exact versioned field sets.
+Condition scalar equality keeps JSON booleans distinct from numbers, graph
+validation emits declaration-order-independent evidence, and rule identifiers
+have a finite grammar whose prefix must match the owning audit category.
+
+The property-assurance layer is test-only and hash locked. It generates bounded
+inputs against public protocol, condition, graph, registry, and path APIs, then
+retains every discovered failure as a minimal deterministic regression. This
+layer does not redefine production contracts, use private helpers, or convert
+randomized coverage into correctness evidence.
 
 ### Review, enforcement, and promotion
 

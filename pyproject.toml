@@ -51,6 +51,7 @@ dev = [
     "cyclonedx-bom>=7.3,<8.0",
     "editables>=0.6,<1.0",
     "hatchling>=1.27,<2.0",
+    "hypothesis>=6,<7",
     "mypy>=1.0,<3.0",
     "pip-audit>=2.10,<3.0",
     "pip-tools>=7.5,<8.0",

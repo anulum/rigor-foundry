@@ -17,6 +17,16 @@ local closeout may additionally run the hash-locked dependency audit, Semgrep,
 package installation smoke, hardened container smoke, and strict documentation
 build; those local results do not replace the corresponding remote evidence.
 
+Property assurance uses the hash-locked Hypothesis dependency through public
+production APIs. Dedicated owners cover strict protocol parsing, canonical
+serialization and digests, bounded condition evaluation, repository-relative
+path confinement, digest-dependency graph validation, and rule-registry
+invariants. Each strategy has bounded examples and no timing deadline. A found
+counterexample must be reduced to a named deterministic regression before the
+fix is accepted; generated examples supplement those regressions rather than
+serving as generic coverage input. Tests must not call private production
+helpers or replace production results with mocks.
+
 The quality job also scans the clean checkout with
 `rigor-foundry-policy.json`, runs every full-scope native control in observe
 mode, and retains the report, Markdown rendering, and gate record for 30 days.

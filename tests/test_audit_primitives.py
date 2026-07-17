@@ -33,6 +33,13 @@ def test_canonical_digest_is_order_independent_and_protocol_stable() -> None:
     assert canonical_digest({"a": 1, "b": 2}) == expected
 
 
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_canonical_digest_rejects_nonfinite_numbers(value: float) -> None:
+    """Canonical identities reject values outside the interoperable JSON domain."""
+    with pytest.raises(ValueError, match="JSON compliant"):
+        canonical_digest(value)
+
+
 def test_strict_field_validators_reject_ambiguous_values() -> None:
     """Protocol fields reject Python values that JSON could blur."""
     with pytest.raises(ValueError, match="string keys"):

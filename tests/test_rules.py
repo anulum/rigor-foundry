@@ -64,6 +64,9 @@ def test_rule_pack_digest_binds_version_envelope_and_every_rule_field() -> None:
         ((replace(RULES[0], category="unknown"),), "unsupported category"),
         ((replace(RULES[0], summary=" "),), "summary is empty"),
         ((replace(RULES[0], introduced="unversioned"),), "introduced version"),
+        ((replace(RULES[0], rule_id="bad id"),), "identifier is invalid"),
+        ((replace(RULES[0], category="architecture"),), "does not match category"),
+        ((replace(RULES[0], introduced="rigor-foundry/1.0"),), "introduced version"),
     ],
 )
 def test_rule_registry_validation_rejects_ambiguous_metadata(
