@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal, TypeAlias, cast
 
-from .models import canonical_digest, require_mapping, require_string
+from .audit_primitives import canonical_digest, require_mapping, require_string
 
 JsonScalar: TypeAlias = str | int | float | bool | None
 """Scalar values accepted by deterministic policy records."""

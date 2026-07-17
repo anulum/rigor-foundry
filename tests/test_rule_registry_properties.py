@@ -51,3 +51,23 @@ def test_every_builtin_rule_rejects_malformed_identifier(
     """Malformed identifiers fail the finite public identifier grammar."""
     errors = validate_rule_registry((replace(rule, rule_id=rule_id),))
     assert any("identifier is invalid" in error for error in errors)
+
+
+@_PROPERTY_SETTINGS
+@given(
+    st.sampled_from(RULES),
+    st.sampled_from(
+        (
+            "rigor-foundry/01.0.0",
+            "rigor-foundry/1.00.0",
+            "rigor-foundry/1.0.00",
+        )
+    ),
+)
+def test_every_builtin_rule_rejects_noncanonical_semver(
+    rule: RuleDefinition,
+    introduced: str,
+) -> None:
+    """Leading-zero semantic versions cannot enter rule metadata."""
+    errors = validate_rule_registry((replace(rule, introduced=introduced),))
+    assert any("introduced version is invalid" in error for error in errors)

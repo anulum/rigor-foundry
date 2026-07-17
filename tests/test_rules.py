@@ -56,6 +56,10 @@ def test_rule_pack_digest_binds_version_envelope_and_every_rule_field() -> None:
     for changed_rules in variants:
         assert rule_pack_digest(rules=changed_rules) != baseline
 
+    for invalid_version in ("", "latest", "rigor-foundry/01.0.0", "rigor-foundry/1.0"):
+        with pytest.raises(ValueError, match="semantic version"):
+            rule_pack_digest(version=invalid_version)
+
 
 @pytest.mark.parametrize(
     "rules, message",
@@ -67,6 +71,7 @@ def test_rule_pack_digest_binds_version_envelope_and_every_rule_field() -> None:
         ((replace(RULES[0], rule_id="bad id"),), "identifier is invalid"),
         ((replace(RULES[0], category="architecture"),), "does not match category"),
         ((replace(RULES[0], introduced="rigor-foundry/1.0"),), "introduced version"),
+        ((replace(RULES[0], introduced="rigor-foundry/01.0.0"),), "introduced version"),
     ],
 )
 def test_rule_registry_validation_rejects_ambiguous_metadata(

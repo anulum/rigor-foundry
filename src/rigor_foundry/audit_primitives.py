@@ -129,3 +129,13 @@ def require_integer(value: object, field: str, *, minimum: int = 0) -> int:
 def require_string_tuple(value: object, field: str) -> tuple[str, ...]:
     """Expose strict string-array validation to sibling protocol modules."""
     return _string_tuple(value, field)
+
+
+def require_exact_fields(
+    value: dict[str, object],
+    expected: frozenset[str],
+    field: str,
+) -> None:
+    """Reject missing or unknown fields in one versioned protocol object."""
+    if frozenset(value) != expected:
+        raise ValueError(f"{field} fields do not match the schema")

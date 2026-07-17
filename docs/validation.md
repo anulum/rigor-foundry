@@ -27,6 +27,13 @@ fix is accepted; generated examples supplement those regressions rather than
 serving as generic coverage input. Tests must not call private production
 helpers or replace production results with mocks.
 
+Strict-parser properties cover repository policy plus representative nested
+and top-level project intent, project profile, evidence contract, control
+definition, and work-task records. Every top-level field is mandatory and an
+unknown field fails before digest comparison. Condition schema 1.1 is the
+bool-safe evaluator contract; schema 1.0 expressions are rejected rather than
+silently reinterpreted.
+
 The quality job also scans the clean checkout with
 `rigor-foundry-policy.json`, runs every full-scope native control in observe
 mode, and retains the report, Markdown rendering, and gate record for 30 days.

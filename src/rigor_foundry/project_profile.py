@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Literal, cast
 
+from .audit_primitives import require_exact_fields
 from .model_primitives import (
     JsonScalar,
     VariableAssignment,
@@ -32,6 +33,33 @@ from .models import canonical_digest, require_mapping, require_string
 from .standard_pack import ControlMode, TargetLevel, _target_level
 
 PROFILE_SCHEMA_VERSION = "1.0"
+
+_PROJECT_INTENT_FIELDS = frozenset(
+    {
+        "schema_version",
+        "risk_class",
+        "regulatory_classes",
+        "target_maturity",
+        "requirements",
+        "intent_digest",
+    }
+)
+_PROJECT_PROFILE_FIELDS = frozenset(
+    {
+        "schema_version",
+        "profile_id",
+        "intent",
+        "packs",
+        "variables",
+        "assignments",
+        "applicability",
+        "overlays",
+        "waivers",
+        "created_by",
+        "created_at",
+        "profile_digest",
+    }
+)
 
 RequirementCategory = Literal[
     "topology",
@@ -173,6 +201,7 @@ class ProjectIntent:
     def from_dict(cls, value: object) -> ProjectIntent:
         """Parse and integrity-check one complete project intent."""
         data = require_mapping(value, "intent")
+        require_exact_fields(data, _PROJECT_INTENT_FIELDS, "project-intent")
         if data.get("schema_version") != PROFILE_SCHEMA_VERSION:
             raise ValueError("unsupported project-intent schema version")
         intent = cls.build(
@@ -645,6 +674,7 @@ class ProjectProfile:
     def from_dict(cls, value: object) -> ProjectProfile:
         """Parse and integrity-check one complete desired-state profile."""
         data = require_mapping(value, "profile")
+        require_exact_fields(data, _PROJECT_PROFILE_FIELDS, "project-profile")
         if data.get("schema_version") != PROFILE_SCHEMA_VERSION:
             raise ValueError("unsupported project-profile schema version")
         variables = tuple(

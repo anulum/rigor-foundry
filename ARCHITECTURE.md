@@ -146,10 +146,14 @@ pack digest. Conditional comparison inputs and deliberate stable non-edges are
 documented explicitly rather than presented as full bindings.
 
 Canonical identities use finite, interoperable JSON only; NaN and infinities
-fail before hashing. Strict parsers require their exact versioned field sets.
-Condition scalar equality keeps JSON booleans distinct from numbers, graph
-validation emits declaration-order-independent evidence, and rule identifiers
-have a finite grammar whose prefix must match the owning audit category.
+fail before hashing. The condition, repository-policy, project-intent,
+project-profile, evidence-contract, control-definition, and work-task parsers
+require their exact versioned field sets. Condition schema 1.1 binds scalar
+equality that keeps JSON booleans distinct from numbers and rejects schema 1.0
+expressions rather than evaluating identical bytes under changed semantics.
+Graph validation emits declaration-order-independent evidence. Rule identifiers
+have a finite grammar whose prefix must match the owning audit category, and
+all rule-pack versions use canonical semantic-version syntax.
 
 The property-assurance layer is test-only and hash locked. It generates bounded
 inputs against public protocol, condition, graph, registry, and path APIs, then

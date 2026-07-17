@@ -33,6 +33,7 @@ ConditionOperator = Literal[
 ]
 ConditionValue: TypeAlias = JsonScalar | tuple[JsonScalar, ...]
 
+CONDITION_SCHEMA_VERSION = "1.1"
 MAX_CONDITION_DEPTH = 8
 MAX_CONDITION_NODES = 64
 MAX_GROUP_CHILDREN = 16
@@ -130,7 +131,7 @@ class ConditionExpression:
         else:
             raise ValueError("unsupported condition operator")
         body: dict[str, object] = {
-            "schema_version": "1.0",
+            "schema_version": CONDITION_SCHEMA_VERSION,
             "op": operator,
             "ref": reference,
             "value": _serialise_value(value),
@@ -167,7 +168,7 @@ class ConditionExpression:
         data = require_mapping(value, "condition")
         if frozenset(data) != _SERIALISED_FIELDS:
             raise ValueError("condition fields do not match the schema")
-        if data.get("schema_version") != "1.0":
+        if data.get("schema_version") != CONDITION_SCHEMA_VERSION:
             raise ValueError("unsupported condition schema version")
         raw_operator = require_string(data.get("op"), "condition.op")
         supported = {
@@ -233,7 +234,7 @@ class ConditionExpression:
     def to_dict(self) -> dict[str, object]:
         """Serialise the complete digest-bound expression tree."""
         return {
-            "schema_version": "1.0",
+            "schema_version": CONDITION_SCHEMA_VERSION,
             "op": self.operator,
             "ref": self.reference,
             "value": _serialise_value(self.value),

@@ -13,19 +13,28 @@ import re
 from dataclasses import dataclass
 
 from .audit_primitives import canonical_digest
+from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
 RULE_PACK_VERSION = "rigor-foundry/1.1.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 
 _RULE_ID = re.compile(r"(?:TA|AR|GF|GV)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
-_RULE_VERSION = re.compile(r"rigor-foundry/[0-9]+\.[0-9]+\.[0-9]+\Z")
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
     "architecture": "AR",
     "godfile": "GF",
     "governance": "GV",
 }
+_VERSION_PREFIX = "rigor-foundry/"
+
+
+def _rule_pack_version(value: object, field: str) -> str:
+    """Return one prefixed strict semantic version for rule-pack metadata."""
+    if not isinstance(value, str) or not value.startswith(_VERSION_PREFIX):
+        raise ValueError(f"{field} must be a prefixed semantic version")
+    require_semantic_version(value.removeprefix(_VERSION_PREFIX), field)
+    return value
 
 
 @dataclass(frozen=True)
@@ -198,10 +207,11 @@ def rule_pack_digest(
     version:
         Rule-pack version bound into the identity envelope.
     """
+    validated_version = _rule_pack_version(version, "rule_pack_version")
     return canonical_digest(
         {
             "schema_version": RULE_PACK_SCHEMA_VERSION,
-            "rule_pack_version": version,
+            "rule_pack_version": validated_version,
             "rules": [rule.to_dict() for rule in rules],
         }
     )
@@ -231,6 +241,8 @@ def validate_rule_registry(
             errors.append(f"{rule.rule_id}: identifier does not match category {rule.category}")
         if not rule.summary.strip():
             errors.append(f"{rule.rule_id}: summary is empty")
-        if _RULE_VERSION.fullmatch(rule.introduced) is None:
+        try:
+            _rule_pack_version(rule.introduced, f"{rule.rule_id}.introduced")
+        except ValueError:
             errors.append(f"{rule.rule_id}: introduced version is invalid")
     return tuple(sorted(set(errors)))

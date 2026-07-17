@@ -9,17 +9,42 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from property_strategies import JSON_SCALARS
+from test_project_profile import intent, profile
+from test_standard_pack import control
+from test_work_models import task
 
 from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.models import AuditPolicy
+from rigor_foundry.project_profile import ProjectIntent, ProjectProfile
+from rigor_foundry.standard_pack import ControlDefinition, EvidenceContract
+from rigor_foundry.work_models import WorkTask
 
 _PROPERTY_SETTINGS = settings(max_examples=100, deadline=None)
+Parser = Callable[[object], object]
+
+
+def _strict_records() -> tuple[tuple[str, dict[str, object], Parser], ...]:
+    """Return representative nested and top-level public versioned records."""
+    expected_control = control()
+    return (
+        ("audit-policy", AuditPolicy().to_dict(), AuditPolicy.from_dict),
+        ("project-intent", intent().to_dict(), ProjectIntent.from_dict),
+        ("project-profile", profile().to_dict(), ProjectProfile.from_dict),
+        (
+            "evidence-contract",
+            expected_control.evidence.to_dict(),
+            EvidenceContract.from_dict,
+        ),
+        ("control-definition", expected_control.to_dict(), ControlDefinition.from_dict),
+        ("work-task", task().to_dict(), WorkTask.from_dict),
+    )
 
 
 @_PROPERTY_SETTINGS
@@ -48,12 +73,31 @@ def test_policy_parser_rejects_every_missing_field(field: str) -> None:
         AuditPolicy.from_dict(value)
 
 
-def test_policy_parser_rejects_unknown_fields_without_digest_bypass() -> None:
-    """Unknown top-level data cannot enter or silently escape the policy identity."""
-    value = deepcopy(AuditPolicy().to_dict())
+@pytest.mark.parametrize(("_name", "source", "parser"), _strict_records())
+def test_public_versioned_parsers_reject_unknown_fields(
+    _name: str,
+    source: dict[str, object],
+    parser: Parser,
+) -> None:
+    """Unknown top-level data cannot silently escape a public record identity."""
+    value = deepcopy(source)
     value["unexpected"] = True
     with pytest.raises(ValueError, match="fields"):
-        AuditPolicy.from_dict(value)
+        parser(value)
+
+
+@pytest.mark.parametrize(("_name", "source", "parser"), _strict_records())
+def test_public_versioned_parsers_reject_every_missing_field(
+    _name: str,
+    source: dict[str, object],
+    parser: Parser,
+) -> None:
+    """Every declared field is mandatory for each assured versioned record."""
+    for field in source:
+        value = deepcopy(source)
+        del value[field]
+        with pytest.raises(ValueError, match="fields"):
+            parser(value)
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])

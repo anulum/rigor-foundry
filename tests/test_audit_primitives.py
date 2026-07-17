@@ -19,6 +19,7 @@ from rigor_foundry.audit_primitives import (
     SCANNER_VERSION,
     SCHEMA_VERSION,
     canonical_digest,
+    require_exact_fields,
     require_integer,
     require_mapping,
     require_string,
@@ -50,6 +51,9 @@ def test_strict_field_validators_reject_ambiguous_values() -> None:
         require_integer(True, "record.count")
     with pytest.raises(ValueError, match="string array"):
         require_string_tuple(("value",), "record.names")
+    with pytest.raises(ValueError, match="fields"):
+        require_exact_fields({"expected": 1, "unknown": 2}, frozenset({"expected"}), "record")
+    require_exact_fields({"expected": 1}, frozenset({"expected"}), "record")
 
 
 def test_models_facade_preserves_protocol_primitive_exports() -> None:

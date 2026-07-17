@@ -14,7 +14,7 @@ from copy import deepcopy
 import pytest
 
 from rigor_foundry.audit_primitives import canonical_digest
-from rigor_foundry.condition_language import ConditionExpression
+from rigor_foundry.condition_language import CONDITION_SCHEMA_VERSION, ConditionExpression
 
 
 def test_all_operators_evaluate_over_inert_mapping_data() -> None:
@@ -125,7 +125,7 @@ def test_parser_and_remaining_shape_branches_fail_closed() -> None:
     for _ in range(7):
         overdeep_child = ConditionExpression.build("not", children=(overdeep_child,))
     overdeep_body: dict[str, object] = {
-        "schema_version": "1.0",
+        "schema_version": CONDITION_SCHEMA_VERSION,
         "op": "not",
         "ref": "",
         "value": None,
@@ -171,3 +171,23 @@ def test_boolean_and_numeric_condition_values_are_not_aliases() -> None:
     assert expression.evaluate({"value": 1})
     assert ConditionExpression.from_dict(expression.to_dict()) == expression
     assert not ConditionExpression.build("eq", reference="value", value=1).evaluate({"value": [1]})
+
+
+def test_condition_schema_binds_evaluator_semantics() -> None:
+    """Legacy bytes cannot retain an identity under the bool-safe evaluator."""
+    expression = ConditionExpression.build("eq", reference="value", value=1)
+    legacy_body: dict[str, object] = {
+        "schema_version": "1.0",
+        "op": "eq",
+        "ref": "value",
+        "value": 1,
+        "children": [],
+    }
+    legacy_record = {
+        **legacy_body,
+        "expression_digest": canonical_digest(legacy_body),
+    }
+    assert CONDITION_SCHEMA_VERSION == "1.1"
+    assert expression.expression_digest != legacy_record["expression_digest"]
+    with pytest.raises(ValueError, match="schema version"):
+        ConditionExpression.from_dict(legacy_record)
