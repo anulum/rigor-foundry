@@ -42,6 +42,7 @@ from .models import (
     reviews_from_path,
     reviews_to_json,
 )
+from .oscal_cli import add_oscal_commands
 from .review import (
     append_todo_entry,
     render_todo_entry,
@@ -604,6 +605,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     residuals.set_defaults(handler=_residuals_check_command)
     add_source_provenance_commands(subparsers)
+    add_oscal_commands(subparsers)
     return parser
 
 

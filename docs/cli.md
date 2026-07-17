@@ -74,6 +74,20 @@ SARIF 2.1.0. Without `--output`, JSON is written to stdout. An explicit output
 parent must already exist. Export is read-only and includes every candidate;
 see [SARIF export](sarif.md) for the state mapping and anchor contract.
 
+## OSCAL export (candidate evidence only)
+
+`rigor oscal --lock LOCK.json --assessments ASSESSMENTS.json --template TEMPLATE_ID
+--generated-at TIMESTAMP [--output RESULTS.oscal.json]` loads a serialised
+effective-profile lock and a JSON array of per-control assessments, maps them
+through a built-in evidence-map template, and emits deterministic OSCAL 1.1.3
+assessment-results JSON. The export is triage-only: it is **not** a certification
+or attestation, omits findings and risks, requires an explicit UTC
+`--generated-at` (no wall clock), and points `import-ap` at the documented
+export boundary. Built-in template ids are listed in
+[Compliance evidence maps](compliance-maps.md). Without `--output`, JSON is
+written to stdout; an explicit output parent must already exist and the path
+must be created exclusively.
+
 ## Evidence review
 
 `review-template` creates explicit review records. `validate-review` verifies
