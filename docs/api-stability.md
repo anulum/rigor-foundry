@@ -39,6 +39,10 @@ availability does not erase those migration boundaries.
 
 ## Provisional imports
 
+`report_sarif`, `SARIF_SCHEMA_URI`, and `SARIF_VERSION` are provisional public
+imports. Their emitted document is independently governed by SARIF 2.1.0 and
+the explicit RigorFoundry property names documented in [SARIF export](sarif.md).
+
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
 version `0.1.1`. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a

@@ -35,6 +35,7 @@ nav:
   - Architecture: architecture.md
   - Digest dependencies: digest-dependencies.md
   - CLI: cli.md
+  - SARIF export: sarif.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md

@@ -15,6 +15,8 @@ becomes an implicit pass.
 - [Architecture](architecture.md) defines the separation between observation,
   review, target state, and remediation.
 - [CLI](cli.md) documents the installed command boundary.
+- [SARIF export](sarif.md) documents candidate-versus-verdict semantics and
+  exact Git-anchor interchange.
 - [Configuration](configuration.md) explains portable policy discovery and
   adopter-owned variables.
 - [Validation](validation.md) distinguishes focused local evidence from the

@@ -40,6 +40,12 @@ mode, and retains the report, Markdown rendering, and gate record for 30 days.
 Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
+The focused SARIF owner scans real Git repositories and exercises the public
+API and subprocess CLI. It covers every review-state mapping, exact anchors,
+stable identifiers, URI encoding, fail-closed invalid reviews, deterministic
+round trips, and 100% branch-aware isolated exporter coverage. Distribution CI
+also scans and exports through the installed wheel outside the checkout.
+
 Candidate anchors have a dedicated real-repository contract. The focused owner
 tests cover clean, unstaged, and staged-plus-unstaged bytes; text, binary,
 non-UTF-8, symlink, oversized, missing, and gitlink paths; SHA-1 and SHA-256

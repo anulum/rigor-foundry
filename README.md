@@ -50,6 +50,8 @@ flowchart LR
     C --> E[Content-addressed AuditReport]
     D --> F[Adapter evidence]
     E --> G[Evidence review]
+    E --> L[SARIF candidate export]
+    G --> L
     F --> G
     G --> H[Enforcement decision]
     G --> I[Verified TODO promotion]
@@ -108,6 +110,7 @@ overwrites them.
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
+| `rigor sarif` | Export every candidate and optional review verdict as deterministic SARIF 2.1.0. |
 | `rigor promote` | Preview or append one finding from a verified cross-model promotion campaign. |
 | `rigor gate` | Apply observe, ratchet, or zero enforcement. |
 | `rigor campaign-create` | Freeze an independent-audit input contract. |
@@ -136,6 +139,7 @@ these native surfaces.
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review, each bound to a verified anchor. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
+| Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |
 | Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
 | Campaigns | `campaign_identity`, `campaign_evidence`, `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare`, `campaign_promotion` | Inference and toolchain identity, correlated-witness collapse, durable provenance, divergence, and promotion eligibility. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |

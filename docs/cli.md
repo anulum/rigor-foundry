@@ -53,6 +53,14 @@ Ignored evidence is collected only for exact paths declared by policy schema
 values, or recursive directory members. `missing` and `unavailable` remain
 evidence states and do not create findings by themselves.
 
+## SARIF export
+
+`rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]`
+verifies the report and optional review ledger before emitting deterministic
+SARIF 2.1.0. Without `--output`, JSON is written to stdout. An explicit output
+parent must already exist. Export is read-only and includes every candidate;
+see [SARIF export](sarif.md) for the state mapping and anchor contract.
+
 ## Evidence review
 
 `review-template` creates explicit review records. `validate-review` verifies

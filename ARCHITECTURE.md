@@ -20,6 +20,12 @@ CLI/API
 Independent campaigns wrap this path with frozen inputs, per-run attestations,
 append-only ignored storage, and disagreement comparison.
 
+`sarif.py` is a read-only interchange boundary. It projects every candidate,
+its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
+state and review verdict remain separate properties; only a reviewed `valid`
+record maps to a failing result. Rule metadata comes from the versioned rule
+registry, and candidate identifiers provide stable fingerprints.
+
 ## Responsibilities
 
 ### Onboarding and public compatibility

@@ -59,6 +59,10 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "public_api_contract_errors(package.__all__, vars(package)) == ()" in workflow
     assert 'public_api_manifest()["schema_version"] == "1.1"' in workflow
     assert "/tmp/rigor-wheel/bin/rigor bootstrap --root ." in workflow
+    assert 'git commit -m "test: track installed-wheel adopter policy"' in workflow
+    assert "/tmp/rigor-wheel/bin/rigor scan --root ." in workflow
+    assert "/tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json" in workflow
+    assert 'document["version"] == "2.1.0"' in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow
     assert workflow.count("runs-on: ubuntu-24.04") == 3

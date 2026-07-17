@@ -91,6 +91,7 @@ from .remediation_plan import (
 from .review import render_todo_entry, review_errors, review_templates, validate_reviews
 from .review_attestation import ReviewerAttestation
 from .sandbox_provenance import BubblewrapCompatibilityPolicy, BubblewrapProvenance
+from .sarif import SARIF_SCHEMA_URI, SARIF_VERSION, report_sarif
 from .scanner import scan_repository
 from .standard_pack import (
     ControlDefinition,
@@ -122,6 +123,8 @@ __all__ = [
     "INFERENCE_IDENTITY_SCHEMA_VERSION",
     "MODEL_WITNESS_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
+    "SARIF_SCHEMA_URI",
+    "SARIF_VERSION",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
     "AdapterLock",
     "ApplicabilityDecision",
@@ -196,6 +199,7 @@ __all__ = [
     "ignored_inventory_digest",
     "render_todo_entry",
     "report_markdown",
+    "report_sarif",
     "resolve_effective_profile",
     "review_errors",
     "review_templates",

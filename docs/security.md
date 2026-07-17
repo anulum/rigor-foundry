@@ -50,6 +50,11 @@ and archive members as adversarial input.
   Campaign persistence and TODO promotion require the ignored-path check to
   reproduce the executable provenance already bound to the durable evidence.
 - Missing evidence never becomes pass.
+- SARIF export validates every supplied review against the exact report and
+  retains unreviewed or `needs-evidence` candidates as review results. Only a
+  completed `valid` review supplies defect severity. Repository-relative paths
+  are URI-encoded while exact anchor paths and object identities remain in the
+  RigorFoundry property bag.
 - Pack and reviewer clearance requires real Ed25519 verification against an
   explicit integrity-bound public-key trust store. The signed message includes
   a versioned length-prefixed protocol domain, so standard-pack signatures

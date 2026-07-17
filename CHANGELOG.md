@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A deterministic SARIF 2.1.0 exporter exposes every audit candidate, optional
+  evidence-review verdict, stable rule/result identity, exact Git anchor, and
+  review-derived severity without treating an unreviewed candidate as a defect.
 - An explicit descriptor-bound `rigor bootstrap` command creates a trackable
   adopter policy and ignored canonical TODO exactly once. It requires declared
   policy, TODO, review-ledger, source-root, and test-root paths and starts every

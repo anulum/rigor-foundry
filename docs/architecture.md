@@ -11,9 +11,15 @@ generator.
 3. Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
-5. Desired-state profiles resolve adopter rules and typed project variables.
-6. Gap records become dependency-ordered remediation plans only after evidence
+5. SARIF projects candidates and optional review verdicts without merging them.
+6. Desired-state profiles resolve adopter rules and typed project variables.
+7. Gap records become dependency-ordered remediation plans only after evidence
    and approval gates pass.
+
+The SARIF projection is read-only. It takes the versioned rule registry and an
+integrity-verified report, validates optional reviews, and emits stable rule
+indices, candidate fingerprints, repository-relative locations, and the exact
+blob/tree anchor in a property bag. See [SARIF export](sarif.md).
 
 Adopter initialization is a separate, explicit write boundary. `bootstrap.py`
 requires the caller to name the policy, canonical TODO, review ledger, and

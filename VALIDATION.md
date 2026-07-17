@@ -37,6 +37,7 @@ execution, or production promotion.
 | Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |
 | Classified residuals | Exact source-symbol binding, expiry, public-test references, and preregistered negative searches | Same contract plus aggregate branch-aware coverage evidence |
 | Onboarding/API stability | Real Git bootstrap, rejection of pre-existing canonical state, point-in-time ledger absence, preserved failure evidence, exact version, binding-aware export inventory, and deprecation-window tests | Installed-wheel version, binding-aware API, and real Git bootstrap/no-overwrite smoke |
+| SARIF 2.1.0 | Real Git candidates, all review states, exact anchors, stable identifiers, deterministic round trip, official-schema validation, and 100% isolated branch coverage | Installed-wheel scan/export smoke plus aggregate branch-aware coverage |
 
 The onboarding/API-stability owner tests execute bootstrap through real Git
 repositories and filesystem objects. They require exact-path success,

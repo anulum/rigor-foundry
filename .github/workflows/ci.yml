@@ -219,6 +219,11 @@ jobs:
           git -C /tmp/rigor-adopter commit -m "test: seed installed-wheel adopter"
           cd /tmp/rigor-adopter
           /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests
+          git add rigor-foundry-policy.json
+          git commit -m "test: track installed-wheel adopter policy"
+          /tmp/rigor-wheel/bin/rigor scan --root . --policy rigor-foundry-policy.json --json-out /tmp/rigor-adopter-report.json
+          /tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json --output /tmp/rigor-adopter-results.sarif
+          /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); assert document["version"] == "2.1.0"; assert document["runs"][0]["results"]'
           test "$(stat -c '%a' docs/internal/TODO.md)" = 600
           test ! -e docs/internal/reviews.json
           set +e

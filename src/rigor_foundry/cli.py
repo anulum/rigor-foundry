@@ -48,6 +48,7 @@ from .review import (
     review_templates,
     validate_reviews,
 )
+from .sarif import report_sarif
 from .scanner import scan_repository
 from .version import __version__
 
@@ -218,6 +219,18 @@ def _validate_review_command(args: argparse.Namespace) -> int:
             print(f"- {error}")
         return 1
     print("repository audit review: PASS")
+    return 0
+
+
+def _sarif_command(args: argparse.Namespace) -> int:
+    """Export one verified report and optional review ledger as SARIF."""
+    report = AuditReport.from_path(args.report)
+    reviews = () if args.review is None else reviews_from_path(args.review)
+    output = report_sarif(report, reviews)
+    if args.output is None:
+        print(output, end="")
+    else:
+        _write_explicit(args.output, output)
     return 0
 
 
@@ -451,6 +464,15 @@ def _parser() -> argparse.ArgumentParser:
     validate.add_argument("--report", type=Path, required=True)
     validate.add_argument("--review", type=Path, required=True)
     validate.set_defaults(handler=_validate_review_command)
+
+    sarif = subparsers.add_parser(
+        "sarif",
+        help="Export candidates and optional review verdicts as deterministic SARIF 2.1.0.",
+    )
+    sarif.add_argument("--report", type=Path, required=True)
+    sarif.add_argument("--review", type=Path)
+    sarif.add_argument("--output", type=Path)
+    sarif.set_defaults(handler=_sarif_command)
 
     promote = subparsers.add_parser(
         "promote",
