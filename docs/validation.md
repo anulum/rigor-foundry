@@ -41,8 +41,9 @@ Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
 Distribution CI also creates a separate real Git adopter, runs the composite
-Action with explicit report paths, and installs the published pre-commit hook
-from the exact checked-out commit. It requires all three resulting JSON
+Action with new ignored report paths, and installs the published system
+pre-commit hook from the exact checked-out commit through the hash-locked wheel.
+It requires all three resulting JSON
 artifacts to be non-empty. This verifies installation and wiring, not domain
 completeness or remediation authority.
 
@@ -51,8 +52,10 @@ the public descriptor-bound Bubblewrap boundary. They cover strict policy and
 output schemas, clean/findings/partial/unavailable relations, tracked-only
 snapshot construction, linked/oversized/dirty/drifting inputs, durable campaign
 round trips, missing executables, and exact version/config/input/output
-identity. CI installs Trivy only after the pinned checksum-list and archive
-digests are both verified. The focused benchmark records non-isolated wall time
+identity. CI installs Trivy, Typos, Buildx, Bubblewrap, and the CodeQL bundle
+only after their pinned manifest and final-asset identities are verified.
+Digest-bound local Docker actions cover Scorecard and PyPI publication. The
+focused benchmark records non-isolated wall time
 for both profiles; it is evidence about orchestration overhead, not a
 throughput or cross-language implementation claim.
 

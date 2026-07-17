@@ -8,8 +8,8 @@ apply remediation, edit source, create policy state, or infer private paths.
 ## GitHub Action
 
 Pin the Action and every other workflow action to a complete commit SHA. The
-following revision is the reviewed integration successor that contains both
-`action.yml` and `.pre-commit-hooks.yaml`:
+following revision is the provenance-hardened integration successor containing
+`action.yml`, `.pre-commit-hooks.yaml`, and the executable-provenance guards:
 
 ```yaml
 name: RigorFoundry
@@ -34,7 +34,7 @@ jobs:
       - name: Prepare explicit ignored output parent
         run: mkdir -p .rigor/reports
       - name: Run read-only evidence gate
-        uses: anulum/rigor-foundry@0ad072dac61f0d757aa91e45dfec2960e4b177c1
+        uses: anulum/rigor-foundry@4e2d758b4c21a12531bca0e45a6681f7ebed2d30
         with:
           repository-root: .
           policy-path: rigor-foundry-policy.json
@@ -45,14 +45,14 @@ jobs:
           allow-native-audits: "false"
 ```
 
-The output parents must already exist; the Action does not create repository
-directories. Keep the output namespace ignored unless the project has an
-explicit evidence-publication policy. The Action installs the exact checked-out
-source revision with Python 3.12.11, the hash-locked build requirements, and the
-hash-locked runtime requirements. The PEP 517 backend and all four of its build
-dependencies are exact requirements as well. Nested `setup-python` is itself
-pinned to a full commit. Inputs enter Bash only through quoted environment
-variables.
+The output parents must already exist and both output files must be absent; the
+Action never overwrites a file or creates repository directories. An output
+inside the adopter worktree must be Git-ignored and untracked. The Action
+installs the exact checked-out source revision with Python 3.12.11, the
+hash-locked build requirements, and the hash-locked runtime requirements. The
+PEP 517 backend and all four of its build dependencies are exact requirements
+as well. Nested `setup-python` is itself pinned to a full commit. Inputs enter
+Bash only through quoted environment variables.
 
 `repository-root`, `policy-path`, `report-path`, and `gate-report-path` are
 mandatory. `mode` accepts only `observe`, `ratchet`, or `zero`; `scope` accepts
@@ -77,9 +77,10 @@ replace, rather than extend, the manifest defaults:
 minimum_pre_commit_version: 4.6.0
 repos:
   - repo: https://github.com/anulum/rigor-foundry
-    rev: 0ad072dac61f0d757aa91e45dfec2960e4b177c1
+    rev: 4e2d758b4c21a12531bca0e45a6681f7ebed2d30
     hooks:
       - id: rigor-foundry
+        entry: .rigor/rigor-venv/bin/rigor
         args:
           - gate
           - --root
@@ -94,22 +95,27 @@ repos:
           - .rigor/reports/pre-commit-gate.json
 ```
 
-Create and ignore `.rigor/reports` before running the hook. The manifest pins
-Cryptography, CFFI, and pycparser to the exact runtime-lock versions, runs once
-serially without filenames, and does not consent to native adapters. For
-ratchet or zero, replace the complete `args` list, select the stronger mode,
-and add `--maturity PATH`. Add `--review PATH` only when the review ledger is
-explicitly owned. Add `--allow-native-audits` only after reviewing the declared
-adapter commands and sandbox prerequisites.
+Create and ignore `.rigor/reports` before running the hook. The hook uses
+`language: system` deliberately: pre-commit's Python environment installer does
+not expose pip's `--require-hashes` contract. Install the pinned RigorFoundry
+checkout into `.rigor/rigor-venv` with its `requirements/build.txt` and
+`requirements/runtime.txt` hash locks, followed by `pip install
+--no-build-isolation --no-deps CHECKOUT`; then retain the explicit `entry`
+shown above. The manifest runs once serially without filenames and does not
+consent to native adapters. For ratchet or zero, replace the complete `args`
+list, select the stronger mode, and add `--maturity PATH`. Add `--review PATH`
+only when the review ledger is explicitly owned. Add `--allow-native-audits`
+only after reviewing the declared adapter commands and sandbox prerequisites.
 
 ## Verification boundary
 
 Distribution CI builds and checks the wheel and source distribution, creates a
 separate real Git adopter under `/tmp`, bootstraps and commits its policy, runs
 the local composite Action against that repository, then makes pre-commit clone
-the source repository at the exact `${GITHUB_SHA}` and execute the published
-hook. The workflow requires non-empty Action scan, Action gate, and pre-commit
-gate artifacts. Local author evidence repeats the Action shell and hook install
+the source repository at the exact `${GITHUB_SHA}` and execute the system hook
+through the hash-locked installed wheel. The workflow requires non-empty Action
+scan, Action gate, and pre-commit gate artifacts. Local author evidence repeats
+the Action shell and hook install
 against an external fixture; hosted CI remains the authoritative runner proof
 after an authorised push.
 

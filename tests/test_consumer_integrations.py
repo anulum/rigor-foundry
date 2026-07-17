@@ -14,7 +14,7 @@ import re
 from tools._repository import ROOT
 from tools.check_action_pins import action_metadata_errors
 
-_INTEGRATION_REVISION = "0ad072dac61f0d757aa91e45dfec2960e4b177c1"
+_INTEGRATION_REVISION = "4e2d758b4c21a12531bca0e45a6681f7ebed2d30"
 
 
 def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
@@ -67,6 +67,9 @@ def test_distributable_hook_requires_locked_runtime_and_defaults_to_passive_gate
     assert "require_serial: true" in manifest
     assert "language: system" in manifest
     assert "additional_dependencies:" not in manifest
+    guide = (ROOT / "docs/integrations.md").read_text(encoding="utf-8")
+    assert "entry: .rigor/rigor-venv/bin/rigor" in guide
+    assert "--require-hashes" in guide
     assert "--allow-native-audits" not in manifest
     assert "promote" not in manifest
     assert "--apply" not in manifest

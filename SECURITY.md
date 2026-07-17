@@ -63,13 +63,18 @@ reviews prioritise:
   envelopes fail closed without compatibility verification.
 - Writes require an explicit command and stay within validated ignored paths.
 - Secret profile variables store provider references, never secret values.
-- CI actions are pinned to full commit SHAs and third-party dependencies are
-  hash locked.
+- CI actions are pinned to full commit SHAs. Runtime-fetched executable assets,
+  bundles, and container images are content-addressed; third-party Python
+  dependencies are hash locked.
+- GitHub-hosted runner and official `setup-python` provisioning retain a
+  provider-managed manifest residual with exact release selectors and
+  repository/lockfile-scoped caches; public issue 9 tracks closure.
 - The consumer Action passes all caller inputs through quoted environment
   variables, installs the exact checked-out source with hash-locked build and
-  runtime dependencies, and exposes no promotion or remediation operation.
-  The distributed pre-commit hook defaults to a staged observe gate without
-  native-audit consent.
+  runtime dependencies, refuses existing or Git-controlled output targets, and
+  exposes no promotion or remediation operation. The distributed system
+  pre-commit hook requires a separately hash-locked installation and defaults
+  to a staged observe gate without native-audit consent.
 - Dependency exceptions are advisory-, package-, version-, command-, and
   expiry-bound in `.github/dependency-waivers.json`; repository audit fails on
   drift or expiry.

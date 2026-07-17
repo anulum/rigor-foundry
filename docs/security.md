@@ -74,11 +74,21 @@ and archive members as adversarial input.
   and raw public keys must both be unique, so aliases for one underlying key
   cannot satisfy independent-review quorum; labels and digest-shaped strings
   do not establish trust.
-- CI actions, Python dependencies, and the base image are immutably pinned.
+- CI actions, Python dependencies, the base image, downloaded executables,
+  CodeQL bundle, BuildKit image, and local Docker-action images are immutably
+  pinned. Project-controlled release downloads verify the retained manifest
+  and final executable or archive before use.
+- GitHub-hosted `ubuntu-24.04` and official `setup-python` provisioning retain
+  a bounded provider-managed manifest residual. Runner labels, action commits,
+  and Python patch releases are exact; cache identity is repository- and
+  lockfile-scoped. [Issue 9](https://github.com/anulum/rigor-foundry/issues/9)
+  tracks the remaining per-artifact identity gap.
 - The consumer Action pins its nested action and hash-locks build/runtime
   installation. Inputs cross the shell boundary only through quoted
-  environment values. Consumer Action and pre-commit defaults are observe-only
-  and carry no promotion or remediation command.
+  environment values. Output targets must be absent, and in-repository targets
+  must be untracked and ignored. The system pre-commit hook requires a
+  separately hash-locked RigorFoundry installation. Both defaults are
+  observe-only and carry no promotion or remediation command.
 - Package publication uses a protected OIDC environment rather than a stored
   package credential.
 

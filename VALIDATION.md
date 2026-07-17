@@ -24,7 +24,7 @@ execution, or production promotion.
 | Tests | Focused single test files only | Full matrix on 3.11, 3.12, 3.13 |
 | Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 95% |
 | Packaging | Wheel and sdist build; metadata-truth guard; wheel smoke outside checkout | Build, metadata-truth guard, Twine check, wheel smoke |
-| Consumer integrations | External Git fixture; exact-source Action shell; exact-revision pre-commit install | Local composite Action plus cloned hook at `${GITHUB_SHA}`; three retained JSON artifacts |
+| Consumer integrations | External Git fixture; exact-source Action shell; exact-revision system hook with hash-locked executable | Local composite Action plus cloned hook at `${GITHUB_SHA}`; three retained JSON artifacts |
 | Release tag | Isolated `python -S` CLI proves exact-version validation without site packages | Exact tag validation runs before build, container publication, and package publication |
 | Documentation | Strict MkDocs build | Strict build and Pages artifact |
 | Container | Local build/smoke when resources permit | Non-root CLI smoke and vulnerability scan |
