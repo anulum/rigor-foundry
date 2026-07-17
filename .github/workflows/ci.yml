@@ -85,6 +85,11 @@ jobs:
           python-version: "3.12.13"
           cache: pip
           cache-dependency-path: requirements/ci.txt
+      - name: Bind distribution Python before nested Actions
+        run: |
+          distribution_python="$(command -v python)"
+          test -x "$distribution_python"
+          printf 'RF_DISTRIBUTION_PYTHON=%s\n' "$distribution_python" >> "$GITHUB_ENV"
       - name: Install hash-locked quality environment
         run: |
           python -m pip install --require-hashes -r requirements/ci.txt
@@ -300,7 +305,7 @@ jobs:
             '          - reports/pre-commit-gate.json' \
             > .pre-commit-config.yaml
           PATH="/tmp/rigor-wheel/bin:$PATH" \
-            python -m pre_commit run --all-files --config .pre-commit-config.yaml
+            "$RF_DISTRIBUTION_PYTHON" -m pre_commit run --all-files --config .pre-commit-config.yaml
           test -s reports/pre-commit-gate.json
           test -s reports/action-report.json
           test -s reports/action-gate.json

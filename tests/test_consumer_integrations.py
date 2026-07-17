@@ -89,11 +89,14 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     assert "gate-report-path: /tmp/rigor-adopter/reports/action-gate.json" in workflow
     assert 'allow-native-audits: "false"' in workflow
     assert "Install and run distributable hook in external fixture" in workflow
+    assert "RF_DISTRIBUTION_PYTHON=%s" in workflow
+    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run' in workflow
+    assert 'PATH="/tmp/rigor-wheel/bin:$PATH"' in workflow
     assert '"  - repo: file://${SOURCE_REPOSITORY}"' in workflow
     assert '"    rev: ${SOURCE_REVISION}"' in workflow
     for argument in ("gate", "--root", "--policy", "--mode", "--scope", "--output"):
         assert f"'          - {argument}'" in workflow
-    assert "python -m pre_commit run --all-files" in workflow
+    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run --all-files' in workflow
     for output in (
         "reports/pre-commit-gate.json",
         "reports/action-report.json",
