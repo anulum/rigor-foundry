@@ -314,17 +314,122 @@ class CoverageResidualManifest:
         }
 
 
+_Scope = ast.Module | ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef
+_Binding = Literal["none", "builtin", "shadow", "global", "nonlocal"]
+
+
+def _scope_nodes(scope: _Scope) -> tuple[ast.AST, ...]:
+    """Return nodes owned by one lexical scope without nested-scope bodies."""
+    roots: list[ast.AST]
+    if isinstance(scope, ast.Lambda):
+        roots = [scope.body]
+    else:
+        roots = list(scope.body)
+    nodes: list[ast.AST] = []
+    stack = roots[:]
+    while stack:
+        node = stack.pop()
+        nodes.append(node)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+            continue
+        stack.extend(ast.iter_child_nodes(node))
+    return tuple(nodes)
+
+
+def _dunder_import_binding(scope: _Scope) -> _Binding:
+    """Classify how one lexical scope binds the ``__import__`` name."""
+    nodes = _scope_nodes(scope)
+    if any(isinstance(node, ast.Global) and "__import__" in node.names for node in nodes):
+        return "global"
+    if any(isinstance(node, ast.Nonlocal) and "__import__" in node.names for node in nodes):
+        return "nonlocal"
+    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        arguments = (
+            *scope.args.posonlyargs,
+            *scope.args.args,
+            *scope.args.kwonlyargs,
+        )
+        if (
+            any(argument.arg == "__import__" for argument in arguments)
+            or (scope.args.vararg is not None and scope.args.vararg.arg == "__import__")
+            or (scope.args.kwarg is not None and scope.args.kwarg.arg == "__import__")
+        ):
+            return "shadow"
+    trusted = False
+    shadowed = False
+    for node in nodes:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            shadowed |= node.name == "__import__"
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            shadowed |= node.id == "__import__"
+        elif isinstance(node, ast.ExceptHandler):
+            shadowed |= node.name == "__import__"
+        elif isinstance(node, ast.Import):
+            shadowed |= any(
+                (alias.asname or alias.name.partition(".")[0]) == "__import__"
+                for alias in node.names
+            )
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if (alias.asname or alias.name) != "__import__":
+                    continue
+                if node.module == "builtins" and alias.name == "__import__":
+                    trusted = True
+                else:
+                    shadowed = True
+    if shadowed:
+        return "shadow"
+    return "builtin" if trusted else "none"
+
+
+def _bare_dunder_import_is_builtin(
+    node: ast.Call,
+    parents: dict[ast.AST, ast.AST],
+) -> bool:
+    """Return whether a bare ``__import__`` call resolves to the builtin."""
+    scopes: list[_Scope] = []
+    ancestor = parents.get(node)
+    while ancestor is not None:
+        if isinstance(ancestor, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)) or (
+            isinstance(ancestor, ast.ClassDef) and not scopes
+        ):
+            scopes.append(ancestor)
+        elif isinstance(ancestor, ast.Module):
+            module = ancestor
+            break
+        ancestor = parents.get(ancestor)
+    else:  # pragma: no cover - every parsed call belongs to its module
+        return False
+    use_module = False
+    for scope in scopes:
+        binding = _dunder_import_binding(scope)
+        if binding == "shadow":
+            return False
+        if binding == "builtin":
+            return True
+        if binding == "global":
+            use_module = True
+            break
+    module_binding = _dunder_import_binding(module)
+    if module_binding == "shadow":
+        return False
+    return module_binding in {"none", "builtin"} or use_module
+
+
 def _forbidden_imports(
     text: str,
     prefixes: tuple[str, ...],
 ) -> tuple[tuple[str, int], ...]:
     """Return structurally matched static or literal-dynamic import uses."""
     tree = ast.parse(text)
+    parents = {
+        child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
+    }
     matches: set[tuple[str, int]] = set()
     importlib_aliases: set[str] = set()
     import_module_aliases: set[str] = set()
     builtins_aliases: set[str] = set()
-    dunder_import_aliases = {"__import__"}
+    dunder_import_aliases: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             importlib_aliases.update(
@@ -339,7 +444,9 @@ def _forbidden_imports(
             )
         elif isinstance(node, ast.ImportFrom) and node.module == "builtins":
             dunder_import_aliases.update(
-                alias.asname or alias.name for alias in node.names if alias.name == "__import__"
+                alias.asname
+                for alias in node.names
+                if alias.name == "__import__" and alias.asname is not None
             )
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -367,7 +474,14 @@ def _forbidden_imports(
                 and function.value.id in importlib_aliases
             ) or (isinstance(function, ast.Name) and function.id in import_module_aliases)
             uses_dunder_import = (
-                isinstance(function, ast.Name) and function.id in dunder_import_aliases
+                isinstance(function, ast.Name)
+                and (
+                    function.id in dunder_import_aliases
+                    or (
+                        function.id == "__import__"
+                        and _bare_dunder_import_is_builtin(node, parents)
+                    )
+                )
             ) or (
                 isinstance(function, ast.Attribute)
                 and function.attr == "__import__"

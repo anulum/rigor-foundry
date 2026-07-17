@@ -257,6 +257,16 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
             "import builtins as runtime\n"
             'runtime.__import__(name="rigor_foundry._remediation_graph")'
         ),
+        (
+            "def load_private() -> object:\n"
+            "    global __import__\n"
+            '    return __import__("rigor_foundry._remediation_graph")'
+        ),
+        (
+            "def load_private() -> object:\n"
+            "    from builtins import __import__\n"
+            '    return __import__("rigor_foundry._remediation_graph")'
+        ),
         "from rigor_foundry import _remediation_graph",
         "from rigor_foundry import (\n    _remediation_graph as graph,\n)",
         (
@@ -297,6 +307,65 @@ def test_negative_search_allows_public_literal_dynamic_import(tmp_path: Path) ->
     remediation_test.write_text(
         remediation_test.read_text(encoding="utf-8")
         + '\nimport importlib\nimportlib.import_module("rigor_foundry.models")\n',
+        encoding="utf-8",
+    )
+
+    assert coverage_residual_errors(root) == ()
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        (
+            "def __import__(name: str) -> str:\n"
+            "    return name\n"
+            '__import__("rigor_foundry._remediation_graph")'
+        ),
+        (
+            "def local_loader(__import__: object) -> object:\n"
+            '    return __import__("rigor_foundry._remediation_graph")'
+        ),
+        ('local_loader = lambda __import__: __import__("rigor_foundry._remediation_graph")'),
+        (
+            "def outer() -> object:\n"
+            "    __import__ = lambda name: name\n"
+            "    def inner() -> object:\n"
+            "        nonlocal __import__\n"
+            '        return __import__("rigor_foundry._remediation_graph")\n'
+            "    return inner()"
+        ),
+        (
+            "try:\n"
+            "    raise RuntimeError\n"
+            "except RuntimeError as __import__:\n"
+            '    __import__("rigor_foundry._remediation_graph")'
+        ),
+        ('import builtins as __import__\n__import__("rigor_foundry._remediation_graph")'),
+        ('from builtins import len as __import__\n__import__("rigor_foundry._remediation_graph")'),
+        (
+            "class LocalLoader:\n"
+            "    __import__ = staticmethod(lambda name: name)\n"
+            '    value = __import__("rigor_foundry._remediation_graph")'
+        ),
+        (
+            "def local_loader(*__import__: object) -> object:\n"
+            '    return __import__("rigor_foundry._remediation_graph")'
+        ),
+        (
+            "def local_loader(**__import__: object) -> object:\n"
+            '    return __import__("rigor_foundry._remediation_graph")'
+        ),
+    ],
+)
+def test_negative_search_allows_shadowed_dunder_import(
+    tmp_path: Path,
+    statement: str,
+) -> None:
+    """User bindings named ``__import__`` are not mistaken for the builtin."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8") + f"\n{statement}\n",
         encoding="utf-8",
     )
 
