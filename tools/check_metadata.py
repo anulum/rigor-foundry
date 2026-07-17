@@ -72,7 +72,7 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
         if classifier not in classifiers:
             errors.append(f"missing classifier: {classifier}")
 
-    package_version = _package_version(root / "src" / "rigor_foundry" / "__init__.py")
+    package_version = _package_version(root / "src" / "rigor_foundry" / "version.py")
     if package_version != version:
         errors.append(f"package version {package_version!r} does not match {version!r}")
 

@@ -41,6 +41,123 @@
       "review_by": "2026-10-14"
     },
     {
+      "residual_id": "CR-BOOTSTRAP-CREATE-INVARIANT",
+      "classification": "runtime-invariant",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "_create_text",
+      "guard": "was not created as a single-link regular file",
+      "source_digest": "16dde794d5f0ea7d62f94ce7dbab9bec1ecdaf12d8e586c1c4896c4ca1242ec6",
+      "owner": "onboarding-security",
+      "rationale": "O_CREAT plus O_EXCL creates a new regular file and the retained descriptor is validated before transfer; manufacturing a non-regular or already-multilink result would require replacing kernel open/fstat behavior rather than exercising the public bootstrap boundary",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
+        "tests/test_bootstrap.py::test_bootstrap_rolls_back_policy_when_private_todo_cannot_be_created"
+      ],
+      "revisit_triggers": [
+        "bootstrap creation moves to a non-regular storage primitive",
+        "the supported kernel changes O_CREAT plus O_EXCL semantics"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-CREATE-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "_create_text",
+      "guard": "already exists; bootstrap never overwrites",
+      "source_digest": "16dde794d5f0ea7d62f94ce7dbab9bec1ecdaf12d8e586c1c4896c4ca1242ec6",
+      "owner": "onboarding-security",
+      "rationale": "the guard covers another process creating the exact leaf after the public precheck but before descriptor-relative O_EXCL; deterministic tests already replace parents, files, Git ownership, and ignored state, while forcing this sub-instruction interval would add scheduler probability rather than stronger no-overwrite evidence",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_never_overwrites_and_leaves_no_partial_policy"
+      ],
+      "revisit_triggers": [
+        "a deterministic kernel-assisted leaf-create handshake is available",
+        "bootstrap no longer uses descriptor-relative O_EXCL"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-GIT-ROOT-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "bootstrap_repository",
+      "guard": "repository root identity changed during Git checks",
+      "source_digest": "6678080d5dbc0e34d90858e982d8209aec6aaddf7715f94e5f90924df79246a3",
+      "owner": "onboarding-security",
+      "rationale": "real-process tests replace the complete repository root immediately after policy creation and prove rollback; hitting the earlier interval inside fixed-root Git plumbing would require a probabilistic scheduler race or patched syscall result and would not strengthen the retained-descriptor guarantee",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_detects_real_path_and_ignore_drift"
+      ],
+      "revisit_triggers": [
+        "a deterministic Git-command boundary mutation hook becomes public",
+        "bootstrap Git checks move behind a kernel transaction"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-PATH-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "_path_identity",
+      "guard": "created bootstrap path is no longer a single-link regular file",
+      "source_digest": "f34aa527d393fd22d39333072a12ee3f9bfece728ad6793cb91ba1649a39015d",
+      "owner": "onboarding-security",
+      "rationale": "deterministic inotify tests replace both created leaves with real regular files and exercise identity mismatch plus safe rollback; changing a leaf into a symlink or multi-link file inside the narrower stat interval would be scheduler-dependent and supplies no stronger result than the existing real replacement proof",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_detects_real_path_and_ignore_drift"
+      ],
+      "revisit_triggers": [
+        "a deterministic post-create hardlink mutation harness is available",
+        "bootstrap leaf validation changes"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-PLATFORM",
+      "classification": "platform-primitive",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "bootstrap_repository",
+      "guard": "platform lacks descriptor-bound bootstrap support",
+      "source_digest": "6678080d5dbc0e34d90858e982d8209aec6aaddf7715f94e5f90924df79246a3",
+      "owner": "onboarding-security",
+      "rationale": "supported POSIX hosts provide O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would simulate an unsupported platform instead of validating the real descriptor-bound public bootstrap",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_rejects_symlinked_parent_and_missing_roots",
+        "tests/test_bootstrap.py::test_bootstrap_requires_exact_real_git_root_and_unique_existing_roots"
+      ],
+      "revisit_triggers": [
+        "a non-POSIX bootstrap backend is implemented",
+        "the supported operating-system contract changes"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-ROLLBACK-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "_unlink_created",
+      "guard": "except FileNotFoundError",
+      "source_digest": "2ad10ec5f7dbc107f57e7e9e60453c29dee9c41ae2372df24ed2e7f2ed7ea090",
+      "owner": "onboarding-security",
+      "rationale": "real-process tests prove rollback removes exact created identities and preserves concurrently replaced leaves; deleting the leaf inside the final stat-to-unlink interval is harmless and requires a probabilistic scheduler race to observe",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_detects_real_path_and_ignore_drift",
+        "tests/test_bootstrap.py::test_bootstrap_rolls_back_policy_when_private_todo_cannot_be_created"
+      ],
+      "revisit_triggers": [
+        "a deterministic unlink-boundary notification becomes available",
+        "bootstrap rollback ownership changes"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
       "residual_id": "CR-GIT-DESCRIPTOR-ROOT",
       "classification": "platform-primitive",
       "source_path": "src/rigor_foundry/git_provenance.py",
@@ -182,6 +299,7 @@
       "search_id": "NS-NO-PRIVATE-SIMULATION",
       "include": [
         "tests/test_adapters.py",
+        "tests/test_bootstrap.py",
         "tests/test_digest_dependencies.py",
         "tests/test_git_provenance.py",
         "tests/test_preflight.py",

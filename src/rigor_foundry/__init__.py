@@ -7,8 +7,6 @@
 # RigorFoundry — reusable repository-audit API
 """Public API for evidence-first repository auditing."""
 
-__version__ = "0.1.1"
-
 from .campaign_identity import (
     INFERENCE_IDENTITY_SCHEMA_VERSION,
     MODEL_WITNESS_SCHEMA_VERSION,
@@ -109,6 +107,7 @@ from .trust import (
     VerificationTrustStore,
     ed25519_signature_message,
 )
+from .version import __version__
 from .work_closure import WorkClosure
 from .work_models import WorkEvent, WorkRecord, WorkTask
 

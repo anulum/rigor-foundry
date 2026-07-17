@@ -10,6 +10,8 @@ becomes an implicit pass.
 
 ## Start here
 
+- [First repository](getting-started.md) provides the explicit, non-overwriting
+  adopter bootstrap and first read-only scan.
 - [Architecture](architecture.md) defines the separation between observation,
   review, target state, and remediation.
 - [CLI](cli.md) documents the installed command boundary.
@@ -18,6 +20,8 @@ becomes an implicit pass.
 - [Validation](validation.md) distinguishes focused local evidence from the
   exhaustive remote gates.
 - [Security](security.md) defines the adversarial repository boundary.
+- [Public API stability](api-stability.md) inventories stable, provisional, and
+  deprecated top-level imports.
 
 **Contact:** [protoscience@anulum.li](mailto:protoscience@anulum.li) |
 [GitHub Discussions](https://github.com/anulum/rigor-foundry/discussions) |

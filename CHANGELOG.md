@@ -7,6 +7,15 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- An explicit descriptor-bound `rigor bootstrap` command creates a trackable
+  adopter policy and ignored canonical TODO exactly once. It requires declared
+  policy, TODO, review-ledger, source-root, and test-root paths and starts every
+  audit domain required rather than inferring applicability.
+- A versioned machine-readable top-level API inventory classifies every
+  `rigor_foundry.__all__` name as stable, provisional, or deprecated and
+  enforces replacement and deprecation-window contracts.
+- A first-repository tutorial documents safe bootstrap, policy review, and the
+  first read-only scan.
 - Policy schema 1.1 can declare a sorted, unique inventory of exact Git-ignored
   paths for bounded `presence` or `file-sha256` capture. Evidence records only
   status, kind, regular-file size, optional SHA-256, and a bounded reason; raw
@@ -26,6 +35,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `rigor --version`, package `__version__`, and distribution metadata now share
+  the import-safe `version.py` owner.
 - Report schema 1.3 and scanner version 0.3.0 bind ignored-inventory evidence
   and its digest in addition to anchored candidates and the repository Git
   object format. Campaign schema 1.5 freezes the same evidence and rejects

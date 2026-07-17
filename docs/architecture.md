@@ -15,6 +15,14 @@ generator.
 6. Gap records become dependency-ordered remediation plans only after evidence
    and approval gates pass.
 
+Adopter initialization is a separate, explicit write boundary. `bootstrap.py`
+requires the caller to name the policy, canonical TODO, review ledger, and
+source/test roots; it creates only the absent policy and TODO through retained
+no-follow directory descriptors. It never infers applicability or adopts an
+existing ledger. `version.py` owns package/CLI identity, and
+`api_stability.py` classifies every package-level export under a versioned
+stable, provisional, or deprecated contract.
+
 Portable scanner scope is projected from one typed language-capability
 registry. The registry separately records unreadable-content scope,
 responsibility metrics, polyglot ownership, dependency-parser families, and

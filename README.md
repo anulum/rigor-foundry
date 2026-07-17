@@ -92,13 +92,19 @@ cd RIGOR-FOUNDRY
 python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
-.venv/bin/rigor scan --root /path/to/repository
+.venv/bin/rigor --version
 ```
+
+For an adopter repository, follow the explicit [first-repository
+tutorial](docs/getting-started.md). Bootstrap requires the policy, canonical
+TODO, review-ledger, source-root, and test-root paths; it never guesses or
+overwrites them.
 
 ## Command surface
 
 | Command | Contract |
 | --- | --- |
+| `rigor bootstrap` | Create one explicit policy and ignored canonical TODO without guessing or overwrite. |
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
@@ -107,6 +113,10 @@ python3 -m venv .venv
 | `rigor campaign-create` | Freeze an independent-audit input contract. |
 | `rigor campaign-run` | Execute and attest one independent run. |
 | `rigor campaign-compare` | Record disagreement and unresolved evidence. |
+
+`rigor --version` reports the canonical installed package version. The exact
+stable/provisional top-level import inventory and deprecation policy are
+documented in [Public API stability](docs/api-stability.md).
 
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,

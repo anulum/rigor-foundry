@@ -14,6 +14,15 @@ The selected policy must be a tracked, non-symlink UTF-8 file inside the
 audited repository. External, parent-relative, ignored, and symlinked policy
 inputs fail closed rather than silently controlling the audit.
 
+`rigor bootstrap` creates a starting policy only when the adopter explicitly
+names the policy, canonical TODO, review ledger, and every source/test root.
+The policy path must be trackable; internal paths must already be Git-ignored.
+Parents and code roots must already exist. The generated policy uses observe
+mode, production/test line thresholds of 700/1000, and marks all audit domains
+required. It does not infer applicability, production packages, size
+registries, native commands, or internal paths. Review those fields before the
+first baseline; see [First repository](getting-started.md).
+
 ## Candidate anchor schemas
 
 Candidate-anchor schema 1.0 is a strict discriminated union:

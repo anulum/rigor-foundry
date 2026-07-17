@@ -7,7 +7,25 @@ python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/rigor --help
+.venv/bin/rigor --version
 ```
+
+`rigor --version` prints the canonical package identity, for example
+`rigor 0.1.1`, without requiring a subcommand.
+
+## Explicit adopter bootstrap
+
+`rigor bootstrap` creates one new trackable policy and one new Git-ignored
+canonical TODO. It requires explicit `--policy`, `--todo`, `--review-ledger`,
+`--source-root`, and `--test-root` values and never guesses or overwrites them.
+Parents and source/test roots must already exist without symlink components.
+The TODO and review-ledger paths must already be ignored; the policy must not
+be ignored or tracked. Repeat root options for multi-root repositories.
+
+The generated observe-mode policy marks every domain required. Missing portable
+or native coverage therefore remains visible until the adopter records an
+evidence-backed applicability decision. See [First repository](getting-started.md)
+for the complete workflow and failure boundary.
 
 ## Read-only inspection
 

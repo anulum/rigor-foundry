@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 import tomllib
 
+from rigor_foundry.version import __version__
 from tools._repository import ROOT
 
 
@@ -23,6 +24,8 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     assert project["build-system"]["requires"] == ["hatchling==1.31.0"]
     assert project["project"]["license"] == "Apache-2.0"
     assert project["project"]["license-files"] == ["LICENSE", "NOTICE"]
+    assert project["project"]["version"] == __version__
+    assert project["project"]["scripts"] == {"rigor": "rigor_foundry.cli:main"}
     assert (
         "/coverage-residuals.json"
         in project["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]

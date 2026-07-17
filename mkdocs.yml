@@ -31,9 +31,11 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - First repository: getting-started.md
   - Architecture: architecture.md
   - Digest dependencies: digest-dependencies.md
   - CLI: cli.md
+  - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
   - Security: security.md

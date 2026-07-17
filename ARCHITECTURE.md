@@ -22,6 +22,17 @@ append-only ignored storage, and disagreement comparison.
 
 ## Responsibilities
 
+### Onboarding and public compatibility
+
+`bootstrap.py` owns adopter initialization. It accepts only explicit paths,
+binds every filesystem write to retained no-follow directory descriptors,
+requires internal TODO/review paths to be ignored and the policy to remain
+trackable, and rolls back only the exact files created by a failed attempt.
+It does not discover or create parents, adopt an existing TODO, or infer domain
+applicability. `version.py` owns the import-safe package identity, while
+`api_stability.py` inventories every package-level export and enforces disjoint
+stable, provisional, and deprecated lifecycle classes.
+
 ### Inventory
 
 `git_provenance.py` owns a separate bootstrap trust boundary for Git. It never

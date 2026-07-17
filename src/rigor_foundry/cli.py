@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .adapters import run_native_audits
+from .bootstrap import bootstrap_repository
 from .campaign_identity import InferenceIdentity
 from .campaign_promotion import validate_promotion_campaign
 from .campaign_workflow import (
@@ -48,6 +49,7 @@ from .review import (
     validate_reviews,
 )
 from .scanner import scan_repository
+from .version import __version__
 
 
 def report_markdown(report: AuditReport) -> str:
@@ -383,10 +385,47 @@ def _residuals_check_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _bootstrap_command(args: argparse.Namespace) -> int:
+    """Create one explicit adopter policy and canonical ignored TODO."""
+    result = bootstrap_repository(
+        args.root,
+        policy_path=args.policy,
+        todo_path=args.todo,
+        review_ledger_path=args.review_ledger,
+        source_roots=tuple(args.source_root),
+        test_roots=tuple(args.test_root),
+        source_line_threshold=args.source_line_threshold,
+        test_line_threshold=args.test_line_threshold,
+        git_trust_policy=_git_trust_policy(args),
+    )
+    print(
+        "created adopter bootstrap: "
+        f"policy={result.policy_path}; TODO={result.todo_path}; "
+        f"policy_digest={result.policy_digest}"
+    )
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     """Build the command-line parser."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version=f"rigor {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    bootstrap = subparsers.add_parser(
+        "bootstrap",
+        help="Create an explicit policy and ignored canonical TODO without overwrite.",
+    )
+    bootstrap.add_argument("--root", type=Path, required=True)
+    bootstrap.add_argument("--policy", type=Path, required=True)
+    bootstrap.add_argument("--todo", type=Path, required=True)
+    bootstrap.add_argument("--review-ledger", type=Path, required=True)
+    bootstrap.add_argument("--source-root", type=Path, action="append", required=True)
+    bootstrap.add_argument("--test-root", type=Path, action="append", required=True)
+    bootstrap.add_argument("--source-line-threshold", type=int, default=700)
+    bootstrap.add_argument("--test-line-threshold", type=int, default=1000)
+    _add_git_trust_arguments(bootstrap)
+    bootstrap.set_defaults(handler=_bootstrap_command)
 
     scan = subparsers.add_parser("scan", help="Emit read-only static audit candidates.")
     scan.add_argument("--root", type=Path, required=True)
