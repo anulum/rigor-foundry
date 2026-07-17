@@ -26,6 +26,14 @@ state and review verdict remain separate properties; only a reviewed `valid`
 record maps to a failing result. Rule metadata comes from the versioned rule
 registry, and candidate identifiers provide stable fingerprints.
 
+Repository module-size governance uses the tracked
+`module-size-decisions.json` registry named by policy. A row is not a size
+waiver: it records one reviewed cohesive responsibility, complete direct
+dependency boundary, exact physical line count, and a concrete reopen trigger.
+The self-contract test requires the registered paths to equal the current
+large-owner candidate set and rejects missing, malformed, incomplete, or
+line-drifted decisions. Mixed owners must split instead of receiving a row.
+
 ## Responsibilities
 
 ### Onboarding and public compatibility

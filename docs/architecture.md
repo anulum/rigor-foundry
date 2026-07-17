@@ -21,6 +21,12 @@ integrity-verified report, validates optional reviews, and emits stable rule
 indices, candidate fingerprints, repository-relative locations, and the exact
 blob/tree anchor in a property bag. See [SARIF export](sarif.md).
 
+The repository policy names a tracked module-size decision registry. Each row
+documents one cohesive owner, its direct dependency boundary, exact physical
+line count, and a concrete reassessment trigger. Registry rows do not suppress
+large-owner candidates. The self-contract requires exact coverage of the
+current candidate set; a mixed-responsibility owner must split.
+
 Adopter initialization is a separate, explicit write boundary. `bootstrap.py`
 requires the caller to name the policy, canonical TODO, review ledger, and
 source/test roots; it creates only the absent policy and TODO through retained

@@ -10,6 +10,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A deterministic SARIF 2.1.0 exporter exposes every audit candidate, optional
   evidence-review verdict, stable rule/result identity, exact Git anchor, and
   review-derived severity without treating an unreviewed candidate as a defect.
+- A tracked module-size decision registry records cohesive responsibility,
+  direct production and test-support dependencies, exact lines, and explicit
+  reopen triggers for every repository test owner above the policy threshold.
 - An explicit descriptor-bound `rigor bootstrap` command creates a trackable
   adopter policy and ignored canonical TODO exactly once. It requires declared
   policy, TODO, review-ledger, source-root, and test-root paths and starts every
@@ -39,6 +42,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- CLI integration construction and cross-command rejection routing now have
+  separate bounded test owners instead of one oversized mixed test module.
 - `rigor --version`, package `__version__`, and distribution metadata now share
   the import-safe `version.py` owner.
 - Report schema 1.3 and scanner version 0.3.0 bind ignored-inventory evidence

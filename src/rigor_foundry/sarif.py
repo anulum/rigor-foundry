@@ -145,7 +145,6 @@ def _result(
             }
         ],
         "fingerprints": {"rigorFoundry/v1": candidate.candidate_id},
-        "partialFingerprints": {"primaryLocationLineHash": candidate.candidate_id},
         "properties": properties,
     }
 
@@ -174,6 +173,11 @@ def _sarif_document(
         If reviews are duplicated, incomplete, or belong to another report.
     """
     errors = validate_reviews(report, reviews)
+    errors += tuple(
+        f"reviews[{index}]: non-valid SARIF review must not carry severity"
+        for index, review in enumerate(reviews)
+        if review.decision != "valid" and review.severity is not None
+    )
     if errors:
         raise ValueError("invalid SARIF reviews: " + "; ".join(errors))
     review_by_candidate = {review.candidate_id: review for review in reviews}
@@ -208,6 +212,11 @@ def _sarif_document(
                     "rigorFoundry/policyDigest": report.policy_digest,
                     "rigorFoundry/ignoredInventoryDigest": report.ignored_inventory_digest,
                     "rigorFoundry/branch": report.branch,
+                    "rigorFoundry/head": report.head,
+                    "rigorFoundry/headTree": report.head_tree,
+                    "rigorFoundry/gitObjectFormat": report.git_object_format,
+                    "rigorFoundry/rulePackVersion": report.rule_pack_version,
+                    "rigorFoundry/rulePackDigest": report.rule_pack_digest,
                 },
             }
         ],

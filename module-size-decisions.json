@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "dependency_boundary": "Public ControlAssessment, EvidenceReference, ReviewerAttestation, EffectiveProfileLock, EffectiveControl, project-profile, and standard-pack records; trust-domain and real signing fixtures construct verified inputs. No CLI, campaign, filesystem, or remediation execution.",
+      "lines": 844,
+      "path": "tests/test_control_assessment.py",
+      "reassess_when": "The file exceeds 950 lines, evidence or reviewer records gain a lifecycle independent of assessment acceptance, another protocol owner is added, or its builders become shared by another test module.",
+      "responsibility": "ControlAssessment aggregate protocol owner for assessment states, nested evidence acceptance, independent reviewer acceptance, risk waivers, strict parsing, identity binding, and round trips."
+    },
+    {
+      "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, report, review, campaign, comparison, adapter, standard pack, effective profile, task, event, and closure. Test construction also directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
+      "lines": 782,
+      "path": "tests/test_digest_dependencies.py",
+      "reassess_when": "The file exceeds 900 lines, the normative graph partitions into independently versioned subgraphs, a new node family has a separate schema owner, or another test-owner fixture dependency is introduced.",
+      "responsibility": "Normative digest-dependency graph owner proving schema completeness, acyclicity, exact mutation propagation, stable non-edges, canonical identities, and runtime graph queries."
+    },
+    {
+      "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, and standard-pack records plus signing fixtures. Private _remediation_graph.argv_digest is used only to construct command-bound AdapterLock fixtures; no remediation executor or mutation authority is exercised.",
+      "lines": 710,
+      "path": "tests/test_remediation_plan.py",
+      "reassess_when": "The file exceeds 850 lines, execution authority is introduced, planning and scheduling become independently versioned protocols, or any additional private production helper is required by the tests.",
+      "responsibility": "Advisory RemediationPlan protocol owner for gaps, steps, lanes, approval, dependency DAGs, conflict-safe batching, command binding, rollback bounds, and cross-record identity rejection."
+    }
+  ]
+}

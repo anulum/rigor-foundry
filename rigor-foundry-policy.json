@@ -13,7 +13,9 @@
     "rigor_foundry",
     "tools"
   ],
-  "module_size_registries": [],
+  "module_size_registries": [
+    "module-size-decisions.json"
+  ],
   "canonical_todo": ".rigor/TODO.md",
   "review_ledger": ".rigor/reviews.json",
   "enforcement_mode": "observe",

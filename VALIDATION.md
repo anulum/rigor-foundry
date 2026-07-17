@@ -31,6 +31,7 @@ execution, or production promotion.
 | Repository self-audit | Immutable temporary-commit scan for authoring evidence | Full policy scan, native-control gate, and 30-day evidence artifact |
 | Git provenance | Real path-shadowing, symlink, replacement, version, report, CLI, and campaign regressions | Same focused contracts plus supported Python matrix |
 | Candidate anchors | Real clean/dirty blob identity, line spans, tree-state absence, SHA-1/SHA-256, strict parsing, and report/CLI/TODO wiring | Same contracts plus aggregate branch-aware coverage |
+| Module size | Exact large-owner set equals sorted tracked decisions; every row binds current lines, one responsibility, complete dependency boundary, and reopen trigger | Same contract plus the clean immutable repository scan |
 | Ignored inventory | Real Git ignore checks, no-follow file/directory/missing/symlink evidence, concurrent mutation, campaign recollection, and promotion drift | Same contracts plus supported Python matrix |
 | Sandbox provenance | Real dpkg association/version/feature inspection, parser tampering, executable replacement, and nested-userns boundary | Ubuntu 24.04 AppArmor/package smoke plus supported Python matrix |
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |

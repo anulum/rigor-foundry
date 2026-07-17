@@ -19,6 +19,7 @@ from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.godfiles import scan_godfiles
 from rigor_foundry.models import AuditPolicy
 from rigor_foundry.scanner import scan_repository
+from tools._repository import ROOT
 
 
 def _rules(repository: GitRepository, policy_path: Path) -> set[str]:
@@ -53,6 +54,28 @@ def test_large_owner_is_candidate_not_automatic_godfile_verdict(tmp_path: Path) 
     assert "definitions=1" in large.evidence
     assert "import_fanout=2" in large.evidence
     assert "not itself a GodFile verdict" in large.rationale
+
+
+def test_repository_large_owner_decisions_cover_every_current_candidate() -> None:
+    """Every current large owner has one complete, line-current responsibility decision."""
+    policy = AuditPolicy.from_path(ROOT / "rigor-foundry-policy.json")
+    candidates = scan_godfiles(load_git_inventory(ROOT), policy)
+    registry = json.loads((ROOT / "module-size-decisions.json").read_text(encoding="utf-8"))
+    registered_sequence = [row["path"] for row in registry["files"]]
+    assert registered_sequence == sorted(set(registered_sequence))
+    registered_paths = set(registered_sequence)
+    large_paths = {
+        candidate.path
+        for candidate in candidates
+        if candidate.rule_id == "GF001-large-responsibility-owner"
+    }
+
+    assert large_paths == registered_paths
+    assert not {
+        candidate.rule_id
+        for candidate in candidates
+        if candidate.rule_id.startswith(("GF002", "GF003", "GF004", "GF005"))
+    }
 
 
 def test_size_registry_reports_missing_invalid_incomplete_and_drift(tmp_path: Path) -> None:

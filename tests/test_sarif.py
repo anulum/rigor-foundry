@@ -113,7 +113,7 @@ def test_public_export_preserves_candidate_and_every_review_state(tmp_path: Path
         assert result["properties"]["rigorFoundry/candidateState"] == "candidate"
         assert result["properties"]["rigorFoundry/verdictState"] == verdict
         assert result["fingerprints"] == {"rigorFoundry/v1": candidate_id}
-        assert result["partialFingerprints"] == {"primaryLocationLineHash": candidate_id}
+        assert "partialFingerprints" not in result
     valid_review = by_id[reviews[0].candidate_id]["properties"]["rigorFoundry/review"]
     assert valid_review["digest"] == reviews[0].review_digest
     assert valid_review["severityProvenance"] == "review-record"
@@ -189,6 +189,43 @@ def test_export_carries_repository_tree_anchor_and_rejects_bad_reviews(tmp_path:
     incomplete = ReviewRecord.from_dict({**template.to_dict(), "decision": "valid"})
     with pytest.raises(ValueError, match="valid finding requires severity"):
         rigor_foundry.report_sarif(report, (incomplete,))
+    contradictory = ReviewRecord.from_dict({**template.to_dict(), "severity": "P0"})
+    with pytest.raises(ValueError, match="non-valid SARIF review must not carry severity"):
+        rigor_foundry.report_sarif(report, (contradictory,))
+
+
+def test_zero_result_run_retains_exact_repository_and_rule_pack_provenance(
+    tmp_path: Path,
+) -> None:
+    """Run-level identities survive when a clean real repository has no results."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text(
+        "tests/test_core.py",
+        "from pkg.core import VALUE\n\ndef test_value() -> None:\n    assert VALUE == 1\n",
+    )
+    repository.write_policy()
+    repository.commit()
+    report = rigor_foundry.scan_repository(
+        repository.root,
+        Path("rigor-foundry-policy.json"),
+    )
+    assert report.candidates == ()
+
+    run = json.loads(rigor_foundry.report_sarif(report))["runs"][0]
+    assert run["results"] == []
+    assert run["properties"] == {
+        "rigorFoundry/branch": report.branch,
+        "rigorFoundry/gitObjectFormat": report.git_object_format,
+        "rigorFoundry/head": report.head,
+        "rigorFoundry/headTree": report.head_tree,
+        "rigorFoundry/ignoredInventoryDigest": report.ignored_inventory_digest,
+        "rigorFoundry/policyDigest": report.policy_digest,
+        "rigorFoundry/reportDigest": report.report_digest,
+        "rigorFoundry/rulePackDigest": report.rule_pack_digest,
+        "rigorFoundry/rulePackVersion": report.rule_pack_version,
+        "rigorFoundry/trackedContentDigest": report.tracked_content_digest,
+    }
 
 
 def test_cli_exports_stdout_and_explicit_file_from_real_report(tmp_path: Path) -> None:

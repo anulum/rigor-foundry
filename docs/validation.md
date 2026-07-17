@@ -57,6 +57,12 @@ inventory and scan APIs; dangling-symlink rejection; deleted registered-owner
 tree anchoring; and anchor drift rejection. The candidate-anchor module must
 retain at least 95% branch-aware isolated coverage.
 
+Module-size governance is checked against the real repository inventory. The
+registered path sequence must be sorted and unique, equal the complete current
+large-owner candidate set, and produce no missing, invalid, incomplete, or
+line-drift candidate. This makes dependency/reassessment evidence durable
+without misrepresenting a line-count signal as an automatic GodFile verdict.
+
 Language-capability tests assert the exact scope, responsibility, and polyglot
 suffix projections; dependency parser and resolution order; nested and
 overlapping roots; prefix-collision rejection; case-normalised test naming;

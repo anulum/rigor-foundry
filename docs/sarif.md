@@ -34,9 +34,10 @@ severity.
 ## Identity and anchors
 
 Rule IDs and indices come from the complete versioned RigorFoundry rule pack.
-The content-addressed candidate ID is exported as both `rigorFoundry/v1` and
-GitHub's `primaryLocationLineHash` fingerprint. Locations use percent-encoded
-repository-relative paths and inclusive line spans.
+The content-addressed candidate ID is exported as the exact `rigorFoundry/v1`
+fingerprint. RigorFoundry does not claim a GitHub `primaryLocationLineHash`
+without the scanned line bytes required to compute that separate identity.
+Locations use percent-encoded repository-relative paths and inclusive spans.
 
 The `rigorFoundry/anchor` property preserves the strict anchor schema. A
 tracked-blob result includes the exact scanned Git blob OID and content
