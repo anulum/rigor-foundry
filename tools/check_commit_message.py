@@ -18,6 +18,7 @@ CONVENTIONAL = re.compile(
     r"^(?:build|chore|ci|docs|feat|fix|perf|refactor|revert|security|style|test)(?:\([a-z0-9._/-]+\))?!?: .+"
 )
 SEAT = re.compile(r"^Seat:\s*([A-Za-z0-9-]+)\s*$", re.MULTILINE)
+LEGACY_COAUTHOR = re.compile(r"^Co-Authored-By:\s*.+$", re.MULTILINE | re.IGNORECASE)
 _IDENTITIES = (
     "co" + "dex",
     "open" + "ai",
@@ -43,6 +44,8 @@ def commit_message_errors(message: str) -> list[str]:
         errors.append("subject exceeds 72 characters")
     if FORBIDDEN_IDENTITIES.search(message):
         errors.append("public commit message contains a vendor or model identity")
+    if LEGACY_COAUTHOR.search(message):
+        errors.append("legacy Co-Authored-By trailers are forbidden")
 
     seats = SEAT.findall(message)
     authorship_count = sum(line.strip() == AUTHORSHIP for line in message.splitlines())

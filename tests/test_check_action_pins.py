@@ -20,6 +20,55 @@ from tools.check_action_pins import (
 )
 
 
+def test_action_guard_rejects_mutable_python_toolchain_selectors(tmp_path: Path) -> None:
+    """Setup-python literals and matrices must bind exact patch releases."""
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(
+        "permissions:\n"
+        "  contents: read\n"
+        "concurrency:\n"
+        "  group: test\n"
+        "jobs:\n"
+        "  test:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        python-version: ['3.11.15', '3.12']\n"
+        "    steps:\n"
+        "- uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1\n"
+        "  with:\n"
+        "    python-version: '3.12'\n",
+        encoding="utf-8",
+    )
+
+    assert workflow_errors(workflow) == [
+        "line 11: setup-python version must include a patch release",
+        "line 9: Python matrix versions must include patch releases",
+    ]
+
+
+def test_action_guard_accepts_exact_python_matrix_selector(tmp_path: Path) -> None:
+    """An expression is immutable when its matrix contains exact releases."""
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(
+        "permissions:\n"
+        "  contents: read\n"
+        "concurrency:\n"
+        "  group: test\n"
+        "jobs:\n"
+        "  test:\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        python-version: ['3.11.15', '3.12.13', '3.13.14']\n"
+        "    steps:\n"
+        "      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1\n"
+        "        with:\n"
+        "          python-version: ${{ matrix.python-version }}\n",
+        encoding="utf-8",
+    )
+
+    assert workflow_errors(workflow) == []
+
+
 def test_action_guard_rejects_mutable_checkout_and_credential_persistence(tmp_path: Path) -> None:
     """A tag pin and default checkout credentials fail the workflow contract."""
     workflow = tmp_path / "ci.yml"
@@ -61,6 +110,7 @@ def test_action_guard_rejects_mutable_uses_and_direct_input_interpolation(
 
     assert action_metadata_errors(action) == [
         "action is not pinned to a full commit: actions/setup-python",
+        "line 4: setup-python requires an exact version",
         "line 6: action inputs must enter shell commands through env",
     ]
 

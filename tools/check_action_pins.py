@@ -17,6 +17,43 @@ from tools._repository import ROOT, redacted_guard_exit_code
 ACTION_PATTERN = re.compile(r"^\s*-?\s*uses:\s*([^\s#]+)", re.MULTILINE)
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 CHECKOUT_PREFIX = "actions/checkout@"
+SETUP_PYTHON_PREFIX = "actions/setup-python@"
+PYTHON_VERSION_PATTERN = re.compile(r"^3\.\d+\.\d+$")
+
+
+def _setup_python_version_errors(text: str) -> list[str]:
+    """Return failures for mutable Python toolchain selectors."""
+    errors: list[str] = []
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if f"uses: {SETUP_PYTHON_PREFIX}" not in line:
+            continue
+        following = lines[index + 1 : index + 10]
+        selector = next(
+            (
+                candidate.split(":", 1)[1].strip()
+                for candidate in following
+                if re.match(r"^\s*python-version:\s*", candidate)
+            ),
+            None,
+        )
+        if selector is None:
+            errors.append(f"line {index + 1}: setup-python requires an exact version")
+            continue
+        if selector == "${{ matrix.python-version }}":
+            continue
+        version = selector.strip("'\"")
+        if not PYTHON_VERSION_PATTERN.fullmatch(version):
+            errors.append(f"line {index + 1}: setup-python version must include a patch release")
+
+    for match in re.finditer(r"^\s*python-version:\s*\[([^]]+)\]\s*$", text, re.MULTILINE):
+        versions = [item.strip().strip("'\"") for item in match.group(1).split(",")]
+        if any(not PYTHON_VERSION_PATTERN.fullmatch(version) for version in versions):
+            line_number = text.count("\n", 0, match.start()) + 1
+            errors.append(
+                f"line {line_number}: Python matrix versions must include patch releases"
+            )
+    return errors
 
 
 def _reference_errors(text: str) -> list[str]:
@@ -50,6 +87,7 @@ def workflow_errors(path: Path) -> list[str]:
 
     lines = text.splitlines()
     errors.extend(_reference_errors(text))
+    errors.extend(_setup_python_version_errors(text))
 
     for index, line in enumerate(lines):
         if f"uses: {CHECKOUT_PREFIX}" not in line:
@@ -64,6 +102,7 @@ def action_metadata_errors(path: Path) -> list[str]:
     """Return supply-chain and shell-boundary failures for a composite action."""
     text = path.read_text(encoding="utf-8")
     errors = _reference_errors(text)
+    errors.extend(_setup_python_version_errors(text))
     if not re.search(r"^\s+using:\s*composite\s*$", text, re.MULTILINE):
         errors.append("action must use the composite runtime")
     for line_number, line in enumerate(text.splitlines(), start=1):

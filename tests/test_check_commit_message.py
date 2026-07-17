@@ -26,3 +26,15 @@ def test_agent_commit_requires_canonical_authorship_and_vendor_neutral_seat() ->
 def test_human_conventional_commit_needs_no_internal_trailers() -> None:
     """External human commits remain compatible with the public hook."""
     assert commit_message_errors("docs: clarify installation\n") == []
+
+
+def test_legacy_coauthor_trailer_is_rejected() -> None:
+    """The retired coauthor trailer cannot accompany canonical attribution."""
+    message = (
+        "feat: verify external source provenance\n\n"
+        "Seat: 4184931\n\n"
+        f"{AUTHORSHIP}\n\n"
+        "Co-Authored-By: Arcane Sapience <protoscience@anulum.li>\n"
+    )
+
+    assert commit_message_errors(message) == ["legacy Co-Authored-By trailers are forbidden"]
