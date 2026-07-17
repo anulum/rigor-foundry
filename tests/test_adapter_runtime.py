@@ -18,6 +18,7 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.adapter_runtime import (
+    CHILD_ENVIRONMENT,
     OUTPUT_LIMIT,
     contained,
     file_digest,
@@ -26,6 +27,11 @@ from rigor_foundry.adapter_runtime import (
     stream_process,
     working_directory,
 )
+
+
+def test_child_environment_binds_the_python_prefix_library() -> None:
+    """Console-script interpreters receive a deterministic trusted loader path."""
+    assert CHILD_ENVIRONMENT["LD_LIBRARY_PATH"] == str(Path(sys.prefix) / "lib")
 
 
 def test_runtime_resolves_only_contained_executables_and_directories(tmp_path: Path) -> None:

@@ -185,6 +185,7 @@ def test_cli_rejects_changed_maturity_and_repeats_deterministically(tmp_path: Pa
     repository.write_policy(maturity_policy_digest=policy.policy_digest)
     cases = repository.root / ".coordination/empty-cases.json"
     output = repository.root / ".coordination/maturity.json"
+    repeated_output = repository.root / ".coordination/maturity-repeated.json"
     cases.write_text(
         json.dumps(
             {
@@ -209,9 +210,10 @@ def test_cli_rejects_changed_maturity_and_repeats_deterministically(tmp_path: Pa
         "--cases",
         str(cases),
         "--output",
-        str(output),
+        str(repeated_output),
     )
     assert second.returncode == 0, second.stderr
+    assert repeated_output.read_bytes() == before
     assert output.read_bytes() == before
 
     document = json.loads(output.read_text(encoding="utf-8"))

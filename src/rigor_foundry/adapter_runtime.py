@@ -36,6 +36,9 @@ SANDBOX_TMP = "/tmp"  # nosec B108
 CHILD_ENVIRONMENT = {
     "HOME": "/nonexistent",
     "LANG": "C.UTF-8",
+    # setup-python interpreters are dynamically linked against this prefix library.
+    # Keep the trusted path deterministic instead of inheriting an ambient loader path.
+    "LD_LIBRARY_PATH": str(Path(sys.prefix) / "lib"),
     "LC_ALL": "C.UTF-8",
     "OTEL_SDK_DISABLED": "true",
     "PYTHONDONTWRITEBYTECODE": "1",

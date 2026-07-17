@@ -204,13 +204,13 @@ def owning_repository_root(path: str, roots: tuple[str, ...]) -> str | None:
 
 
 def filesystem_path_within(path: Path, root: Path) -> bool:
-    """Return whether resolved ``path`` is contained by resolved ``root``.
+    """Return whether an existing resolved ``path`` is within an existing ``root``.
 
     This lexical helper does not replace descriptor-bound no-follow filesystem
     operations used by security-sensitive inventory collection.
     """
     try:
-        path.resolve(strict=False).relative_to(root.resolve(strict=False))
+        path.resolve(strict=True).relative_to(root.resolve(strict=True))
     except (OSError, RuntimeError, ValueError):
         return False
     return True

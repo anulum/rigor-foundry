@@ -131,4 +131,5 @@ def test_filesystem_containment_resolves_symlinks_and_rejects_prefix_siblings(
     assert filesystem_path_within(inside, root)
     assert not filesystem_path_within(root / "escape" / "owner.py", root)
     assert not filesystem_path_within(root / "loop" / "owner.py", root)
+    assert not filesystem_path_within(root / "missing.py", root)
     assert not filesystem_path_within(sibling, root)

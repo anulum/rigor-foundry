@@ -115,6 +115,24 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     assert "/tmp/rigor-adopter/reports/*.json" in distribution
 
 
+def test_ci_test_matrix_installs_every_verified_native_fixture() -> None:
+    """Every exhaustive matrix job provisions the native tools its tests exercise."""
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    match = re.search(
+        r"^  test:\n(?P<body>.*?)(?=^  [a-zA-Z0-9_-]+:\n|\Z)",
+        workflow,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert match is not None
+    test_job = match.group("body")
+    assert 'tools.install_buildx --destination "$pythonLocation/bin/docker-buildx"' in test_job
+    assert "python -m tools.install_typos" in test_job
+    assert "python -m tools.install_trivy" in test_job
+    assert test_job.index("tools.install_buildx") < test_job.index("Run exhaustive CI-owned suite")
+    assert test_job.index("tools.install_typos") < test_job.index("Run exhaustive CI-owned suite")
+    assert test_job.index("tools.install_trivy") < test_job.index("Run exhaustive CI-owned suite")
+
+
 def test_public_integration_examples_use_the_immutable_successor_revision() -> None:
     """Adopter examples never recommend a mutable action or hook revision."""
     guide = (ROOT / "docs/integrations.md").read_text(encoding="utf-8")

@@ -185,6 +185,8 @@ jobs:
           python -m pip install --require-hashes -r requirements/test.txt
           python -m pip install --require-hashes -r requirements/security.txt
           python -m pip install --no-build-isolation --no-deps .
+          python -m tools.install_buildx --destination "$pythonLocation/bin/docker-buildx"
+          python -m tools.install_typos
           python -m tools.install_trivy
       - name: Run exhaustive CI-owned suite
         run: >-
