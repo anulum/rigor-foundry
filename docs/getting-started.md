@@ -100,3 +100,11 @@ native evidence, and unresolved domain decisions must remain visible rather
 than being converted into a clean result. Use `review-template`,
 `validate-review`, and an independent campaign before promoting a verified
 finding into the canonical TODO.
+
+## Add a repository gate
+
+After committing the reviewed policy, adopt the pinned GitHub Action or
+pre-commit hook from [Consumer integrations](integrations.md). Create and
+ignore the exact report parent first. Begin in observe mode; ratchet and zero
+require an explicit maturity report already bound by policy. Neither
+integration can apply remediation or promote findings.

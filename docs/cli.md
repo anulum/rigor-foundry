@@ -13,6 +13,10 @@ python3 -m venv .venv
 `rigor --version` prints the canonical package identity, for example
 `rigor 0.1.1`, without requiring a subcommand.
 
+The distributed GitHub Action and pre-commit hook invoke this same installed
+CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
+do not expose `promote --apply`; see [Consumer integrations](integrations.md).
+
 ## External source provenance
 
 `source-capture` records already-retained HTTPS response bytes under an exact

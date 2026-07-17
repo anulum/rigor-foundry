@@ -102,7 +102,9 @@ python3 -m venv .venv
 For an adopter repository, follow the explicit [first-repository
 tutorial](docs/getting-started.md). Bootstrap requires the policy, canonical
 TODO, review-ledger, source-root, and test-root paths; it never guesses or
-overwrites them.
+overwrites them. The [consumer integration guide](docs/integrations.md)
+provides immutable-SHA GitHub Action and pre-commit configurations with
+explicit policy/evidence paths and no remediation authority.
 
 ## Command surface
 

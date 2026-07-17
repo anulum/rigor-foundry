@@ -75,6 +75,10 @@ and archive members as adversarial input.
   cannot satisfy independent-review quorum; labels and digest-shaped strings
   do not establish trust.
 - CI actions, Python dependencies, and the base image are immutably pinned.
+- The consumer Action pins its nested action and hash-locks build/runtime
+  installation. Inputs cross the shell boundary only through quoted
+  environment values. Consumer Action and pre-commit defaults are observe-only
+  and carry no promotion or remediation command.
 - Package publication uses a protected OIDC environment rather than a stored
   package credential.
 

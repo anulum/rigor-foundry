@@ -65,6 +65,11 @@ reviews prioritise:
 - Secret profile variables store provider references, never secret values.
 - CI actions are pinned to full commit SHAs and third-party dependencies are
   hash locked.
+- The consumer Action passes all caller inputs through quoted environment
+  variables, installs the exact checked-out source with hash-locked build and
+  runtime dependencies, and exposes no promotion or remediation operation.
+  The distributed pre-commit hook defaults to a staged observe gate without
+  native-audit consent.
 - Dependency exceptions are advisory-, package-, version-, command-, and
   expiry-bound in `.github/dependency-waivers.json`; repository audit fails on
   drift or expiry.

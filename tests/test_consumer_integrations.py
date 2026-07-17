@@ -14,6 +14,8 @@ import re
 from tools._repository import ROOT
 from tools.check_action_pins import action_metadata_errors
 
+_INTEGRATION_REVISION = "0ad072dac61f0d757aa91e45dfec2960e4b177c1"
+
 
 def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
     """The composite action installs exact source and never receives write authority."""
@@ -96,3 +98,18 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     ):
         assert f"test -s {output}" in workflow
     assert "/tmp/rigor-adopter/reports/*.json" in workflow
+
+
+def test_public_integration_examples_use_the_immutable_successor_revision() -> None:
+    """Adopter examples never recommend a mutable action or hook revision."""
+    guide = (ROOT / "docs/integrations.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    navigation = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+
+    assert f"anulum/rigor-foundry@{_INTEGRATION_REVISION}" in guide
+    assert f"rev: {_INTEGRATION_REVISION}" in guide
+    assert "anulum/rigor-foundry@main" not in guide
+    assert "anulum/rigor-foundry@v" not in guide
+    assert re.search(r"rev:\s+(?:main|v\d|HEAD)", guide) is None
+    assert "consumer integration guide](docs/integrations.md)" in readme
+    assert "Consumer integrations: integrations.md" in navigation

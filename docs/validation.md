@@ -40,6 +40,12 @@ mode, and retains the report, Markdown rendering, and gate record for 30 days.
 Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
+Distribution CI also creates a separate real Git adopter, runs the composite
+Action with explicit report paths, and installs the published pre-commit hook
+from the exact checked-out commit. It requires all three resulting JSON
+artifacts to be non-empty. This verifies installation and wiring, not domain
+completeness or remediation authority.
+
 Built-in adapter-profile owners execute real Semgrep and Trivy binaries through
 the public descriptor-bound Bubblewrap boundary. They cover strict policy and
 output schemas, clean/findings/partial/unavailable relations, tracked-only

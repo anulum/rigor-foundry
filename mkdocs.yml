@@ -32,6 +32,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - First repository: getting-started.md
+  - Consumer integrations: integrations.md
   - Architecture: architecture.md
   - Digest dependencies: digest-dependencies.md
   - Source provenance: source-provenance.md
