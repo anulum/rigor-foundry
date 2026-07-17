@@ -118,12 +118,19 @@ jobs:
           retention-days: 30
 
   test:
+    name: test (${{ matrix.python-version-minor }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11.15", "3.12.13", "3.13.14"]
+        include:
+          - python-version: "3.11.15"
+            python-version-minor: "3.11"
+          - python-version: "3.12.13"
+            python-version-minor: "3.12"
+          - python-version: "3.13.14"
+            python-version-minor: "3.13"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
