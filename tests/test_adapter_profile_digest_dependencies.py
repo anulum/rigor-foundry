@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from test_digest_dependencies import _campaign, _comparison, _report
@@ -18,11 +19,28 @@ from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_models import AuditCampaign, AuditRunAttestation
 from rigor_foundry.digest_dependencies import transitive_dependents
-from rigor_foundry.models import AuditReport
+from rigor_foundry.models import AdapterSpec, AuditReport, canonical_digest
 from rigor_foundry.sandbox_provenance import (
     BubblewrapCompatibilityPolicy,
     BubblewrapProvenance,
 )
+
+
+def _profile_spec() -> AdapterSpec:
+    """Return the exact policy declaration represented by profile evidence."""
+    return AdapterSpec.from_dict(
+        {
+            "name": "semgrep-security",
+            "profile": "semgrep-local-json-v1",
+            "configuration_path": "security/semgrep.yml",
+            "target_paths": ["src"],
+            "timeout_seconds": 60,
+            "scope": "full",
+            "working_directory": ".",
+            "required": True,
+        },
+        0,
+    )
 
 
 def _profile_result(*, input_digest: str, output_digest: str) -> AdapterResult:
@@ -60,7 +78,7 @@ def _profile_result(*, input_digest: str, output_digest: str) -> AdapterResult:
         output_truncated=False,
         timed_out=False,
         required=True,
-        spec_digest="7" * 64,
+        spec_digest=canonical_digest(_profile_spec().to_dict()),
         executable_digest="8" * 64,
         command_digest="9" * 64,
         environment_digest="a" * 64,
@@ -107,7 +125,11 @@ def test_inventory_and_profile_mutations_rebind_only_declared_run_identities(
     tmp_path: Path,
 ) -> None:
     """Profile input/output mutations change evidence and the containing run only."""
-    report = _report(tmp_path)
+    base_report = _report(tmp_path)
+    report = _report(
+        tmp_path,
+        policy=replace(base_report.policy, native_audits=(_profile_spec(),)),
+    )
     campaign = _campaign(report)
     comparison = _comparison(campaign)
     baseline = _profile_result(input_digest="c" * 64, output_digest="d" * 64)

@@ -50,7 +50,12 @@ Profile declarations cannot override the executable, argv, parser, or domains.
 The working directory is always `.`. Trivy accepts exactly one target; Semgrep
 accepts one or more. Configuration and targets must be canonical
 repository-relative paths. The profile declaration, immutable profile, and
-derived command are independently digest-bound.
+derived command are independently digest-bound. Run construction and durable
+store/load require the ordered evidence name, required flag, specification
+digest, and profile identity to match every policy adapter selected for a full
+run. The context-free `AuditRunAttestation.from_dict()` parser validates record
+integrity only; callers must use the campaign store boundary to validate an
+imported attestation against its report policy and campaign contract.
 
 ## Exact input projection
 

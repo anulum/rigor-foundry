@@ -131,6 +131,7 @@ def adapter_result(
     returncode: int,
     package_version: str = "0.9.0-1ubuntu0.1",
     command_digest: str = "3" * 64,
+    spec_digest: str = "1" * 64,
 ) -> AdapterResult:
     """Build bounded native evidence for comparison protocol tests."""
     return AdapterResult(
@@ -141,7 +142,7 @@ def adapter_result(
         output_truncated=False,
         timed_out=False,
         required=True,
-        spec_digest="1" * 64,
+        spec_digest=spec_digest,
         executable_digest="2" * 64,
         command_digest=command_digest,
         environment_digest="4" * 64,
@@ -173,10 +174,12 @@ def stored_run(
     omitted_domains: tuple[str, ...] = (),
     adapters: tuple[AdapterResult, ...] = (),
     inference_identity: InferenceIdentity | None = None,
+    contextual_validation: bool = True,
 ) -> StoredAuditRun:
     """Build a parser-valid adversarial run for comparison-only divergence tests."""
+    construction_report = report if contextual_validation else baseline.report
     source_campaign = AuditCampaign.build(
-        report,
+        construction_report,
         campaign_id=campaign.campaign_id,
         project=campaign.project,
         policy_path=campaign.policy_path,
@@ -195,12 +198,12 @@ def stored_run(
         finished_at="2026-07-15T12:01:00Z",
         status=status,
         report_relative_path=f"runs/{run_id}/report.json",
-        report=report,
+        report=construction_report,
         covered_domains=(
             baseline.attestation.covered_domains if covered_domains is None else covered_domains
         ),
         omitted_domains=omitted_domains,
-        adapter_results=adapters,
+        adapter_results=adapters if contextual_validation else (),
         toolchain=toolchain,
         command_digest="6" * 64,
         limitations=(),
@@ -208,6 +211,10 @@ def stored_run(
     document = source_attestation.to_dict()
     document["campaign_id"] = campaign.campaign_id
     document["input_contract_digest"] = campaign.contract_digest
+    document["report_digest"] = report.report_digest
+    document["candidate_count"] = len(report.candidates)
+    if not contextual_validation:
+        document["adapter_evidence"] = [adapter.to_dict() for adapter in adapters]
     document.pop("attestation_digest")
     document["attestation_digest"] = canonical_digest(document)
     attestation = AuditRunAttestation.from_dict(document)

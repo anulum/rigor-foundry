@@ -45,6 +45,7 @@ from rigor_foundry.models import (
     Decision,
     ReviewRecord,
     Severity,
+    canonical_digest,
 )
 
 
@@ -248,6 +249,7 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
         0,
     )
     report = _report_with(baseline.report, native_audits=(expected_adapter,))
+    spec_digest = canonical_digest(expected_adapter.to_dict())
     passed = _stored_run(
         campaign,
         baseline,
@@ -255,7 +257,13 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
         report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-pass",
-        adapters=(_adapter_result(output_digest="a" * 64, returncode=0),),
+        adapters=(
+            _adapter_result(
+                output_digest="a" * 64,
+                returncode=0,
+                spec_digest=spec_digest,
+            ),
+        ),
     )
     failed = _stored_run(
         campaign,
@@ -264,7 +272,13 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
         report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-fail",
-        adapters=(_adapter_result(output_digest="b" * 64, returncode=1),),
+        adapters=(
+            _adapter_result(
+                output_digest="b" * 64,
+                returncode=1,
+                spec_digest=spec_digest,
+            ),
+        ),
     )
     changed_sandbox = _stored_run(
         campaign,
@@ -278,6 +292,7 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
                 output_digest="a" * 64,
                 returncode=0,
                 package_version="0.9.0-1ubuntu0.2",
+                spec_digest=spec_digest,
             ),
         ),
     )
@@ -293,6 +308,7 @@ def test_comparison_reports_native_adapter_evidence_divergence(tmp_path: Path) -
                 output_digest="a" * 64,
                 returncode=0,
                 command_digest="9" * 64,
+                spec_digest=spec_digest,
             ),
         ),
     )
@@ -328,6 +344,7 @@ def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> N
         0,
     )
     report = _report_with(baseline.report, native_audits=(expected_adapter,))
+    spec_digest = canonical_digest(expected_adapter.to_dict())
     complete = _stored_run(
         campaign,
         baseline,
@@ -335,7 +352,13 @@ def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> N
         report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-complete",
-        adapters=(_adapter_result(output_digest="a" * 64, returncode=0),),
+        adapters=(
+            _adapter_result(
+                output_digest="a" * 64,
+                returncode=0,
+                spec_digest=spec_digest,
+            ),
+        ),
     )
     omitted = _stored_run(
         campaign,
@@ -344,6 +367,7 @@ def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> N
         report=report,
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-omitted",
+        contextual_validation=False,
     )
 
     comparison = compare_campaign(
@@ -375,6 +399,7 @@ def test_comparison_reports_unexpected_and_duplicate_adapter_evidence(
         toolchain=campaign.toolchain,
         agent_identity="SAMPLE-PROJECT/adapter-duplicate",
         adapters=(evidence, evidence),
+        contextual_validation=False,
     )
 
     comparison = compare_campaign(

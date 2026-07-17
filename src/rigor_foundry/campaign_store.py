@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from .campaign_evidence import validate_adapter_evidence
 from .campaign_inputs import validate_campaign_input
 from .campaign_models import AuditCampaign, AuditRunAttestation
 from .git_inventory import is_git_ignored
@@ -271,6 +272,7 @@ def store_run(
     if attestation.report_digest != report.report_digest:
         raise ValueError("attestation report digest does not match report")
     validate_campaign_input(campaign, report, attestation.toolchain)
+    validate_adapter_evidence(report.policy, attestation.adapter_evidence)
     campaign_directory = campaign_path.resolve(strict=True).parent
     repository = Path(campaign.repository_root).resolve(strict=True)
     try:
@@ -349,6 +351,12 @@ def load_runs(campaign_path: Path) -> tuple[StoredAuditRun, ...]:
             raise ValueError(
                 f"run {attestation.run_id} has campaign input divergence: "
                 + str(exc).partition(": ")[2]
+            ) from exc
+        try:
+            validate_adapter_evidence(report.policy, attestation.adapter_evidence)
+        except ValueError as exc:
+            raise ValueError(
+                f"run {attestation.run_id} has adapter evidence divergence: {exc}"
             ) from exc
         if len(report.candidates) != attestation.candidate_count:
             raise ValueError(f"run {attestation.run_id} candidate count mismatch")

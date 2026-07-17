@@ -9,14 +9,20 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from pathlib import Path
 
+import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.adapters import AdapterResult
+from rigor_foundry.campaign_evidence import validate_adapter_evidence
 from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_models import AuditRunAttestation
-from rigor_foundry.campaign_store import load_runs
+from rigor_foundry.campaign_store import load_runs, store_run
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
+from rigor_foundry.models import canonical_digest
 
 
 def _profile(
@@ -94,7 +100,7 @@ def test_campaign_attests_both_real_profiles_and_complete_domain_coverage(
         expected_runs=1,
     )
 
-    _run_path, attestation = execute_campaign(
+    run_path, attestation = execute_campaign(
         campaign_path,
         run_id="profile-agent",
         agent_identity="PROFILE-ADOPTER/profile-agent",
@@ -122,3 +128,85 @@ def test_campaign_attests_both_real_profiles_and_complete_domain_coverage(
     )
     stored = load_runs(campaign_path)[0].attestation
     assert AuditRunAttestation.from_dict(stored.to_dict()) == stored
+    stored_report = load_runs(campaign_path)[0].report
+
+    with pytest.raises(ValueError, match="count does not match"):
+        validate_adapter_evidence(stored_report.policy, attestation.adapter_evidence[:-1])
+    for changed, message in (
+        (replace(attestation.adapter_evidence[0], name="cross-wired"), "name does not match"),
+        (
+            replace(
+                attestation.adapter_evidence[0],
+                required=not attestation.adapter_evidence[0].required,
+            ),
+            "required does not match",
+        ),
+    ):
+        with pytest.raises(ValueError, match=message):
+            validate_adapter_evidence(
+                stored_report.policy,
+                (changed, *attestation.adapter_evidence[1:]),
+            )
+    first_profile = attestation.adapter_evidence[0].profile_evidence
+    assert first_profile is not None
+    wrong_profile = replace(first_profile, profile="trivy-repository-json-v1")
+    with pytest.raises(ValueError, match="profile does not match"):
+        validate_adapter_evidence(
+            stored_report.policy,
+            (
+                replace(attestation.adapter_evidence[0], profile_evidence=wrong_profile),
+                *attestation.adapter_evidence[1:],
+            ),
+        )
+
+    first_result = AdapterResult.from_dict(attestation.adapter_evidence[0].to_dict())
+    forged_result = replace(first_result, spec_digest="0" * 64)
+    with pytest.raises(ValueError, match="spec_digest does not match policy declaration"):
+        AuditRunAttestation.build(
+            run_id="forged-build",
+            campaign=_campaign,
+            agent_identity=attestation.agent_identity,
+            session_identity=attestation.session_identity,
+            inference_identity=attestation.inference_identity,
+            started_at=attestation.started_at,
+            finished_at=attestation.finished_at,
+            status=attestation.status,
+            report_relative_path="runs/forged-build/report.json",
+            report=stored_report,
+            covered_domains=attestation.covered_domains,
+            omitted_domains=attestation.omitted_domains,
+            adapter_results=(
+                forged_result,
+                AdapterResult.from_dict(attestation.adapter_evidence[1].to_dict(), 1),
+            ),
+            toolchain=attestation.toolchain,
+            command_digest=attestation.command_digest,
+            limitations=attestation.limitations,
+        )
+
+    forged_document = attestation.to_dict()
+    forged_document["run_id"] = "forged-store"
+    forged_document["report_relative_path"] = "runs/forged-store/report.json"
+    raw_evidence = forged_document["adapter_evidence"]
+    assert isinstance(raw_evidence, list)
+    assert isinstance(raw_evidence[0], dict)
+    raw_evidence[0]["spec_digest"] = "0" * 64
+    forged_document.pop("attestation_digest")
+    forged_document["attestation_digest"] = canonical_digest(forged_document)
+    forged_attestation = AuditRunAttestation.from_dict(forged_document)
+    with pytest.raises(ValueError, match="spec_digest does not match policy declaration"):
+        store_run(campaign_path, stored_report, forged_attestation)
+
+    persisted_document = attestation.to_dict()
+    persisted_evidence = persisted_document["adapter_evidence"]
+    assert isinstance(persisted_evidence, list)
+    assert isinstance(persisted_evidence[0], dict)
+    persisted_evidence[0]["spec_digest"] = "0" * 64
+    persisted_document.pop("attestation_digest")
+    persisted_document["attestation_digest"] = canonical_digest(persisted_document)
+    (run_path / "attestation.json").write_text(
+        json.dumps(persisted_document, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="adapter evidence divergence"):
+        load_runs(campaign_path)

@@ -22,6 +22,7 @@ from .campaign_evidence import (
 from .campaign_evidence import (
     ToolchainIdentity as ToolchainIdentity,
 )
+from .campaign_evidence import validate_adapter_evidence
 from .campaign_identity import InferenceIdentity
 from .campaign_inputs import (
     campaign_git_identity,
@@ -451,6 +452,8 @@ class AuditRunAttestation:
     ) -> AuditRunAttestation:
         """Build a content-addressed run attestation."""
         validate_campaign_input(campaign, report, toolchain)
+        adapter_evidence = tuple(AdapterEvidence.from_result(result) for result in adapter_results)
+        validate_adapter_evidence(report.policy, adapter_evidence)
         fields: dict[str, object] = {
             "schema_version": CAMPAIGN_SCHEMA_VERSION,
             "run_id": _identifier(run_id, "run_id"),
@@ -470,9 +473,7 @@ class AuditRunAttestation:
             "candidate_count": len(report.candidates),
             "covered_domains": sorted(covered_domains),
             "omitted_domains": sorted(omitted_domains),
-            "adapter_evidence": [
-                AdapterEvidence.from_result(result).to_dict() for result in adapter_results
-            ],
+            "adapter_evidence": [item.to_dict() for item in adapter_evidence],
             "toolchain": toolchain.to_dict(),
             "command_digest": require_string(command_digest, "command_digest"),
             "limitations": list(limitations),

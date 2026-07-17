@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .adapter_profiles import AdapterProfileEvidence
 from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
-from .models import canonical_digest, require_mapping, require_string
+from .models import AuditPolicy, canonical_digest, require_mapping, require_string
 from .sandbox_provenance import BubblewrapProvenance
 
 _TOOLCHAIN_FIELDS = frozenset(
@@ -176,3 +176,30 @@ class AdapterEvidence:
         """Parse one native-adapter evidence record."""
         result = AdapterResult.from_dict(value, index)
         return cls.from_result(result)
+
+
+def validate_adapter_evidence(
+    policy: AuditPolicy,
+    evidence: tuple[AdapterEvidence, ...],
+) -> None:
+    """Bind full-run adapter evidence to exact ordered policy declarations."""
+    expected = tuple(
+        specification
+        for specification in policy.native_audits
+        if specification.scope in {"full", "both"}
+    )
+    if len(evidence) != len(expected):
+        raise ValueError("adapter evidence count does not match full policy declarations")
+    for index, (specification, observed) in enumerate(zip(expected, evidence, strict=True)):
+        field = f"adapter_evidence[{index}]"
+        if observed.name != specification.name:
+            raise ValueError(f"{field}.name does not match policy declaration")
+        if observed.required is not specification.required:
+            raise ValueError(f"{field}.required does not match policy declaration")
+        if observed.spec_digest != canonical_digest(specification.to_dict()):
+            raise ValueError(f"{field}.spec_digest does not match policy declaration")
+        observed_profile = (
+            None if observed.profile_evidence is None else observed.profile_evidence.profile
+        )
+        if observed_profile != specification.profile:
+            raise ValueError(f"{field}.profile does not match policy declaration")
