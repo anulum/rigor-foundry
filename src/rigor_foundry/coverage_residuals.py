@@ -19,8 +19,9 @@ from pathlib import Path
 from typing import Final, Literal, cast
 
 from .audit_primitives import require_mapping, require_string, require_string_tuple
+from .import_guard import DynamicImportPolicy, forbidden_imports
 
-COVERAGE_RESIDUAL_SCHEMA_VERSION: Final = "1.1"
+COVERAGE_RESIDUAL_SCHEMA_VERSION: Final = "1.2"
 DEFAULT_COVERAGE_RESIDUAL_MANIFEST: Final = Path("coverage-residuals.json")
 MAX_REVIEW_WINDOW: Final = timedelta(days=90)
 
@@ -191,6 +192,7 @@ class NegativeSearch:
     search_id: str
     include: tuple[str, ...]
     forbidden_import_prefixes: tuple[str, ...]
+    dynamic_import_policy: DynamicImportPolicy
     patterns: tuple[str, ...]
     rationale: str
 
@@ -206,6 +208,7 @@ class NegativeSearch:
                     "search_id",
                     "include",
                     "forbidden_import_prefixes",
+                    "dynamic_import_policy",
                     "patterns",
                     "rationale",
                 }
@@ -228,6 +231,12 @@ class NegativeSearch:
         )
         if any(_IMPORT_PREFIX.fullmatch(prefix) is None for prefix in forbidden_import_prefixes):
             raise ValueError(f"{field}.forbidden_import_prefixes contains an invalid prefix")
+        dynamic_import_policy = require_string(
+            data.get("dynamic_import_policy"),
+            f"{field}.dynamic_import_policy",
+        )
+        if dynamic_import_policy not in {"allow", "forbid-syntax"}:
+            raise ValueError(f"{field}.dynamic_import_policy is invalid")
         patterns = _ordered_nonempty(
             require_string_tuple(data.get("patterns"), f"{field}.patterns"),
             f"{field}.patterns",
@@ -241,6 +250,7 @@ class NegativeSearch:
             search_id=search_id,
             include=_ordered_nonempty(include, f"{field}.include"),
             forbidden_import_prefixes=forbidden_import_prefixes,
+            dynamic_import_policy=cast(DynamicImportPolicy, dynamic_import_policy),
             patterns=patterns,
             rationale=require_string(data.get("rationale"), f"{field}.rationale"),
         )
@@ -251,6 +261,7 @@ class NegativeSearch:
             "search_id": self.search_id,
             "include": list(self.include),
             "forbidden_import_prefixes": list(self.forbidden_import_prefixes),
+            "dynamic_import_policy": self.dynamic_import_policy,
             "patterns": list(self.patterns),
             "rationale": self.rationale,
         }
@@ -312,200 +323,6 @@ class CoverageResidualManifest:
             "residuals": [item.to_dict() for item in self.residuals],
             "negative_searches": [item.to_dict() for item in self.negative_searches],
         }
-
-
-_Scope = ast.Module | ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef
-_Binding = Literal["none", "builtin", "shadow", "global", "nonlocal"]
-
-
-def _scope_nodes(scope: _Scope) -> tuple[ast.AST, ...]:
-    """Return nodes owned by one lexical scope without nested-scope bodies."""
-    roots: list[ast.AST]
-    if isinstance(scope, ast.Lambda):
-        roots = [scope.body]
-    else:
-        roots = list(scope.body)
-    nodes: list[ast.AST] = []
-    stack = roots[:]
-    while stack:
-        node = stack.pop()
-        nodes.append(node)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
-            continue
-        stack.extend(ast.iter_child_nodes(node))
-    return tuple(nodes)
-
-
-def _dunder_import_binding(scope: _Scope) -> _Binding:
-    """Classify how one lexical scope binds the ``__import__`` name."""
-    nodes = _scope_nodes(scope)
-    if any(isinstance(node, ast.Global) and "__import__" in node.names for node in nodes):
-        return "global"
-    if any(isinstance(node, ast.Nonlocal) and "__import__" in node.names for node in nodes):
-        return "nonlocal"
-    if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-        arguments = (
-            *scope.args.posonlyargs,
-            *scope.args.args,
-            *scope.args.kwonlyargs,
-        )
-        if (
-            any(argument.arg == "__import__" for argument in arguments)
-            or (scope.args.vararg is not None and scope.args.vararg.arg == "__import__")
-            or (scope.args.kwarg is not None and scope.args.kwarg.arg == "__import__")
-        ):
-            return "shadow"
-    trusted = False
-    shadowed = False
-    for node in nodes:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            shadowed |= node.name == "__import__"
-        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
-            shadowed |= node.id == "__import__"
-        elif isinstance(node, ast.ExceptHandler):
-            shadowed |= node.name == "__import__"
-        elif isinstance(node, ast.Import):
-            shadowed |= any(
-                (alias.asname or alias.name.partition(".")[0]) == "__import__"
-                for alias in node.names
-            )
-        elif isinstance(node, ast.ImportFrom):
-            for alias in node.names:
-                if (alias.asname or alias.name) != "__import__":
-                    continue
-                if node.module == "builtins" and alias.name == "__import__":
-                    trusted = True
-                else:
-                    shadowed = True
-    if shadowed:
-        return "shadow"
-    return "builtin" if trusted else "none"
-
-
-def _bare_dunder_import_is_builtin(
-    node: ast.Call,
-    parents: dict[ast.AST, ast.AST],
-) -> bool:
-    """Return whether a bare ``__import__`` call resolves to the builtin."""
-    scopes: list[_Scope] = []
-    ancestor = parents.get(node)
-    while ancestor is not None:
-        if isinstance(ancestor, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)) or (
-            isinstance(ancestor, ast.ClassDef) and not scopes
-        ):
-            scopes.append(ancestor)
-        elif isinstance(ancestor, ast.Module):
-            module = ancestor
-            break
-        ancestor = parents.get(ancestor)
-    else:  # pragma: no cover - every parsed call belongs to its module
-        return False
-    use_module = False
-    for scope in scopes:
-        binding = _dunder_import_binding(scope)
-        if binding == "shadow":
-            return False
-        if binding == "builtin":
-            return True
-        if binding == "global":
-            use_module = True
-            break
-    module_binding = _dunder_import_binding(module)
-    if module_binding == "shadow":
-        return False
-    return module_binding in {"none", "builtin"} or use_module
-
-
-def _forbidden_imports(
-    text: str,
-    prefixes: tuple[str, ...],
-) -> tuple[tuple[str, int], ...]:
-    """Return structurally matched static or literal-dynamic import uses."""
-    tree = ast.parse(text)
-    parents = {
-        child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
-    }
-    matches: set[tuple[str, int]] = set()
-    importlib_aliases: set[str] = set()
-    import_module_aliases: set[str] = set()
-    builtins_aliases: set[str] = set()
-    dunder_import_aliases: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            importlib_aliases.update(
-                alias.asname or alias.name for alias in node.names if alias.name == "importlib"
-            )
-            builtins_aliases.update(
-                alias.asname or alias.name for alias in node.names if alias.name == "builtins"
-            )
-        elif isinstance(node, ast.ImportFrom) and node.module == "importlib":
-            import_module_aliases.update(
-                alias.asname or alias.name for alias in node.names if alias.name == "import_module"
-            )
-        elif isinstance(node, ast.ImportFrom) and node.module == "builtins":
-            dunder_import_aliases.update(
-                alias.asname
-                for alias in node.names
-                if alias.name == "__import__" and alias.asname is not None
-            )
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imported = tuple(alias.name for alias in node.names)
-            for prefix in prefixes:
-                if any(name.startswith(prefix) for name in imported):
-                    matches.add((prefix, node.lineno))
-        elif isinstance(node, ast.ImportFrom) and node.module is not None:
-            for prefix in prefixes:
-                package, separator, member_prefix = prefix.rpartition(".")
-                imports_private_module = node.module.startswith(prefix)
-                imports_private_member = (
-                    bool(separator)
-                    and node.module == package
-                    and any(alias.name.startswith(member_prefix) for alias in node.names)
-                )
-                if imports_private_module or imports_private_member:
-                    matches.add((prefix, node.lineno))
-        elif isinstance(node, ast.Call):
-            function = node.func
-            uses_import_module = (
-                isinstance(function, ast.Attribute)
-                and function.attr == "import_module"
-                and isinstance(function.value, ast.Name)
-                and function.value.id in importlib_aliases
-            ) or (isinstance(function, ast.Name) and function.id in import_module_aliases)
-            uses_dunder_import = (
-                isinstance(function, ast.Name)
-                and (
-                    function.id in dunder_import_aliases
-                    or (
-                        function.id == "__import__"
-                        and _bare_dunder_import_is_builtin(node, parents)
-                    )
-                )
-            ) or (
-                isinstance(function, ast.Attribute)
-                and function.attr == "__import__"
-                and isinstance(function.value, ast.Name)
-                and function.value.id in builtins_aliases
-            )
-            if not (uses_import_module or uses_dunder_import):
-                continue
-            name_keywords = tuple(
-                keyword.value for keyword in node.keywords if keyword.arg == "name"
-            )
-            if (node.args and name_keywords) or len(name_keywords) > 1:
-                raise ValueError(f"ambiguous dynamic import module name at line {node.lineno}")
-            module_name = (
-                node.args[0] if node.args else name_keywords[0] if name_keywords else None
-            )
-            if not isinstance(module_name, ast.Constant) or not isinstance(module_name.value, str):
-                raise ValueError(
-                    f"dynamic import module name is not a string literal at line {node.lineno}"
-                )
-            for prefix in prefixes:
-                if module_name.value.startswith(prefix):
-                    matches.add((prefix, node.lineno))
-    return tuple(sorted(matches, key=lambda item: (item[1], item[0])))
 
 
 def _symbol_source(text: str, symbol: str, path: Path) -> str:
@@ -626,9 +443,10 @@ def coverage_residual_errors(
                 continue
             if path.suffix == ".py":
                 try:
-                    import_matches = _forbidden_imports(
+                    import_matches = forbidden_imports(
                         text,
                         search.forbidden_import_prefixes,
+                        search.dynamic_import_policy,
                     )
                 except (SyntaxError, ValueError) as exc:
                     line = exc.lineno if isinstance(exc, SyntaxError) else 1
@@ -638,9 +456,9 @@ def coverage_residual_errors(
                     )
                 else:
                     errors.extend(
-                        f"{search.search_id}: prohibited import prefix matches "
-                        f"{path_text}:{line}: {prefix}"
-                        for prefix, line in import_matches
+                        f"{search.search_id}: prohibited import syntax matches "
+                        f"{path_text}:{line}: {evidence}"
+                        for evidence, line in import_matches
                     )
             for pattern in search.patterns:
                 match = re.search(pattern, text, re.MULTILINE)

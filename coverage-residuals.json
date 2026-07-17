@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "residuals": [
     {
       "residual_id": "CR-ADAPTER-PIPE-INVARIANT",
@@ -332,13 +332,14 @@
       "forbidden_import_prefixes": [
         "rigor_foundry._"
       ],
+      "dynamic_import_policy": "forbid-syntax",
       "patterns": [
         "\\._(?:snapshot_file|open_no_follow|validate_path|locate|environment|metadata_command|sandbox_contract|mount_parent_arguments)\\(",
         "\\b(?:monkeypatch|patch)\\.setattr\\(",
         "\\bobject\\.__new__\\(",
         "from tools\\.preflight import [^\\n]*\\b_run\\b"
       ],
-      "rationale": "claimed security and protocol coverage must use public APIs and real processes, filesystems, or platform CI; production-private imports or calls and monkeypatched internals are prohibited"
+      "rationale": "claimed security and protocol coverage must use static public dependencies and real processes, filesystems, or platform CI; private static imports, reserved dynamic-import and code-generation syntax, production-private calls, and monkeypatched internals are prohibited"
     }
   ]
 }

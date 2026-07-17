@@ -90,7 +90,7 @@ def test_tracked_manifest_round_trips_and_passes_public_cli(
     manifest = CoverageResidualManifest.from_path(ROOT / MANIFEST)
 
     assert manifest.to_dict() == _document()
-    assert COVERAGE_RESIDUAL_SCHEMA_VERSION == "1.1"
+    assert COVERAGE_RESIDUAL_SCHEMA_VERSION == "1.2"
     assert coverage_residual_errors(ROOT) == ()
     assert main(["residuals-check", "--root", str(ROOT)]) == 0
     assert capsys.readouterr().out == "coverage residuals: PASS\n"
@@ -176,6 +176,7 @@ def test_residual_parser_rejects_ambiguous_dispositions(
         ("include", [], "sorted, unique, and non-empty"),
         ("forbidden_import_prefixes", [], "sorted, unique, and non-empty"),
         ("forbidden_import_prefixes", ["not dotted"], "invalid prefix"),
+        ("dynamic_import_policy", "semantic", "is invalid"),
         ("patterns", [], "sorted, unique, and non-empty"),
         ("patterns", ["["], "invalid regular expression"),
     ],
@@ -247,43 +248,22 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
 @pytest.mark.parametrize(
     "statement",
     [
-        '__import__("rigor_foundry._remediation_graph")',
-        '__import__(name="rigor_foundry._remediation_graph")',
-        (
-            "from builtins import __import__ as load_module\n"
-            'load_module("rigor_foundry._remediation_graph")'
-        ),
-        (
-            "import builtins as runtime\n"
-            'runtime.__import__(name="rigor_foundry._remediation_graph")'
-        ),
-        (
-            "def load_private() -> object:\n"
-            "    global __import__\n"
-            '    return __import__("rigor_foundry._remediation_graph")'
-        ),
-        (
-            "def load_private() -> object:\n"
-            "    from builtins import __import__\n"
-            '    return __import__("rigor_foundry._remediation_graph")'
-        ),
         "from rigor_foundry import _remediation_graph",
-        "from rigor_foundry import (\n    _remediation_graph as graph,\n)",
-        (
-            "from importlib import import_module as load_module\n"
-            'load_module(name="rigor_foundry._remediation_graph")'
-        ),
         "from rigor_foundry._remediation_graph import argv_digest",
-        ('import importlib\nimportlib.import_module(name="rigor_foundry._remediation_graph")'),
-        ('import importlib as loader\nloader.import_module("rigor_foundry._remediation_graph")'),
         "import rigor_foundry._remediation_graph as graph",
+        "import importlib",
+        '__import__("rigor_foundry.models")',
+        ('def __import__(name: str) -> str:\n    return name\n__import__("public")'),
+        'eval("public")',
+        'getattr(object(), "import_" + "module")',
+        'globals()["__" + "import__"]',
     ],
 )
-def test_negative_search_rejects_private_production_imports(
+def test_negative_search_rejects_private_or_reserved_import_syntax(
     tmp_path: Path,
     statement: str,
 ) -> None:
-    """Protocol tests cannot reconstruct evidence with private production helpers."""
+    """The high-assurance contract bans private imports and reserved syntax."""
     root = _copy_contract(tmp_path)
     remediation_test = root / "tests/test_remediation_plan.py"
     remediation_test.write_text(
@@ -294,82 +274,10 @@ def test_negative_search_rejects_private_production_imports(
     errors = coverage_residual_errors(root)
 
     assert any(
-        "NS-NO-PRIVATE-SIMULATION: prohibited import prefix matches "
+        "NS-NO-PRIVATE-SIMULATION: prohibited import syntax matches "
         "tests/test_remediation_plan.py" in error
         for error in errors
     )
-
-
-def test_negative_search_allows_public_literal_dynamic_import(tmp_path: Path) -> None:
-    """Literal dynamic import checks remain bounded to forbidden prefixes."""
-    root = _copy_contract(tmp_path)
-    remediation_test = root / "tests/test_remediation_plan.py"
-    remediation_test.write_text(
-        remediation_test.read_text(encoding="utf-8")
-        + '\nimport importlib\nimportlib.import_module("rigor_foundry.models")\n',
-        encoding="utf-8",
-    )
-
-    assert coverage_residual_errors(root) == ()
-
-
-@pytest.mark.parametrize(
-    "statement",
-    [
-        (
-            "def __import__(name: str) -> str:\n"
-            "    return name\n"
-            '__import__("rigor_foundry._remediation_graph")'
-        ),
-        (
-            "def local_loader(__import__: object) -> object:\n"
-            '    return __import__("rigor_foundry._remediation_graph")'
-        ),
-        ('local_loader = lambda __import__: __import__("rigor_foundry._remediation_graph")'),
-        (
-            "def outer() -> object:\n"
-            "    __import__ = lambda name: name\n"
-            "    def inner() -> object:\n"
-            "        nonlocal __import__\n"
-            '        return __import__("rigor_foundry._remediation_graph")\n'
-            "    return inner()"
-        ),
-        (
-            "try:\n"
-            "    raise RuntimeError\n"
-            "except RuntimeError as __import__:\n"
-            '    __import__("rigor_foundry._remediation_graph")'
-        ),
-        ('import builtins as __import__\n__import__("rigor_foundry._remediation_graph")'),
-        ('from builtins import len as __import__\n__import__("rigor_foundry._remediation_graph")'),
-        (
-            "class LocalLoader:\n"
-            "    __import__ = staticmethod(lambda name: name)\n"
-            '    value = __import__("rigor_foundry._remediation_graph")'
-        ),
-        (
-            "def local_loader(*__import__: object) -> object:\n"
-            '    return __import__("rigor_foundry._remediation_graph")'
-        ),
-        (
-            "def local_loader(**__import__: object) -> object:\n"
-            '    return __import__("rigor_foundry._remediation_graph")'
-        ),
-    ],
-)
-def test_negative_search_allows_shadowed_dunder_import(
-    tmp_path: Path,
-    statement: str,
-) -> None:
-    """User bindings named ``__import__`` are not mistaken for the builtin."""
-    root = _copy_contract(tmp_path)
-    remediation_test = root / "tests/test_remediation_plan.py"
-    remediation_test.write_text(
-        remediation_test.read_text(encoding="utf-8") + f"\n{statement}\n",
-        encoding="utf-8",
-    )
-
-    assert coverage_residual_errors(root) == ()
 
 
 def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> None:
@@ -388,37 +296,6 @@ def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> N
         "tests/test_remediation_plan.py" in error
         for error in errors
     )
-
-
-def test_negative_search_fails_closed_on_ambiguous_dynamic_import(tmp_path: Path) -> None:
-    """A dynamic importer cannot provide competing positional and keyword names."""
-    root = _copy_contract(tmp_path)
-    remediation_test = root / "tests/test_remediation_plan.py"
-    remediation_test.write_text(
-        remediation_test.read_text(encoding="utf-8")
-        + '\n__import__("rigor_foundry.models", name="rigor_foundry.models")\n',
-        encoding="utf-8",
-    )
-
-    errors = coverage_residual_errors(root)
-
-    assert any("ambiguous dynamic import module name" in error for error in errors)
-
-
-def test_negative_search_fails_closed_on_computed_dynamic_import(tmp_path: Path) -> None:
-    """A dynamic importer cannot hide its target behind runtime computation."""
-    root = _copy_contract(tmp_path)
-    remediation_test = root / "tests/test_remediation_plan.py"
-    remediation_test.write_text(
-        remediation_test.read_text(encoding="utf-8")
-        + '\nimport importlib\nmodule_name = "rigor_foundry.models"\n'
-        + "importlib.import_module(module_name)\n",
-        encoding="utf-8",
-    )
-
-    errors = coverage_residual_errors(root)
-
-    assert any("dynamic import module name is not a string literal" in error for error in errors)
 
 
 def test_negative_search_keeps_regex_support_for_non_python_files(tmp_path: Path) -> None:
