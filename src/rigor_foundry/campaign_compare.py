@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast
 
+from .campaign_evidence import validate_adapter_evidence
 from .campaign_identity import (
     ModelWitness,
     collapse_model_witnesses,
@@ -411,6 +412,13 @@ def _adapter_divergence(runs: tuple[StoredAuditRun, ...]) -> tuple[str, ...]:
     problems: list[str] = []
     for stored in runs:
         run_id = stored.attestation.run_id
+        try:
+            validate_adapter_evidence(
+                stored.report.policy,
+                stored.attestation.adapter_evidence,
+            )
+        except ValueError as exc:
+            problems.append(f"run {run_id}: adapter evidence violates report policy: {exc}")
         expected = {
             adapter.name
             for adapter in stored.report.policy.native_audits

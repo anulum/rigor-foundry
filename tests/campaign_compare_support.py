@@ -14,6 +14,7 @@ from pathlib import Path
 
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.adapter_profiles import AdapterProfileEvidence
 from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_models import (
@@ -129,19 +130,22 @@ def adapter_result(
     *,
     output_digest: str,
     returncode: int,
+    name: str = "repository-check",
+    required: bool = True,
     package_version: str = "0.9.0-1ubuntu0.1",
     command_digest: str = "3" * 64,
     spec_digest: str = "1" * 64,
+    profile_evidence: AdapterProfileEvidence | None = None,
 ) -> AdapterResult:
     """Build bounded native evidence for comparison protocol tests."""
     return AdapterResult(
-        name="repository-check",
+        name=name,
         returncode=returncode,
         output_digest=output_digest,
         output_bytes=10,
         output_truncated=False,
         timed_out=False,
-        required=True,
+        required=required,
         spec_digest=spec_digest,
         executable_digest="2" * 64,
         command_digest=command_digest,
@@ -158,6 +162,7 @@ def adapter_result(
             package_status="install ok installed",
             capability_digest="8" * 64,
         ),
+        profile_evidence=profile_evidence,
     )
 
 

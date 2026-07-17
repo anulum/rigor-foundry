@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from campaign_compare_support import (
@@ -34,9 +35,15 @@ from campaign_compare_support import (
 )
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.adapter_profiles import AdapterProfileEvidence, profile_by_name
 from rigor_foundry.campaign_compare import compare_campaign
 from rigor_foundry.campaign_models import (
     AuditCampaign,
+)
+from rigor_foundry.campaign_store import (
+    load_comparison_record,
+    store_campaign,
+    store_comparison_record,
 )
 from rigor_foundry.campaign_workflow import create_campaign
 from rigor_foundry.models import (
@@ -380,6 +387,8 @@ def test_comparison_reports_omitted_native_adapter_evidence(tmp_path: Path) -> N
     )
 
     assert comparison.adapter_divergence == (
+        "run adapter-omitted: adapter evidence violates report policy: "
+        "adapter evidence count does not match full policy declarations",
         "run adapter-omitted: omitted native adapters repository-check",
     )
 
@@ -412,9 +421,161 @@ def test_comparison_reports_unexpected_and_duplicate_adapter_evidence(
     )
 
     assert comparison.adapter_divergence == (
+        "run adapter-duplicate: adapter evidence violates report policy: "
+        "adapter evidence count does not match full policy declarations",
         "run adapter-duplicate: duplicated native adapters repository-check",
         "run adapter-duplicate: reported unexpected native adapters repository-check",
     )
+
+
+def test_promotion_rejects_context_free_adapter_policy_forgery(tmp_path: Path) -> None:
+    """Structurally valid forged adapter records cannot produce a promotion."""
+    _diagnostic, baseline_runs = _campaign_runs(tmp_path)
+    baseline = baseline_runs[0]
+
+    def command_spec(name: str) -> AdapterSpec:
+        return AdapterSpec.from_dict(
+            {
+                "name": name,
+                "command": ["{python}", f"controls/{name}.py"],
+                "timeout_seconds": 30,
+                "scope": "full",
+                "working_directory": ".",
+                "required": True,
+                "domains": ["application-security"],
+            },
+            0,
+        )
+
+    first_spec = command_spec("repository-first")
+    second_spec = command_spec("repository-second")
+    semgrep_spec = AdapterSpec.from_dict(
+        {
+            "name": "semgrep-security",
+            "profile": "semgrep-local-json-v1",
+            "configuration_path": "config/semgrep.yml",
+            "target_paths": ["src"],
+            "timeout_seconds": 30,
+            "scope": "full",
+            "working_directory": ".",
+            "required": True,
+        },
+        0,
+    )
+    trivy_profile = AdapterProfileEvidence.build(
+        profile=profile_by_name("trivy-repository-json-v1"),
+        status="clean",
+        reason="clean",
+        tool_version="0.72.0",
+        version_output_digest="1" * 64,
+        configuration_digest="2" * 64,
+        input_digest="3" * 64,
+        output_digest="4" * 64,
+        finding_count=0,
+        scanned_target_count=1,
+    )
+    valid_first = _adapter_result(
+        name=first_spec.name,
+        output_digest="a" * 64,
+        returncode=0,
+        spec_digest=canonical_digest(first_spec.to_dict()),
+    )
+    valid_second = _adapter_result(
+        name=second_spec.name,
+        output_digest="b" * 64,
+        returncode=0,
+        spec_digest=canonical_digest(second_spec.to_dict()),
+    )
+    cases = (
+        (
+            "spec-digest",
+            (first_spec,),
+            (replace(valid_first, spec_digest="0" * 64),),
+            "spec_digest does not match policy declaration",
+        ),
+        (
+            "required-flag",
+            (first_spec,),
+            (replace(valid_first, required=False),),
+            "required does not match policy declaration",
+        ),
+        (
+            "profile",
+            (semgrep_spec,),
+            (
+                _adapter_result(
+                    name=semgrep_spec.name,
+                    output_digest="4" * 64,
+                    returncode=0,
+                    spec_digest=canonical_digest(semgrep_spec.to_dict()),
+                    profile_evidence=trivy_profile,
+                ),
+            ),
+            "profile does not match policy declaration",
+        ),
+        (
+            "order",
+            (first_spec, second_spec),
+            (valid_second, valid_first),
+            "name does not match policy declaration",
+        ),
+    )
+    for case_name, specifications, forged_evidence, expected_message in cases:
+        report = _report_with(baseline.report, native_audits=specifications)
+        campaign = AuditCampaign.build(
+            report,
+            campaign_id=f"promotion-{case_name}",
+            project="SAMPLE-PROJECT",
+            policy_path="rigor-foundry-policy.json",
+            toolchain=baseline.attestation.toolchain,
+            created_by="coordinator/one",
+            created_at="2026-07-15T12:00:00Z",
+            purpose="promotion",
+            expected_runs=2,
+            required_model_witnesses=2,
+        )
+        forged_runs = tuple(
+            _stored_run(
+                campaign,
+                baseline,
+                run_id=f"{case_name}-{index}",
+                report=report,
+                toolchain=campaign.toolchain,
+                agent_identity=f"SAMPLE-PROJECT/{case_name}-{index}",
+                adapters=forged_evidence,
+                inference_identity=_inference_identity(f"{case_name}-family-{index}"),
+                contextual_validation=False,
+            )
+            for index in (1, 2)
+        )
+        comparison = compare_campaign(
+            campaign,
+            forged_runs,
+            ((),),
+            comparison_id=f"comparison-{case_name}",
+            created_by="coordinator/one",
+            created_at="2026-07-15T13:00:00Z",
+        )
+
+        assert any(expected_message in problem for problem in comparison.adapter_divergence)
+        assert comparison.unresolved
+        assert not comparison.promotion_eligible
+
+        if case_name == "spec-digest":
+            campaign_path = store_campaign(
+                Path(campaign.repository_root),
+                Path(".rigor/audits"),
+                campaign,
+            )
+            comparison_path = store_comparison_record(
+                campaign_path,
+                comparison.comparison_id,
+                comparison.to_dict(),
+            )
+            reloaded = load_comparison_record(campaign_path, comparison_path)
+            assert reloaded.adapter_divergence == comparison.adapter_divergence
+            assert reloaded.unresolved
+            assert not reloaded.promotion_eligible
 
 
 def test_comparison_reports_review_decision_and_priority_divergence(tmp_path: Path) -> None:

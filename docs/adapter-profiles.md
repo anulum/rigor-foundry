@@ -55,7 +55,10 @@ store/load require the ordered evidence name, required flag, specification
 digest, and profile identity to match every policy adapter selected for a full
 run. The context-free `AuditRunAttestation.from_dict()` parser validates record
 integrity only; callers must use the campaign store boundary to validate an
-imported attestation against its report policy and campaign contract.
+imported attestation against its report policy and campaign contract. Campaign
+comparison repeats the adapter-policy relation check for every supplied run;
+context-invalid evidence is retained as unresolved divergence and can never
+produce a promotion-eligible comparison record.
 
 ## Exact input projection
 
