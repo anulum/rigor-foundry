@@ -27,6 +27,8 @@ separately and are not misrepresented as unconditional digest edges.
 | Git provenance | `git_provenance.identity_digest` | `git_provenance` |
 | Policy | `policy_digest` | `models` |
 | Rule pack | `rule_pack_digest` | `rules` |
+| Maturity policy | `maturity_policy_digest` | `rule_maturity` |
+| Rule maturity | `maturity_digest` | `rule_maturity` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
 | Toolchain | `toolchain.identity_digest` | `campaign_evidence` |
@@ -67,6 +69,8 @@ the task baseline and a revalidation that names another candidate or report.
 | Git provenance | Report | complete `git_provenance` record |
 | Policy | Report | complete `policy` plus `policy_digest` |
 | Rule pack | Report | `rule_pack_digest` |
+| Rule pack | Rule maturity | `rule_pack_digest` |
+| Maturity policy | Rule maturity | complete policy plus `policy_digest` |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
 | Toolchain | Effective profile | `toolchain_digest` |
@@ -104,6 +108,11 @@ absence of cycles.
   lock that contains them.
 - Review rationale, evidence, reviewer, and time can change a review and any
   resulting task without changing the source report or campaign.
+- A maturity report may contain no adjudications, so report and review are not
+  unconditional graph parents. Each populated maturity evidence row does bind
+  its exact `report_digest`, candidate identifier, and `review_digest`; the
+  report recomputes those conditional member identities. Likewise, observe-mode
+  enforcement may omit maturity, while ratchet and zero require and bind it.
 - Comparison logic embeds the exact participating attestation, report, and
   review digests, plus the collapsed model-witness identities. The set of
   participating records is campaign-instance data rather than a fixed schema
@@ -124,9 +133,10 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 15 identities and cover inventory, ignored inventory, Git provenance,
-policy, rule-pack, toolchain, report, review, campaign, task, adapter-lock,
-standard-pack, effective-profile, and closure mutations. Strict parsing
+The tests compare all 17 identities and cover inventory, ignored inventory, Git
+provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
+report, review, campaign, task, adapter-lock, standard-pack, effective-profile,
+and closure mutations. Strict parsing
 vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the
 same closure identity.

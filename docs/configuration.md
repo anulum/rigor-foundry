@@ -76,6 +76,36 @@ reason. No-follow descriptor walks prevent parent or final symlink traversal.
 Concurrent mutation or replacement becomes unavailable evidence. Missing and
 unavailable observations are evidence gaps, not automatic control failures.
 
+## Rule-maturity policy and cases
+
+Rule-maturity policy is deliberately separate from repository scan policy. It
+controls whether a rule may influence ratchet or zero enforcement, not whether
+the scanner may emit a candidate. The schema-1.0 policy requires these exact
+integer fields and its canonical `policy_digest`:
+
+- `minimum_adjudicated_reviews`;
+- `minimum_distinct_repositories`;
+- `minimum_distinct_reviewers`;
+- `minimum_positive_reviews`;
+- `maximum_false_positive_basis_points`, from 0 through 10,000;
+- `maximum_median_effort_seconds`; and
+- `maximum_p90_effort_seconds`.
+
+All minima are at least one, positive reviews cannot exceed the total review
+minimum, and the median limit cannot exceed the p90 limit. RigorFoundry supplies
+no universal threshold values; adopters must justify them against their corpus
+and operating costs.
+
+The case manifest has exact top-level fields `schema_version`, `policy`, and
+`cases`. Every case has `repository_id`, `report`, `review`, `candidate_id`,
+`reviewer_effort_seconds`, and non-empty `effort_evidence`. A source-validated
+case projects the exact tree, tracked-content, scan-policy, report, candidate,
+rule, review, reviewer, decision, timestamp, duration, and effort references
+into one evidence digest. Reusing the same report/candidate pair twice is
+rejected. The resulting maturity report binds the current rule-pack version and
+digest, complete threshold policy, sorted evidence, all rule assessments, and
+one `maturity_digest`.
+
 ## Git executable trust
 
 Git bootstrap trust is runtime configuration, not repository-controlled policy:

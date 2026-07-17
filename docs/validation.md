@@ -47,6 +47,15 @@ round trips, and 100% branch-aware isolated exporter coverage. Distribution CI
 also scans and exports through the installed wheel outside the checkout, then
 validates the result against the SHA-256-pinned official OASIS Errata 01 schema.
 
+Rule-maturity validation has dedicated protocol and CLI owners. The protocol
+owner reaches 100% statement and branch coverage across threshold validation,
+source-bound evidence, conservative median and nearest-rank p90 calculations,
+finite probation reasons, complete-pack assessment, strict parsing, duplicate
+rejection, and digest recomputation. The CLI owner scans a real Git repository,
+builds and adjudicates a real review ledger, evaluates an explicit case
+manifest, and proves that ratchet requires the exact maturity artifact while
+keeping probationary candidates visible and non-blocking.
+
 Candidate anchors have a dedicated real-repository contract. The focused owner
 tests cover clean, unstaged, and staged-plus-unstaged bytes; text, binary,
 non-UTF-8, symlink, oversized, missing, and gitlink paths; SHA-1 and SHA-256

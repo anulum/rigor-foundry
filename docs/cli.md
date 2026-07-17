@@ -76,6 +76,37 @@ Bubblewrap compatibility policy, semantic version, binary digest, Debian
 package version/architecture/status, package-query binary digest, supported
 option-surface digest, and derived provenance identity.
 
+## Rule maturity
+
+`rigor maturity-evaluate --cases CASES.json [--output MATURITY.json]` reads an
+explicit schema-1.0 case manifest. Each case names one integrity-verified report
+file, one review document, an exact candidate identifier, a portable repository
+identifier, measured reviewer-effort seconds, and one or more retained
+effort-evidence references. Relative report and review paths resolve from the
+case-manifest directory. The command selects exactly one completed review per
+case and rejects stale, incomplete, duplicate, malformed, or digest-changed
+records.
+
+The manifest policy states minimum review, repository, reviewer, and positive
+decision counts plus maximum false-positive basis points, median effort, and
+nearest-rank 90th-percentile effort. It has no implicit default. Output covers
+the complete built-in rule pack: rules that meet every threshold are `active`;
+all others remain `probation` with finite reason codes. `invalid` decisions are
+false positives, while `valid` and `accepted-boundary` decisions count as
+positive adjudications.
+
+`rigor gate --mode ratchet` and `--mode zero` require `--maturity`. The gate
+binds the maturity digest, counts active and probationary candidates separately,
+and lists every probationary rule present in the current report. Probationary
+candidates cannot block and cannot be omitted from the artifact. Observe mode
+may run without a maturity report and makes no rule-activation claim.
+
+Repository and reviewer identifiers, measured duration, and effort references
+are operator declarations. Schema validation and content addressing detect
+unrecomputed changes; they do not authenticate those declarations. Deployments
+that need authenticated calibration must add signed custody around the case
+manifest and retained evidence.
+
 ## Independent campaigns
 
 `campaign-create`, `campaign-run`, and `campaign-compare` freeze independent

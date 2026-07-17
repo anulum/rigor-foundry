@@ -55,6 +55,7 @@ from rigor_foundry.models import (
     ReviewRecord,
     canonical_digest,
 )
+from rigor_foundry.rule_maturity import RuleMaturityPolicy, RuleMaturityReport
 from rigor_foundry.standard_pack import StandardPack
 from rigor_foundry.work_closure import WorkClosure
 from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkTask
@@ -308,6 +309,32 @@ def _profile_snapshot(
         "adapter-lock": adapter.adapter_digest,
         "standard-pack": pack.pack_digest,
         "effective-profile": lock.lock_digest,
+        **_maturity_snapshot(),
+    }
+
+
+def _maturity_policy(*, maximum_p90_effort_seconds: int = 90) -> RuleMaturityPolicy:
+    """Return one explicit probation policy for digest propagation tests."""
+    return RuleMaturityPolicy.build(
+        minimum_adjudicated_reviews=2,
+        minimum_distinct_repositories=2,
+        minimum_distinct_reviewers=2,
+        minimum_positive_reviews=1,
+        maximum_false_positive_basis_points=1_000,
+        maximum_median_effort_seconds=60,
+        maximum_p90_effort_seconds=maximum_p90_effort_seconds,
+    )
+
+
+def _maturity_snapshot(
+    policy: RuleMaturityPolicy | None = None,
+) -> DigestSnapshot:
+    """Return maturity policy and derived full-pack identities."""
+    selected = policy or _maturity_policy()
+    report = RuleMaturityReport.build(selected, ())
+    return {
+        "maturity-policy": selected.policy_digest,
+        "rule-maturity": report.maturity_digest,
     }
 
 
@@ -325,13 +352,15 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.2"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.3"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
         "ignored-inventory",
         "git-provenance",
         "policy",
         "rule-pack",
+        "maturity-policy",
+        "rule-maturity",
         "adapter-lock",
         "standard-pack",
         "toolchain",
@@ -343,16 +372,13 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 22
+    assert len(DIGEST_DEPENDENCIES) == 24
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.2"
-    assert (
-        digest_dependency_graph_digest()
-        == "e2922f40b51aff8e86e16676aa164bf3e4a5333d812465969db4b2e2a7201a4e"
-    )
+    assert digest_dependency_graph()["schema_version"] == "1.3"
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
+    assert direct_dependents("maturity-policy") == ("rule-maturity",)
     assert transitive_dependents("review") == ("task", "closure")
     assert transitive_dependents("toolchain") == (
         "effective-profile",
@@ -366,6 +392,10 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "comparison",
         "task",
         "closure",
+    )
+    assert (
+        digest_dependency_graph_digest()
+        == "3d3712c8aab75201997a75c6fb67a13760306fe8b6f086226b6b944109c15f07"
     )
 
 
@@ -504,6 +534,12 @@ def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(
                 _campaign(rule_report),
             ),
             **profile,
+            "rule-maturity": canonical_digest(
+                {
+                    "prior": profile["rule-maturity"],
+                    "rule_pack_digest": rule_report.rule_pack_digest,
+                }
+            ),
         },
     )
 
@@ -767,6 +803,22 @@ def test_adapter_pack_toolchain_and_effective_profile_bind_exact_dependencies(
             **changed_workflow,
         },
     )
+
+
+def test_maturity_policy_mutation_rebinds_the_complete_rule_assessment() -> None:
+    """A threshold change rebinds maturity without changing unrelated records."""
+    before_policy = _maturity_policy()
+    after_policy = _maturity_policy(maximum_p90_effort_seconds=120)
+    adapter, pack, lock = _effective_records()
+    stable = {
+        "adapter-lock": adapter.adapter_digest,
+        "standard-pack": pack.pack_digest,
+        "effective-profile": lock.lock_digest,
+    }
+    before = {**stable, **_maturity_snapshot(before_policy)}
+    after = {**stable, **_maturity_snapshot(after_policy)}
+
+    _assert_transition("maturity-policy", before, after)
 
 
 def test_policy_and_review_identities_bind_complete_canonical_records() -> None:

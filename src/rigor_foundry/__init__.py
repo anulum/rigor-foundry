@@ -90,6 +90,17 @@ from .remediation_plan import (
 )
 from .review import render_todo_entry, review_errors, review_templates, validate_reviews
 from .review_attestation import ReviewerAttestation
+from .rule_maturity import (
+    RULE_MATURITY_SCHEMA_VERSION,
+    RuleMaturityAssessment,
+    RuleMaturityPolicy,
+    RuleMaturityReport,
+    RuleReviewEvidence,
+)
+from .rule_maturity_manifest import (
+    MATURITY_CASE_MANIFEST_SCHEMA_VERSION,
+    evaluate_rule_maturity_manifest,
+)
 from .sandbox_provenance import BubblewrapCompatibilityPolicy, BubblewrapProvenance
 from .sarif import SARIF_SCHEMA_URI, SARIF_VERSION, report_sarif
 from .scanner import scan_repository
@@ -121,8 +132,10 @@ __all__ = [
     "ED25519_SIGNATURE_MESSAGE_VERSION",
     "IGNORED_INVENTORY_SCHEMA_VERSION",
     "INFERENCE_IDENTITY_SCHEMA_VERSION",
+    "MATURITY_CASE_MANIFEST_SCHEMA_VERSION",
     "MODEL_WITNESS_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
+    "RULE_MATURITY_SCHEMA_VERSION",
     "SARIF_SCHEMA_URI",
     "SARIF_VERSION",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
@@ -171,6 +184,10 @@ __all__ = [
     "ResolvedVariable",
     "ReviewRecord",
     "ReviewerAttestation",
+    "RuleMaturityAssessment",
+    "RuleMaturityPolicy",
+    "RuleMaturityReport",
+    "RuleReviewEvidence",
     "SecretReference",
     "StandardPack",
     "TargetGap",
@@ -196,6 +213,7 @@ __all__ = [
     "digest_dependency_graph_digest",
     "direct_dependents",
     "ed25519_signature_message",
+    "evaluate_rule_maturity_manifest",
     "ignored_inventory_digest",
     "render_todo_entry",
     "report_markdown",

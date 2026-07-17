@@ -7,6 +7,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A per-rule maturity schema keeps every rule in probation until an explicit
+  adopter policy is met by source-bound completed reviews, distinct repository
+  and reviewer declarations, positive adjudications, bounded false-positive
+  rate, and retained reviewer-effort references. A real-file case manifest and
+  CLI command derive the content-addressed assessment without universal
+  threshold claims.
 - A deterministic SARIF 2.1.0 exporter exposes every audit candidate, optional
   evidence-review verdict, stable rule/result identity, exact Git anchor, and
   review-derived severity without treating an unreviewed candidate as a defect.
@@ -42,6 +48,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Ratchet and zero enforcement require an exact maturity report. Candidates
+  from probationary rules remain counted and identified in the gate artifact
+  but cannot silently become blocking debt; enforcement schema advances to
+  1.2 and the normative digest graph advances to 1.3.
 - CLI integration construction and cross-command rejection routing now have
   separate bounded test owners instead of one oversized mixed test module.
 - `rigor --version`, package `__version__`, and distribution metadata now share

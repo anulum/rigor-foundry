@@ -24,6 +24,12 @@ from rigor_foundry.models import (
     Candidate,
     EnforcementMode,
     ReviewRecord,
+    canonical_digest,
+)
+from rigor_foundry.rule_maturity import (
+    RuleMaturityPolicy,
+    RuleMaturityReport,
+    RuleReviewEvidence,
 )
 from rigor_foundry.sandbox_provenance import (
     BubblewrapCompatibilityPolicy,
@@ -120,6 +126,28 @@ def _adapter_result(*, returncode: int = 0) -> AdapterResult:
     )
 
 
+def _maturity() -> RuleMaturityReport:
+    """Return active maturity evidence for the governance rule under test."""
+    report = _report()
+    evidence = RuleReviewEvidence.build(
+        report,
+        _review(report, "valid"),
+        repository_id="fixture/enforcement",
+        reviewer_effort_seconds=30,
+        effort_evidence=("timer:enforcement-calibration",),
+    )
+    policy = RuleMaturityPolicy.build(
+        minimum_adjudicated_reviews=1,
+        minimum_distinct_repositories=1,
+        minimum_distinct_reviewers=1,
+        minimum_positive_reviews=1,
+        maximum_false_positive_basis_points=10_000,
+        maximum_median_effort_seconds=60,
+        maximum_p90_effort_seconds=60,
+    )
+    return RuleMaturityReport.build(policy, (evidence,))
+
+
 def test_observe_records_candidates_but_native_required_failure_blocks() -> None:
     """Observe does not verdict candidates, while execution failures remain fail-closed."""
     report = _report()
@@ -138,25 +166,37 @@ def test_observe_records_candidates_but_native_required_failure_blocks() -> None
 
 
 def test_enforcement_schema_version_declares_sandbox_provenance_migration() -> None:
-    """Enforcement 1.1 requires the structured native sandbox identity."""
-    assert ENFORCEMENT_SCHEMA_VERSION == "1.1"
+    """Enforcement 1.2 binds rule maturity alongside native sandbox identity."""
+    assert ENFORCEMENT_SCHEMA_VERSION == "1.2"
 
 
 def test_ratchet_requires_current_unexpired_unique_review() -> None:
     """Unreviewed, expired, and duplicate decisions cannot enter the legacy ledger."""
     report = _report()
     now = datetime(2026, 7, 16, tzinfo=UTC)
-    unreviewed = evaluate_enforcement(report, (), "ratchet", now=now)
+    with pytest.raises(ValueError, match="require rule maturity evidence"):
+        evaluate_enforcement(report, (), "ratchet", now=now)
+    maturity = _maturity()
+    unreviewed = evaluate_enforcement(report, (), "ratchet", maturity=maturity, now=now)
     assert not unreviewed.passed
-    reviewed = evaluate_enforcement(report, (_review(report, "invalid"),), "ratchet", now=now)
+    reviewed = evaluate_enforcement(
+        report,
+        (_review(report, "invalid"),),
+        "ratchet",
+        maturity=maturity,
+        now=now,
+    )
     assert reviewed.passed
     expired = replace(_review(report, "invalid"), expires_at="2026-07-15T10:30:00Z")
-    assert not evaluate_enforcement(report, (expired,), "ratchet", now=now).passed
+    assert not evaluate_enforcement(
+        report, (expired,), "ratchet", maturity=maturity, now=now
+    ).passed
     with pytest.raises(ValueError, match="multiple completed"):
         evaluate_enforcement(
             report,
             (_review(report, "invalid"), _review(report, "invalid")),
             "ratchet",
+            maturity=maturity,
             now=now,
         )
 
@@ -166,14 +206,21 @@ def test_zero_rejects_verified_valid_debt_until_remediated() -> None:
     report = _report()
     now = datetime(2026, 7, 16, tzinfo=UTC)
     valid = _review(report, "valid")
-    ratchet = evaluate_enforcement(report, (valid,), "ratchet", now=now)
+    maturity = _maturity()
+    ratchet = evaluate_enforcement(report, (valid,), "ratchet", maturity=maturity, now=now)
     assert ratchet.passed
-    zero = evaluate_enforcement(report, (valid,), "zero", now=now)
+    zero = evaluate_enforcement(report, (valid,), "zero", maturity=maturity, now=now)
     assert not zero.passed
     assert zero.valid_debt_count == 1
     assert any("valid remediation debt" in blocker for blocker in zero.blockers)
     with pytest.raises(ValueError, match="UTC"):
-        evaluate_enforcement(report, (), "observe", now=datetime(2026, 7, 16))
+        evaluate_enforcement(
+            report,
+            (),
+            "observe",
+            maturity=maturity,
+            now=datetime(2026, 7, 16),
+        )
 
 
 def test_gate_artifact_binds_exact_report_and_rejects_tampering() -> None:
@@ -230,6 +277,48 @@ def test_gate_artifact_rejects_malformed_protocol_fields(
         type(gate).from_dict(document)
 
 
+def test_gate_parser_rejects_inconsistent_maturity_projection() -> None:
+    """Maturity identifiers and candidate partitions cannot be recanonicalised inconsistently."""
+    plain = evaluate_enforcement(_report(), (), "observe").to_dict()
+    plain["active_candidate_count"] = 1
+    plain["gate_digest"] = canonical_digest(
+        {key: value for key, value in plain.items() if key != "gate_digest"}
+    )
+    with pytest.raises(ValueError, match="counts require a maturity artifact"):
+        type(evaluate_enforcement(_report(), (), "observe")).from_dict(plain)
+
+    probation = RuleMaturityReport.build(
+        RuleMaturityPolicy.build(
+            minimum_adjudicated_reviews=1,
+            minimum_distinct_repositories=1,
+            minimum_distinct_reviewers=1,
+            minimum_positive_reviews=1,
+            maximum_false_positive_basis_points=0,
+            maximum_median_effort_seconds=60,
+            maximum_p90_effort_seconds=60,
+        ),
+        (),
+    )
+    partitioned = evaluate_enforcement(_report(), (), "ratchet", maturity=probation).to_dict()
+    partitioned["probation_candidate_count"] = 0
+    partitioned["gate_digest"] = canonical_digest(
+        {key: value for key, value in partitioned.items() if key != "gate_digest"}
+    )
+    with pytest.raises(ValueError, match="counts do not match"):
+        type(evaluate_enforcement(_report(), (), "observe")).from_dict(partitioned)
+
+    partitioned["probation_candidate_count"] = 1
+    partitioned["probation_rule_ids"] = [
+        "GV004-uncontrolled-required-domain",
+        "GV004-uncontrolled-required-domain",
+    ]
+    partitioned["gate_digest"] = canonical_digest(
+        {key: value for key, value in partitioned.items() if key != "gate_digest"}
+    )
+    with pytest.raises(ValueError, match="sorted and unique"):
+        type(evaluate_enforcement(_report(), (), "observe")).from_dict(partitioned)
+
+
 def test_ratchet_ignores_templates_and_optional_native_failures() -> None:
     """Needs-evidence records do not count as reviews and optional tools do not block."""
     report = _report()
@@ -238,6 +327,7 @@ def test_ratchet_ignores_templates_and_optional_native_failures() -> None:
         report,
         (template,),
         "ratchet",
+        maturity=_maturity(),
         adapter_results=(replace(_adapter_result(returncode=9), required=False),),
         now=datetime(2026, 7, 16, tzinfo=UTC),
     )
@@ -248,6 +338,41 @@ def test_ratchet_ignores_templates_and_optional_native_failures() -> None:
         "unreviewed current candidate "
         f"{report.candidates[0].candidate_id} ({report.candidates[0].rule_id})",
     )
+
+
+def test_probation_candidates_remain_visible_without_affecting_ratchet() -> None:
+    """A probationary signal is counted but cannot become enforcement debt."""
+    report = _report()
+    probation = RuleMaturityReport.build(
+        RuleMaturityPolicy.build(
+            minimum_adjudicated_reviews=1,
+            minimum_distinct_repositories=1,
+            minimum_distinct_reviewers=1,
+            minimum_positive_reviews=1,
+            maximum_false_positive_basis_points=0,
+            maximum_median_effort_seconds=60,
+            maximum_p90_effort_seconds=60,
+        ),
+        (),
+    )
+    decision = evaluate_enforcement(report, (), "ratchet", maturity=probation)
+    recovered = type(decision).from_dict(decision.to_dict())
+
+    assert decision.passed
+    assert decision.active_candidate_count == 0
+    assert decision.probation_candidate_count == 1
+    assert decision.probation_rule_ids == ("GV004-uncontrolled-required-domain",)
+    assert decision.maturity_digest == probation.maturity_digest
+    assert recovered == decision
+
+    incompatible_report = replace(report, rule_pack_digest="0" * 64)
+    with pytest.raises(ValueError, match="different rule pack"):
+        evaluate_enforcement(
+            incompatible_report,
+            (),
+            "ratchet",
+            maturity=probation,
+        )
 
 
 def test_enforcement_rejects_non_utc_expiry_and_unknown_runtime_mode() -> None:
@@ -262,6 +387,7 @@ def test_enforcement_rejects_non_utc_expiry_and_unknown_runtime_mode() -> None:
             report,
             (non_utc,),
             "ratchet",
+            maturity=_maturity(),
             now=datetime(2026, 7, 16, tzinfo=UTC),
         )
 

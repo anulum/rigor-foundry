@@ -53,7 +53,9 @@ flowchart LR
     E --> L[SARIF candidate export]
     G --> L
     F --> G
-    G --> H[Enforcement decision]
+    G --> M[Adjudicated rule maturity]
+    M --> H[Enforcement decision]
+    G --> H
     G --> I[Verified TODO promotion]
     E --> J[Independent campaign attestations]
     J --> K[Divergence comparison]
@@ -111,8 +113,9 @@ overwrites them.
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
 | `rigor sarif` | Export every candidate and optional review verdict as deterministic SARIF 2.1.0. |
+| `rigor maturity-evaluate` | Derive probation or active status from explicit adjudicated review cases. |
 | `rigor promote` | Preview or append one finding from a verified cross-model promotion campaign. |
-| `rigor gate` | Apply observe, ratchet, or zero enforcement. |
+| `rigor gate` | Apply observe, ratchet, or zero enforcement; non-observe modes require a maturity report. |
 | `rigor campaign-create` | Freeze an independent-audit input contract. |
 | `rigor campaign-run` | Execute and attest one independent run. |
 | `rigor campaign-compare` | Record disagreement and unresolved evidence. |
@@ -139,6 +142,7 @@ these native surfaces.
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review, each bound to a verified anchor. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `models` | Versioned rules, strict protocol primitives, applicability, and content-addressed records. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
+| Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |
 | Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
 | Campaigns | `campaign_identity`, `campaign_evidence`, `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare`, `campaign_promotion` | Inference and toolchain identity, correlated-witness collapse, durable provenance, divergence, and promotion eligibility. |

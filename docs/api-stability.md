@@ -43,6 +43,14 @@ availability does not erase those migration boundaries.
 imports. Their emitted document is independently governed by SARIF 2.1.0 and
 the explicit RigorFoundry property names documented in [SARIF export](sarif.md).
 
+`RuleMaturityPolicy`, `RuleReviewEvidence`, `RuleMaturityAssessment`,
+`RuleMaturityReport`, `RULE_MATURITY_SCHEMA_VERSION`,
+`MATURITY_CASE_MANIFEST_SCHEMA_VERSION`, and
+`evaluate_rule_maturity_manifest` are provisional. Their JSON contracts are
+independently versioned at schema 1.0, and enforcement consumes their exact
+content digest rather than treating top-level import stability as protocol
+compatibility.
+
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
 version `0.1.1`. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a

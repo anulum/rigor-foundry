@@ -25,8 +25,9 @@ from .models import (
     require_string_tuple,
 )
 from .review import validate_reviews
+from .rule_maturity import RuleMaturityReport
 
-ENFORCEMENT_SCHEMA_VERSION = "1.1"
+ENFORCEMENT_SCHEMA_VERSION = "1.2"
 _ENFORCEMENT_FIELDS = frozenset(
     {
         "schema_version",
@@ -39,6 +40,10 @@ _ENFORCEMENT_FIELDS = frozenset(
         "candidate_count",
         "reviewed_count",
         "valid_debt_count",
+        "active_candidate_count",
+        "probation_candidate_count",
+        "probation_rule_ids",
+        "maturity_digest",
         "adapter_results",
         "adapter_evidence_digest",
         "blockers",
@@ -71,6 +76,10 @@ class EnforcementResult:
     candidate_count: int
     reviewed_count: int
     valid_debt_count: int
+    active_candidate_count: int
+    probation_candidate_count: int
+    probation_rule_ids: tuple[str, ...]
+    maturity_digest: str | None
     adapter_results: tuple[AdapterResult, ...]
     adapter_evidence_digest: str
     blockers: tuple[str, ...]
@@ -84,6 +93,10 @@ class EnforcementResult:
         mode: EnforcementMode,
         reviewed_count: int,
         valid_debt_count: int,
+        active_candidate_count: int,
+        probation_candidate_count: int,
+        probation_rule_ids: tuple[str, ...],
+        maturity_digest: str | None,
         adapter_results: tuple[AdapterResult, ...],
         blockers: tuple[str, ...],
     ) -> EnforcementResult:
@@ -100,6 +113,10 @@ class EnforcementResult:
             "candidate_count": len(report.candidates),
             "reviewed_count": reviewed_count,
             "valid_debt_count": valid_debt_count,
+            "active_candidate_count": active_candidate_count,
+            "probation_candidate_count": probation_candidate_count,
+            "probation_rule_ids": list(probation_rule_ids),
+            "maturity_digest": maturity_digest,
             "adapter_results": adapter_evidence,
             "adapter_evidence_digest": canonical_digest(adapter_evidence),
             "blockers": list(blockers),
@@ -121,6 +138,10 @@ class EnforcementResult:
             candidate_count=cast(int, fields["candidate_count"]),
             reviewed_count=cast(int, fields["reviewed_count"]),
             valid_debt_count=cast(int, fields["valid_debt_count"]),
+            active_candidate_count=cast(int, fields["active_candidate_count"]),
+            probation_candidate_count=cast(int, fields["probation_candidate_count"]),
+            probation_rule_ids=tuple(cast(list[str], fields["probation_rule_ids"])),
+            maturity_digest=cast(str | None, fields["maturity_digest"]),
             adapter_results=tuple(
                 AdapterResult.from_dict(item, index) for index, item in enumerate(raw_results)
             ),
@@ -147,6 +168,10 @@ class EnforcementResult:
             "candidate_count": self.candidate_count,
             "reviewed_count": self.reviewed_count,
             "valid_debt_count": self.valid_debt_count,
+            "active_candidate_count": self.active_candidate_count,
+            "probation_candidate_count": self.probation_candidate_count,
+            "probation_rule_ids": list(self.probation_rule_ids),
+            "maturity_digest": self.maturity_digest,
             "adapter_results": [item.to_dict() for item in self.adapter_results],
             "adapter_evidence_digest": self.adapter_evidence_digest,
             "blockers": list(self.blockers),
@@ -179,6 +204,20 @@ class EnforcementResult:
         if recorded_adapter_digest != canonical_digest(adapter_results):
             raise ValueError("adapter evidence digest does not match its content")
         blockers = list(require_string_tuple(data.get("blockers"), "enforcement.blockers"))
+        probation_rule_ids = list(
+            require_string_tuple(
+                data.get("probation_rule_ids"),
+                "enforcement.probation_rule_ids",
+            )
+        )
+        if probation_rule_ids != sorted(set(probation_rule_ids)):
+            raise ValueError("enforcement.probation_rule_ids must be sorted and unique")
+        raw_maturity_digest = data.get("maturity_digest")
+        maturity_digest = (
+            None
+            if raw_maturity_digest is None
+            else _digest(raw_maturity_digest, "enforcement.maturity_digest")
+        )
         passed = data.get("passed")
         if not isinstance(passed, bool) or passed is not (not blockers):
             raise ValueError("enforcement.passed does not match blockers")
@@ -212,6 +251,18 @@ class EnforcementResult:
                 "enforcement.valid_debt_count",
                 minimum=0,
             ),
+            "active_candidate_count": require_integer(
+                data.get("active_candidate_count"),
+                "enforcement.active_candidate_count",
+                minimum=0,
+            ),
+            "probation_candidate_count": require_integer(
+                data.get("probation_candidate_count"),
+                "enforcement.probation_candidate_count",
+                minimum=0,
+            ),
+            "probation_rule_ids": probation_rule_ids,
+            "maturity_digest": maturity_digest,
             "adapter_results": adapter_results,
             "adapter_evidence_digest": recorded_adapter_digest,
             "blockers": blockers,
@@ -223,6 +274,17 @@ class EnforcementResult:
         )
         if recorded_gate_digest != canonical_digest(fields):
             raise ValueError("gate digest does not match enforcement content")
+        if maturity_digest is None:
+            if (
+                fields["active_candidate_count"] != 0
+                or fields["probation_candidate_count"] != 0
+                or probation_rule_ids
+            ):
+                raise ValueError("enforcement maturity counts require a maturity artifact")
+        elif cast(int, fields["active_candidate_count"]) + cast(
+            int, fields["probation_candidate_count"]
+        ) != cast(int, fields["candidate_count"]):
+            raise ValueError("enforcement maturity candidate counts do not match candidate_count")
         return cls._from_fields(fields, recorded_gate_digest)
 
     def assert_report(self, report: AuditReport) -> None:
@@ -275,6 +337,7 @@ def evaluate_enforcement(
     reviews: tuple[ReviewRecord, ...],
     mode: EnforcementMode,
     *,
+    maturity: RuleMaturityReport | None = None,
     adapter_results: tuple[AdapterResult, ...] = (),
     now: datetime | None = None,
 ) -> EnforcementResult:
@@ -291,6 +354,9 @@ def evaluate_enforcement(
         and ``zero`` additionally rejects reviewed valid debt.
     adapter_results:
         Repository-native audit results for the same scope.
+    maturity:
+        Optional rule-maturity report. Ratchet and zero modes require it;
+        probationary rules remain visible but do not influence the verdict.
     now:
         Optional UTC decision time for deterministic verification.
 
@@ -305,6 +371,16 @@ def evaluate_enforcement(
     decision_time = now or datetime.now(UTC)
     if decision_time.tzinfo is None or decision_time.utcoffset() != UTC.utcoffset(decision_time):
         raise ValueError("enforcement time must use UTC")
+    validated_maturity = (
+        None if maturity is None else RuleMaturityReport.from_dict(maturity.to_dict())
+    )
+    if mode != "observe" and validated_maturity is None:
+        raise ValueError("ratchet and zero enforcement require rule maturity evidence")
+    if validated_maturity is not None and (
+        validated_maturity.rule_pack_version != report.rule_pack_version
+        or validated_maturity.rule_pack_digest != report.rule_pack_digest
+    ):
+        raise ValueError("rule maturity evidence belongs to a different rule pack")
     validation_errors = validate_reviews(report, reviews)
     blockers = list(validation_errors)
     completed = _completed_review_by_candidate(reviews)
@@ -325,8 +401,24 @@ def evaluate_enforcement(
         f"native audit {result.name} failed with exit {result.returncode}"
         for result in required_adapter_failures
     )
+    active_candidates = tuple(
+        candidate
+        for candidate in report.candidates
+        if validated_maturity is not None
+        and validated_maturity.assessment_for(candidate.rule_id).status == "active"
+    )
+    probation_candidates = (
+        ()
+        if validated_maturity is None
+        else tuple(
+            candidate
+            for candidate in report.candidates
+            if validated_maturity.assessment_for(candidate.rule_id).status == "probation"
+        )
+    )
+    probation_rule_ids = tuple(sorted({item.rule_id for item in probation_candidates}))
     if mode != "observe":
-        for candidate in report.candidates:
+        for candidate in active_candidates:
             candidate_review = completed.get(candidate.candidate_id)
             if candidate_review is None:
                 blockers.append(
@@ -341,6 +433,12 @@ def evaluate_enforcement(
         mode=mode,
         reviewed_count=len(completed),
         valid_debt_count=sum(1 for review in completed.values() if review.decision == "valid"),
+        active_candidate_count=len(active_candidates),
+        probation_candidate_count=len(probation_candidates),
+        probation_rule_ids=probation_rule_ids,
+        maturity_digest=(
+            validated_maturity.maturity_digest if validated_maturity is not None else None
+        ),
         adapter_results=adapter_results,
         blockers=tuple(blockers),
     )

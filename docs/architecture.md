@@ -11,10 +11,21 @@ generator.
 3. Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
-5. SARIF projects candidates and optional review verdicts without merging them.
-6. Desired-state profiles resolve adopter rules and typed project variables.
-7. Gap records become dependency-ordered remediation plans only after evidence
+5. A separate maturity report evaluates each rule against explicit adjudication,
+   false-positive, reviewer-diversity, and reviewer-effort thresholds.
+6. SARIF projects candidates and optional review verdicts without merging them.
+7. Desired-state profiles resolve adopter rules and typed project variables.
+8. Gap records become dependency-ordered remediation plans only after evidence
    and approval gates pass.
+
+Rule maturity is an enforcement-admission boundary, not a scanner verdict.
+Every built-in rule has exactly one derived `probation` or `active` assessment.
+Ratchet and zero modes require the maturity artifact and evaluate only active
+rules; probationary candidates remain explicitly counted and named. Thresholds
+are supplied by the adopter. RigorFoundry does not claim that one false-positive
+or effort limit fits every repository. Case records bind exact report,
+candidate, review, repository, reviewer, and retained effort-source references.
+Repository and reviewer labels are declarations, not cryptographic identities.
 
 The SARIF projection is read-only. It takes the versioned rule registry and an
 integrity-verified report, validates optional reviews, and emits stable rule

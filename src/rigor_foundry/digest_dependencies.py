@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.2"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.3"
 
 DigestNode = Literal[
     "inventory",
@@ -22,6 +22,8 @@ DigestNode = Literal[
     "git-provenance",
     "policy",
     "rule-pack",
+    "maturity-policy",
+    "rule-maturity",
     "adapter-lock",
     "standard-pack",
     "toolchain",
@@ -83,6 +85,12 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     ),
     DigestNodeSpec("policy", "policy_digest", "models"),
     DigestNodeSpec("rule-pack", "rule_pack_digest", "rules"),
+    DigestNodeSpec(
+        "maturity-policy",
+        "maturity_policy_digest",
+        "rule_maturity",
+    ),
+    DigestNodeSpec("rule-maturity", "maturity_digest", "rule_maturity"),
     DigestNodeSpec("adapter-lock", "adapter_digest", "effective_profile"),
     DigestNodeSpec("standard-pack", "pack_digest", "standard_pack"),
     DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
@@ -101,6 +109,8 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("git-provenance", "report", "git_provenance"),
     DigestDependency("policy", "report", "policy + policy_digest"),
     DigestDependency("rule-pack", "report", "rule_pack_digest"),
+    DigestDependency("rule-pack", "rule-maturity", "rule_pack_digest"),
+    DigestDependency("maturity-policy", "rule-maturity", "policy + policy_digest"),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),

@@ -48,6 +48,8 @@ from .review import (
     review_templates,
     validate_reviews,
 )
+from .rule_maturity import RuleMaturityReport
+from .rule_maturity_manifest import evaluate_rule_maturity_manifest
 from .sarif import report_sarif
 from .scanner import scan_repository
 from .version import __version__
@@ -322,10 +324,12 @@ def _gate_command(args: argparse.Namespace) -> int:
         args.scope,
         trusted=args.allow_native_audits,
     )
+    maturity = RuleMaturityReport.from_path(args.maturity) if args.maturity is not None else None
     result = evaluate_enforcement(
         report,
         reviews,
         requested_mode,
+        maturity=maturity,
         adapter_results=adapter_results,
     )
     output = json.dumps(result.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -334,6 +338,17 @@ def _gate_command(args: argparse.Namespace) -> int:
     else:
         _write_explicit(args.output, output)
     return 0 if result.passed else 1
+
+
+def _maturity_evaluate_command(args: argparse.Namespace) -> int:
+    """Evaluate explicit adjudicated cases into per-rule maturity decisions."""
+    report = evaluate_rule_maturity_manifest(args.cases)
+    output = report.to_json()
+    if args.output is None:
+        print(output, end="")
+    else:
+        _write_explicit(args.output, output)
+    return 0
 
 
 def _campaign_create_command(args: argparse.Namespace) -> int:
@@ -497,6 +512,11 @@ def _parser() -> argparse.ArgumentParser:
     gate.add_argument("--root", type=Path, required=True)
     gate.add_argument("--policy", type=Path)
     gate.add_argument("--review", type=Path)
+    gate.add_argument(
+        "--maturity",
+        type=Path,
+        help="Content-addressed per-rule maturity report required by ratchet and zero modes.",
+    )
     gate.add_argument("--mode", choices=("observe", "ratchet", "zero"))
     gate.add_argument("--scope", choices=("staged", "full"), default="full")
     gate.add_argument(
@@ -507,6 +527,14 @@ def _parser() -> argparse.ArgumentParser:
     gate.add_argument("--output", type=Path)
     _add_git_trust_arguments(gate)
     gate.set_defaults(handler=_gate_command)
+
+    maturity = subparsers.add_parser(
+        "maturity-evaluate",
+        help="Derive probation or active rule status from adjudicated review cases.",
+    )
+    maturity.add_argument("--cases", type=Path, required=True)
+    maturity.add_argument("--output", type=Path)
+    maturity.set_defaults(handler=_maturity_evaluate_command)
 
     campaign_create = subparsers.add_parser(
         "campaign-create",

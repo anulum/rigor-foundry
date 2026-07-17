@@ -14,6 +14,7 @@ CLI/API
   -> portable candidate collectors
   -> content-addressed report
   -> evidence review
+  -> adjudicated rule maturity
   -> enforcement or explicit promotion
 ```
 
@@ -162,9 +163,10 @@ includes `GitExecutableProvenance`, the Git object format, ignored-inventory
 evidence, and strict anchored candidates; changing any bound input changes the
 report digest. Review-ledger
 schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes schema 1.2 of the machine-readable graph of
+`digest_dependencies.py` publishes schema 1.3 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
-includes ignored inventory, Git provenance, and toolchain identities in
+includes ignored inventory, Git provenance, maturity policy, rule maturity,
+and toolchain identities in
 addition to the tracked inventory, policy, rule-pack, desired-state, report,
 review, campaign, comparison, task, and closure records. Policy and review
 records expose one canonical identity each. Rule-pack version 1.1.0 binds its
@@ -195,8 +197,20 @@ report binding, and duplicate prevention. Promotion rescans the repository and
 rejects changed HEAD, content, policy, Git provenance, ignored evidence, or
 candidate identity.
 
+`rule_maturity.py` derives one `probation` or `active` decision for every
+built-in rule from an explicit threshold policy and source-bound completed
+reviews. It records repository and reviewer diversity, positive and invalid
+decisions, conservative median and nearest-rank p90 effort, and retained
+effort-source references. `rule_maturity_manifest.py` owns the explicit
+report/review file-reference boundary. Thresholds and identity labels are
+operator declarations; the schema does not claim universal calibration or
+cryptographic authentication.
+
 `enforcement.py` supports observe, ratchet, and zero modes. A command-line mode
-may strengthen but cannot weaken the repository policy.
+may strengthen but cannot weaken the repository policy. Ratchet and zero
+require an exact maturity report and evaluate active rules only. Probationary
+candidates remain counted and named in the gate artifact instead of becoming
+silent pass state.
 
 ### Native audit adapters
 
