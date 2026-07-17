@@ -240,7 +240,7 @@ jobs:
           git -C /tmp/rigor-adopter init --initial-branch=main
           git -C /tmp/rigor-adopter config user.name "Distribution Smoke"
           git -C /tmp/rigor-adopter config user.email "distribution-smoke@example.invalid"
-          printf '%s\n' 'docs/internal/' > /tmp/rigor-adopter/.gitignore
+          printf '%s\n' 'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore
           printf '%s\n' 'VALUE = 1' > /tmp/rigor-adopter/src/example.py
           printf '%s\n' 'def test_value() -> None:' '    assert True' > /tmp/rigor-adopter/tests/test_example.py
           git -C /tmp/rigor-adopter add .gitignore src tests

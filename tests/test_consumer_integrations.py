@@ -84,6 +84,7 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     assert "Run consumer action against external fixture" in workflow
     assert "uses: ./" in workflow
     assert "repository-root: /tmp/rigor-adopter" in workflow
+    assert "'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore" in workflow
     assert "report-path: /tmp/rigor-adopter/reports/action-report.json" in workflow
     assert "gate-report-path: /tmp/rigor-adopter/reports/action-gate.json" in workflow
     assert 'allow-native-audits: "false"' in workflow
