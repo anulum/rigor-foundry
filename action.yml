@@ -15,7 +15,7 @@ inputs:
     description: Existing Git repository to inspect.
     required: true
   policy-path:
-    description: Explicit policy path, absolute or relative to repository-root.
+    description: Tracked policy path relative to repository-root.
     required: true
   report-path:
     description: New JSON scan report path whose parent already exists.

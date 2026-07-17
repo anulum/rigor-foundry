@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 import subprocess
@@ -20,6 +21,7 @@ import pytest
 from tools.install_trivy import (
     TRIVY_ARCHIVE_DIGEST,
     TRIVY_ARCHIVE_NAME,
+    TRIVY_BINARY_DIGEST,
     TRIVY_CHECKSUM_DIGEST,
     TRIVY_VERSION,
     main,
@@ -45,6 +47,8 @@ def test_active_environment_contains_the_verified_trivy_release() -> None:
     assert stat.S_IMODE(metadata.st_mode) & (stat.S_IWGRP | stat.S_IWOTH) == 0
     assert len(TRIVY_CHECKSUM_DIGEST) == 64
     assert len(TRIVY_ARCHIVE_DIGEST) == 64
+    assert len(TRIVY_BINARY_DIGEST) == 64
+    assert _sha256_file(executable) == TRIVY_BINARY_DIGEST
     assert f"trivy_{TRIVY_VERSION}_Linux-64bit.tar.gz" == TRIVY_ARCHIVE_NAME
 
 
@@ -59,3 +63,8 @@ def test_installer_cli_help_and_digest_failures_are_fail_closed(
 
     with pytest.raises(ValueError, match="checksum document digest"):
         verify_release_payloads(b"untrusted checksums", b"untrusted archive")
+
+
+def _sha256_file(path: Path) -> str:
+    """Return the SHA-256 digest of one test executable."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()

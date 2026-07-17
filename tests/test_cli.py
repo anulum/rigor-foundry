@@ -18,6 +18,7 @@ from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.cli import main, report_markdown
 from rigor_foundry.models import AuditReport
+from tools.check_consumer_outputs import consumer_output_errors
 
 
 def test_scan_is_read_only_deterministic_and_labels_candidates(tmp_path: Path) -> None:
@@ -97,6 +98,31 @@ def test_scan_cli_rejects_implicit_root_for_absolute_git(tmp_path: Path) -> None
 
     assert result.returncode == 2
     assert "requires --git-trust-root" in result.stderr
+
+
+def test_scan_output_rejects_symlink_introduced_after_action_guard(tmp_path: Path) -> None:
+    """The real CLI cannot follow a target introduced after the Action precheck."""
+    repository = cli_repository(tmp_path / "repository")
+    output = repository.root / ".coordination/action.json"
+    victim = tmp_path / "victim.json"
+    victim.write_text("preserve\n", encoding="utf-8")
+    assert consumer_output_errors(repository.root, (output,)) == []
+    output.symlink_to(victim)
+
+    result = repository.run_audit(
+        "scan",
+        "--root",
+        ".",
+        "--policy",
+        POLICY,
+        "--json-out",
+        str(output),
+    )
+
+    assert result.returncode == 2
+    assert "output path already exists" in result.stderr
+    assert output.is_symlink()
+    assert victim.read_text(encoding="utf-8") == "preserve\n"
 
 
 def test_review_validation_and_explicit_promotion_use_current_tree(tmp_path: Path) -> None:

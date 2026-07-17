@@ -50,6 +50,7 @@ from .review import (
 )
 from .rule_maturity import RuleMaturityReport
 from .rule_maturity_manifest import evaluate_rule_maturity_manifest
+from .safe_output import write_new_output
 from .sarif import report_sarif
 from .scanner import scan_repository
 from .source_provenance_cli import add_source_provenance_commands
@@ -142,10 +143,8 @@ def report_markdown(report: AuditReport) -> str:
 
 
 def _write_explicit(path: Path, text: str) -> None:
-    """Write an explicitly requested output without creating parent directories."""
-    if not path.parent.is_dir():
-        raise ValueError(f"output parent does not exist: {path.parent}")
-    path.write_text(text, encoding="utf-8")
+    """Create one explicitly requested output without overwriting adopter bytes."""
+    write_new_output(path, text)
 
 
 def _git_trust_policy(args: argparse.Namespace) -> GitTrustPolicy:

@@ -27,6 +27,7 @@ TRIVY_ARCHIVE_NAME = f"trivy_{TRIVY_VERSION}_Linux-64bit.tar.gz"
 TRIVY_CHECKSUM_NAME = f"trivy_{TRIVY_VERSION}_checksums.txt"
 TRIVY_CHECKSUM_DIGEST = "ebe9d19a774b950e240b1017a038e9b5a002ea068e02023369ff6d241c10c580"
 TRIVY_ARCHIVE_DIGEST = "bbb64b9695866ce4a7a8f5c9592002c5961cab378577fa3f8a040df362b9b2ea"
+TRIVY_BINARY_DIGEST = "0e69edd134a3c338baa1a6806920773615d682b18cbc6a0cba2a3b658ef9b63e"
 _BASE_URL = f"https://github.com/aquasecurity/trivy/releases/download/v{TRIVY_VERSION}"
 _MAX_CHECKSUM_BYTES = 16 * 1024
 _MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
@@ -93,6 +94,8 @@ def _binary_from_archive(archive: bytes) -> bytes:
         raise ValueError("Trivy release archive is invalid") from exc
     if len(binary) != member.size:
         raise ValueError("Trivy archive binary size does not match metadata")
+    if _sha256(binary) != TRIVY_BINARY_DIGEST:
+        raise ValueError("Trivy archive binary digest does not match the release pin")
     return binary
 
 
