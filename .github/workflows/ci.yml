@@ -224,6 +224,9 @@ jobs:
           /tmp/rigor-wheel/bin/rigor scan --root . --policy rigor-foundry-policy.json --json-out /tmp/rigor-adopter-report.json
           /tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json --output /tmp/rigor-adopter-results.sarif
           /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); assert document["version"] == "2.1.0"; assert document["runs"][0]["results"]'
+          curl --proto '=https' --tlsv1.2 --fail --location --output /tmp/sarif-schema-2.1.0.json https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json
+          printf '%s  %s\n' c3b4bb2d6093897483348925aaa73af03b3e3f4bd4ca38cef26dcb4212a2682e /tmp/sarif-schema-2.1.0.json | sha256sum --check --strict
+          python -c 'import json, pathlib; from jsonschema import Draft4Validator; schema = json.loads(pathlib.Path("/tmp/sarif-schema-2.1.0.json").read_text(encoding="utf-8")); document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); Draft4Validator.check_schema(schema); Draft4Validator(schema).validate(document)'
           test "$(stat -c '%a' docs/internal/TODO.md)" = 600
           test ! -e docs/internal/reviews.json
           set +e

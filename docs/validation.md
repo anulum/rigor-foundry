@@ -44,7 +44,8 @@ The focused SARIF owner scans real Git repositories and exercises the public
 API and subprocess CLI. It covers every review-state mapping, exact anchors,
 stable identifiers, URI encoding, fail-closed invalid reviews, deterministic
 round trips, and 100% branch-aware isolated exporter coverage. Distribution CI
-also scans and exports through the installed wheel outside the checkout.
+also scans and exports through the installed wheel outside the checkout, then
+validates the result against the SHA-256-pinned official OASIS Errata 01 schema.
 
 Candidate anchors have a dedicated real-repository contract. The focused owner
 tests cover clean, unstaged, and staged-plus-unstaged bytes; text, binary,
