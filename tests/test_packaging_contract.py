@@ -57,6 +57,20 @@ def test_hash_locks_cover_each_resolved_distribution() -> None:
         assert all("--hash=sha256:" in entry for entry in resolved), name
 
 
+def test_container_scan_uses_repository_verified_trivy() -> None:
+    """Container CI executes the digest-bound Trivy installer, not its download action."""
+    workflow = (ROOT / ".github/workflows/docker.yml").read_text(encoding="utf-8")
+    assert "python3 -m tools.install_trivy" in workflow
+    assert '"$RUNNER_TEMP/trivy" image' in workflow
+    assert "aquasecurity/trivy-action@" not in workflow
+    assert "python3 -m tools.install_buildx" in workflow
+    assert "docker/setup-buildx-action@" not in workflow
+    assert (
+        "moby/buildkit@sha256:"
+        "2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec" in workflow
+    )
+
+
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
 
@@ -89,7 +103,11 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert profiles == ["            userns,", "            userns,"]
     assert workflow.count('apparmor_restrict_unprivileged_userns)" = 1') == 2
     assert workflow.count("/usr/bin/bwrap --version") == 2
-    assert workflow.count("/usr/bin/dpkg-query --show") == 2
+    assert workflow.count("/usr/bin/dpkg-query --show") == 4
+    assert workflow.count("0.9.0-1ubuntu0.1") == 2
+    assert workflow.count("python3 -m tools.install_bubblewrap") == 2
+    assert workflow.count("52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712") == 2
+    assert "apt-get install" not in workflow
     assert workflow.count("--disable-userns --assert-userns-disabled") == 4
     assert workflow.count("/usr/bin/unshare --user -- /usr/bin/true") == 2
     assert workflow.count("--symlink usr/bin /bin --symlink usr/lib /lib") == 4

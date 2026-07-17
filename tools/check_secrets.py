@@ -21,7 +21,8 @@ RULES = {
     "aws-access-key": re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"),
     "credential-url": re.compile(r"[a-z][a-z0-9+.-]*://[^\s/:@]+:[^\s/@]+@", re.IGNORECASE),
     "credential-assignment": re.compile(
-        r"(?im)^\s*(?:api[_-]?key|access[_-]?token|auth[_-]?token|password|secret)\s*[:=]\s*[\"']?([^\s\"']{8,})"
+        r"(?im)^[ \t]*(?:api[_-]?key|access[_-]?token|auth[_-]?token|password|secret)"
+        r"[ \t]*[:=][ \t]*[\"']?([^\s\"']{8,})"
     ),
 }
 REFERENCE_MARKERS = ("${{ secrets.", "${", "$ENV", "secret-provider", "example", "redacted")

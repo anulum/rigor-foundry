@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — digest-bound OpenSSF Scorecard container
+
+name: Digest-bound OpenSSF Scorecard
+description: Run the upstream Scorecard image by immutable OCI digest.
+
+inputs:
+  results_file:
+    description: Path to the output results file.
+    required: true
+  results_format:
+    description: Output format; json or sarif.
+    required: true
+  repo_token:
+    description: GitHub token with repository read access.
+    required: false
+    default: ${{ github.token }}
+  publish_results:
+    description: Publish results to the Scorecard API.
+    required: false
+    default: "false"
+  file_mode:
+    description: Method used to retrieve repository files.
+    required: false
+    default: archive
+  internal_publish_base_url:
+    description: Scorecard publication API base URL.
+    required: false
+    default: https://api.scorecard.dev
+  internal_default_token:
+    description: Default token forwarded to the upstream executable.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: docker
+  image: docker://ghcr.io/ossf/scorecard-action@sha256:2dd6a6d60100f78ef24e14a47941d0087a524b4d3642041558239b1c6097c941

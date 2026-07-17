@@ -19,6 +19,8 @@ SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 CHECKOUT_PREFIX = "actions/checkout@"
 SETUP_PYTHON_PREFIX = "actions/setup-python@"
 PYTHON_VERSION_PATTERN = re.compile(r"^3\.\d+\.\d+$")
+DOCKER_IMAGE_PATTERN = re.compile(r'^\s*image:\s*"?(docker://[^"\s]+)"?\s*$', re.MULTILINE)
+OCI_DIGEST_PATTERN = re.compile(r"^docker://[^@\s]+@sha256:[0-9a-f]{64}$")
 
 
 def _setup_python_version_errors(text: str) -> list[str]:
@@ -84,6 +86,8 @@ def workflow_errors(path: Path) -> list[str]:
         errors.append("concurrency control is required")
     if re.search(r"^\s*permissions:\s*write-all\s*$", text, re.MULTILINE):
         errors.append("write-all permissions are forbidden")
+    if re.search(r"^\s*runs-on:\s*ubuntu-latest\s*$", text, re.MULTILINE):
+        errors.append("Ubuntu runners must use an exact release label")
 
     lines = text.splitlines()
     errors.extend(_reference_errors(text))
@@ -103,8 +107,14 @@ def action_metadata_errors(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     errors = _reference_errors(text)
     errors.extend(_setup_python_version_errors(text))
-    if not re.search(r"^\s+using:\s*composite\s*$", text, re.MULTILINE):
-        errors.append("action must use the composite runtime")
+    composite = re.search(r"^\s+using:\s*composite\s*$", text, re.MULTILINE)
+    docker = re.search(r"^\s+using:\s*docker\s*$", text, re.MULTILINE)
+    if not composite and not docker:
+        errors.append("action must use the composite or Docker runtime")
+    if docker:
+        images = DOCKER_IMAGE_PATTERN.findall(text)
+        if len(images) != 1 or not OCI_DIGEST_PATTERN.fullmatch(images[0]):
+            errors.append("Docker action image must use one immutable OCI digest")
     for line_number, line in enumerate(text.splitlines(), start=1):
         if "${{ inputs." not in line:
             continue

@@ -33,8 +33,9 @@ jobs:
       - name: Install native audit sandbox
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends bubblewrap
+          python3 -m tools.install_bubblewrap \
+            --destination "$RUNNER_TEMP/bubblewrap.deb"
+          sudo dpkg -i "$RUNNER_TEMP/bubblewrap.deb"
           sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
           abi <abi/4.0>,
           include <tunables/global>
@@ -53,6 +54,11 @@ jobs:
           /usr/bin/dpkg-query --show \
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
+          test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
+            0.9.0-1ubuntu0.1
+          printf '%s  %s\n' \
+            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
             --uid 65534 --gid 65534 --ro-bind /usr /usr \
@@ -69,7 +75,11 @@ jobs:
             echo "nested user namespace unexpectedly succeeded" >&2
             exit 1
           fi
-      - uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14
+      - name: Install and run verified Typos
+        run: |
+          python3 -m tools.install_typos --destination "$RUNNER_TEMP/typos"
+          "$RUNNER_TEMP/typos" --version
+          "$RUNNER_TEMP/typos"
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.12.13"
@@ -121,8 +131,9 @@ jobs:
       - name: Install native audit sandbox
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends bubblewrap
+          python3 -m tools.install_bubblewrap \
+            --destination "$RUNNER_TEMP/bubblewrap.deb"
+          sudo dpkg -i "$RUNNER_TEMP/bubblewrap.deb"
           sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
           abi <abi/4.0>,
           include <tunables/global>
@@ -141,6 +152,11 @@ jobs:
           /usr/bin/dpkg-query --show \
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
+          test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
+            0.9.0-1ubuntu0.1
+          printf '%s  %s\n' \
+            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
             --uid 65534 --gid 65534 --ro-bind /usr /usr \
@@ -283,7 +299,8 @@ jobs:
             '          - --output' \
             '          - reports/pre-commit-gate.json' \
             > .pre-commit-config.yaml
-          python -m pre_commit run --all-files --config .pre-commit-config.yaml
+          PATH="/tmp/rigor-wheel/bin:$PATH" \
+            python -m pre_commit run --all-files --config .pre-commit-config.yaml
           test -s reports/pre-commit-gate.json
           test -s reports/action-report.json
           test -s reports/action-gate.json

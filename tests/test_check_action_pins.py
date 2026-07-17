@@ -88,6 +88,23 @@ def test_action_guard_rejects_mutable_checkout_and_credential_persistence(tmp_pa
     assert "line 8: checkout must disable persisted credentials" in errors
 
 
+def test_action_guard_rejects_mutable_ubuntu_runner(tmp_path: Path) -> None:
+    """Hosted Linux runners must bind an explicit Ubuntu release."""
+    workflow = tmp_path / "ci.yml"
+    workflow.write_text(
+        "permissions:\n"
+        "  contents: read\n"
+        "concurrency:\n"
+        "  group: test\n"
+        "jobs:\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    assert workflow_errors(workflow) == ["Ubuntu runners must use an exact release label"]
+
+
 def test_repository_workflows_use_immutable_actions() -> None:
     """Every production workflow and composite action passes the public guard."""
     assert action_pin_errors() == []
@@ -159,7 +176,25 @@ def test_action_guard_rejects_non_composite_runtime_but_accepts_env_and_output_i
         "    value: ${{ inputs.report-path }}\n",
         encoding="utf-8",
     )
-    assert action_metadata_errors(action) == ["action must use the composite runtime"]
+    assert action_metadata_errors(action) == ["action must use the composite or Docker runtime"]
+
+
+def test_action_guard_requires_digest_bound_docker_image(tmp_path: Path) -> None:
+    """A local Docker action cannot execute a mutable registry tag."""
+    action = tmp_path / "action.yml"
+    action.write_text(
+        "runs:\n  using: docker\n  image: docker://ghcr.io/example/tool:v1\n",
+        encoding="utf-8",
+    )
+    assert action_metadata_errors(action) == [
+        "Docker action image must use one immutable OCI digest"
+    ]
+
+    action.write_text(
+        "runs:\n  using: docker\n  image: docker://ghcr.io/example/tool@sha256:" + "a" * 64 + "\n",
+        encoding="utf-8",
+    )
+    assert action_metadata_errors(action) == []
 
 
 def test_repository_guard_reports_absent_workflows_and_prefixes_nested_failures(
@@ -190,7 +225,7 @@ def test_repository_guard_reports_absent_workflows_and_prefixes_nested_failures(
 
     assert action_pin_errors(tmp_path) == [
         ".github/workflows/ci.yaml: action has no immutable revision: owner/unversioned",
-        ".github/actions/example/action.yaml: action must use the composite runtime",
+        ".github/actions/example/action.yaml: action must use the composite or Docker runtime",
     ]
 
 

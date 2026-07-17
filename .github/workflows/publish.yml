@@ -49,7 +49,7 @@ jobs:
             github.ref_name == github.event.repository.default_branch)
          ))
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment:
       name: pypi
@@ -129,7 +129,7 @@ jobs:
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
         with:
           subject-path: dist/*
-      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+      - uses: ./.github/actions/pypi-publish
         with:
           packages-dir: dist/
           print-hash: true

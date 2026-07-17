@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — digest-bound PyPI Trusted Publishing container
+
+name: Digest-bound PyPI publisher
+description: Run the upstream PyPI Trusted Publishing image by immutable OCI digest.
+
+inputs:
+  user:
+    description: Package-index username.
+    required: false
+    default: __token__
+  password:
+    description: Package-index password or API token.
+    required: false
+  repository-url:
+    description: Package upload endpoint.
+    required: false
+    default: https://upload.pypi.org/legacy/
+  packages-dir:
+    description: Directory containing distributions.
+    required: false
+    default: dist/
+  verify-metadata:
+    description: Validate distribution metadata before upload.
+    required: false
+    default: "true"
+  skip-existing:
+    description: Do not fail when a distribution already exists.
+    required: false
+    default: "false"
+  verbose:
+    description: Enable verbose publication output.
+    required: false
+    default: "true"
+  print-hash:
+    description: Print uploaded distribution hashes.
+    required: false
+    default: "true"
+  attestations:
+    description: Publish PEP 740 attestations through Trusted Publishing.
+    required: false
+    default: "true"
+
+runs:
+  using: docker
+  image: docker://ghcr.io/pypa/gh-action-pypi-publish@sha256:72bce99a396e7ed0635f3fcc0f0a7052314a68c00c1999f5d0f9454b18cd2e40

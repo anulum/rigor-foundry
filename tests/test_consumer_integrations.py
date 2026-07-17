@@ -46,6 +46,7 @@ def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
     assert 'requirements/build.txt"' in action
     assert 'requirements/runtime.txt"' in action
     assert "--no-build-isolation --no-deps" in action
+    assert 'python "$RF_ACTION_PATH/tools/check_consumer_outputs.py"' in action
     assert '"$environment_root/venv/bin/rigor" scan' in action
     assert '"$environment_root/venv/bin/rigor" gate' in action
     assert action_metadata_errors(action_path) == []
@@ -53,8 +54,8 @@ def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
     assert "--apply" not in action
 
 
-def test_distributable_hook_pins_runtime_and_defaults_to_passive_staged_gate() -> None:
-    """The published hook self-installs exact runtime versions and defaults to observe."""
+def test_distributable_hook_requires_locked_runtime_and_defaults_to_passive_gate() -> None:
+    """The published hook uses the caller's locked runtime and defaults to observe."""
     manifest = (ROOT / ".pre-commit-hooks.yaml").read_text(encoding="utf-8")
 
     assert "- id: rigor-foundry" in manifest
@@ -64,12 +65,8 @@ def test_distributable_hook_pins_runtime_and_defaults_to_passive_staged_gate() -
     assert "pass_filenames: false" in manifest
     assert "always_run: true" in manifest
     assert "require_serial: true" in manifest
-    dependencies = re.findall(r"^    - ([a-z0-9_-]+==[^\s]+)$", manifest, re.MULTILINE)
-    assert dependencies == [
-        "cryptography==49.0.0",
-        "cffi==2.1.0",
-        "pycparser==3.0",
-    ]
+    assert "language: system" in manifest
+    assert "additional_dependencies:" not in manifest
     assert "--allow-native-audits" not in manifest
     assert "promote" not in manifest
     assert "--apply" not in manifest

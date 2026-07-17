@@ -62,7 +62,12 @@ def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
     assert "          persist-credentials: false" in workflow
     assert "release-signing-artifacts: false" in workflow
     assert "release-signing-artifacts: true" not in workflow
-    assert "pypa/gh-action-pypi-publish@" in workflow
+    assert "uses: ./.github/actions/pypi-publish" in workflow
+    publisher = (ROOT / ".github/actions/pypi-publish/action.yml").read_text(encoding="utf-8")
+    assert (
+        "docker://ghcr.io/pypa/gh-action-pypi-publish@sha256:"
+        "72bce99a396e7ed0635f3fcc0f0a7052314a68c00c1999f5d0f9454b18cd2e40" in publisher
+    )
     assert "password:" not in workflow
 
 
@@ -72,7 +77,7 @@ def test_publish_workflow_keeps_signatures_out_of_distribution_uploads() -> None
 
     isolate_step = workflow.index("name: Isolate signing bundles")
     attest_step = workflow.index("actions/attest-build-provenance@")
-    publish_step = workflow.index("pypa/gh-action-pypi-publish@")
+    publish_step = workflow.index("uses: ./.github/actions/pypi-publish")
 
     assert isolate_step < attest_step < publish_step
     assert "mkdir --mode=0700 signing-bundles" in workflow

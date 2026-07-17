@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   analysis:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
-      - uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a
+      - uses: ./.github/actions/scorecard
         with:
           results_file: results.sarif
           results_format: sarif

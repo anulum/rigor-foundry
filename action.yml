@@ -18,10 +18,10 @@ inputs:
     description: Explicit policy path, absolute or relative to repository-root.
     required: true
   report-path:
-    description: Explicit JSON scan report path whose parent already exists.
+    description: New JSON scan report path whose parent already exists.
     required: true
   gate-report-path:
-    description: Explicit JSON gate report path whose parent already exists.
+    description: New JSON gate report path whose parent already exists.
     required: true
   mode:
     description: Enforcement mode; one of observe, ratchet, or zero.
@@ -91,12 +91,10 @@ runs:
           echo "maturity-path is required for ratchet and zero modes" >&2
           exit 2
         fi
-        for output_path in "$RF_REPORT_PATH" "$RF_GATE_REPORT_PATH"; do
-          if [[ ! -d "$(dirname "$output_path")" ]]; then
-            echo "output parent does not exist: $(dirname "$output_path")" >&2
-            exit 2
-          fi
-        done
+        python "$RF_ACTION_PATH/tools/check_consumer_outputs.py" \
+          --repository-root "$RF_REPOSITORY_ROOT" \
+          --output "$RF_REPORT_PATH" \
+          --output "$RF_GATE_REPORT_PATH"
 
         environment_root="$(mktemp -d "${RUNNER_TEMP}/rigor-foundry-action.XXXXXX")"
         trap 'rm -rf "$environment_root"' EXIT

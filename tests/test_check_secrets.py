@@ -139,6 +139,20 @@ def test_secret_guard_reports_multiline_line_number_without_trailing_newline(
     ]
 
 
+def test_empty_yaml_credential_input_does_not_consume_next_field(tmp_path: Path) -> None:
+    """An empty action input cannot absorb a following metadata line as its value."""
+    _initialize_repository(tmp_path)
+    (tmp_path / "action.yml").write_text(
+        "inputs:\n"
+        "  password:\n"
+        "    description: Package-index password or API token.\n"
+        "    required: false\n",
+        encoding="utf-8",
+    )
+
+    assert secret_errors(tmp_path) == []
+
+
 def test_secret_guard_cli_redacts_all_finding_details(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

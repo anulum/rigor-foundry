@@ -20,11 +20,7 @@
     - observe
     - --scope
     - staged
-  language: python
-  additional_dependencies:
-    - cryptography==49.0.0
-    - cffi==2.1.0
-    - pycparser==3.0
+  language: system
   pass_filenames: false
   always_run: true
   require_serial: true
