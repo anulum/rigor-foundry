@@ -22,7 +22,12 @@ from test_work_models import lifecycle, source_records
 
 import rigor_foundry
 from rigor_foundry.campaign_compare import AuditComparison, compare_campaign
-from rigor_foundry.campaign_models import AuditCampaign, ToolchainIdentity
+from rigor_foundry.campaign_identity import InferenceIdentity
+from rigor_foundry.campaign_models import (
+    AuditCampaign,
+    AuditRunAttestation,
+    ToolchainIdentity,
+)
 from rigor_foundry.digest_dependencies import (
     DIGEST_DEPENDENCIES,
     DIGEST_DEPENDENCY_SCHEMA_VERSION,
@@ -176,6 +181,36 @@ def _comparison(campaign: AuditCampaign) -> AuditComparison:
     )
 
 
+def _attestation(
+    campaign: AuditCampaign,
+    report: AuditReport,
+) -> AuditRunAttestation:
+    """Build one deterministic run identity from production constructors."""
+    return AuditRunAttestation.build(
+        run_id="digest-run",
+        campaign=campaign,
+        agent_identity="RIGOR-FOUNDRY/digest-agent",
+        session_identity="terminal/digest",
+        inference_identity=InferenceIdentity.build(
+            provider="provider.example",
+            model="model-v1",
+            model_family="model-family",
+            operator="operator-one",
+        ),
+        started_at="2026-07-15T12:01:00Z",
+        finished_at="2026-07-15T12:02:00Z",
+        status="complete",
+        report_relative_path="runs/digest-run/report.json",
+        report=report,
+        covered_domains=campaign.required_domains,
+        omitted_domains=(),
+        adapter_results=(),
+        toolchain=campaign.toolchain,
+        command_digest="1" * 64,
+        limitations=(),
+    )
+
+
 def _events(task: WorkTask) -> tuple[WorkEvent, ...]:
     """Rebuild the real lifecycle fixture against ``task``'s exact source."""
     _fixture_task, templates = lifecycle()
@@ -234,6 +269,7 @@ def _workflow_snapshot(
     campaign: AuditCampaign,
 ) -> DigestSnapshot:
     """Return production identities for the report/campaign/work subgraph."""
+    attestation = _attestation(campaign, report)
     return {
         "inventory": report.tracked_content_digest,
         "ignored-inventory": report.ignored_inventory_digest,
@@ -244,6 +280,7 @@ def _workflow_snapshot(
         "report": report.report_digest,
         "review": review.review_digest,
         "campaign": campaign.contract_digest,
+        "attestation": attestation.attestation_digest,
         "comparison": _comparison(campaign).comparison_digest,
         "task": task.definition_digest,
         "closure": _closure(task).closure_digest,
@@ -352,7 +389,7 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.5"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.6"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
         "ignored-inventory",
@@ -373,13 +410,14 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "report",
         "review",
         "campaign",
+        "attestation",
         "comparison",
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 30
+    assert len(DIGEST_DEPENDENCIES) == 32
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.5"
+    assert digest_dependency_graph()["schema_version"] == "1.6"
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
@@ -393,21 +431,23 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     assert transitive_dependents("toolchain") == (
         "effective-profile",
         "campaign",
+        "attestation",
         "comparison",
     )
-    assert transitive_dependents("adapter-profile") == ("campaign", "comparison")
+    assert transitive_dependents("adapter-profile") == ("attestation",)
     assert transitive_dependents("inventory") == (
         "adapter-profile",
         "report",
         "review",
         "campaign",
+        "attestation",
         "comparison",
         "task",
         "closure",
     )
     assert (
         digest_dependency_graph_digest()
-        == "1f9b4efae1672b292ae66b7315de889fe39cf737bdf19a409c656375e5c6d991"
+        == "3f1fbdda4812ef5442addee2a7f586cf33c38e2eed6cfb539749a50ce6ebdb82"
     )
 
 

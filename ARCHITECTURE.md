@@ -164,7 +164,7 @@ includes `GitExecutableProvenance`, the Git object format, ignored-inventory
 evidence, and strict anchored candidates; changing any bound input changes the
 report digest. Review-ledger
 schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes schema 1.5 of the machine-readable graph of
+`digest_dependencies.py` publishes schema 1.6 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
 includes ignored inventory, Git provenance, maturity policy, rule maturity,
 and toolchain identities in

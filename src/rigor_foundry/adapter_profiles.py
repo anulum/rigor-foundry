@@ -299,6 +299,16 @@ class AdapterProfileEvidence:
             raise ValueError("unavailable profile evidence cannot claim a tool version")
         if status == "unavailable" and (finding_count != 0 or scanned_target_count != 0):
             raise ValueError("unavailable profile evidence requires zero result counts")
+        if reason in {"invalid-output", "output-truncated", "timed-out"} and (
+            finding_count != 0 or scanned_target_count != 0
+        ):
+            raise ValueError(f"{reason} profile evidence requires zero result counts")
+        if reason == "no-scanned-targets" and scanned_target_count != 0:
+            raise ValueError("no-scanned-targets evidence requires zero scanned targets")
+        if reason == "invalid-returncode" and scanned_target_count == 0:
+            raise ValueError("invalid-returncode evidence requires scanned targets")
+        if reason == "scan-errors" and profile.parser != "semgrep":
+            raise ValueError("scan-errors evidence is supported only by the Semgrep profile")
         if _digest(fields.get("profile_digest"), "profile_evidence.profile_digest") != (
             profile.profile_digest
         ):

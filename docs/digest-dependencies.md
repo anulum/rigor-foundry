@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.5 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.6 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -41,6 +41,7 @@ separately and are not misrepresented as unconditional digest edges.
 | Report | `report_digest` | `models` |
 | Review | `review_digest` | `models` |
 | Campaign | `contract_digest` | `campaign_models` |
+| Run attestation | `attestation_digest` | `campaign_models` |
 | Comparison | `comparison_digest` | `campaign_compare` |
 | Task | `definition_digest` | `work_models` |
 | Closure | `closure_digest` | `work_closure` |
@@ -84,8 +85,7 @@ the task baseline and a revalidation that names another candidate or report.
 | Source retrieval policy | Source capture | policy plus `retrieval_policy_digest` |
 | Source capture | Source verification | complete capture |
 | Inventory | Adapter profile | `input_digest` |
-| Policy | Adapter profile | `spec_digest` plus `profile_digest` |
-| Adapter profile | Campaign | `adapter_evidence[*].profile_evidence` |
+| Adapter profile | Run attestation | `adapter_evidence[*].profile_evidence` |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
 | Toolchain | Effective profile | `toolchain_digest` |
@@ -96,6 +96,9 @@ the task baseline and a revalidation that names another candidate or report.
 | Policy | Campaign | `policy_digest` |
 | Rule pack | Campaign | `rule_pack_digest` |
 | Toolchain | Campaign | complete `toolchain` record |
+| Report | Run attestation | `report_digest` |
+| Campaign | Run attestation | `input_contract_digest` |
+| Toolchain | Run attestation | complete `toolchain` record |
 | Campaign | Comparison | `input_contract_digest` |
 | Inventory | Task | `baseline_tracked_content_digest` |
 | Policy | Task | `source_policy_digest` |
@@ -136,8 +139,10 @@ absence of cycles.
   review digests, plus the collapsed model-witness identities. The set of
   participating records is campaign-instance data rather than a fixed schema
   dependency, so only the campaign contract remains an unconditional normative
-  graph edge. Promotion reconstructs these conditional bindings from durable
-  records before accepting a selected report and review.
+  comparison edge. A run attestation separately binds its campaign contract,
+  report, toolchain, and any adapter-profile evidence; it is not part of the
+  earlier campaign identity. Promotion reconstructs the conditional comparison
+  bindings from durable records before accepting a selected report and review.
 
 These non-edges are compatibility contracts, not omissions hidden by the
 diagram. Adding a new binding requires a schema/version migration and updated
@@ -152,10 +157,11 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 22 identities and cover inventory, ignored inventory, Git
+The tests compare all 23 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
-adapter-profile, report, review, campaign, task, adapter-lock, standard-pack, effective-profile,
-closure, source claim, retrieval policy, capture, and verification mutations.
+adapter-profile, report, review, campaign, run attestation, task, adapter-lock,
+standard-pack, effective-profile, closure, source claim, retrieval policy,
+capture, and verification mutations.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the
 same closure identity.

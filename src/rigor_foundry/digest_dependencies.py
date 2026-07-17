@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.5"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.6"
 
 DigestNode = Literal[
     "inventory",
@@ -36,6 +36,7 @@ DigestNode = Literal[
     "report",
     "review",
     "campaign",
+    "attestation",
     "comparison",
     "task",
     "closure",
@@ -116,6 +117,7 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     DigestNodeSpec("report", "report_digest", "models"),
     DigestNodeSpec("review", "review_digest", "models"),
     DigestNodeSpec("campaign", "contract_digest", "campaign_models"),
+    DigestNodeSpec("attestation", "attestation_digest", "campaign_models"),
     DigestNodeSpec("comparison", "comparison_digest", "campaign_compare"),
     DigestNodeSpec("task", "definition_digest", "work_models"),
     DigestNodeSpec("closure", "closure_digest", "work_closure"),
@@ -137,8 +139,11 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     ),
     DigestDependency("source-capture", "source-verification", "capture"),
     DigestDependency("inventory", "adapter-profile", "input_digest"),
-    DigestDependency("policy", "adapter-profile", "spec_digest + profile_digest"),
-    DigestDependency("adapter-profile", "campaign", "adapter_evidence[*].profile_evidence"),
+    DigestDependency(
+        "adapter-profile",
+        "attestation",
+        "adapter_evidence[*].profile_evidence",
+    ),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),
@@ -153,6 +158,9 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("policy", "campaign", "policy_digest"),
     DigestDependency("rule-pack", "campaign", "rule_pack_digest"),
     DigestDependency("toolchain", "campaign", "toolchain"),
+    DigestDependency("report", "attestation", "report_digest"),
+    DigestDependency("campaign", "attestation", "input_contract_digest"),
+    DigestDependency("toolchain", "attestation", "toolchain"),
     DigestDependency("campaign", "comparison", "input_contract_digest"),
     DigestDependency("inventory", "task", "baseline_tracked_content_digest"),
     DigestDependency("policy", "task", "source_policy_digest"),

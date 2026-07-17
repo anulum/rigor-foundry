@@ -25,7 +25,7 @@ from rigor_foundry.adapter_profiles import (
     profile_by_name,
 )
 from rigor_foundry.adapters import AdapterResult, run_adapter
-from rigor_foundry.models import AdapterSpec
+from rigor_foundry.models import AdapterSpec, canonical_digest
 
 
 def _profile_spec(name: str, profile: str, configuration: str, target: str) -> AdapterSpec:
@@ -43,6 +43,17 @@ def _profile_spec(name: str, profile: str, configuration: str, target: str) -> A
         },
         0,
     )
+
+
+def _redigest_profile(
+    evidence: AdapterProfileEvidence,
+    **changes: object,
+) -> dict[str, object]:
+    """Return a self-consistent imported record with selected field changes."""
+    changed = {**evidence.to_dict(), **changes}
+    fields = {key: value for key, value in changed.items() if key != "evidence_digest"}
+    changed["evidence_digest"] = canonical_digest(fields)
+    return changed
 
 
 def test_profile_evidence_round_trip_rejects_static_contradictions() -> None:
@@ -131,6 +142,31 @@ def test_profile_registry_and_evidence_schema_fail_closed() -> None:
             },
             "requires zero result counts",
         ),
+        (
+            {
+                "status": "partial",
+                "reason": "invalid-output",
+                "finding_count": 1,
+                "scanned_target_count": 1,
+            },
+            "requires zero result counts",
+        ),
+        (
+            {
+                "status": "partial",
+                "reason": "no-scanned-targets",
+                "scanned_target_count": 1,
+            },
+            "requires zero scanned targets",
+        ),
+        (
+            {
+                "status": "partial",
+                "reason": "invalid-returncode",
+                "scanned_target_count": 0,
+            },
+            "requires scanned targets",
+        ),
     )
     for changes, message in invalid_relations:
         with pytest.raises(ValueError, match=message):
@@ -148,11 +184,46 @@ def test_profile_registry_and_evidence_schema_fail_closed() -> None:
     wrong_profile = evidence.to_dict()
     wrong_profile["profile_digest"] = "e" * 64
     fields = {key: value for key, value in wrong_profile.items() if key != "evidence_digest"}
-    from rigor_foundry.models import canonical_digest
-
     wrong_profile["evidence_digest"] = canonical_digest(fields)
     with pytest.raises(ValueError, match="does not match built-in profile"):
         AdapterProfileEvidence.from_dict(wrong_profile)
+
+    for changes, message in (
+        (
+            {
+                "status": "partial",
+                "reason": "invalid-output",
+                "finding_count": 7,
+                "scanned_target_count": 9,
+            },
+            "requires zero result counts",
+        ),
+        (
+            {
+                "status": "partial",
+                "reason": "no-scanned-targets",
+                "scanned_target_count": 1,
+            },
+            "requires zero scanned targets",
+        ),
+    ):
+        with pytest.raises(ValueError, match=message):
+            AdapterProfileEvidence.from_dict(_redigest_profile(evidence, **changes))
+
+    trivy = profile_by_name("trivy-repository-json-v1")
+    with pytest.raises(ValueError, match="only by the Semgrep profile"):
+        AdapterProfileEvidence.build(
+            profile=trivy,
+            status="partial",
+            reason="scan-errors",
+            tool_version="Version: 0.72.0",
+            version_output_digest="a" * 64,
+            configuration_digest="b" * 64,
+            input_digest="c" * 64,
+            output_digest="d" * 64,
+            finding_count=0,
+            scanned_target_count=1,
+        )
 
 
 @pytest.mark.parametrize(
@@ -377,6 +448,25 @@ def test_real_semgrep_profile_scans_safe_and_vulnerable_commits(tmp_path: Path) 
     mismatched_returncode["returncode"] = 1
     with pytest.raises(ValueError, match="clean profile return code"):
         AdapterResult.from_dict(mismatched_returncode)
+
+    impossible_invalid_returncode = clean.to_dict()
+    impossible_invalid_returncode.update(
+        {
+            "profile_evidence": _redigest_profile(
+                clean.profile_evidence,
+                status="partial",
+                reason="invalid-returncode",
+            ),
+            "passed": False,
+        }
+    )
+    with pytest.raises(ValueError, match="agrees with findings"):
+        AdapterResult.from_dict(impossible_invalid_returncode)
+    valid_invalid_returncode = {**impossible_invalid_returncode, "returncode": 1}
+    parsed_invalid_returncode = AdapterResult.from_dict(valid_invalid_returncode)
+    assert not parsed_invalid_returncode.complete
+    assert parsed_invalid_returncode.profile_evidence is not None
+    assert parsed_invalid_returncode.profile_evidence.reason == "invalid-returncode"
 
     contradictory_bound = clean.to_dict()
     contradictory_bound["timed_out"] = True

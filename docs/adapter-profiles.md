@@ -115,13 +115,20 @@ return-code/timeout/truncation relation. Unavailable evidence has return code
 126, zero output bytes, zero result counts, no tool-version claim, and neither
 timeout nor truncation. These relations are validated after digest
 recomputation; a self-consistent but cross-wired nested record is rejected.
+Invalid-output, timeout, and truncation reasons also require zero result counts;
+no-scanned-target evidence requires a zero scanned count; invalid-return-code
+evidence requires scanned targets and an outer return code that contradicts the
+finding-derived expected code. Scan-error evidence is Semgrep-only because the
+Trivy parser has no corresponding production outcome.
 
 Only complete evidence contributes declared domain coverage. A required
 `findings`, `partial`, or `unavailable` result blocks enforcement; findings
 remain complete evidence and are not relabelled as execution failure. Campaign
-schema 1.9 retains the exact nested evidence. Enforcement schema 1.4 names the
-profile status and reason in its blocker. Digest-dependency schema 1.5 binds
-inventory and policy to profile evidence, then profile evidence to campaign.
+schema 1.9 retains the exact nested evidence in each run attestation.
+Enforcement schema 1.4 names the profile status and reason in its blocker.
+Digest-dependency schema 1.6 binds inventory to profile evidence and binds that
+evidence into the run attestation; policy remains bound through the separate
+campaign contract that the attestation also embeds.
 
 ## Installation and CI
 

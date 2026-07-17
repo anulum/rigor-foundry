@@ -117,6 +117,12 @@ class AdapterResult:
             return
         if self.timed_out or self.output_truncated:
             raise ValueError(f"{field} profile execution bounds contradict evidence")
+        if evidence.reason == "invalid-returncode":
+            expected_returncode = 1 if evidence.finding_count else 0
+            if self.returncode == expected_returncode:
+                raise ValueError(
+                    f"{field} invalid-returncode profile evidence agrees with findings"
+                )
         if evidence.status == "clean" and self.returncode != 0:
             raise ValueError(f"{field} clean profile return code is invalid")
         if evidence.status == "findings" and self.returncode != 1:
