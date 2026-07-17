@@ -9,8 +9,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from .model_primitives import require_semantic_version
 
@@ -131,6 +132,39 @@ class ApiDeprecation:
     replacement: str
 
 
+@dataclass(frozen=True)
+class StableApiBinding:
+    """Expected runtime identity class for one stable top-level export."""
+
+    kind: str
+    module: str | None
+    qualname: str | None
+
+
+STABLE_PUBLIC_API_BINDINGS: Mapping[str, StableApiBinding] = MappingProxyType(
+    {
+        "AuditPolicy": StableApiBinding("class", "rigor_foundry.models", "AuditPolicy"),
+        "AuditReport": StableApiBinding("class", "rigor_foundry.models", "AuditReport"),
+        "Candidate": StableApiBinding("class", "rigor_foundry.candidate_anchor", "Candidate"),
+        "GitTrustPolicy": StableApiBinding(
+            "class", "rigor_foundry.git_provenance", "GitTrustPolicy"
+        ),
+        "ReviewRecord": StableApiBinding("class", "rigor_foundry.models", "ReviewRecord"),
+        "__version__": StableApiBinding("str", None, None),
+        "report_markdown": StableApiBinding("function", "rigor_foundry.cli", "report_markdown"),
+        "review_templates": StableApiBinding(
+            "function", "rigor_foundry.review", "review_templates"
+        ),
+        "scan_repository": StableApiBinding(
+            "function", "rigor_foundry.scanner", "scan_repository"
+        ),
+        "validate_reviews": StableApiBinding(
+            "function", "rigor_foundry.review", "validate_reviews"
+        ),
+    }
+)
+
+
 DEPRECATED_PUBLIC_API: tuple[ApiDeprecation, ...] = ()
 
 
@@ -165,16 +199,65 @@ def _deprecation_errors(deprecation: ApiDeprecation) -> tuple[str, ...]:
     return tuple(errors)
 
 
+def _stable_binding_errors(
+    exports: Mapping[str, object],
+    stable: frozenset[str],
+    binding_contract: Mapping[str, StableApiBinding],
+) -> tuple[str, ...]:
+    """Return stable-export runtime identity errors."""
+    errors: list[str] = []
+    missing_contracts = stable - set(binding_contract)
+    extra_contracts = set(binding_contract) - stable
+    if missing_contracts:
+        errors.append(
+            "stable binding contracts are missing: " + ", ".join(sorted(missing_contracts))
+        )
+    if extra_contracts:
+        errors.append(
+            "stable binding contracts are unknown: " + ", ".join(sorted(extra_contracts))
+        )
+    for name in sorted(stable & set(exports) & set(binding_contract)):
+        value = exports[name]
+        expected = binding_contract[name]
+        if expected.kind == "class":
+            kind_matches = isinstance(value, type)
+        elif expected.kind == "function":
+            kind_matches = callable(value) and not isinstance(value, type)
+        elif expected.kind == "str":
+            kind_matches = type(value) is str
+        else:
+            errors.append(f"{name}: stable binding kind is invalid")
+            continue
+        if not kind_matches:
+            errors.append(f"{name}: stable export kind changed")
+            continue
+        if expected.module is not None and getattr(value, "__module__", None) != expected.module:
+            errors.append(f"{name}: stable export module changed")
+        if (
+            expected.qualname is not None
+            and getattr(value, "__qualname__", None) != expected.qualname
+        ):
+            errors.append(f"{name}: stable export qualified name changed")
+    return tuple(errors)
+
+
 def public_api_contract_errors(
     exports: Iterable[str],
+    bindings: Mapping[str, object],
     *,
     stable: frozenset[str] = STABLE_PUBLIC_API,
     provisional: frozenset[str] = PROVISIONAL_PUBLIC_API,
     deprecated: tuple[ApiDeprecation, ...] = DEPRECATED_PUBLIC_API,
+    stable_bindings: Mapping[str, StableApiBinding] = STABLE_PUBLIC_API_BINDINGS,
 ) -> tuple[str, ...]:
-    """Return deterministic errors for one top-level export classification."""
+    """Return deterministic classification and runtime-binding errors."""
     errors: list[str] = []
     exported = tuple(exports)
+    missing_bindings = set(exported) - set(bindings)
+    if missing_bindings:
+        errors.append(
+            "top-level export bindings are missing: " + ", ".join(sorted(missing_bindings))
+        )
     if len(exported) != len(set(exported)):
         errors.append("top-level exports must be unique")
     deprecated_names = tuple(item.name for item in deprecated)
@@ -199,6 +282,7 @@ def public_api_contract_errors(
         errors.append("unclassified top-level exports: " + ", ".join(sorted(missing)))
     if unknown:
         errors.append("classified names are not exported: " + ", ".join(sorted(unknown)))
+    errors.extend(_stable_binding_errors(bindings, stable, stable_bindings))
     for item in deprecated:
         errors.extend(f"{item.name}: {error}" for error in _deprecation_errors(item))
         if item.replacement and item.replacement not in classified:
@@ -211,6 +295,14 @@ def public_api_manifest() -> dict[str, object]:
     return {
         "schema_version": API_STABILITY_SCHEMA_VERSION,
         "stable": sorted(STABLE_PUBLIC_API),
+        "stable_bindings": {
+            name: {
+                "kind": binding.kind,
+                "module": binding.module,
+                "qualname": binding.qualname,
+            }
+            for name, binding in sorted(STABLE_PUBLIC_API_BINDINGS.items())
+        },
         "provisional": sorted(PROVISIONAL_PUBLIC_API),
         "deprecated": [
             {

@@ -205,6 +205,27 @@ jobs:
           /tmp/rigor-wheel/bin/python -m pip install --no-deps dist/*.whl
           cd /tmp
           /tmp/rigor-wheel/bin/rigor --help
+          /tmp/rigor-wheel/bin/rigor --version
+          /tmp/rigor-wheel/bin/python -c 'import rigor_foundry as package; from rigor_foundry.api_stability import public_api_contract_errors, public_api_manifest; assert public_api_contract_errors(package.__all__, vars(package)) == (); assert public_api_manifest()["schema_version"] == "1.0"'
+          rm -rf /tmp/rigor-adopter
+          mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal
+          git -C /tmp/rigor-adopter init --initial-branch=main
+          git -C /tmp/rigor-adopter config user.name "Distribution Smoke"
+          git -C /tmp/rigor-adopter config user.email "distribution-smoke@example.invalid"
+          printf '%s\n' 'docs/internal/' > /tmp/rigor-adopter/.gitignore
+          printf '%s\n' 'VALUE = 1' > /tmp/rigor-adopter/src/example.py
+          printf '%s\n' 'def test_value() -> None:' '    assert True' > /tmp/rigor-adopter/tests/test_example.py
+          git -C /tmp/rigor-adopter add .gitignore src tests
+          git -C /tmp/rigor-adopter commit -m "test: seed installed-wheel adopter"
+          cd /tmp/rigor-adopter
+          /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests
+          test "$(stat -c '%a' docs/internal/TODO.md)" = 600
+          test ! -e docs/internal/reviews.json
+          set +e
+          /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests >/dev/null 2>&1
+          second_status=$?
+          set -e
+          test "$second_status" = 2
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: rigor-foundry-distributions

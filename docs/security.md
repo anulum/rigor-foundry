@@ -39,9 +39,12 @@ and archive members as adversarial input.
 - Bootstrap writes walk existing parents through retained no-follow directory
   descriptors, create single-link regular files with exclusive creation,
   synchronize file and parent metadata, and revalidate root, parent, path, and
-  Git tracked/ignored state before returning. Existing paths are never adopted
-  or overwritten. A failed two-file attempt removes only the exact inode it
-  created, leaving pre-existing or concurrently replaced data untouched.
+  Git tracked/ignored state before returning. Existing paths, including an
+  ignored review ledger, are never adopted or overwritten. A failed two-file
+  attempt preserves any file it created as incident evidence: pathname-based
+  rollback is intentionally forbidden because POSIX cannot atomically prove an
+  inode identity and unlink that same inode. Concurrently replaced data is
+  never deleted by bootstrap.
 - Writes require an explicit command and a validated ignored destination.
   Campaign persistence and TODO promotion require the ignored-path check to
   reproduce the executable provenance already bound to the durable evidence.

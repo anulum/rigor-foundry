@@ -58,9 +58,12 @@ Bootstrap succeeds only when:
 - policy, TODO, and review-ledger paths are distinct and repository relative.
 
 The command creates the policy as a regular `0644` file and the canonical TODO
-as a private `0600` file. It never creates the review ledger, guesses a TODO,
-creates parent directories, follows symlinks, or overwrites an existing path.
-A failure rolls back only files created by that exact attempt.
+as a private `0600` file. It never creates or adopts the review ledger, guesses
+a TODO, creates parent directories, follows symlinks, or overwrites an existing
+path. If a concurrent mutation or second-file failure occurs after one file is
+created, bootstrap fails and preserves the created evidence. Inspect it before
+retrying; the tool never performs a pathname-based rollback that could delete a
+concurrent writer's replacement.
 
 ## Review the fail-closed policy
 

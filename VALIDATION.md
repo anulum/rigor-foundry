@@ -36,15 +36,16 @@ execution, or production promotion.
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
 | Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |
 | Classified residuals | Exact source-symbol binding, expiry, public-test references, and preregistered negative searches | Same contract plus aggregate branch-aware coverage evidence |
-| Onboarding/API stability | Real Git bootstrap, no-overwrite/rollback, exact version, export inventory, and deprecation-window tests | Same contracts plus installed-wheel CLI/API smoke |
+| Onboarding/API stability | Real Git bootstrap, no-adoption/no-overwrite, preserved failure evidence, exact version, binding-aware export inventory, and deprecation-window tests | Installed-wheel version, binding-aware API, and real Git bootstrap/no-overwrite smoke |
 
 The onboarding/API-stability owner tests execute bootstrap through real Git
 repositories and filesystem objects. They require exact-path success,
-second-run refusal, no partial policy on an existing TODO, Git tracked/ignored
-separation, symlink-parent rejection, existing source/test roots, a real
-outside-checkout version command, exact `__all__` classification, deterministic
-manifest serialization, and deprecation-window failures. Mocked Git results or
-fabricated filesystem metadata are not accepted as evidence.
+second-run refusal, zero writes when canonical state already exists, preserved
+incident evidence after a later failure, Git tracked/ignored separation,
+symlink-parent rejection, existing source/test roots, a real outside-checkout
+version command, exact `__all__` classification and runtime identities,
+deterministic manifest serialization, and deprecation-window failures. Mocked
+Git results or fabricated filesystem metadata are not accepted as evidence.
 
 ## Local integration evidence
 

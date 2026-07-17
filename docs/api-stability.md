@@ -10,9 +10,11 @@ from rigor_foundry.api_stability import public_api_manifest
 manifest = public_api_manifest()
 ```
 
-The result has sorted `stable` and `provisional` name arrays plus structured
-`deprecated` records. Compatibility tests require every top-level export to
-have exactly one classification and to resolve to a real package attribute.
+The result has sorted `stable` and `provisional` name arrays, exact stable
+runtime-binding records, and structured `deprecated` records. Compatibility
+tests require every top-level export to have exactly one classification. Every
+stable binding is also checked for its object kind, implementation module, and
+qualified name, so retaining a spelling while rebinding it incompatibly fails.
 
 ## Stable imports
 

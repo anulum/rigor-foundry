@@ -122,8 +122,8 @@ def _create_text(
         descriptor = os.open(name, _CREATE_FLAGS, mode, dir_fd=parent_descriptor)
         os.fchmod(descriptor, mode)
         metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
-            raise RuntimeError(f"{label} was not created as a single-link regular file")
+        if not stat.S_ISREG(metadata.st_mode):
+            raise RuntimeError(f"{label} was not created as a regular file")
         identity = metadata.st_dev, metadata.st_ino
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
             descriptor = None
@@ -147,20 +147,13 @@ def _path_identity(parent_descriptor: int, name: str) -> tuple[int, int]:
     return metadata.st_dev, metadata.st_ino
 
 
-def _unlink_created(
-    parent_descriptor: int,
-    name: str,
-    identity: tuple[int, int] | None,
-) -> None:
-    """Remove only the exact file created by this failed bootstrap attempt."""
-    if identity is None:
-        return
+def _require_absent(parent_descriptor: int, name: str, label: str) -> None:
+    """Require one exact no-follow path to remain absent."""
     try:
-        if _path_identity(parent_descriptor, name) == identity:
-            os.unlink(name, dir_fd=parent_descriptor)
-            os.fsync(parent_descriptor)
+        os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
     except FileNotFoundError:
         return
+    raise ValueError(f"bootstrap never overwrites or adopts an existing {label}")
 
 
 def _validate_roots(
@@ -249,8 +242,7 @@ def bootstrap_repository(
     repository_descriptor = os.open(repository, _DIRECTORY_FLAGS)
     policy_parent: int | None = None
     todo_parent: int | None = None
-    policy_identity: tuple[int, int] | None = None
-    todo_identity: tuple[int, int] | None = None
+    ledger_parent: int | None = None
     try:
         root_identity = _directory_identity(repository_descriptor)
         runner = GitRunner(git_trust_policy)
@@ -302,10 +294,12 @@ def bootstrap_repository(
             repository_descriptor, policy_relative, "policy path"
         )
         todo_parent, todo_name = _open_parent(repository_descriptor, todo_relative, "TODO path")
-        if (repository / policy_relative).exists() or (repository / todo_relative).exists():
-            raise ValueError(
-                "bootstrap never overwrites an existing target; no files were created"
-            )
+        ledger_parent, ledger_name = _open_parent(
+            repository_descriptor, ledger_relative, "review-ledger path"
+        )
+        _require_absent(policy_parent, policy_name, "policy path")
+        _require_absent(todo_parent, todo_name, "TODO path")
+        _require_absent(ledger_parent, ledger_name, "review-ledger path")
         policy_identity = _create_text(
             policy_parent, policy_name, policy_text, mode=0o644, label="policy path"
         )
@@ -321,10 +315,19 @@ def bootstrap_repository(
                 raise RuntimeError("TODO parent changed during bootstrap")
         finally:
             os.close(reopened_todo_parent)
+        reopened_ledger_parent, _ = _open_parent(
+            repository_descriptor, ledger_relative, "review-ledger path"
+        )
+        try:
+            if _directory_identity(reopened_ledger_parent) != _directory_identity(ledger_parent):
+                raise RuntimeError("review-ledger parent changed during bootstrap")
+        finally:
+            os.close(reopened_ledger_parent)
         if _path_identity(policy_parent, policy_name) != policy_identity:
             raise RuntimeError("policy path changed during bootstrap")
         if _path_identity(todo_parent, todo_name) != todo_identity:
             raise RuntimeError("TODO path changed during bootstrap")
+        _require_absent(ledger_parent, ledger_name, "review-ledger path")
         if _git_tracked(repository, policy_relative, runner) or is_git_ignored(
             repository, policy_relative, git_runner=runner
         ):
@@ -342,13 +345,9 @@ def bootstrap_repository(
             todo_path=repository / todo_relative,
             policy_digest=policy.policy_digest,
         )
-    except Exception:
-        if todo_parent is not None:
-            _unlink_created(todo_parent, todo_relative.name, todo_identity)
-        if policy_parent is not None:
-            _unlink_created(policy_parent, policy_relative.name, policy_identity)
-        raise
     finally:
+        if ledger_parent is not None:
+            os.close(ledger_parent)
         if todo_parent is not None:
             os.close(todo_parent)
         if policy_parent is not None:

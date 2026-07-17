@@ -13,7 +13,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   audit domain required rather than inferring applicability.
 - A versioned machine-readable top-level API inventory classifies every
   `rigor_foundry.__all__` name as stable, provisional, or deprecated and
-  enforces replacement and deprecation-window contracts.
+  enforces stable runtime identities, replacement, and deprecation-window
+  contracts.
 - A first-repository tutorial documents safe bootstrap, policy review, and the
   first read-only scan.
 - Policy schema 1.1 can declare a sorted, unique inventory of exact Git-ignored
