@@ -248,14 +248,23 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
     "statement",
     [
         '__import__("rigor_foundry._remediation_graph")',
+        '__import__(name="rigor_foundry._remediation_graph")',
+        (
+            "from builtins import __import__ as load_module\n"
+            'load_module("rigor_foundry._remediation_graph")'
+        ),
+        (
+            "import builtins as runtime\n"
+            'runtime.__import__(name="rigor_foundry._remediation_graph")'
+        ),
         "from rigor_foundry import _remediation_graph",
         "from rigor_foundry import (\n    _remediation_graph as graph,\n)",
         (
             "from importlib import import_module as load_module\n"
-            'load_module("rigor_foundry._remediation_graph")'
+            'load_module(name="rigor_foundry._remediation_graph")'
         ),
         "from rigor_foundry._remediation_graph import argv_digest",
-        ('import importlib\nimportlib.import_module("rigor_foundry._remediation_graph")'),
+        ('import importlib\nimportlib.import_module(name="rigor_foundry._remediation_graph")'),
         ('import importlib as loader\nloader.import_module("rigor_foundry._remediation_graph")'),
         "import rigor_foundry._remediation_graph as graph",
     ],
@@ -306,10 +315,41 @@ def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> N
     errors = coverage_residual_errors(root)
 
     assert any(
-        "NS-NO-PRIVATE-SIMULATION: negative-search Python file is unparseable: "
+        "NS-NO-PRIVATE-SIMULATION: negative-search Python analysis failed: "
         "tests/test_remediation_plan.py" in error
         for error in errors
     )
+
+
+def test_negative_search_fails_closed_on_ambiguous_dynamic_import(tmp_path: Path) -> None:
+    """A dynamic importer cannot provide competing positional and keyword names."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8")
+        + '\n__import__("rigor_foundry.models", name="rigor_foundry.models")\n',
+        encoding="utf-8",
+    )
+
+    errors = coverage_residual_errors(root)
+
+    assert any("ambiguous dynamic import module name" in error for error in errors)
+
+
+def test_negative_search_fails_closed_on_computed_dynamic_import(tmp_path: Path) -> None:
+    """A dynamic importer cannot hide its target behind runtime computation."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8")
+        + '\nimport importlib\nmodule_name = "rigor_foundry.models"\n'
+        + "importlib.import_module(module_name)\n",
+        encoding="utf-8",
+    )
+
+    errors = coverage_residual_errors(root)
+
+    assert any("dynamic import module name is not a string literal" in error for error in errors)
 
 
 def test_negative_search_keeps_regex_support_for_non_python_files(tmp_path: Path) -> None:

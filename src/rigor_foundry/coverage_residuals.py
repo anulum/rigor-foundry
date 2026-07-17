@@ -321,16 +321,25 @@ def _forbidden_imports(
     """Return structurally matched static or literal-dynamic import uses."""
     tree = ast.parse(text)
     matches: set[tuple[str, int]] = set()
-    importlib_aliases = {"importlib"}
+    importlib_aliases: set[str] = set()
     import_module_aliases: set[str] = set()
+    builtins_aliases: set[str] = set()
+    dunder_import_aliases = {"__import__"}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             importlib_aliases.update(
                 alias.asname or alias.name for alias in node.names if alias.name == "importlib"
             )
+            builtins_aliases.update(
+                alias.asname or alias.name for alias in node.names if alias.name == "builtins"
+            )
         elif isinstance(node, ast.ImportFrom) and node.module == "importlib":
             import_module_aliases.update(
                 alias.asname or alias.name for alias in node.names if alias.name == "import_module"
+            )
+        elif isinstance(node, ast.ImportFrom) and node.module == "builtins":
+            dunder_import_aliases.update(
+                alias.asname or alias.name for alias in node.names if alias.name == "__import__"
             )
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -349,7 +358,7 @@ def _forbidden_imports(
                 )
                 if imports_private_module or imports_private_member:
                     matches.add((prefix, node.lineno))
-        elif isinstance(node, ast.Call) and node.args:
+        elif isinstance(node, ast.Call):
             function = node.func
             uses_import_module = (
                 isinstance(function, ast.Attribute)
@@ -357,16 +366,31 @@ def _forbidden_imports(
                 and isinstance(function.value, ast.Name)
                 and function.value.id in importlib_aliases
             ) or (isinstance(function, ast.Name) and function.id in import_module_aliases)
-            uses_dunder_import = isinstance(function, ast.Name) and function.id == "__import__"
-            module_name = node.args[0]
-            if (
-                (uses_import_module or uses_dunder_import)
-                and isinstance(module_name, ast.Constant)
-                and isinstance(module_name.value, str)
-            ):
-                for prefix in prefixes:
-                    if module_name.value.startswith(prefix):
-                        matches.add((prefix, node.lineno))
+            uses_dunder_import = (
+                isinstance(function, ast.Name) and function.id in dunder_import_aliases
+            ) or (
+                isinstance(function, ast.Attribute)
+                and function.attr == "__import__"
+                and isinstance(function.value, ast.Name)
+                and function.value.id in builtins_aliases
+            )
+            if not (uses_import_module or uses_dunder_import):
+                continue
+            name_keywords = tuple(
+                keyword.value for keyword in node.keywords if keyword.arg == "name"
+            )
+            if (node.args and name_keywords) or len(name_keywords) > 1:
+                raise ValueError(f"ambiguous dynamic import module name at line {node.lineno}")
+            module_name = (
+                node.args[0] if node.args else name_keywords[0] if name_keywords else None
+            )
+            if not isinstance(module_name, ast.Constant) or not isinstance(module_name.value, str):
+                raise ValueError(
+                    f"dynamic import module name is not a string literal at line {node.lineno}"
+                )
+            for prefix in prefixes:
+                if module_name.value.startswith(prefix):
+                    matches.add((prefix, node.lineno))
     return tuple(sorted(matches, key=lambda item: (item[1], item[0])))
 
 
@@ -492,10 +516,11 @@ def coverage_residual_errors(
                         text,
                         search.forbidden_import_prefixes,
                     )
-                except SyntaxError as exc:
+                except (SyntaxError, ValueError) as exc:
+                    line = exc.lineno if isinstance(exc, SyntaxError) else 1
                     errors.append(
-                        f"{search.search_id}: negative-search Python file is unparseable: "
-                        f"{path_text}:{exc.lineno or 1}"
+                        f"{search.search_id}: negative-search Python analysis failed: "
+                        f"{path_text}:{line or 1}: {exc}"
                     )
                 else:
                     errors.extend(
