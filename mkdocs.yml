@@ -42,6 +42,7 @@ nav:
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md
   - Claim isolation and fleet views: claim-isolation.md
+  - Cross-repository campaigns: cross-repository-campaigns.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
