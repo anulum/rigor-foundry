@@ -74,6 +74,22 @@ def _reference_errors(text: str) -> list[str]:
     return errors
 
 
+def _top_level_permission_errors(text: str) -> list[str]:
+    """Return failures for write authority granted to every workflow job."""
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if line != "permissions:":
+            continue
+        errors: list[str] = []
+        for candidate in lines[index + 1 :]:
+            if candidate and not candidate.startswith((" ", "\t", "#")):
+                break
+            if re.match(r"^\s+[A-Za-z-]+:\s*write\s*$", candidate):
+                errors.append("write permissions must be scoped to an explicit job")
+        return errors
+    return []
+
+
 def workflow_errors(path: Path) -> list[str]:
     """Return supply-chain and permission failures for one workflow."""
     text = path.read_text(encoding="utf-8")
@@ -92,6 +108,7 @@ def workflow_errors(path: Path) -> list[str]:
     lines = text.splitlines()
     errors.extend(_reference_errors(text))
     errors.extend(_setup_python_version_errors(text))
+    errors.extend(_top_level_permission_errors(text))
 
     for index, line in enumerate(lines):
         if f"uses: {CHECKOUT_PREFIX}" not in line:

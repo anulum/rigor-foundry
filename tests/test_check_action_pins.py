@@ -105,6 +105,25 @@ def test_action_guard_rejects_mutable_ubuntu_runner(tmp_path: Path) -> None:
     assert workflow_errors(workflow) == ["Ubuntu runners must use an exact release label"]
 
 
+def test_action_guard_rejects_top_level_write_authority(tmp_path: Path) -> None:
+    """Write scopes belong only to the job that consumes them."""
+    workflow = tmp_path / "release.yml"
+    workflow.write_text(
+        "permissions:\n"
+        "  contents: write\n"
+        "concurrency:\n"
+        "  group: release\n"
+        "jobs:\n"
+        "  release:\n"
+        "    permissions:\n"
+        "      contents: write\n"
+        "    runs-on: ubuntu-24.04\n"
+        "    steps: []\n",
+        encoding="utf-8",
+    )
+    assert workflow_errors(workflow) == ["write permissions must be scoped to an explicit job"]
+
+
 def test_repository_workflows_use_immutable_actions() -> None:
     """Every production workflow and composite action passes the public guard."""
     assert action_pin_errors() == []
