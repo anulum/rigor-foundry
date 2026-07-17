@@ -19,6 +19,22 @@ SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 CHECKOUT_PREFIX = "actions/checkout@"
 
 
+def _reference_errors(text: str) -> list[str]:
+    """Return immutable-revision failures for external action references."""
+    errors: list[str] = []
+    for match in ACTION_PATTERN.finditer(text):
+        reference = match.group(1)
+        if reference.startswith("./"):
+            continue
+        if "@" not in reference:
+            errors.append(f"action has no immutable revision: {reference}")
+            continue
+        action, revision = reference.rsplit("@", 1)
+        if not SHA_PATTERN.fullmatch(revision):
+            errors.append(f"action is not pinned to a full commit: {action}")
+    return errors
+
+
 def workflow_errors(path: Path) -> list[str]:
     """Return supply-chain and permission failures for one workflow."""
     text = path.read_text(encoding="utf-8")
@@ -33,16 +49,7 @@ def workflow_errors(path: Path) -> list[str]:
         errors.append("write-all permissions are forbidden")
 
     lines = text.splitlines()
-    for match in ACTION_PATTERN.finditer(text):
-        reference = match.group(1)
-        if reference.startswith("./"):
-            continue
-        if "@" not in reference:
-            errors.append(f"action has no immutable revision: {reference}")
-            continue
-        action, revision = reference.rsplit("@", 1)
-        if not SHA_PATTERN.fullmatch(revision):
-            errors.append(f"action is not pinned to a full commit: {action}")
+    errors.extend(_reference_errors(text))
 
     for index, line in enumerate(lines):
         if f"uses: {CHECKOUT_PREFIX}" not in line:
@@ -53,15 +60,46 @@ def workflow_errors(path: Path) -> list[str]:
     return errors
 
 
+def action_metadata_errors(path: Path) -> list[str]:
+    """Return supply-chain and shell-boundary failures for a composite action."""
+    text = path.read_text(encoding="utf-8")
+    errors = _reference_errors(text)
+    if not re.search(r"^\s+using:\s*composite\s*$", text, re.MULTILINE):
+        errors.append("action must use the composite runtime")
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if "${{ inputs." not in line:
+            continue
+        if re.match(r"^\s+(?:value|RF_[A-Z0-9_]+):\s*\$\{\{ inputs\.", line):
+            continue
+        errors.append(f"line {line_number}: action inputs must enter shell commands through env")
+    return errors
+
+
 def action_pin_errors(root: Path = ROOT) -> list[str]:
-    """Return deterministic failures across all GitHub workflows."""
-    workflows = sorted((root / ".github" / "workflows").glob("*.yml"))
+    """Return deterministic failures across workflows and action metadata."""
+    workflows = sorted(
+        {
+            *(root / ".github" / "workflows").glob("*.yml"),
+            *(root / ".github" / "workflows").glob("*.yaml"),
+        }
+    )
     if not workflows:
         return [".github/workflows: no YAML workflows found"]
     errors: list[str] = []
     for workflow in workflows:
         for error in workflow_errors(workflow):
             errors.append(f"{workflow.relative_to(root).as_posix()}: {error}")
+    action_files = sorted(
+        {
+            *root.glob("action.yml"),
+            *root.glob("action.yaml"),
+            *(root / ".github" / "actions").glob("**/action.yml"),
+            *(root / ".github" / "actions").glob("**/action.yaml"),
+        }
+    )
+    for action in action_files:
+        for error in action_metadata_errors(action):
+            errors.append(f"{action.relative_to(root).as_posix()}: {error}")
     return errors
 
 

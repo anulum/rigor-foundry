@@ -9,7 +9,11 @@
 
 from pathlib import Path
 
-from tools.check_action_pins import action_pin_errors, workflow_errors
+from tools.check_action_pins import (
+    action_metadata_errors,
+    action_pin_errors,
+    workflow_errors,
+)
 
 
 def test_action_guard_rejects_mutable_checkout_and_credential_persistence(tmp_path: Path) -> None:
@@ -32,5 +36,26 @@ def test_action_guard_rejects_mutable_checkout_and_credential_persistence(tmp_pa
 
 
 def test_repository_workflows_use_immutable_actions() -> None:
-    """Every production workflow passes the same public guard."""
+    """Every production workflow and composite action passes the public guard."""
     assert action_pin_errors() == []
+
+
+def test_action_guard_rejects_mutable_uses_and_direct_input_interpolation(
+    tmp_path: Path,
+) -> None:
+    """Composite actions pin nested actions and pass inputs through environment values."""
+    action = tmp_path / "action.yml"
+    action.write_text(
+        "runs:\n"
+        "  using: composite\n"
+        "  steps:\n"
+        "    - uses: actions/setup-python@v6\n"
+        "    - shell: bash\n"
+        "      run: echo '${{ inputs.policy-path }}'\n",
+        encoding="utf-8",
+    )
+
+    assert action_metadata_errors(action) == [
+        "action is not pinned to a full commit: actions/setup-python",
+        "line 6: action inputs must enter shell commands through env",
+    ]

@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — read-only consumer audit action
+
+name: RigorFoundry audit gate
+description: Install the exact checked-out action and emit read-only scan and gate evidence.
+author: Miroslav Šotek
+
+inputs:
+  repository-root:
+    description: Existing Git repository to inspect.
+    required: true
+  policy-path:
+    description: Explicit policy path, absolute or relative to repository-root.
+    required: true
+  report-path:
+    description: Explicit JSON scan report path whose parent already exists.
+    required: true
+  gate-report-path:
+    description: Explicit JSON gate report path whose parent already exists.
+    required: true
+  mode:
+    description: Enforcement mode; one of observe, ratchet, or zero.
+    required: false
+    default: observe
+  scope:
+    description: Native-adapter scope; one of staged or full.
+    required: false
+    default: full
+  review-path:
+    description: Optional explicit review-ledger path.
+    required: false
+    default: ""
+  maturity-path:
+    description: Explicit maturity report required for ratchet and zero modes.
+    required: false
+    default: ""
+  allow-native-audits:
+    description: Explicit consent for declared read-only sandboxed native audits.
+    required: false
+    default: "false"
+
+outputs:
+  report-path:
+    description: The caller-supplied scan report path.
+    value: ${{ inputs.report-path }}
+  gate-report-path:
+    description: The caller-supplied gate report path.
+    value: ${{ inputs.gate-report-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Select pinned Python
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+      with:
+        python-version: "3.12.11"
+    - name: Install exact action and run evidence gate
+      shell: bash
+      env:
+        RF_ACTION_PATH: ${{ github.action_path }}
+        RF_REPOSITORY_ROOT: ${{ inputs.repository-root }}
+        RF_POLICY_PATH: ${{ inputs.policy-path }}
+        RF_REPORT_PATH: ${{ inputs.report-path }}
+        RF_GATE_REPORT_PATH: ${{ inputs.gate-report-path }}
+        RF_MODE: ${{ inputs.mode }}
+        RF_SCOPE: ${{ inputs.scope }}
+        RF_REVIEW_PATH: ${{ inputs.review-path }}
+        RF_MATURITY_PATH: ${{ inputs.maturity-path }}
+        RF_ALLOW_NATIVE_AUDITS: ${{ inputs.allow-native-audits }}
+      run: |
+        set -euo pipefail
+
+        case "$RF_MODE" in
+          observe|ratchet|zero) ;;
+          *) echo "mode must be observe, ratchet, or zero" >&2; exit 2 ;;
+        esac
+        case "$RF_SCOPE" in
+          staged|full) ;;
+          *) echo "scope must be staged or full" >&2; exit 2 ;;
+        esac
+        case "$RF_ALLOW_NATIVE_AUDITS" in
+          true|false) ;;
+          *) echo "allow-native-audits must be true or false" >&2; exit 2 ;;
+        esac
+        if [[ "$RF_MODE" != observe && -z "$RF_MATURITY_PATH" ]]; then
+          echo "maturity-path is required for ratchet and zero modes" >&2
+          exit 2
+        fi
+        for output_path in "$RF_REPORT_PATH" "$RF_GATE_REPORT_PATH"; do
+          if [[ ! -d "$(dirname "$output_path")" ]]; then
+            echo "output parent does not exist: $(dirname "$output_path")" >&2
+            exit 2
+          fi
+        done
+
+        environment_root="$(mktemp -d "${RUNNER_TEMP}/rigor-foundry-action.XXXXXX")"
+        trap 'rm -rf "$environment_root"' EXIT
+        python -m venv "$environment_root/venv"
+        runtime_python="$environment_root/venv/bin/python"
+        "$runtime_python" -m pip install --disable-pip-version-check \
+          --require-hashes \
+          -r "$RF_ACTION_PATH/requirements/build.txt" \
+          -r "$RF_ACTION_PATH/requirements/runtime.txt"
+        "$runtime_python" -m pip install --disable-pip-version-check \
+          --no-build-isolation --no-deps "$RF_ACTION_PATH"
+
+        "$environment_root/venv/bin/rigor" scan \
+          --root "$RF_REPOSITORY_ROOT" \
+          --policy "$RF_POLICY_PATH" \
+          --json-out "$RF_REPORT_PATH"
+
+        gate=(
+          "$environment_root/venv/bin/rigor" gate
+          --root "$RF_REPOSITORY_ROOT"
+          --policy "$RF_POLICY_PATH"
+          --mode "$RF_MODE"
+          --scope "$RF_SCOPE"
+          --output "$RF_GATE_REPORT_PATH"
+        )
+        if [[ -n "$RF_REVIEW_PATH" ]]; then
+          gate+=(--review "$RF_REVIEW_PATH")
+        fi
+        if [[ -n "$RF_MATURITY_PATH" ]]; then
+          gate+=(--maturity "$RF_MATURITY_PATH")
+        fi
+        if [[ "$RF_ALLOW_NATIVE_AUDITS" == true ]]; then
+          gate+=(--allow-native-audits)
+        fi
+        "${gate[@]}"

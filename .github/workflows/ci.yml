@@ -220,7 +220,7 @@ jobs:
           /tmp/rigor-wheel/bin/rigor source-verify --claim source-claim.json --capture source-capture.json --payload source-payload.json --verified-at 2026-07-17T08:30:00Z --verifier distribution/smoke --output source-verification.json
           /tmp/rigor-wheel/bin/python -c 'import json; from pathlib import Path; from rigor_foundry import SourceVerification; verification = SourceVerification.from_dict(json.loads(Path("source-verification.json").read_text(encoding="utf-8"))); assert verification.verified_value is True'
           rm -rf /tmp/rigor-adopter
-          mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal
+          mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal /tmp/rigor-adopter/reports
           git -C /tmp/rigor-adopter init --initial-branch=main
           git -C /tmp/rigor-adopter config user.name "Distribution Smoke"
           git -C /tmp/rigor-adopter config user.email "distribution-smoke@example.invalid"
@@ -246,9 +246,43 @@ jobs:
           second_status=$?
           set -e
           test "$second_status" = 2
+      - name: Run consumer action against external fixture
+        uses: ./
+        with:
+          repository-root: /tmp/rigor-adopter
+          policy-path: rigor-foundry-policy.json
+          report-path: /tmp/rigor-adopter/reports/action-report.json
+          gate-report-path: /tmp/rigor-adopter/reports/action-gate.json
+          mode: observe
+          scope: full
+          allow-native-audits: "false"
+      - name: Install and run distributable hook in external fixture
+        env:
+          SOURCE_REPOSITORY: ${{ github.workspace }}
+          SOURCE_REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cd /tmp/rigor-adopter
+          printf '%s\n' \
+            'minimum_pre_commit_version: 4.6.0' \
+            'repos:' \
+            "  - repo: file://${SOURCE_REPOSITORY}" \
+            "    rev: ${SOURCE_REVISION}" \
+            '    hooks:' \
+            '      - id: rigor-foundry' \
+            '        args:' \
+            '          - --output' \
+            '          - reports/pre-commit-gate.json' \
+            > .pre-commit-config.yaml
+          python -m pre_commit run --all-files --config .pre-commit-config.yaml
+          test -s reports/pre-commit-gate.json
+          test -s reports/action-report.json
+          test -s reports/action-gate.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: rigor-foundry-distributions
-          path: dist/*
+          path: |
+            dist/*
+            /tmp/rigor-adopter/reports/*.json
           if-no-files-found: error
           retention-days: 14
