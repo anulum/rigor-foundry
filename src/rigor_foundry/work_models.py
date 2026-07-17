@@ -33,36 +33,9 @@ from .models import (
     require_string,
     require_string_tuple,
 )
+from .protocol_fields import WORK_TASK_FIELDS
 
 WORK_SCHEMA_VERSION = "1.0"
-
-_WORK_TASK_FIELDS = frozenset(
-    {
-        "schema_version",
-        "task_id",
-        "candidate",
-        "source_report_digest",
-        "source_policy_digest",
-        "source_rule_pack_digest",
-        "baseline_head",
-        "baseline_head_tree",
-        "baseline_tracked_content_digest",
-        "title",
-        "severity",
-        "rationale",
-        "production_impact",
-        "suggested_owner",
-        "dependencies",
-        "acceptance_gates",
-        "affected_surfaces",
-        "prohibited_shortcuts",
-        "required_verifier",
-        "review_digest",
-        "created_by",
-        "created_at",
-        "definition_digest",
-    }
-)
 
 WorkState = Literal[
     "proposed-task",
@@ -265,7 +238,7 @@ class WorkTask:
     def from_dict(cls, value: object) -> WorkTask:
         """Parse and integrity-check one immutable task definition."""
         data = require_mapping(value, "task")
-        require_exact_fields(data, _WORK_TASK_FIELDS, "work-task")
+        require_exact_fields(data, WORK_TASK_FIELDS, "work-task")
         if data.get("schema_version") != WORK_SCHEMA_VERSION:
             raise ValueError("unsupported work-task schema version")
         fields: dict[str, object] = {

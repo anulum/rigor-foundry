@@ -31,6 +31,7 @@ from .models import (
     require_mapping,
     require_string,
 )
+from .protocol_fields import CONTROL_DEFINITION_FIELDS, EVIDENCE_CONTRACT_FIELDS
 from .trust import (
     ED25519_ALGORITHM,
     ED25519_SIGNATURE_HEX_LENGTH,
@@ -41,35 +42,6 @@ from .trust import (
 PACK_COMPONENT_SCHEMA_VERSION = "1.0"
 PACK_SCHEMA_VERSION = "1.1"
 PACK_SIGNATURE_SCHEMA_VERSION = "1.0"
-
-_EVIDENCE_CONTRACT_FIELDS = frozenset(
-    {
-        "schema_version",
-        "contract_id",
-        "required_adapters",
-        "evidence_types",
-        "freshness_seconds",
-        "minimum_independent_reviewers",
-        "contract_digest",
-    }
-)
-_CONTROL_DEFINITION_FIELDS = frozenset(
-    {
-        "schema_version",
-        "control_id",
-        "version",
-        "title",
-        "domain",
-        "severity",
-        "target_level",
-        "mode",
-        "default_applicable",
-        "condition",
-        "evidence",
-        "remediation",
-        "control_digest",
-    }
-)
 
 TargetLevel = Literal["baseline", "production", "enterprise", "industrial-safety"]
 ControlMode = Literal["require", "deny"]
@@ -270,7 +242,7 @@ class EvidenceContract:
     def from_dict(cls, value: object) -> EvidenceContract:
         """Parse and integrity-check one evidence contract."""
         data = require_mapping(value, "evidence_contract")
-        require_exact_fields(data, _EVIDENCE_CONTRACT_FIELDS, "evidence-contract")
+        require_exact_fields(data, EVIDENCE_CONTRACT_FIELDS, "evidence-contract")
         if data.get("schema_version") != PACK_COMPONENT_SCHEMA_VERSION:
             raise ValueError("unsupported evidence-contract schema version")
         contract = cls.build(
@@ -508,7 +480,7 @@ class ControlDefinition:
     def from_dict(cls, value: object) -> ControlDefinition:
         """Parse and integrity-check one control definition."""
         data = require_mapping(value, "control")
-        require_exact_fields(data, _CONTROL_DEFINITION_FIELDS, "control")
+        require_exact_fields(data, CONTROL_DEFINITION_FIELDS, "control")
         if data.get("schema_version") != PACK_COMPONENT_SCHEMA_VERSION:
             raise ValueError("unsupported control schema version")
         raw_condition = data.get("condition")
