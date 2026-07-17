@@ -70,9 +70,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Canonical review validation rejects severity on every non-`valid` decision,
   so review validation, SARIF export, enforcement, and campaign consumers share
   one fail-closed verdict/severity relation.
-- Test-authenticity residual schema 1.1 structurally blocks aliased,
-  parenthesised, and direct private production-module imports in Python
-  contract tests; remediation command fixtures use the public canonical digest.
+- Test-authenticity residual schema 1.1 structurally blocks direct, aliased,
+  parenthesised, and literal-dynamic private production-module imports in
+  Python contract tests; remediation fixtures use the public canonical digest.
 - Package publication now grants release-asset write access only to the
   protected publication job so Sigstore bundles can be attached. Owner-confirmed
   recovery may run from the named tag or the repository default branch, but

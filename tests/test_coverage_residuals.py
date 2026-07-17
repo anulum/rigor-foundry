@@ -247,9 +247,16 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
 @pytest.mark.parametrize(
     "statement",
     [
+        '__import__("rigor_foundry._remediation_graph")',
         "from rigor_foundry import _remediation_graph",
         "from rigor_foundry import (\n    _remediation_graph as graph,\n)",
+        (
+            "from importlib import import_module as load_module\n"
+            'load_module("rigor_foundry._remediation_graph")'
+        ),
         "from rigor_foundry._remediation_graph import argv_digest",
+        ('import importlib\nimportlib.import_module("rigor_foundry._remediation_graph")'),
+        ('import importlib as loader\nloader.import_module("rigor_foundry._remediation_graph")'),
         "import rigor_foundry._remediation_graph as graph",
     ],
 )
@@ -272,6 +279,19 @@ def test_negative_search_rejects_private_production_imports(
         "tests/test_remediation_plan.py" in error
         for error in errors
     )
+
+
+def test_negative_search_allows_public_literal_dynamic_import(tmp_path: Path) -> None:
+    """Literal dynamic import checks remain bounded to forbidden prefixes."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8")
+        + '\nimport importlib\nimportlib.import_module("rigor_foundry.models")\n',
+        encoding="utf-8",
+    )
+
+    assert coverage_residual_errors(root) == ()
 
 
 def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> None:

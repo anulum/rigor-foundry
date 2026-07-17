@@ -318,9 +318,20 @@ def _forbidden_imports(
     text: str,
     prefixes: tuple[str, ...],
 ) -> tuple[tuple[str, int], ...]:
-    """Return structurally matched import prefixes and source lines."""
+    """Return structurally matched static or literal-dynamic import uses."""
     tree = ast.parse(text)
     matches: set[tuple[str, int]] = set()
+    importlib_aliases = {"importlib"}
+    import_module_aliases: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            importlib_aliases.update(
+                alias.asname or alias.name for alias in node.names if alias.name == "importlib"
+            )
+        elif isinstance(node, ast.ImportFrom) and node.module == "importlib":
+            import_module_aliases.update(
+                alias.asname or alias.name for alias in node.names if alias.name == "import_module"
+            )
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imported = tuple(alias.name for alias in node.names)
@@ -338,6 +349,24 @@ def _forbidden_imports(
                 )
                 if imports_private_module or imports_private_member:
                     matches.add((prefix, node.lineno))
+        elif isinstance(node, ast.Call) and node.args:
+            function = node.func
+            uses_import_module = (
+                isinstance(function, ast.Attribute)
+                and function.attr == "import_module"
+                and isinstance(function.value, ast.Name)
+                and function.value.id in importlib_aliases
+            ) or (isinstance(function, ast.Name) and function.id in import_module_aliases)
+            uses_dunder_import = isinstance(function, ast.Name) and function.id == "__import__"
+            module_name = node.args[0]
+            if (
+                (uses_import_module or uses_dunder_import)
+                and isinstance(module_name, ast.Constant)
+                and isinstance(module_name.value, str)
+            ):
+                for prefix in prefixes:
+                    if module_name.value.startswith(prefix):
+                        matches.add((prefix, node.lineno))
     return tuple(sorted(matches, key=lambda item: (item[1], item[0])))
 
 
