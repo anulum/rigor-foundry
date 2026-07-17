@@ -89,6 +89,13 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert workflow.count("--symlink usr/bin /bin --symlink usr/lib /lib") == 4
     assert workflow.count("--symlink usr/lib64 /lib64") == 4
     assert workflow.count("--clearenv -- /usr/bin/true") == 2
+    assert workflow.count("python -m tools.install_trivy") == 1
+    assert (
+        workflow.count("python -m pip install --require-hashes -r requirements/security.txt") == 1
+    )
+    assert workflow.index("python -m tools.install_trivy") < workflow.index(
+        "python -m pytest tests -q"
+    )
     assert "apparmor_restrict_unprivileged_userns=0" not in workflow
     assert "sysctl -w" not in workflow
     assert "apparmor_parser --remove" not in workflow

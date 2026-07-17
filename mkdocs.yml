@@ -36,6 +36,7 @@ nav:
   - Digest dependencies: digest-dependencies.md
   - Source provenance: source-provenance.md
   - CLI: cli.md
+  - Built-in adapter profiles: adapter-profiles.md
   - SARIF export: sarif.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md

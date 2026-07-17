@@ -352,7 +352,7 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.4"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.5"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
         "ignored-inventory",
@@ -365,6 +365,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "source-retrieval-policy",
         "source-capture",
         "source-verification",
+        "adapter-profile",
         "adapter-lock",
         "standard-pack",
         "toolchain",
@@ -376,9 +377,9 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 27
+    assert len(DIGEST_DEPENDENCIES) == 30
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.4"
+    assert digest_dependency_graph()["schema_version"] == "1.5"
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
@@ -394,7 +395,9 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "campaign",
         "comparison",
     )
+    assert transitive_dependents("adapter-profile") == ("campaign", "comparison")
     assert transitive_dependents("inventory") == (
+        "adapter-profile",
         "report",
         "review",
         "campaign",
@@ -404,7 +407,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     )
     assert (
         digest_dependency_graph_digest()
-        == "330b4078f3ac3f0cb4387a29524e95e39615e4881e69e1bfab6e83cd582665f8"
+        == "1f9b4efae1672b292ae66b7315de889fe39cf737bdf19a409c656375e5c6d991"
     )
 
 

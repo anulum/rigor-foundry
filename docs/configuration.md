@@ -35,9 +35,9 @@ Candidate-anchor schema 1.0 is a strict discriminated union:
 Report schema 1.3 requires one anchor on every candidate and records
 `git_object_format`. Scanner version 0.3.0 verifies all anchors against the
 inventory that produced the report. Campaign schema 1.5 carries the object
-format into independent-run input comparison. Campaign schema 1.8 additionally
-binds ignored inventory, campaign purpose, witness requirements, and explicit
-inference identity. Earlier report or campaign
+format into independent-run input comparison. Campaign schema 1.9 additionally
+binds ignored inventory, campaign purpose, witness requirements, explicit
+inference identity, and structured built-in adapter evidence. Earlier report or campaign
 records must be regenerated; unknown or mixed anchor fields have no
 compatibility fallback.
 
@@ -62,7 +62,7 @@ prefixes, and only `test_`/`_test.py` names apply outside them.
 
 ## Declared ignored inventory
 
-Policy schema 1.2 accepts an `ignored_inventory` array sorted by
+Policy schema 1.3 accepts an `ignored_inventory` array sorted by
 `evidence_id`, `path`, and `capture`. Every declaration contains a unique
 portable `evidence_id`, a unique exact normalised repository-relative path,
 and either `presence` or `file-sha256`. Globs, absolute paths, parent traversal,
@@ -96,7 +96,7 @@ minimum, and the median limit cannot exceed the p90 limit. RigorFoundry supplies
 no universal threshold values; adopters must justify them against their corpus
 and operating costs.
 
-Repository policy schema 1.2 binds that separate calibration through
+Repository policy schema 1.3 binds that separate calibration through
 `maturity_policy_digest`. Observe mode may leave it `null`, but a repository
 whose `enforcement_mode` is `ratchet` or `zero` must name the exact 64-character
 lowercase policy digest. A CLI request may strengthen observe mode only when
@@ -253,6 +253,12 @@ an adapter run fails closed. Gate and campaign records embed the complete
 policy and observed secret-free package-database evidence. The dpkg fields do
 not prove repository signatures or installed-payload checksums; the executable
 SHA-256 identifies the bytes inspected and executed.
+
+Policy schema 1.3 also accepts immutable built-in Semgrep and offline Trivy
+profiles. They project an exact clean tracked-only workspace, bind structured
+profile evidence, and withhold domain coverage for partial or unavailable
+results. Adopters cannot override their command, parser, or domain mapping.
+See [Built-in adapter profiles](adapter-profiles.md).
 
 Conditions use a bounded declarative expression tree. They can read declared
 context values and combine supported comparisons and boolean operations; they

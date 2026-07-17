@@ -40,6 +40,16 @@ mode, and retains the report, Markdown rendering, and gate record for 30 days.
 Observe mode preserves candidate evidence without misrepresenting static
 signals as reviewed defect verdicts.
 
+Built-in adapter-profile owners execute real Semgrep and Trivy binaries through
+the public descriptor-bound Bubblewrap boundary. They cover strict policy and
+output schemas, clean/findings/partial/unavailable relations, tracked-only
+snapshot construction, linked/oversized/dirty/drifting inputs, durable campaign
+round trips, missing executables, and exact version/config/input/output
+identity. CI installs Trivy only after the pinned checksum-list and archive
+digests are both verified. The focused benchmark records non-isolated wall time
+for both profiles; it is evidence about orchestration overhead, not a
+throughput or cross-language implementation claim.
+
 The focused SARIF owner scans real Git repositories and exercises the public
 API and subprocess CLI. It covers every review-state mapping, exact anchors,
 stable identifiers, URI encoding, fail-closed invalid reviews, deterministic

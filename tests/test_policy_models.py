@@ -141,6 +141,38 @@ def test_adapter_rejects_shell_shape_escape_and_unknown_domain() -> None:
             AdapterSpec.from_dict(changed, 0)
 
 
+def test_builtin_profile_policy_round_trip_owns_command_and_domains() -> None:
+    """Adopters select fixed profiles without reconstructing argv or domain claims."""
+    declaration: dict[str, object] = {
+        "name": "semgrep-security",
+        "profile": "semgrep-local-json-v1",
+        "configuration_path": ".rigor/semgrep.yml",
+        "target_paths": ["tests", "src"],
+        "timeout_seconds": 90,
+        "scope": "full",
+        "working_directory": ".",
+        "required": True,
+    }
+    spec = AdapterSpec.from_dict(declaration, 0)
+    assert spec.built_in
+    assert spec.command == ("semgrep",)
+    assert spec.domains == ("application-security",)
+    assert spec.target_paths == ("src", "tests")
+    assert spec.to_dict() == {**declaration, "target_paths": ["src", "tests"]}
+    assert AdapterSpec.from_dict(spec.to_dict(), 0) == spec
+
+    for change in (
+        {"profile": "unknown-profile"},
+        {"command": ["semgrep", "--config", "auto"]},
+        {"domains": ["supply-chain"]},
+        {"configuration_path": "../semgrep.yml"},
+        {"target_paths": []},
+        {"working_directory": "src"},
+    ):
+        with pytest.raises(ValueError):
+            AdapterSpec.from_dict({**declaration, **change}, 0)
+
+
 def test_policy_file_loading_rejects_missing_and_malformed_documents(tmp_path: Path) -> None:
     """Policy loading distinguishes unavailable files from invalid JSON."""
     with pytest.raises(ValueError, match="cannot read audit policy"):

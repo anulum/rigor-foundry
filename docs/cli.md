@@ -84,6 +84,8 @@ output are not retained. The structured sandbox evidence records the complete
 Bubblewrap compatibility policy, semantic version, binary digest, Debian
 package version/architecture/status, package-query binary digest, supported
 option-surface digest, and derived provenance identity.
+Built-in profiles use the same consent flag and emit structured fail-closed
+evidence; see [Built-in adapter profiles](adapter-profiles.md).
 
 ## Rule maturity
 
@@ -105,7 +107,7 @@ false positives, while `valid` and `accepted-boundary` decisions count as
 positive adjudications.
 
 `rigor gate --mode ratchet` and `--mode zero` require `--maturity`. The gate
-also requires repository policy schema 1.2 to bind the maturity report's exact
+also requires repository policy schema 1.3 to bind the maturity report's exact
 `policy_digest` as `maturity_policy_digest`. It binds both the maturity-policy
 and maturity-report digests, counts active and probationary candidates
 separately, and lists every probationary rule present in the current report.
@@ -127,7 +129,7 @@ inputs, retain attestations, and record disagreements rather than averaging
 them away. `campaign-create --purpose promotion` defaults to two required model
 witnesses; `--required-model-witnesses` may raise that threshold.
 
-Campaign schema 1.8 freezes the repository Git object format and ignored
+Campaign schema 1.9 freezes the repository Git object format and ignored
 inventory in addition to the report input projection. Every `campaign-run`
 requires `--provider`, `--model`, `--model-family`, and `--operator`. The exact
 identity is content-addressed in the run attestation. Runs from a different

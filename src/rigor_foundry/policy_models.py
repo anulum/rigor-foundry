@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from .adapter_profiles import ProfileName, profile_by_name
+from .adapter_workspace import validate_profile_paths
 from .audit_primitives import (
     AUDIT_DOMAINS,
     POLICY_FIELDS,
@@ -77,9 +79,30 @@ class AdapterSpec:
     working_directory: str
     required: bool
     domains: tuple[str, ...]
+    profile: ProfileName | None = None
+    configuration_path: str | None = None
+    target_paths: tuple[str, ...] = ()
+
+    @property
+    def built_in(self) -> bool:
+        """Return whether this specification uses an immutable built-in profile."""
+        return self.profile is not None
 
     def to_dict(self) -> dict[str, object]:
         """Serialise one adapter specification."""
+        if self.profile is not None:
+            if self.configuration_path is None:
+                raise ValueError("built-in adapter profile requires configuration_path")
+            return {
+                "name": self.name,
+                "profile": self.profile,
+                "configuration_path": self.configuration_path,
+                "target_paths": list(self.target_paths),
+                "timeout_seconds": self.timeout_seconds,
+                "scope": self.scope,
+                "working_directory": self.working_directory,
+                "required": self.required,
+            }
         return {
             "name": self.name,
             "command": list(self.command),
@@ -94,6 +117,8 @@ class AdapterSpec:
     def from_dict(cls, value: object, index: int) -> AdapterSpec:
         """Parse one repository-native adapter specification."""
         data = _mapping(value, f"native_audits[{index}]")
+        if "profile" in data:
+            return cls._profile_from_dict(data, index)
         command = _string_tuple(data.get("command"), f"native_audits[{index}].command")
         if not command or any(not item for item in command):
             raise ValueError(f"native_audits[{index}].command must be non-empty argv")
@@ -133,6 +158,54 @@ class AdapterSpec:
             working_directory=working_directory,
             required=required,
             domains=domains,
+        )
+
+    @classmethod
+    def _profile_from_dict(cls, data: dict[str, object], index: int) -> AdapterSpec:
+        """Parse one strict built-in profile declaration."""
+        field = f"native_audits[{index}]"
+        expected = {
+            "name",
+            "profile",
+            "configuration_path",
+            "target_paths",
+            "timeout_seconds",
+            "scope",
+            "working_directory",
+            "required",
+        }
+        if set(data) != expected:
+            raise ValueError(f"{field} built-in profile fields do not match schema")
+        profile = profile_by_name(data.get("profile"), f"{field}.profile")
+        configuration, targets = validate_profile_paths(
+            _string(data.get("configuration_path"), f"{field}.configuration_path"),
+            _string_tuple(data.get("target_paths"), f"{field}.target_paths"),
+        )
+        profile.command_arguments(configuration, targets)
+        scope = _string(data.get("scope"), f"{field}.scope")
+        if scope not in {"staged", "full", "both"}:
+            raise ValueError(f"{field}.scope is unsupported")
+        working_directory = _string(data.get("working_directory"), f"{field}.working_directory")
+        if working_directory != ".":
+            raise ValueError(f"{field}.working_directory must be '.' for built-in profiles")
+        required = data.get("required")
+        if not isinstance(required, bool):
+            raise ValueError(f"{field}.required must be boolean")
+        return cls(
+            name=_string(data.get("name"), f"{field}.name"),
+            command=(profile.executable,),
+            timeout_seconds=_integer(
+                data.get("timeout_seconds"),
+                f"{field}.timeout_seconds",
+                minimum=1,
+            ),
+            scope=cast(AdapterScope, scope),
+            working_directory=working_directory,
+            required=required,
+            domains=profile.domains,
+            profile=profile.name,
+            configuration_path=configuration,
+            target_paths=targets,
         )
 
 

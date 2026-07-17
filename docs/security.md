@@ -34,6 +34,13 @@ and archive members as adversarial input.
   The dpkg association is package-database evidence, not proof of a repository
   signature or installed-payload checksum; the executable digest identifies
   the inspected and executed binary bytes.
+- Built-in profiles copy only exact clean tracked regular files into a bounded
+  read-only snapshot, mount the analyser from a retained descriptor, and bind
+  executable, configuration, input, version-output, output, and profile
+  digests. Ignored/untracked files, symlinks, gitlinks, hard links, concurrent
+  replacement, malformed output, timeouts, truncation, and analyser errors
+  cannot become clean evidence. The offline Trivy profile claims only
+  misconfiguration and secret scanning, never CVE or supply-chain coverage.
 - Repository policies must be tracked, non-symlink UTF-8 files inside the
   audited root, and Git index modes and object ids bind every tracked entry.
 - Bootstrap writes walk existing parents through retained no-follow directory

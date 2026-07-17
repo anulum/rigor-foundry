@@ -97,6 +97,7 @@ def test_adapter_enforces_real_timeout_and_repository_working_directory(
     assert timed.timed_out
     assert timed.returncode == 124
     assert not timed.passed
+    assert not timed.complete
     processes = subprocess.run(  # nosec B603
         ["/usr/bin/ps", "-eo", "args"],
         check=True,
@@ -242,7 +243,7 @@ def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path
         AdapterResult.from_dict(unknown_field)
 
     unsupported_schema = result.to_dict()
-    unsupported_schema["schema_version"] = "2.0"
+    unsupported_schema["schema_version"] = "9.0"
     with pytest.raises(ValueError, match="schema version is unsupported"):
         AdapterResult.from_dict(unsupported_schema)
 

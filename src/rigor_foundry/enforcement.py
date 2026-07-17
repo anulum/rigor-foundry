@@ -28,7 +28,7 @@ from .review import validate_reviews
 from .rule_maturity import RuleMaturityReport
 from .rules import RULES_BY_ID
 
-ENFORCEMENT_SCHEMA_VERSION = "1.3"
+ENFORCEMENT_SCHEMA_VERSION = "1.4"
 _ENFORCEMENT_FIELDS = frozenset(
     {
         "schema_version",
@@ -452,7 +452,12 @@ def evaluate_enforcement(
         result for result in adapter_results if result.required and not result.passed
     )
     blockers.extend(
-        f"native audit {result.name} failed with exit {result.returncode}"
+        (
+            f"native audit {result.name} failed with "
+            f"{result.profile_evidence.status}/{result.profile_evidence.reason}"
+            if result.profile_evidence is not None
+            else f"native audit {result.name} failed with exit {result.returncode}"
+        )
         for result in required_adapter_failures
     )
     active_candidates = tuple(

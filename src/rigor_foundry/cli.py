@@ -324,6 +324,8 @@ def _gate_command(args: argparse.Namespace) -> int:
         policy.native_audits,
         args.scope,
         trusted=args.allow_native_audits,
+        git_trust_policy=git_trust_policy,
+        expected_tracked_content_digest=report.tracked_content_digest,
     )
     maturity = RuleMaturityReport.from_path(args.maturity) if args.maturity is not None else None
     result = evaluate_enforcement(

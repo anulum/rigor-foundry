@@ -208,7 +208,7 @@ def test_manifest_read_failures_are_normalised(tmp_path: Path) -> None:
 def test_source_guard_and_digest_drift_fail_closed(tmp_path: Path) -> None:
     """Changing one classified guard invalidates its exact source disposition."""
     root = _copy_contract(tmp_path)
-    source = root / "src/rigor_foundry/adapters.py"
+    source = root / "src/rigor_foundry/adapter_runtime.py"
     text = source.read_text(encoding="utf-8")
     source.write_text(
         text.replace(

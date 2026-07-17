@@ -552,6 +552,18 @@ def _bubblewrap_version(output: str) -> str:
     return version
 
 
+def _canonical_help(output: str, executable_path: str) -> str:
+    """Replace the descriptor-number invocation banner with the trusted path."""
+    lines = output.splitlines(keepends=True)
+    banner = (
+        r"usage: /proc/self/fd/[0-9]+ \[OPTIONS\.\.\.\] "
+        r"\[--\] COMMAND \[ARGS\.\.\.\]\n"
+    )
+    if lines and re.fullmatch(banner, lines[0]) is not None:
+        lines[0] = f"usage: {executable_path} [OPTIONS...] [--] COMMAND [ARGS...]\n"
+    return "".join(lines)
+
+
 def _package_owner(output: str, policy: BubblewrapCompatibilityPolicy) -> str:
     """Parse and validate the dpkg association for the executable path."""
     lines = output.splitlines()
@@ -613,7 +625,10 @@ def inspect_bubblewrap(
         owner = _metadata_command(query_handle, *owner_arguments)
         record = _metadata_command(query_handle, *record_arguments)
         version_output = _metadata_command(executable_handle, "--version")
-        help_output = _metadata_command(executable_handle, "--help")
+        help_output = _canonical_help(
+            _metadata_command(executable_handle, "--help"),
+            active_policy.executable_path,
+        )
         for option in active_policy.required_options:
             if option not in help_output.split():
                 raise RuntimeError(f"Bubblewrap compatibility option is unavailable: {option}")

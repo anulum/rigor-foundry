@@ -176,8 +176,8 @@ def test_observe_records_candidates_but_native_required_failure_blocks() -> None
 
 
 def test_enforcement_schema_version_declares_sandbox_provenance_migration() -> None:
-    """Enforcement 1.3 binds maturity policy alongside maturity evidence."""
-    assert ENFORCEMENT_SCHEMA_VERSION == "1.3"
+    """Enforcement 1.4 binds structured built-in profile failure evidence."""
+    assert ENFORCEMENT_SCHEMA_VERSION == "1.4"
 
 
 def test_ratchet_requires_current_unexpired_unique_review() -> None:

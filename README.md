@@ -132,6 +132,13 @@ evidence. Native execution currently requires Bubblewrap at
 Bubblewrap 0.9.x installation. Passive scans and report review do not require
 these native surfaces.
 
+Verified built-in Semgrep and offline Trivy profiles additionally bind the
+immutable command/parser contract, exact tracked-only input snapshot,
+configuration and executable bytes, tool version, structured status, and
+profile evidence digest. Partial or unavailable evidence never supplies domain
+coverage. See [Built-in adapter profiles](docs/adapter-profiles.md) for the
+strict policy form, installation boundary, coverage limits, and benchmark.
+
 ## Module ownership
 
 | Surface | Modules | Responsibility |
@@ -144,7 +151,7 @@ these native surfaces.
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |
-| Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
+| Native boundaries | `adapters`, `adapter_runtime`, `adapter_profiles`, `adapter_workspace`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands; immutable built-in profiles; tracked-only snapshots; structured evidence; and versioned Bubblewrap compatibility. |
 | External sources | `source_capture`, `source_provenance` | Content-addressed advisory/version/standard/digest claims, bounded capture metadata, stable retained-file reads, and deterministic offline verification. |
 | Campaigns | `campaign_identity`, `campaign_evidence`, `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare`, `campaign_promotion` | Inference and toolchain identity, correlated-witness collapse, durable provenance, divergence, and promotion eligibility. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |

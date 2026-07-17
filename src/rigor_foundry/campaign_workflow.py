@@ -132,6 +132,8 @@ def execute_campaign(
         report.policy.native_audits,
         "full",
         trusted=trusted_native_audits,
+        git_trust_policy=git_trust_policy,
+        expected_tracked_content_digest=report.tracked_content_digest,
     )
     post_runner = GitRunner(git_trust_policy)
     post_inventory = load_git_inventory(
@@ -168,8 +170,8 @@ def execute_campaign(
         or ignored_inventory_digest(post_ignored) != report.ignored_inventory_digest
     ):
         raise RuntimeError("native audit mutated ignored inventory state; run not attested")
-    attempted = frozenset(result.name for result in adapter_results)
-    coverage = audit_domain_coverage(report.policy, attempted_adapters=attempted)
+    completed = frozenset(result.name for result in adapter_results if result.complete)
+    coverage = audit_domain_coverage(report.policy, attempted_adapters=completed)
     covered_domains = tuple(
         item.domain for item in coverage if item.applicability == "required" and item.controls
     )
@@ -177,7 +179,12 @@ def execute_campaign(
         item.domain for item in coverage if item.applicability == "required" and not item.controls
     )
     limitations = tuple(
-        f"required native audit failed: {result.name} (exit {result.returncode})"
+        (
+            f"required native audit failed: {result.name} "
+            f"({result.profile_evidence.status}/{result.profile_evidence.reason})"
+            if result.profile_evidence is not None
+            else f"required native audit failed: {result.name} (exit {result.returncode})"
+        )
         for result in adapter_results
         if result.required and not result.passed
     )
@@ -196,6 +203,11 @@ def execute_campaign(
                     "environment_digest": result.environment_digest,
                     "sandbox_digest": result.sandbox_digest,
                     "sandbox_provenance_identity": (result.sandbox_provenance.identity_digest),
+                    "profile_evidence_digest": (
+                        None
+                        if result.profile_evidence is None
+                        else result.profile_evidence.evidence_digest
+                    ),
                 }
                 for result in adapter_results
             ],
@@ -212,7 +224,11 @@ def execute_campaign(
         inference_identity=inference_identity,
         started_at=started_at,
         finished_at=_now(),
-        status="complete",
+        status=(
+            "incomplete"
+            if any(result.required and not result.complete for result in adapter_results)
+            else "complete"
+        ),
         report_relative_path=report_relative_path,
         report=report,
         covered_domains=covered_domains,

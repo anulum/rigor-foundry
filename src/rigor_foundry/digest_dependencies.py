@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.4"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.5"
 
 DigestNode = Literal[
     "inventory",
@@ -28,6 +28,7 @@ DigestNode = Literal[
     "source-retrieval-policy",
     "source-capture",
     "source-verification",
+    "adapter-profile",
     "adapter-lock",
     "standard-pack",
     "toolchain",
@@ -107,6 +108,7 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
         "verification_digest",
         "source_provenance",
     ),
+    DigestNodeSpec("adapter-profile", "evidence_digest", "adapter_profiles"),
     DigestNodeSpec("adapter-lock", "adapter_digest", "effective_profile"),
     DigestNodeSpec("standard-pack", "pack_digest", "standard_pack"),
     DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
@@ -134,6 +136,9 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
         "retrieval_policy + retrieval_policy_digest",
     ),
     DigestDependency("source-capture", "source-verification", "capture"),
+    DigestDependency("inventory", "adapter-profile", "input_digest"),
+    DigestDependency("policy", "adapter-profile", "spec_digest + profile_digest"),
+    DigestDependency("adapter-profile", "campaign", "adapter_evidence[*].profile_evidence"),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),

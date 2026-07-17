@@ -127,6 +127,18 @@ def test_real_bubblewrap_provenance_is_complete_and_round_trips() -> None:
     )
 
 
+def test_real_capability_identity_is_independent_of_descriptor_allocation() -> None:
+    """Unrelated live descriptors cannot alter the canonical Bubblewrap help identity."""
+    baseline = inspect_bubblewrap()
+    descriptors = [os.open("/dev/null", os.O_RDONLY) for _ in range(7)]
+    try:
+        shifted = inspect_bubblewrap()
+    finally:
+        for descriptor in descriptors:
+            os.close(descriptor)
+    assert shifted == baseline
+
+
 def test_fake_package_provenance_is_bound_to_policy_and_capabilities(tmp_path: Path) -> None:
     """A deterministic package fixture produces one fully bound identity."""
     policy = _fake_policy(tmp_path)

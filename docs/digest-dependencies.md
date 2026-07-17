@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.4 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.5 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -33,9 +33,10 @@ separately and are not misrepresented as unconditional digest edges.
 | Source retrieval policy | `policy_digest` | `source_capture` |
 | Source capture | `capture_digest` | `source_capture` |
 | Source verification | `verification_digest` | `source_provenance` |
+| Adapter profile | `evidence_digest` | `adapter_profiles` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
-| Toolchain | `toolchain.identity_digest` | `campaign_evidence` |
+| Toolchain | `toolchain.identity_digest` | `campaign_models` |
 | Effective profile | `lock_digest` | `effective_profile` |
 | Report | `report_digest` | `models` |
 | Review | `review_digest` | `models` |
@@ -57,7 +58,7 @@ one envelope. Existing rules retain their original introduction version.
 Git provenance binds the resolved executable path, selected root, executable
 SHA-256, observed version, complete trust policy, and trust-policy digest.
 Toolchain identity binds Python implementation/version, platform, and
-interpreter executable SHA-256. Campaign schema 1.8 embeds both complete
+interpreter executable SHA-256. Campaign schema 1.9 embeds both complete
 records plus the ignored evidence tuple and digest; effective-profile locks
 bind the toolchain digest used for profile resolution.
 
@@ -82,6 +83,9 @@ the task baseline and a revalidation that names another candidate or report.
 | Source claim | Source verification | complete claim |
 | Source retrieval policy | Source capture | policy plus `retrieval_policy_digest` |
 | Source capture | Source verification | complete capture |
+| Inventory | Adapter profile | `input_digest` |
+| Policy | Adapter profile | `spec_digest` plus `profile_digest` |
+| Adapter profile | Campaign | `adapter_evidence[*].profile_evidence` |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
 | Toolchain | Effective profile | `toolchain_digest` |
@@ -148,9 +152,9 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 21 identities and cover inventory, ignored inventory, Git
+The tests compare all 22 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
-report, review, campaign, task, adapter-lock, standard-pack, effective-profile,
+adapter-profile, report, review, campaign, task, adapter-lock, standard-pack, effective-profile,
 closure, source claim, retrieval policy, capture, and verification mutations.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the

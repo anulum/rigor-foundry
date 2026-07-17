@@ -15,6 +15,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from .adapter_profiles import AdapterProfileEvidence
 from .adapters import ADAPTER_RESULT_SCHEMA_VERSION, AdapterResult
 from .models import canonical_digest, require_mapping, require_string
 from .sandbox_provenance import BubblewrapProvenance
@@ -124,6 +125,7 @@ class AdapterEvidence:
     sandbox_digest: str
     sandbox_provenance: BubblewrapProvenance
     passed: bool
+    profile_evidence: AdapterProfileEvidence | None
 
     @classmethod
     def from_result(cls, result: AdapterResult) -> AdapterEvidence:
@@ -143,6 +145,7 @@ class AdapterEvidence:
             sandbox_digest=result.sandbox_digest,
             sandbox_provenance=result.sandbox_provenance,
             passed=result.passed,
+            profile_evidence=result.profile_evidence,
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -162,6 +165,9 @@ class AdapterEvidence:
             "environment_digest": self.environment_digest,
             "sandbox_digest": self.sandbox_digest,
             "sandbox_provenance": self.sandbox_provenance.to_dict(),
+            "profile_evidence": (
+                None if self.profile_evidence is None else self.profile_evidence.to_dict()
+            ),
             "passed": self.passed,
         }
 

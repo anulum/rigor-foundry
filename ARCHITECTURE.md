@@ -164,7 +164,7 @@ includes `GitExecutableProvenance`, the Git object format, ignored-inventory
 evidence, and strict anchored candidates; changing any bound input changes the
 report digest. Review-ledger
 schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes schema 1.3 of the machine-readable graph of
+`digest_dependencies.py` publishes schema 1.5 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
 includes ignored inventory, Git provenance, maturity policy, rule maturity,
 and toolchain identities in
@@ -210,7 +210,7 @@ cryptographic authentication.
 `enforcement.py` supports observe, ratchet, and zero modes. A command-line mode
 may strengthen but cannot weaken the repository policy. Ratchet and zero
 require an exact maturity report whose threshold-policy digest is already bound
-by repository policy schema 1.2, and evaluate active rules only. Probationary
+by repository policy schema 1.3, and evaluate active rules only. Probationary
 candidates remain counted and named in the gate artifact instead of becoming
 silent pass state. This repository binding prevents an operator-selected empty
 or weaker calibration report from silently weakening ratchet enforcement.
@@ -226,7 +226,13 @@ becomes publisher-signature evidence or change authority.
 
 ### Native audit adapters
 
-`adapters.py` executes only declared argv. External executables are resolved
+`adapters.py` owns dispatch and the versioned result envelope;
+`adapter_runtime.py` owns fixed-root resolution, Bubblewrap construction, and
+bounded process streaming. `adapter_profiles.py` owns immutable Semgrep and
+offline Trivy command/parser/domain contracts plus finite structured evidence.
+`adapter_workspace.py` builds the exact clean tracked-only input projection and
+rejects ignored, untracked, linked, non-regular, oversized, empty, or changing
+inputs. External executables are resolved
 before execution; the `{python}` token preserves the active virtual-environment
 launcher so native controls cannot silently escape the locked toolchain.
 Shells are disabled, timeouts are mandatory, outputs are bounded, and results
@@ -234,6 +240,11 @@ include executable and input identity. `sandbox_provenance.py` defines the
 versioned Bubblewrap compatibility and dpkg-database association record;
 `trusted_executable.py` performs no-follow component walks, descriptor-pinned
 execution, streaming output bounds, deadlines, and process-group termination.
+Built-in tools are mounted from retained descriptors and run only against the
+read-only `/workspace` snapshot. Complete `clean` or `findings` evidence may
+cover the fixed application-security domain; partial and unavailable evidence
+never does. The Trivy profile fixes offline misconfiguration and secret
+scanners and makes no vulnerability-database, CVE, SBOM, or supply-chain claim.
 
 ### Independent campaigns
 
@@ -241,7 +252,7 @@ execution, streaming output bounds, deadlines, and process-group termination.
 `campaign_inputs.py`, `campaign_store.py`, `campaign_workflow.py`,
 `campaign_compare.py`, and `campaign_promotion.py` freeze campaign inputs,
 inference identities, Git and sandbox provenance, independent toolchains, and
-limitations, and preserve disagreement. Campaign schema 1.8 requires every run
+limitations, and preserve disagreement. Campaign schema 1.9 requires every run
 to reproduce the complete
 frozen input projection: repository root, HEAD, tree, branch, tracked-content
 identity, Git object format, dirty paths, tracked-file count, policy, rule pack,

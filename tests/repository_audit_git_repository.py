@@ -142,7 +142,7 @@ class GitRepository:
     ) -> Path:
         """Write a complete internal repository policy for this worktree."""
         policy: dict[str, object] = {
-            "schema_version": "1.2",
+            "schema_version": "1.3",
             "source_line_threshold": source_threshold,
             "test_line_threshold": test_threshold,
             "source_roots": ["src", "tools"],

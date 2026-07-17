@@ -11,16 +11,30 @@ from __future__ import annotations
 
 import hashlib
 import os
-import selectors
-import signal
-import subprocess  # nosec B404
+import stat
 import sys
-import time
-from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
 
+from .adapter_profiles import (
+    AdapterProfileEvidence,
+    interpret_profile_output,
+    normalise_version_output,
+    profile_by_name,
+)
+from .adapter_runtime import (
+    CHILD_ENVIRONMENT,
+    SANDBOX_TOOL,
+    SANDBOX_VERSION,
+    file_digest,
+    resolved_executable,
+    sandbox_contract,
+    stream_process,
+    working_directory,
+)
+from .adapter_workspace import AdapterWorkspace, create_adapter_workspace
+from .git_provenance import GitTrustPolicy
 from .models import (
     AdapterSpec,
     canonical_digest,
@@ -29,25 +43,10 @@ from .models import (
     require_string,
 )
 from .sandbox_provenance import BubblewrapProvenance, inspect_bubblewrap
-from .trusted_executable import TrustedExecutable, open_trusted_executable
+from .trusted_executable import TrustedExecutable, open_trusted_executable, run_trusted_command
 
 ExecutionScope = Literal["staged", "full"]
-ADAPTER_RESULT_SCHEMA_VERSION = "1.0"
-_OUTPUT_LIMIT = 65_536
-_READ_SIZE = 8_192
-_BWRAP = Path("/usr/bin/bwrap")
-_PACKAGE_SOURCE = Path(__file__).resolve().parents[1]
-_SANDBOX_VERSION = "rigor-foundry-bwrap-v2"
-# This path is a private tmpfs created inside the bubblewrap mount namespace.
-_SANDBOX_TMP = "/tmp"  # nosec B108
-_CHILD_ENVIRONMENT = {
-    "HOME": "/nonexistent",
-    "LANG": "C.UTF-8",
-    "LC_ALL": "C.UTF-8",
-    "PYTHONDONTWRITEBYTECODE": "1",
-    "PYTHONNOUSERSITE": "1",
-    "TMPDIR": _SANDBOX_TMP,
-}
+ADAPTER_RESULT_SCHEMA_VERSION = "2.0"
 
 
 def _digest(value: object, field: str) -> str:
@@ -56,18 +55,6 @@ def _digest(value: object, field: str) -> str:
     if len(result) != 64 or any(character not in "0123456789abcdef" for character in result):
         raise ValueError(f"{field} must be a lowercase SHA-256 digest")
     return result
-
-
-def _file_digest(path: Path) -> str:
-    """Return SHA-256 for one regular file without loading it at once."""
-    digest = hashlib.sha256()
-    try:
-        with path.open("rb") as handle:
-            while chunk := handle.read(1024 * 1024):
-                digest.update(chunk)
-    except OSError as exc:
-        raise ValueError(f"cannot hash native audit executable: {path}") from exc
-    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -87,11 +74,53 @@ class AdapterResult:
     environment_digest: str
     sandbox_digest: str
     sandbox_provenance: BubblewrapProvenance
+    profile_evidence: AdapterProfileEvidence | None = None
 
     @property
     def passed(self) -> bool:
         """Return whether the native audit exited within every bound."""
+        if self.profile_evidence is not None:
+            return self.profile_evidence.passed
         return self.returncode == 0 and not self.timed_out and not self.output_truncated
+
+    @property
+    def complete(self) -> bool:
+        """Return whether the execution produced complete interpretable evidence."""
+        if self.profile_evidence is not None:
+            return self.profile_evidence.complete
+        return not self.timed_out and not self.output_truncated
+
+    def _validate_profile_relation(self, field: str) -> None:
+        """Validate exact outer-execution relations for nested profile evidence."""
+        evidence = self.profile_evidence
+        if evidence is None:
+            return
+        if evidence.output_digest != self.output_digest:
+            raise ValueError(f"{field}.profile_evidence output digest does not match execution")
+        if evidence.status == "unavailable":
+            observed = (
+                self.returncode,
+                self.output_bytes,
+                self.output_truncated,
+                self.timed_out,
+            )
+            if observed != (126, 0, False, False):
+                raise ValueError(f"{field} unavailable profile execution fields are invalid")
+            return
+        if evidence.reason == "timed-out":
+            if self.returncode != 124 or not self.timed_out or self.output_truncated:
+                raise ValueError(f"{field} timed-out profile execution fields are invalid")
+            return
+        if evidence.reason == "output-truncated":
+            if self.returncode != 125 or not self.output_truncated or self.timed_out:
+                raise ValueError(f"{field} truncated profile execution fields are invalid")
+            return
+        if self.timed_out or self.output_truncated:
+            raise ValueError(f"{field} profile execution bounds contradict evidence")
+        if evidence.status == "clean" and self.returncode != 0:
+            raise ValueError(f"{field} clean profile return code is invalid")
+        if evidence.status == "findings" and self.returncode != 1:
+            raise ValueError(f"{field} findings profile return code is invalid")
 
     def to_dict(self) -> dict[str, object]:
         """Serialise without adapter argv, repository paths, environment, or raw output."""
@@ -110,6 +139,9 @@ class AdapterResult:
             "environment_digest": self.environment_digest,
             "sandbox_digest": self.sandbox_digest,
             "sandbox_provenance": self.sandbox_provenance.to_dict(),
+            "profile_evidence": (
+                None if self.profile_evidence is None else self.profile_evidence.to_dict()
+            ),
             "passed": self.passed,
         }
 
@@ -133,6 +165,7 @@ class AdapterResult:
             "environment_digest",
             "sandbox_digest",
             "sandbox_provenance",
+            "profile_evidence",
             "passed",
         }
         if set(data) != expected:
@@ -166,311 +199,325 @@ class AdapterResult:
             ),
             sandbox_digest=_digest(data.get("sandbox_digest"), f"{field}.sandbox_digest"),
             sandbox_provenance=BubblewrapProvenance.from_dict(data.get("sandbox_provenance")),
+            profile_evidence=(
+                None
+                if data.get("profile_evidence") is None
+                else AdapterProfileEvidence.from_dict(data.get("profile_evidence"))
+            ),
         )
+        result._validate_profile_relation(field)
         if result.passed is not data["passed"]:
             raise ValueError(f"{field}.passed does not match native evidence")
         return result
 
 
-def _contained(path: Path, roots: tuple[Path, ...]) -> bool:
-    """Return whether a lexical path is within an explicitly trusted root."""
-    for root in roots:
-        try:
-            path.relative_to(root)
-        except ValueError:
-            continue
-        return True
-    return False
-
-
-def _resolved_executable(root: Path, value: str) -> Path:
-    """Resolve an executable from fixed roots, never the ambient ``PATH``."""
-    trusted_roots = (root, Path(sys.prefix).absolute(), Path("/usr"))
-    if value == "{python}":
-        candidate = Path(sys.executable).absolute()
-    elif Path(value).is_absolute():
-        candidate = Path(value)
-    elif "/" in value:
-        candidate = root / value
-    else:
-        candidates = (
-            Path(sys.prefix) / "bin" / value,
-            Path("/usr/bin") / value,
-            Path("/bin") / value,
+def _trusted_adapter_executable(path: Path) -> TrustedExecutable:
+    """Open one root- or operator-owned adapter executable by descriptor."""
+    try:
+        owner = path.stat(follow_symlinks=False).st_uid
+    except OSError as exc:
+        raise ValueError(f"native audit executable is unavailable: {path.name}") from exc
+    if owner not in {0, os.getuid()}:
+        raise ValueError("native audit executable owner is not trusted")
+    try:
+        return open_trusted_executable(
+            path,
+            required_owner_uid=owner,
+            forbidden_mode_bits=stat.S_IWGRP | stat.S_IWOTH,
+            require_single_link=False,
         )
-        candidate = next((item for item in candidates if item.exists()), candidates[0])
-    absolute = candidate.absolute()
-    if not _contained(absolute, trusted_roots):
-        raise ValueError("native audit executable is outside trusted runtime roots")
-    try:
-        resolved = absolute.resolve(strict=True)
-    except (OSError, ValueError) as exc:
-        raise ValueError(f"native audit executable is unavailable: {value}") from exc
-    if not _contained(resolved, trusted_roots):
-        raise ValueError("native audit executable symlink escapes trusted runtime roots")
-    if not resolved.is_file() or not os.access(resolved, os.X_OK):
-        raise ValueError(f"native audit executable is not executable: {value}")
-    return absolute
+    except RuntimeError as exc:
+        raise ValueError(
+            f"native audit executable cannot be descriptor-bound: {path.name}"
+        ) from exc
 
 
-def _working_directory(root: Path, relative: str) -> Path:
-    """Return a resolved repository-contained working directory."""
-    relative_path = Path(relative)
-    if relative_path.is_absolute() or ".." in relative_path.parts:
-        raise ValueError("native audit working directory escapes repository")
-    try:
-        candidate = (root / relative_path).resolve(strict=True)
-        candidate.relative_to(root)
-    except (OSError, ValueError) as exc:
-        raise ValueError("native audit working directory escapes repository") from exc
-    if not candidate.is_dir():
-        raise ValueError("native audit working directory is not a directory")
-    return candidate
+def _verify_adapter_executable(executable: TrustedExecutable) -> None:
+    """Fail if the retained executable bytes or descriptor identity changed."""
+    metadata = os.fstat(executable.descriptor)
+    snapshot = executable.snapshot
+    observed = (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_uid,
+        metadata.st_gid,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+    )
+    expected = (
+        snapshot.device,
+        snapshot.inode,
+        snapshot.mode,
+        snapshot.owner_uid,
+        snapshot.group_gid,
+        snapshot.link_count,
+        snapshot.size,
+        snapshot.modified_ns,
+    )
+    os.lseek(executable.descriptor, 0, os.SEEK_SET)
+    digest = hashlib.sha256()
+    while chunk := os.read(executable.descriptor, 1024 * 1024):
+        digest.update(chunk)
+    os.lseek(executable.descriptor, 0, os.SEEK_SET)
+    if observed != expected or digest.hexdigest() != snapshot.digest:
+        raise RuntimeError("native audit executable changed during execution")
 
 
-def _minimal_mounts(paths: tuple[Path, ...]) -> tuple[Path, ...]:
-    """Collapse read-only mount roots already covered by an ancestor."""
-    selected: list[Path] = []
-    for path in sorted(
-        {item.resolve(strict=True) for item in paths}, key=lambda item: len(item.parts)
-    ):
-        if _contained(path, (Path("/usr"),)):
-            continue
-        if not _contained(path, tuple(selected)):
-            selected.append(path)
-    return tuple(selected)
-
-
-def _mount_parent_arguments(mounts: tuple[Path, ...]) -> tuple[str, ...]:
-    """Create empty ancestors needed for same-path read-only bind mounts."""
-    excluded = {Path("/"), Path("/usr"), Path(_SANDBOX_TMP)}
-    parents: set[Path] = set()
-    for mount in mounts:
-        parent = mount.parent
-        while parent not in excluded:
-            parents.add(parent)
-            parent = parent.parent
-    arguments: list[str] = []
-    for parent in sorted(parents, key=lambda item: (len(item.parts), str(item))):
-        arguments.extend(("--dir", str(parent)))
-    return tuple(arguments)
-
-
-def _sandbox_contract(
-    repository: Path,
-    executable: Path,
-    cwd: Path,
-) -> tuple[
-    tuple[str, ...],
-    dict[str, str],
-    BubblewrapProvenance,
-    str,
-    TrustedExecutable,
-]:
-    """Build a fixed bubblewrap contract and its canonical identity digest."""
-    if not _BWRAP.is_file() or not os.access(_BWRAP, os.X_OK):
-        raise RuntimeError("native audits require /usr/bin/bwrap for read-only isolation")
+def _profile_unavailable_result(
+    spec: AdapterSpec,
+    workspace: AdapterWorkspace,
+    *,
+    reason: Literal["executable-unavailable", "version-unavailable"],
+    executable_digest: str,
+    version_output_digest: str,
+) -> AdapterResult:
+    """Return durable fail-closed evidence when a built-in tool cannot run."""
+    if spec.profile is None:
+        raise ValueError("profile evidence requires a built-in adapter")
+    profile = profile_by_name(spec.profile)
     provenance = inspect_bubblewrap()
-    if provenance.executable_path != str(_BWRAP):
-        raise RuntimeError("Bubblewrap provenance does not match the sandbox launcher")
-    mounts = _minimal_mounts((repository, Path(sys.prefix), _PACKAGE_SOURCE))
+    output_digest = canonical_digest(
+        {
+            "stdout_digest": hashlib.sha256(b"").hexdigest(),
+            "stderr_digest": hashlib.sha256(b"").hexdigest(),
+            "stdout_bytes": 0,
+            "stderr_bytes": 0,
+            "truncated": False,
+            "timed_out": False,
+        }
+    )
+    evidence = AdapterProfileEvidence.build(
+        profile=profile,
+        status="unavailable",
+        reason=reason,
+        tool_version="",
+        version_output_digest=version_output_digest,
+        configuration_digest=workspace.configuration_digest,
+        input_digest=workspace.input_digest,
+        output_digest=output_digest,
+        finding_count=0,
+        scanned_target_count=0,
+    )
     child_environment = {
-        **_CHILD_ENVIRONMENT,
+        **CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
     }
-    policy = provenance.policy
-    launcher = open_trusted_executable(
-        _BWRAP,
-        required_owner_uid=policy.required_owner_uid,
-        forbidden_mode_bits=policy.forbidden_mode_bits,
-        require_single_link=policy.require_single_link,
+    command_arguments = profile.command_arguments(
+        f"/workspace/{workspace.configuration_path}",
+        tuple(f"/workspace/{target}" for target in workspace.target_paths),
     )
-    try:
-        if launcher.snapshot.digest != provenance.executable_digest:
-            raise RuntimeError("Bubblewrap executable changed after provenance inspection")
-        arguments: list[str] = [
-            launcher.execution_path,
-            "--die-with-parent",
-            "--new-session",
-            "--unshare-all",
-            "--unshare-user",
-            "--disable-userns",
-            "--assert-userns-disabled",
-            "--uid",
-            "65534",
-            "--gid",
-            "65534",
-            "--ro-bind",
-            "/usr",
-            "/usr",
-            "--symlink",
-            "usr/bin",
-            "/bin",
-            "--symlink",
-            "usr/lib",
-            "/lib",
-            "--symlink",
-            "usr/lib64",
-            "/lib64",
-            "--proc",
-            "/proc",
-            "--dev",
-            "/dev",
-            "--tmpfs",
-            _SANDBOX_TMP,
-            *_mount_parent_arguments(mounts),
-        ]
-        for mount in mounts:
-            arguments.extend(("--ro-bind", str(mount), str(mount)))
-        arguments.extend(("--chdir", str(cwd), "--clearenv"))
-        for key, value in sorted(child_environment.items()):
-            arguments.extend(("--setenv", key, value))
-        sandbox_body = {
-            "version": _SANDBOX_VERSION,
-            "bubblewrap_provenance_identity": provenance.identity_digest,
-            "bubblewrap_policy_digest": provenance.policy_digest,
-            "bubblewrap_arguments_digest": canonical_digest(arguments[1:]),
-            "mounts_digest": canonical_digest([str(item) for item in mounts]),
-            "working_directory_digest": canonical_digest(str(cwd)),
-            "executable_digest": _file_digest(executable),
-            "environment_digest": canonical_digest(child_environment),
-            "network": "unshared",
-            "repository": "read-only",
-            "uid": 65534,
-            "gid": 65534,
-        }
-        launcher_environment = {
-            "LANG": "C.UTF-8",
-            "LC_ALL": "C.UTF-8",
-            "PATH": "/usr/bin:/bin",
-        }
-        return (
-            tuple(arguments),
-            launcher_environment,
-            provenance,
-            canonical_digest(sandbox_body),
-            launcher,
-        )
-    except Exception:
-        launcher.close()
-        raise
+    return AdapterResult(
+        name=spec.name,
+        returncode=126,
+        output_digest=output_digest,
+        output_bytes=0,
+        output_truncated=False,
+        timed_out=False,
+        required=spec.required,
+        spec_digest=canonical_digest(spec.to_dict()),
+        executable_digest=executable_digest,
+        command_digest=canonical_digest((profile.executable, *command_arguments)),
+        environment_digest=canonical_digest(child_environment),
+        sandbox_digest=canonical_digest(
+            {
+                "version": SANDBOX_VERSION,
+                "state": "unavailable-before-launch",
+                "workspace_input_digest": workspace.input_digest,
+                "bubblewrap_provenance_identity": provenance.identity_digest,
+            }
+        ),
+        sandbox_provenance=provenance,
+        profile_evidence=evidence,
+    )
 
 
-def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
-    """Terminate the bubblewrap process group, escalating if it does not exit."""
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGTERM)
-    if process.poll() is None:
-        with suppress(subprocess.TimeoutExpired):
-            process.wait(timeout=0.5)
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGKILL)
-    if process.poll() is None:
-        process.wait(timeout=2)
-
-
-def _stream_process(
-    command: tuple[str, ...],
+def _run_profile_adapter(
+    repository: Path,
+    spec: AdapterSpec,
     *,
-    environment: dict[str, str],
-    timeout_seconds: int,
-    pass_fds: tuple[int, ...] = (),
-) -> tuple[int, str, int, bool, bool]:
-    """Execute one process with a streaming aggregate output hard cap."""
-    process = subprocess.Popen(  # nosec B603
-        command,
-        env=environment,
-        shell=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=True,
-        pass_fds=pass_fds,
-    )
-    if process.stdout is None or process.stderr is None:
-        _terminate_process_tree(process)
-        raise RuntimeError("native audit output pipes were not created")
-    stream_digests = {"stdout": hashlib.sha256(), "stderr": hashlib.sha256()}
-    stream_bytes = {"stdout": 0, "stderr": 0}
-    selector = selectors.DefaultSelector()
-    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
-    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
-    deadline = time.monotonic() + timeout_seconds
-    truncated = False
-    timed_out = False
-    try:
-        while selector.get_map():
-            remaining_time = deadline - time.monotonic()
-            if remaining_time <= 0:
-                timed_out = True
-                _terminate_process_tree(process)
-                break
-            for key, _mask in selector.select(timeout=min(remaining_time, 0.1)):
-                total = sum(stream_bytes.values())
-                allowed = _OUTPUT_LIMIT - total
-                chunk = os.read(key.fd, min(_READ_SIZE, allowed + 1))
-                if not chunk:
-                    selector.unregister(key.fileobj)
-                    continue
-                label = str(key.data)
-                accepted = chunk[:allowed]
-                stream_digests[label].update(accepted)
-                stream_bytes[label] += len(accepted)
-                if len(chunk) > allowed:
-                    truncated = True
-                    _terminate_process_tree(process)
-                    break
-            if truncated:
-                break
-        if process.poll() is None:
-            remaining_time = deadline - time.monotonic()
-            if remaining_time <= 0:
-                timed_out = True
-                _terminate_process_tree(process)
-            else:
-                try:
-                    process.wait(timeout=remaining_time)
-                except subprocess.TimeoutExpired:
-                    timed_out = True
-                    _terminate_process_tree(process)
-    finally:
-        selector.close()
-        process.stdout.close()
-        process.stderr.close()
-        if process.poll() is None:
-            _terminate_process_tree(process)
-    returncode = 124 if timed_out else 125 if truncated else int(process.returncode)
-    output_body = {
-        "stdout_digest": stream_digests["stdout"].hexdigest(),
-        "stdout_bytes": stream_bytes["stdout"],
-        "stderr_digest": stream_digests["stderr"].hexdigest(),
-        "stderr_bytes": stream_bytes["stderr"],
-        "truncated": truncated,
-        "timed_out": timed_out,
-    }
-    return (
-        returncode,
-        canonical_digest(output_body),
-        sum(stream_bytes.values()),
-        truncated,
-        timed_out,
-    )
+    git_trust_policy: GitTrustPolicy | None,
+    expected_tracked_content_digest: str | None,
+) -> AdapterResult:
+    """Run one built-in profile against an exact tracked-only workspace."""
+    if spec.profile is None or spec.configuration_path is None:
+        raise ValueError("built-in adapter profile declaration is incomplete")
+    profile = profile_by_name(spec.profile)
+    with create_adapter_workspace(
+        repository,
+        configuration_path=spec.configuration_path,
+        target_paths=spec.target_paths,
+        git_trust_policy=git_trust_policy,
+        expected_tracked_content_digest=expected_tracked_content_digest,
+    ) as workspace:
+        try:
+            executable_path = resolved_executable(repository, profile.executable).resolve(
+                strict=True
+            )
+            executable = _trusted_adapter_executable(executable_path)
+        except ValueError:
+            return _profile_unavailable_result(
+                spec,
+                workspace,
+                reason="executable-unavailable",
+                executable_digest=hashlib.sha256(b"").hexdigest(),
+                version_output_digest=hashlib.sha256(b"").hexdigest(),
+            )
+        command_arguments = profile.command_arguments(
+            f"/workspace/{workspace.configuration_path}",
+            tuple(f"/workspace/{target}" for target in workspace.target_paths),
+        )
+        sandbox, environment, provenance, sandbox_digest, launcher = sandbox_contract(
+            workspace.root,
+            executable_path,
+            workspace.root,
+            repository_destination=Path("/workspace"),
+            repository_identity=workspace.input_digest,
+            executable_digest=executable.snapshot.digest,
+            executable_descriptor=executable.descriptor,
+        )
+        version_output_digest = hashlib.sha256(b"").hexdigest()
+        try:
+            try:
+                version_result = run_trusted_command(
+                    executable,
+                    profile.version_arguments,
+                    environment={
+                        **CHILD_ENVIRONMENT,
+                        "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+                        "SEMGREP_ENABLE_VERSION_CHECK": "0",
+                        "SEMGREP_SEND_METRICS": "off",
+                    },
+                    timeout_seconds=min(spec.timeout_seconds, 30),
+                    output_limit=8192,
+                )
+            except RuntimeError:
+                return _profile_unavailable_result(
+                    spec,
+                    workspace,
+                    reason="version-unavailable",
+                    executable_digest=executable.snapshot.digest,
+                    version_output_digest=version_output_digest,
+                )
+            version_output_digest = canonical_digest(
+                {
+                    "stdout": hashlib.sha256(version_result.stdout).hexdigest(),
+                    "stderr": hashlib.sha256(version_result.stderr).hexdigest(),
+                }
+            )
+            if version_result.returncode != 0:
+                return _profile_unavailable_result(
+                    spec,
+                    workspace,
+                    reason="version-unavailable",
+                    executable_digest=executable.snapshot.digest,
+                    version_output_digest=version_output_digest,
+                )
+            try:
+                tool_version = normalise_version_output(version_result.stdout)
+            except ValueError:
+                return _profile_unavailable_result(
+                    spec,
+                    workspace,
+                    reason="version-unavailable",
+                    executable_digest=executable.snapshot.digest,
+                    version_output_digest=version_output_digest,
+                )
+            process = stream_process(
+                (*sandbox, "--", SANDBOX_TOOL, *command_arguments),
+                environment=environment,
+                timeout_seconds=spec.timeout_seconds,
+                pass_fds=(launcher.descriptor, executable.descriptor),
+            )
+            _verify_adapter_executable(executable)
+        finally:
+            launcher.close()
+            executable.close()
+        observed_after = inspect_bubblewrap(provenance.policy)
+        if observed_after.identity_digest != provenance.identity_digest:
+            changed = tuple(
+                key
+                for key, value in provenance.to_dict().items()
+                if observed_after.to_dict().get(key) != value
+            )
+            raise RuntimeError(
+                "Bubblewrap provenance changed during native audit execution: "
+                f"{', '.join(changed)}"
+            )
+        status, reason, findings, scanned = interpret_profile_output(
+            profile,
+            stdout=process.stdout,
+            returncode=process.returncode,
+            timed_out=process.timed_out,
+            truncated=process.truncated,
+        )
+        evidence = AdapterProfileEvidence.build(
+            profile=profile,
+            status=status,
+            reason=reason,
+            tool_version=tool_version,
+            version_output_digest=version_output_digest,
+            configuration_digest=workspace.configuration_digest,
+            input_digest=workspace.input_digest,
+            output_digest=process.output_digest,
+            finding_count=findings,
+            scanned_target_count=scanned,
+        )
+        child_environment = {
+            **CHILD_ENVIRONMENT,
+            "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+        }
+        return AdapterResult(
+            name=spec.name,
+            returncode=process.returncode,
+            output_digest=process.output_digest,
+            output_bytes=process.output_bytes,
+            output_truncated=process.truncated,
+            timed_out=process.timed_out,
+            required=spec.required,
+            spec_digest=canonical_digest(spec.to_dict()),
+            executable_digest=executable.snapshot.digest,
+            command_digest=canonical_digest((profile.executable, *command_arguments)),
+            environment_digest=canonical_digest(child_environment),
+            sandbox_digest=sandbox_digest,
+            sandbox_provenance=provenance,
+            profile_evidence=evidence,
+        )
 
 
-def run_adapter(root: Path, spec: AdapterSpec, *, trusted: bool = False) -> AdapterResult:
+def run_adapter(
+    root: Path,
+    spec: AdapterSpec,
+    *,
+    trusted: bool = False,
+    git_trust_policy: GitTrustPolicy | None = None,
+    expected_tracked_content_digest: str | None = None,
+) -> AdapterResult:
     """Run one explicitly consented adapter inside a read-only sandbox."""
     if not trusted:
         raise ValueError("native audit execution requires explicit trusted consent")
     repository = root.resolve(strict=True)
-    executable = _resolved_executable(repository, spec.command[0])
+    if spec.profile is not None:
+        validated = AdapterSpec.from_dict(spec.to_dict(), 0)
+        if validated != spec:
+            raise ValueError("built-in adapter specification is not canonical")
+        return _run_profile_adapter(
+            repository,
+            spec,
+            git_trust_policy=git_trust_policy,
+            expected_tracked_content_digest=expected_tracked_content_digest,
+        )
+    executable = resolved_executable(repository, spec.command[0])
     command = (str(executable), *spec.command[1:])
-    cwd = _working_directory(repository, spec.working_directory)
-    sandbox, environment, sandbox_provenance, sandbox_digest, launcher = _sandbox_contract(
+    cwd = working_directory(repository, spec.working_directory)
+    sandbox, environment, sandbox_provenance, sandbox_digest, launcher = sandbox_contract(
         repository,
         executable,
         cwd,
     )
     try:
-        returncode, output_digest, output_bytes, truncated, timed_out = _stream_process(
+        process = stream_process(
             (*sandbox, "--", *command),
             environment=environment,
             timeout_seconds=spec.timeout_seconds,
@@ -482,19 +529,19 @@ def run_adapter(root: Path, spec: AdapterSpec, *, trusted: bool = False) -> Adap
     if observed_after.identity_digest != sandbox_provenance.identity_digest:
         raise RuntimeError("Bubblewrap provenance changed during native audit execution")
     child_environment = {
-        **_CHILD_ENVIRONMENT,
+        **CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
     }
     return AdapterResult(
         name=spec.name,
-        returncode=returncode,
-        output_digest=output_digest,
-        output_bytes=output_bytes,
-        output_truncated=truncated,
-        timed_out=timed_out,
+        returncode=process.returncode,
+        output_digest=process.output_digest,
+        output_bytes=process.output_bytes,
+        output_truncated=process.truncated,
+        timed_out=process.timed_out,
         required=spec.required,
         spec_digest=canonical_digest(spec.to_dict()),
-        executable_digest=_file_digest(executable),
+        executable_digest=file_digest(executable),
         command_digest=canonical_digest(command),
         environment_digest=canonical_digest(child_environment),
         sandbox_digest=sandbox_digest,
@@ -508,6 +555,8 @@ def run_native_audits(
     scope: ExecutionScope,
     *,
     trusted: bool = False,
+    git_trust_policy: GitTrustPolicy | None = None,
+    expected_tracked_content_digest: str | None = None,
 ) -> tuple[AdapterResult, ...]:
     """Run applicable adapters only after explicit trusted execution consent."""
     selected = tuple(spec for spec in specs if spec.scope in {scope, "both"})
@@ -516,4 +565,13 @@ def run_native_audits(
         raise ValueError("native audit adapter names must be unique")
     if selected and not trusted:
         raise ValueError("native audit execution requires explicit trusted consent")
-    return tuple(run_adapter(root, spec, trusted=True) for spec in selected)
+    return tuple(
+        run_adapter(
+            root,
+            spec,
+            trusted=True,
+            git_trust_policy=git_trust_policy,
+            expected_tracked_content_digest=expected_tracked_content_digest,
+        )
+        for spec in selected
+    )
