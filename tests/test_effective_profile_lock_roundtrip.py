@@ -82,7 +82,7 @@ def test_json_round_trip_bytes() -> None:
 
 def test_pack_verification_round_trip() -> None:
     """Offline pack-verification evidence rebinds its digest."""
-    lock, _controls = two_control_lock()
+    _lock, _controls = two_control_lock()
     # Rebuild verification evidence through the lock's sealed digests is not stored;
     # construct one via Adapter-like path using PackVerification.from_dict of a live build.
     from signing_fixtures import pack_signature, trust_store
@@ -306,7 +306,7 @@ def test_schema_version_rejects() -> None:
     """Wrong schema versions fail closed on lock and verification parse."""
     from rigor_foundry.effective_profile import PackVerification
 
-    lock, _ = two_control_lock()
+    lock, _controls = two_control_lock()
     payload = lock.to_dict()
     payload["schema_version"] = "9.9"
     with pytest.raises(ValueError, match="unsupported effective-profile lock schema"):
@@ -384,7 +384,7 @@ def test_effective_control_rejects_bad_mode_and_level() -> None:
     """Effective control parse rejects unsupported mode and target level."""
     from rigor_foundry.effective_profile import EffectiveControl
 
-    lock, controls = two_control_lock()
+    _lock, controls = two_control_lock()
     payload = controls[0].to_dict()
     payload["mode"] = "maybe"
     with pytest.raises(ValueError, match="mode is unsupported"):
