@@ -207,6 +207,14 @@ jobs:
           /tmp/rigor-wheel/bin/rigor --help
           /tmp/rigor-wheel/bin/rigor --version
           /tmp/rigor-wheel/bin/python -c 'import rigor_foundry as package; from rigor_foundry.api_stability import public_api_contract_errors, public_api_manifest; assert public_api_contract_errors(package.__all__, vars(package)) == (); assert public_api_manifest()["schema_version"] == "1.1"'
+          rm -rf /tmp/rigor-source-e2e
+          mkdir /tmp/rigor-source-e2e
+          cd /tmp/rigor-source-e2e
+          printf '%s\n' '{"advisory":{"affected":true}}' > source-payload.json
+          /tmp/rigor-wheel/bin/python -c 'from pathlib import Path; from rigor_foundry import ExternalSourceClaim, SourceRetrievalPolicy, source_provenance_to_json; policy = SourceRetrievalPolicy.build(allowed_hosts=("advisories.example.test",), allow_cross_origin_redirects=False, maximum_redirects=0, timeout_seconds=5, maximum_bytes=1024, allowed_media_types=("application/json",), freshness_seconds=3600); claim = ExternalSourceClaim.build(claim_id="cve-2026-52869-affected", kind="advisory", subject="CVE-2026-52869", predicate="affected", expected_value=True, source_uri="https://advisories.example.test/CVE-2026-52869.json", extraction_method="json-pointer", selector="/advisory/affected"); Path("source-policy.json").write_text(source_provenance_to_json(policy), encoding="utf-8"); Path("source-claim.json").write_text(source_provenance_to_json(claim), encoding="utf-8")'
+          /tmp/rigor-wheel/bin/rigor source-capture --policy source-policy.json --payload source-payload.json --requested-uri https://advisories.example.test/CVE-2026-52869.json --final-uri https://advisories.example.test/CVE-2026-52869.json --redirect-count 0 --http-status 200 --media-type application/json --retrieved-at 2026-07-17T08:00:00Z --retriever-name curl --retriever-version 8.10.1 --retriever-executable-digest aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa --output source-capture.json
+          /tmp/rigor-wheel/bin/rigor source-verify --claim source-claim.json --capture source-capture.json --payload source-payload.json --verified-at 2026-07-17T08:30:00Z --verifier distribution/smoke --output source-verification.json
+          /tmp/rigor-wheel/bin/python -c 'import json; from pathlib import Path; from rigor_foundry import SourceVerification; verification = SourceVerification.from_dict(json.loads(Path("source-verification.json").read_text(encoding="utf-8"))); assert verification.verified_value is True'
           rm -rf /tmp/rigor-adopter
           mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal
           git -C /tmp/rigor-adopter init --initial-branch=main

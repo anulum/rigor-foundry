@@ -97,6 +97,19 @@ def verification() -> SourceVerification:
     )
 
 
+def _recompute_verification_digest(document: dict[str, object]) -> None:
+    """Recompute one public record digest after a semantic test mutation."""
+    body = {key: value for key, value in document.items() if key != "verification_digest"}
+    encoded = json.dumps(
+        body,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    document["verification_digest"] = hashlib.sha256(encoded).hexdigest()
+
+
 def test_advisory_version_standard_and_digest_claims_verify_exact_values() -> None:
     """All four public claim kinds use exact captured bytes and finite extraction."""
     advisory = verification()
@@ -454,6 +467,39 @@ def test_parser_rejects_nested_policy_and_capture_identity_drift() -> None:
     changed["retrieval_policy"] = nested
     with pytest.raises(ValueError, match="policy digest"):
         SourceCapture.from_dict(changed)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    (
+        ("uri", "claim URI"),
+        ("value", "expected value"),
+        ("value-type", "expected value"),
+        ("before-capture", "freshness"),
+        ("after-freshness", "freshness"),
+    ),
+)
+def test_parser_rejects_digest_recomputed_cross_record_contradictions(
+    mutation: str,
+    message: str,
+) -> None:
+    """A valid outer digest cannot legitimise contradictory success evidence."""
+    document = verification().to_dict()
+    if mutation == "uri":
+        document["claim"] = claim(
+            source_uri="https://different.example.test/advisory.json"
+        ).to_dict()
+    elif mutation == "value":
+        document["verified_value"] = False
+    elif mutation == "value-type":
+        document["verified_value"] = 1
+    elif mutation == "before-capture":
+        document["verified_at"] = "2026-07-17T07:59:59Z"
+    else:
+        document["verified_at"] = "2026-07-17T09:00:01Z"
+    _recompute_verification_digest(document)
+    with pytest.raises(ValueError, match=message):
+        SourceVerification.from_dict(document)
 
 
 def test_record_identity_changes_only_with_semantic_inputs() -> None:

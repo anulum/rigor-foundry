@@ -91,9 +91,12 @@ not replace the hosted Python-version matrix.
 External source-provenance tests use real retained files through no-follow,
 single-link stable reads. They cover advisory, version, standard, and digest
 claims; duplicate JSON keys; JSON Pointer escapes and arrays; policy, URI,
-capture, freshness, and digest divergence; CLI capture-to-verification; public
-imports; and normative digest propagation. Packaging gates repeat the installed
-CLI workflow outside the source checkout.
+capture, freshness, verified-value type, digest-recomputed cross-record
+contradictions, and digest divergence; CLI capture-to-verification; public
+imports; and normative digest propagation. The distribution job builds a wheel,
+installs it into a fresh virtual environment, changes into a temporary directory
+outside the checkout, and executes the installed `rigor source-capture` then
+`rigor source-verify` console-script boundary against real retained bytes.
 
 Security-sensitive tests must exercise public APIs with real processes,
 filesystems, and installed platform surfaces. The quality job runs

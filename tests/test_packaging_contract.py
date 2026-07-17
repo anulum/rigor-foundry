@@ -58,6 +58,11 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "/tmp/rigor-wheel/bin/rigor --version" in workflow
     assert "public_api_contract_errors(package.__all__, vars(package)) == ()" in workflow
     assert 'public_api_manifest()["schema_version"] == "1.1"' in workflow
+    assert "cd /tmp/rigor-source-e2e" in workflow
+    assert "/tmp/rigor-wheel/bin/rigor source-capture" in workflow
+    assert "/tmp/rigor-wheel/bin/rigor source-verify" in workflow
+    assert "SourceVerification.from_dict" in workflow
+    assert "verification.verified_value is True" in workflow
     assert "/tmp/rigor-wheel/bin/rigor bootstrap --root ." in workflow
     assert 'git commit -m "test: track installed-wheel adopter policy"' in workflow
     assert "/tmp/rigor-wheel/bin/rigor scan --root ." in workflow

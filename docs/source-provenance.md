@@ -102,4 +102,9 @@ from rigor_foundry import (
 
 Use `build`, `record`, `from_dict`, or `verify_external_source`; direct
 success-shaped dataclass construction is unavailable. Parsers require exact
-fields, recompute derived digests, and reject unsupported schema versions.
+fields, recompute derived digests, reject unsupported schema versions, and
+reject source URI, verified-value, type, or freshness contradictions across a
+verification record. `SourceVerification.from_dict` cannot replay extraction
+because records omit retained payload bytes. At an evidence trust boundary,
+retain the payload and call `verify_external_source` again; an internally
+consistent parsed record alone is not extraction proof.

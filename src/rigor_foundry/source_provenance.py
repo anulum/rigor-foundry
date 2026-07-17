@@ -295,7 +295,13 @@ class SourceVerification:
 
     @classmethod
     def from_dict(cls, value: object) -> SourceVerification:
-        """Parse successful evidence and recompute the verification digest."""
+        """Parse evidence and validate its static success relations.
+
+        This parser cannot replay JSON-pointer extraction because verification
+        records intentionally omit retained payload bytes. Call
+        :func:`verify_external_source` with the retained payload at trust
+        boundaries that require extraction replay.
+        """
         data = require_mapping(value, "source verification")
         require_exact_fields(data, _VERIFICATION_FIELDS, "source verification")
         if data.get("schema_version") != SOURCE_PROVENANCE_SCHEMA_VERSION:
@@ -305,26 +311,31 @@ class SourceVerification:
         )
         if authority != "retrieval-policy-only":
             raise ValueError("source verification authority scope is unsupported")
-        fields = {
+        claim = ExternalSourceClaim.from_dict(data.get("claim"))
+        capture = SourceCapture.from_dict(data.get("capture"))
+        verified_value = require_json_scalar(
+            data.get("verified_value"), "source verification.verified_value"
+        )
+        verified_at = require_utc_timestamp(
+            data.get("verified_at"), "source verification.verified_at"
+        )
+        _require_success_relations(claim, capture, verified_value, verified_at)
+        fields: dict[str, object] = {
             "schema_version": SOURCE_PROVENANCE_SCHEMA_VERSION,
-            "claim": ExternalSourceClaim.from_dict(data.get("claim")).to_dict(),
-            "capture": SourceCapture.from_dict(data.get("capture")).to_dict(),
-            "verified_value": require_json_scalar(
-                data.get("verified_value"), "source verification.verified_value"
-            ),
-            "verified_at": require_utc_timestamp(
-                data.get("verified_at"), "source verification.verified_at"
-            ),
+            "claim": claim.to_dict(),
+            "capture": capture.to_dict(),
+            "verified_value": verified_value,
+            "verified_at": verified_at,
             "verifier": require_identifier(data.get("verifier"), "source verification.verifier"),
             "authority_scope": authority,
         }
         if data.get("verification_digest") != canonical_digest(fields):
             raise ValueError("source verification digest does not match its content")
         return cls._create(
-            claim=ExternalSourceClaim.from_dict(fields["claim"]),
-            capture=SourceCapture.from_dict(fields["capture"]),
-            verified_value=cast(JsonScalar, fields["verified_value"]),
-            verified_at=cast(str, fields["verified_at"]),
+            claim=claim,
+            capture=capture,
+            verified_value=verified_value,
+            verified_at=verified_at,
             verifier=cast(str, fields["verifier"]),
             verification_digest=cast(str, data["verification_digest"]),
         )
@@ -352,6 +363,28 @@ class SourceVerification:
         return verification
 
 
+def _require_success_relations(
+    claim: ExternalSourceClaim,
+    capture: SourceCapture,
+    verified_value: JsonScalar,
+    verified_at: str,
+) -> None:
+    """Reject mutually inconsistent success-shaped source evidence."""
+    if claim.source_uri != capture.final_uri:
+        raise ValueError("source claim URI does not match the final captured URI")
+    age = (
+        parse_utc_timestamp(verified_at, "source verification.verified_at")
+        - parse_utc_timestamp(capture.retrieved_at, "source capture.retrieved_at")
+    ).total_seconds()
+    if age < 0 or age > capture.retrieval_policy.freshness_seconds:
+        raise ValueError("source capture is outside the retrieval-policy freshness window")
+    if (
+        type(verified_value) is not type(claim.expected_value)
+        or verified_value != claim.expected_value
+    ):
+        raise ValueError("source claim expected value does not match captured source")
+
+
 def verify_external_source(
     claim: ExternalSourceClaim,
     capture: SourceCapture,
@@ -363,20 +396,12 @@ def verify_external_source(
     """Verify exact retained bytes, freshness, source binding, and asserted value."""
     checked_claim = ExternalSourceClaim.from_dict(claim.to_dict())
     checked_capture = SourceCapture.from_dict(capture.to_dict())
-    if checked_claim.source_uri != checked_capture.final_uri:
-        raise ValueError("source claim URI does not match the final captured URI")
     if (
         len(payload) != checked_capture.payload_size
         or hashlib.sha256(payload).hexdigest() != checked_capture.payload_digest
     ):
         raise ValueError("source payload does not match capture identity")
     verified = require_utc_timestamp(verified_at, "source verification.verified_at")
-    age = (
-        parse_utc_timestamp(verified, "source verification.verified_at")
-        - parse_utc_timestamp(checked_capture.retrieved_at, "source capture.retrieved_at")
-    ).total_seconds()
-    if age < 0 or age > checked_capture.retrieval_policy.freshness_seconds:
-        raise ValueError("source capture is outside the retrieval-policy freshness window")
     if checked_claim.extraction_method == "whole-payload-sha256":
         observed: JsonScalar = checked_capture.payload_digest
     else:
@@ -384,11 +409,7 @@ def verify_external_source(
             _json_without_duplicate_keys(payload),
             checked_claim.selector,
         )
-    if (
-        type(observed) is not type(checked_claim.expected_value)
-        or observed != checked_claim.expected_value
-    ):
-        raise ValueError("source claim expected value does not match captured source")
+    _require_success_relations(checked_claim, checked_capture, observed, verified)
     fields: dict[str, object] = {
         "schema_version": SOURCE_PROVENANCE_SCHEMA_VERSION,
         "claim": checked_claim.to_dict(),
