@@ -145,6 +145,7 @@ these native surfaces.
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |
 | Native boundaries | `adapters`, `sandbox_provenance`, `trusted_executable` | Descriptor-pinned, time/output-bounded repository commands plus versioned Bubblewrap compatibility and dpkg association. |
+| External sources | `source_capture`, `source_provenance` | Content-addressed advisory/version/standard/digest claims, bounded capture metadata, stable retained-file reads, and deterministic offline verification. |
 | Campaigns | `campaign_identity`, `campaign_evidence`, `campaign_models`, `campaign_store`, `campaign_workflow`, `campaign_compare`, `campaign_promotion` | Inference and toolchain identity, correlated-witness collapse, durable provenance, divergence, and promotion eligibility. |
 | Profile primitives | `model_primitives`, `condition_language` | Typed variables, opaque secret references, strict values, and bounded conditions. |
 | Desired state | `standard_pack`, `project_profile`, `effective_profile`, `profile_resolution`, `trust` | Versioned controls, explicit Ed25519 trust stores, adopter intent, exact pack locks, contradiction evidence, and fail-closed resolution. |

@@ -215,6 +215,15 @@ candidates remain counted and named in the gate artifact instead of becoming
 silent pass state. This repository binding prevents an operator-selected empty
 or weaker calibration report from silently weakening ratchet enforcement.
 
+### External source provenance
+
+`source_capture.py` owns bounded retrieval policy, retained-byte capture
+identity, and no-follow stable reads. `source_provenance.py` owns exact
+advisory, version, standard, and content-digest assertions plus deterministic
+offline verification. Claim, policy, capture, and verification are separate
+digest nodes. Successful verification is retrieval-policy-only; HTTPS metadata never
+becomes publisher-signature evidence or change authority.
+
 ### Native audit adapters
 
 `adapters.py` executes only declared argv. External executables are resolved

@@ -13,6 +13,15 @@ python3 -m venv .venv
 `rigor --version` prints the canonical package identity, for example
 `rigor 0.1.1`, without requiring a subcommand.
 
+## External source provenance
+
+`source-capture` records already-retained HTTPS response bytes under an exact
+retrieval policy. It does not perform or authorise network access.
+`source-verify` deterministically verifies one advisory, version, standard, or
+content-digest claim against the exact capture and payload. See
+[Verified external source provenance](source-provenance.md) for the complete
+contract and examples.
+
 ## Explicit adopter bootstrap
 
 `rigor bootstrap` creates one new trackable policy and one new Git-ignored

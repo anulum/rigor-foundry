@@ -104,6 +104,18 @@ from .rule_maturity_manifest import (
 from .sandbox_provenance import BubblewrapCompatibilityPolicy, BubblewrapProvenance
 from .sarif import SARIF_SCHEMA_URI, SARIF_VERSION, report_sarif
 from .scanner import scan_repository
+from .source_capture import (
+    SOURCE_PROVENANCE_SCHEMA_VERSION,
+    SourceCapture,
+    SourceRetrievalPolicy,
+    read_source_payload,
+)
+from .source_provenance import (
+    ExternalSourceClaim,
+    SourceVerification,
+    source_provenance_to_json,
+    verify_external_source,
+)
 from .standard_pack import (
     ControlDefinition,
     EvidenceContract,
@@ -138,6 +150,7 @@ __all__ = [
     "RULE_MATURITY_SCHEMA_VERSION",
     "SARIF_SCHEMA_URI",
     "SARIF_VERSION",
+    "SOURCE_PROVENANCE_SCHEMA_VERSION",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
     "AdapterLock",
     "ApplicabilityDecision",
@@ -160,6 +173,7 @@ __all__ = [
     "EvidenceContract",
     "EvidenceReference",
     "ExceptionWaiver",
+    "ExternalSourceClaim",
     "GitExecutableProvenance",
     "GitTrustPolicy",
     "IgnoredInventoryDeclaration",
@@ -189,6 +203,9 @@ __all__ = [
     "RuleMaturityReport",
     "RuleReviewEvidence",
     "SecretReference",
+    "SourceCapture",
+    "SourceRetrievalPolicy",
+    "SourceVerification",
     "StandardPack",
     "TargetGap",
     "TrackedBlobAnchor",
@@ -215,6 +232,7 @@ __all__ = [
     "ed25519_signature_message",
     "evaluate_rule_maturity_manifest",
     "ignored_inventory_digest",
+    "read_source_payload",
     "render_todo_entry",
     "report_markdown",
     "report_sarif",
@@ -222,9 +240,11 @@ __all__ = [
     "review_errors",
     "review_templates",
     "scan_repository",
+    "source_provenance_to_json",
     "transitive_dependents",
     "validate_campaign_input",
     "validate_digest_dependency_graph",
     "validate_promotion_campaign",
     "validate_reviews",
+    "verify_external_source",
 ]

@@ -52,6 +52,7 @@ from .rule_maturity import RuleMaturityReport
 from .rule_maturity_manifest import evaluate_rule_maturity_manifest
 from .sarif import report_sarif
 from .scanner import scan_repository
+from .source_provenance_cli import add_source_provenance_commands
 from .version import __version__
 
 
@@ -601,6 +602,7 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
     )
     residuals.set_defaults(handler=_residuals_check_command)
+    add_source_provenance_commands(subparsers)
     return parser
 
 

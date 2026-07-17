@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.3"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.4"
 
 DigestNode = Literal[
     "inventory",
@@ -24,6 +24,10 @@ DigestNode = Literal[
     "rule-pack",
     "maturity-policy",
     "rule-maturity",
+    "source-claim",
+    "source-retrieval-policy",
+    "source-capture",
+    "source-verification",
     "adapter-lock",
     "standard-pack",
     "toolchain",
@@ -91,6 +95,18 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
         "rule_maturity",
     ),
     DigestNodeSpec("rule-maturity", "maturity_digest", "rule_maturity"),
+    DigestNodeSpec("source-claim", "claim_digest", "source_provenance"),
+    DigestNodeSpec(
+        "source-retrieval-policy",
+        "policy_digest",
+        "source_capture",
+    ),
+    DigestNodeSpec("source-capture", "capture_digest", "source_capture"),
+    DigestNodeSpec(
+        "source-verification",
+        "verification_digest",
+        "source_provenance",
+    ),
     DigestNodeSpec("adapter-lock", "adapter_digest", "effective_profile"),
     DigestNodeSpec("standard-pack", "pack_digest", "standard_pack"),
     DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
@@ -111,6 +127,13 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("rule-pack", "report", "rule_pack_digest"),
     DigestDependency("rule-pack", "rule-maturity", "rule_pack_digest"),
     DigestDependency("maturity-policy", "rule-maturity", "policy + policy_digest"),
+    DigestDependency("source-claim", "source-verification", "claim"),
+    DigestDependency(
+        "source-retrieval-policy",
+        "source-capture",
+        "retrieval_policy + retrieval_policy_digest",
+    ),
+    DigestDependency("source-capture", "source-verification", "capture"),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),

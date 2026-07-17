@@ -56,6 +56,13 @@ independently versioned at schema 1.0, and enforcement consumes their exact
 content digest rather than treating top-level import stability as protocol
 compatibility.
 
+`ExternalSourceClaim`, `SourceRetrievalPolicy`, `SourceCapture`,
+`SourceVerification`, `SOURCE_PROVENANCE_SCHEMA_VERSION`,
+`read_source_payload`, `source_provenance_to_json`, and
+`verify_external_source` are provisional. Their schema 1.0 records distinguish
+declared retrieval metadata from publisher authority and bind claim, policy,
+capture, and successful offline verification through separate digests.
+
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
 version `0.1.1`. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a

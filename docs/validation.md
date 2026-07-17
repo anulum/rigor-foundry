@@ -88,6 +88,13 @@ report/campaign binding, filesystem-monitor suppression, reserved hook-path
 rejection, CLI configuration, and campaign divergence. These focused tests do
 not replace the hosted Python-version matrix.
 
+External source-provenance tests use real retained files through no-follow,
+single-link stable reads. They cover advisory, version, standard, and digest
+claims; duplicate JSON keys; JSON Pointer escapes and arrays; policy, URI,
+capture, freshness, and digest divergence; CLI capture-to-verification; public
+imports; and normative digest propagation. Packaging gates repeat the installed
+CLI workflow outside the source checkout.
+
 Security-sensitive tests must exercise public APIs with real processes,
 filesystems, and installed platform surfaces. The quality job runs
 `rigor residuals-check --root .` to reject private production-helper calls,

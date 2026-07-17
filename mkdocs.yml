@@ -34,6 +34,7 @@ nav:
   - First repository: getting-started.md
   - Architecture: architecture.md
   - Digest dependencies: digest-dependencies.md
+  - Source provenance: source-provenance.md
   - CLI: cli.md
   - SARIF export: sarif.md
   - Public API stability: api-stability.md

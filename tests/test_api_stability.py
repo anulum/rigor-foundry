@@ -48,6 +48,11 @@ def test_exact_top_level_exports_have_one_stability_class() -> None:
     )
     for name in rigor_foundry.__all__:
         assert getattr(rigor_foundry, name) is not None
+    assert rigor_foundry.ExternalSourceClaim.__module__ == "rigor_foundry.source_provenance"
+    assert rigor_foundry.SourceRetrievalPolicy.__module__ == "rigor_foundry.source_capture"
+    assert rigor_foundry.SourceCapture.__module__ == "rigor_foundry.source_capture"
+    assert rigor_foundry.SourceVerification.__module__ == "rigor_foundry.source_provenance"
+    assert rigor_foundry.verify_external_source.__module__ == "rigor_foundry.source_provenance"
 
 
 def test_public_api_manifest_is_deterministic_machine_readable_json() -> None:

@@ -352,7 +352,7 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.3"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.4"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
         "ignored-inventory",
@@ -361,6 +361,10 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "rule-pack",
         "maturity-policy",
         "rule-maturity",
+        "source-claim",
+        "source-retrieval-policy",
+        "source-capture",
+        "source-verification",
         "adapter-lock",
         "standard-pack",
         "toolchain",
@@ -372,13 +376,18 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 24
+    assert len(DIGEST_DEPENDENCIES) == 27
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.3"
+    assert digest_dependency_graph()["schema_version"] == "1.4"
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
     assert direct_dependents("maturity-policy") == ("rule-maturity",)
+    assert direct_dependents("source-claim") == ("source-verification",)
+    assert transitive_dependents("source-retrieval-policy") == (
+        "source-capture",
+        "source-verification",
+    )
     assert transitive_dependents("review") == ("task", "closure")
     assert transitive_dependents("toolchain") == (
         "effective-profile",
@@ -395,7 +404,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     )
     assert (
         digest_dependency_graph_digest()
-        == "7d050f9c2aa6ca636a71f18ccb89bf7a308c15eb5c586477f9ba24f6b138a8b8"
+        == "330b4078f3ac3f0cb4387a29524e95e39615e4881e69e1bfab6e83cd582665f8"
     )
 
 

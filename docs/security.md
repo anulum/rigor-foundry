@@ -50,6 +50,10 @@ and archive members as adversarial input.
   Campaign persistence and TODO promotion require the ignored-path check to
   reproduce the executable provenance already bound to the durable evidence.
 - Missing evidence never becomes pass.
+- External source capture records declared HTTPS acquisition metadata and exact
+  retained bytes; it is not publisher-signature or source-authority proof.
+  Verification runs offline, is scoped to the explicit retrieval policy, and
+  grants no remediation, waiver, suppression, or promotion authority.
 - SARIF export validates every supplied review against the exact report and
   retains unreviewed or `needs-evidence` candidates as review results. Only a
   completed `valid` review supplies defect severity. Repository-relative paths

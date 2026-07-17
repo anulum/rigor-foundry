@@ -114,6 +114,16 @@ rejected. The resulting maturity report binds the current rule-pack version and
 digest, complete threshold policy, sorted evidence, all rule assessments, and
 one `maturity_digest`.
 
+## External source retrieval policy
+
+External source provenance uses a standalone schema 1.0 retrieval policy; it
+is not silently inherited from repository scan policy. The policy requires a
+sorted unique host allowlist, explicit cross-origin redirect decision, at most
+ten redirects, positive timeout and freshness bounds, a byte limit no greater
+than 32 MiB, and sorted lowercase media types without parameters. Capture
+metadata must reproduce the complete policy and its digest. See
+[Verified external source provenance](source-provenance.md).
+
 ## Git executable trust
 
 Git bootstrap trust is runtime configuration, not repository-controlled policy:

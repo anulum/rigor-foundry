@@ -118,6 +118,15 @@ construction. Human-readable excerpts remain separate, whitespace-normalised,
 and limited to 512 UTF-8 bytes; large member sets carry a full count and
 SHA-256 with a bounded deterministic prefix.
 
+## External source boundary
+
+`source_capture.py` owns bounded retrieval policy, retained-byte capture
+identity, and no-follow stable reads. `source_provenance.py` owns exact
+advisory, version, standard, and content-digest assertions plus deterministic
+offline verification. Claim, policy, capture, and verification are separate
+digest nodes. Successful verification is retrieval-policy-only; HTTPS metadata never
+becomes publisher-signature evidence or change authority.
+
 ## Isolation boundary
 
 Git plumbing never resolves from ambient `PATH`. The default platform policy

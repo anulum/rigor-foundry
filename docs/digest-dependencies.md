@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.3 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.4 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -29,6 +29,10 @@ separately and are not misrepresented as unconditional digest edges.
 | Rule pack | `rule_pack_digest` | `rules` |
 | Maturity policy | `policy_digest` | `rule_maturity` |
 | Rule maturity | `maturity_digest` | `rule_maturity` |
+| Source claim | `claim_digest` | `source_provenance` |
+| Source retrieval policy | `policy_digest` | `source_capture` |
+| Source capture | `capture_digest` | `source_capture` |
+| Source verification | `verification_digest` | `source_provenance` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
 | Toolchain | `toolchain.identity_digest` | `campaign_evidence` |
@@ -75,6 +79,9 @@ the task baseline and a revalidation that names another candidate or report.
 | Rule pack | Report | `rule_pack_digest` |
 | Rule pack | Rule maturity | `rule_pack_digest` |
 | Maturity policy | Rule maturity | complete policy plus `policy_digest` |
+| Source claim | Source verification | complete claim |
+| Source retrieval policy | Source capture | policy plus `retrieval_policy_digest` |
+| Source capture | Source verification | complete capture |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
 | Toolchain | Effective profile | `toolchain_digest` |
@@ -117,6 +124,10 @@ absence of cycles.
   its exact `report_digest`, candidate identifier, and `review_digest`; the
   report recomputes those conditional member identities. Likewise, observe-mode
   enforcement may omit maturity, while ratchet and zero require and bind it.
+- External source provenance is a separate evidence subgraph. Current reports,
+  profiles, waivers, and standard packs do not unconditionally consume it.
+  Consumers must reference a specific verification digest in a separately
+  versioned schema migration rather than infer authority from source presence.
 - Comparison logic embeds the exact participating attestation, report, and
   review digests, plus the collapsed model-witness identities. The set of
   participating records is campaign-instance data rather than a fixed schema
@@ -137,10 +148,10 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 17 identities and cover inventory, ignored inventory, Git
+The tests compare all 21 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
 report, review, campaign, task, adapter-lock, standard-pack, effective-profile,
-and closure mutations. Strict parsing
-vectors reject altered closure schemas, fields, references, counts, and
+closure, source claim, retrieval policy, capture, and verification mutations.
+Strict parsing vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the
 same closure identity.
