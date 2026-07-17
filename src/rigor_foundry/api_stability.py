@@ -13,9 +13,16 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from .candidate_anchor import Candidate
+from .cli import report_markdown
+from .git_provenance import GitTrustPolicy
 from .model_primitives import require_semantic_version
+from .models import AuditPolicy, AuditReport, ReviewRecord
+from .review import review_templates, validate_reviews
+from .scanner import scan_repository
+from .version import __version__
 
-API_STABILITY_SCHEMA_VERSION = "1.0"
+API_STABILITY_SCHEMA_VERSION = "1.1"
 MINIMUM_DEPRECATION_MINOR_RELEASES = 2
 
 STABLE_PUBLIC_API: frozenset[str] = frozenset(
@@ -164,6 +171,21 @@ STABLE_PUBLIC_API_BINDINGS: Mapping[str, StableApiBinding] = MappingProxyType(
     }
 )
 
+_STABLE_PUBLIC_API_TARGETS: Mapping[str, object] = MappingProxyType(
+    {
+        "AuditPolicy": AuditPolicy,
+        "AuditReport": AuditReport,
+        "Candidate": Candidate,
+        "GitTrustPolicy": GitTrustPolicy,
+        "ReviewRecord": ReviewRecord,
+        "__version__": __version__,
+        "report_markdown": report_markdown,
+        "review_templates": review_templates,
+        "scan_repository": scan_repository,
+        "validate_reviews": validate_reviews,
+    }
+)
+
 
 DEPRECATED_PUBLIC_API: tuple[ApiDeprecation, ...] = ()
 
@@ -203,6 +225,7 @@ def _stable_binding_errors(
     exports: Mapping[str, object],
     stable: frozenset[str],
     binding_contract: Mapping[str, StableApiBinding],
+    target_contract: Mapping[str, object] | None,
 ) -> tuple[str, ...]:
     """Return stable-export runtime identity errors."""
     errors: list[str] = []
@@ -216,9 +239,24 @@ def _stable_binding_errors(
         errors.append(
             "stable binding contracts are unknown: " + ", ".join(sorted(extra_contracts))
         )
+    if target_contract is not None:
+        missing_targets = stable - set(target_contract)
+        extra_targets = set(target_contract) - stable
+        if missing_targets:
+            errors.append(
+                "stable object targets are missing: " + ", ".join(sorted(missing_targets))
+            )
+        if extra_targets:
+            errors.append("stable object targets are unknown: " + ", ".join(sorted(extra_targets)))
     for name in sorted(stable & set(exports) & set(binding_contract)):
         value = exports[name]
         expected = binding_contract[name]
+        if (
+            target_contract is not None
+            and name in target_contract
+            and value is not target_contract[name]
+        ):
+            errors.append(f"{name}: stable export object changed")
         if expected.kind == "class":
             kind_matches = isinstance(value, type)
         elif expected.kind == "function":
@@ -249,6 +287,7 @@ def public_api_contract_errors(
     provisional: frozenset[str] = PROVISIONAL_PUBLIC_API,
     deprecated: tuple[ApiDeprecation, ...] = DEPRECATED_PUBLIC_API,
     stable_bindings: Mapping[str, StableApiBinding] = STABLE_PUBLIC_API_BINDINGS,
+    stable_targets: Mapping[str, object] | None = None,
 ) -> tuple[str, ...]:
     """Return deterministic classification and runtime-binding errors."""
     errors: list[str] = []
@@ -282,7 +321,12 @@ def public_api_contract_errors(
         errors.append("unclassified top-level exports: " + ", ".join(sorted(missing)))
     if unknown:
         errors.append("classified names are not exported: " + ", ".join(sorted(unknown)))
-    errors.extend(_stable_binding_errors(bindings, stable, stable_bindings))
+    target_contract = (
+        _STABLE_PUBLIC_API_TARGETS
+        if stable_targets is None and stable == STABLE_PUBLIC_API
+        else stable_targets
+    )
+    errors.extend(_stable_binding_errors(bindings, stable, stable_bindings, target_contract))
     for item in deprecated:
         errors.extend(f"{item.name}: {error}" for error in _deprecation_errors(item))
         if item.replacement and item.replacement not in classified:

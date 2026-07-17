@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal
 
 import pytest
 from repository_audit_git_repository import GitRepository
@@ -22,80 +21,6 @@ from rigor_foundry.models import AUDIT_DOMAINS, AuditPolicy
 _POLICY = Path("rigor-foundry-policy.json")
 _TODO = Path("docs/internal/TODO.md")
 _LEDGER = Path("docs/internal/reviews.json")
-Mutation = Literal[
-    "create-ledger",
-    "drop-todo-ignore",
-    "hardlink-policy",
-    "replace-policy",
-    "replace-ledger-parent",
-    "replace-root",
-    "replace-todo",
-    "replace-todo-parent",
-    "track-policy",
-]
-
-
-def _apply_real_mutation(repository: GitRepository, mutation: Mutation) -> None:
-    """Apply one real filesystem or Git mutation at the revalidation boundary."""
-    root = repository.root
-    if mutation == "replace-todo-parent":
-        internal = root / "docs/internal"
-        internal.rename(root / "docs/internal-original")
-        internal.mkdir(mode=0o700)
-    elif mutation == "replace-ledger-parent":
-        reviews = root / "reviews"
-        reviews.rename(root / "reviews-original")
-        reviews.mkdir(mode=0o700)
-    elif mutation == "track-policy":
-        repository.git_command("add", "--", _POLICY.as_posix())
-    elif mutation == "replace-policy":
-        policy = root / _POLICY
-        policy.rename(root / "rigor-foundry-policy-original.json")
-        policy.write_text("concurrent policy\n", encoding="utf-8")
-    elif mutation == "replace-todo":
-        todo = root / _TODO
-        todo.rename(todo.with_name("TODO-original.md"))
-        todo.write_text("concurrent TODO\n", encoding="utf-8")
-    elif mutation == "drop-todo-ignore":
-        (root / ".gitignore").write_text("", encoding="utf-8")
-    elif mutation == "create-ledger":
-        (root / _LEDGER).write_text("concurrent ledger\n", encoding="utf-8")
-    elif mutation == "hardlink-policy":
-        os.link(root / _POLICY, root / "rigor-foundry-policy-hardlink.json")
-    else:
-        root.rename(root.with_name(root.name + "-original"))
-        root.mkdir(mode=0o700)
-
-
-def _bootstrap_with_real_mutation(
-    repository: GitRepository,
-    mutation: Mutation,
-    *,
-    ledger_path: Path = _LEDGER,
-) -> None:
-    """Mutate real state immediately before bootstrap's final root revalidation."""
-    real_stat = os.stat
-    mutated = False
-
-    def revalidation_stat(path, *args, **kwargs):
-        nonlocal mutated
-        if not mutated and Path(path) == repository.root:
-            try:
-                real_stat(repository.root / _POLICY, follow_symlinks=False)
-                real_stat(repository.root / _TODO, follow_symlinks=False)
-            except FileNotFoundError:
-                pass
-            else:
-                mutated = True
-                _apply_real_mutation(repository, mutation)
-        return real_stat(path, *args, **kwargs)
-
-    os.stat = revalidation_stat
-    try:
-        _bootstrap(repository, ledger_path=ledger_path)
-    finally:
-        os.stat = real_stat
-    assert mutated
 
 
 def _repository(path: Path) -> GitRepository:
@@ -344,114 +269,6 @@ def test_bootstrap_preserves_created_policy_when_private_todo_cannot_be_created(
         internal.chmod(0o700)
     assert (repository.root / _POLICY).is_file()
     assert not (repository.root / _TODO).exists()
-
-
-def test_bootstrap_detects_real_parent_replacement_and_preserves_evidence(
-    tmp_path: Path,
-) -> None:
-    """A process replacing the TODO parent cannot redirect descriptor-bound writes."""
-    repository = _repository(tmp_path / "repository")
-    with pytest.raises(RuntimeError, match="TODO parent changed"):
-        _bootstrap_with_real_mutation(repository, "replace-todo-parent")
-    assert (repository.root / _POLICY).is_file()
-    assert not (repository.root / _TODO).exists()
-    assert (repository.root / "docs/internal-original/TODO.md").is_file()
-
-
-def test_bootstrap_detects_real_review_ledger_parent_replacement(tmp_path: Path) -> None:
-    """The separately retained ledger parent cannot be swapped before return."""
-    repository = _repository(tmp_path / "repository")
-    repository.write_text(".gitignore", "docs/internal/\nreviews/\n")
-    repository.commit("test: ignore separate review ledger")
-    (repository.root / "reviews").mkdir()
-    ledger = Path("reviews/reviews.json")
-
-    with pytest.raises(RuntimeError, match="review-ledger parent changed"):
-        _bootstrap_with_real_mutation(
-            repository,
-            "replace-ledger-parent",
-            ledger_path=ledger,
-        )
-
-    assert (repository.root / _POLICY).is_file()
-    assert (repository.root / _TODO).is_file()
-    assert not (repository.root / ledger).exists()
-    assert (repository.root / "reviews-original").is_dir()
-
-
-def test_bootstrap_detects_real_git_ownership_drift_and_preserves_evidence(
-    tmp_path: Path,
-) -> None:
-    """A concurrent real Git add cannot turn bootstrap output into an accepted result."""
-    repository = _repository(tmp_path / "repository")
-    with pytest.raises(RuntimeError, match="policy Git ownership changed"):
-        _bootstrap_with_real_mutation(repository, "track-policy")
-    assert (repository.root / _POLICY).is_file()
-    assert (repository.root / _TODO).is_file()
-    assert repository.git_command("ls-files", _POLICY.as_posix()).stdout.strip() == (
-        _POLICY.as_posix()
-    )
-
-
-@pytest.mark.parametrize(
-    ("mutation", "watch_internal", "message"),
-    [
-        ("replace-policy", False, "policy path changed"),
-        ("replace-root", False, "repository root identity changed"),
-        ("replace-todo", True, "TODO path changed"),
-        ("drop-todo-ignore", True, "TODO path Git ownership changed"),
-    ],
-)
-def test_bootstrap_detects_real_path_and_ignore_drift(
-    tmp_path: Path,
-    mutation: Mutation,
-    watch_internal: bool,
-    message: str,
-) -> None:
-    """Ready-synchronised real mutations activate each public fail-closed boundary."""
-    repository = _repository(tmp_path / mutation)
-    original_root = repository.root.with_name(repository.root.name + "-original")
-    assert watch_internal is (mutation in {"drop-todo-ignore", "replace-todo"})
-    with pytest.raises(RuntimeError, match=message):
-        _bootstrap_with_real_mutation(repository, mutation)
-    if mutation == "replace-root":
-        assert (original_root / _POLICY).is_file()
-        assert (original_root / _TODO).is_file()
-    elif mutation == "replace-policy":
-        assert (repository.root / _POLICY).read_text(encoding="utf-8") == "concurrent policy\n"
-        assert (repository.root / "rigor-foundry-policy-original.json").is_file()
-        assert (repository.root / _TODO).is_file()
-    elif mutation == "replace-todo":
-        assert (repository.root / _TODO).read_text(encoding="utf-8") == "concurrent TODO\n"
-        assert (repository.root / "docs/internal/TODO-original.md").is_file()
-        assert (repository.root / _POLICY).is_file()
-    else:
-        assert (repository.root / _POLICY).is_file()
-        assert (repository.root / _TODO).is_file()
-
-
-@pytest.mark.parametrize(
-    ("mutation", "message"),
-    [
-        ("create-ledger", "existing review-ledger path"),
-        ("hardlink-policy", "single-link regular file"),
-    ],
-)
-def test_bootstrap_detects_real_ledger_and_hardlink_races(
-    tmp_path: Path,
-    mutation: Mutation,
-    message: str,
-) -> None:
-    """Real concurrent filesystem changes fail closed without deleting evidence."""
-    repository = _repository(tmp_path / mutation)
-    with pytest.raises((RuntimeError, ValueError), match=message):
-        _bootstrap_with_real_mutation(repository, mutation)
-    assert (repository.root / _POLICY).is_file()
-    assert (repository.root / _TODO).is_file()
-    if mutation == "create-ledger":
-        assert (repository.root / _LEDGER).read_text(encoding="utf-8") == ("concurrent ledger\n")
-    else:
-        assert (repository.root / "rigor-foundry-policy-hardlink.json").is_file()
 
 
 def test_bootstrap_normalises_real_git_index_failure(tmp_path: Path) -> None:

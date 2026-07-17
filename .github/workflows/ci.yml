@@ -206,7 +206,7 @@ jobs:
           cd /tmp
           /tmp/rigor-wheel/bin/rigor --help
           /tmp/rigor-wheel/bin/rigor --version
-          /tmp/rigor-wheel/bin/python -c 'import rigor_foundry as package; from rigor_foundry.api_stability import public_api_contract_errors, public_api_manifest; assert public_api_contract_errors(package.__all__, vars(package)) == (); assert public_api_manifest()["schema_version"] == "1.0"'
+          /tmp/rigor-wheel/bin/python -c 'import rigor_foundry as package; from rigor_foundry.api_stability import public_api_contract_errors, public_api_manifest; assert public_api_contract_errors(package.__all__, vars(package)) == (); assert public_api_manifest()["schema_version"] == "1.1"'
           rm -rf /tmp/rigor-adopter
           mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal
           git -C /tmp/rigor-adopter init --initial-branch=main

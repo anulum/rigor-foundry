@@ -309,6 +309,14 @@ def bootstrap_repository(
         root_after = os.stat(repository, follow_symlinks=False)
         if (root_after.st_dev, root_after.st_ino) != root_identity:
             raise RuntimeError("repository root identity changed during bootstrap")
+        reopened_policy_parent, _ = _open_parent(
+            repository_descriptor, policy_relative, "policy path"
+        )
+        try:
+            if _directory_identity(reopened_policy_parent) != _directory_identity(policy_parent):
+                raise RuntimeError("policy parent changed during bootstrap")
+        finally:
+            os.close(reopened_policy_parent)
         reopened_todo_parent, _ = _open_parent(repository_descriptor, todo_relative, "TODO path")
         try:
             if _directory_identity(reopened_todo_parent) != _directory_identity(todo_parent):

@@ -54,6 +54,14 @@ def test_public_api_manifest_is_deterministic_machine_readable_json() -> None:
     """Consumers can persist an ordered stability inventory without imports-by-guess."""
     manifest = public_api_manifest()
     assert manifest["schema_version"] == API_STABILITY_SCHEMA_VERSION
+    assert API_STABILITY_SCHEMA_VERSION == "1.1"
+    assert set(manifest) == {
+        "deprecated",
+        "provisional",
+        "schema_version",
+        "stable",
+        "stable_bindings",
+    }
     assert manifest["stable"] == sorted(STABLE_PUBLIC_API)
     assert set(manifest["stable_bindings"]) == STABLE_PUBLIC_API
     assert manifest["provisional"] == sorted(PROVISIONAL_PUBLIC_API)
@@ -92,8 +100,20 @@ def test_contract_rejects_incompatible_stable_export_rebinding() -> None:
     """A stable name cannot retain its spelling while changing runtime identity."""
     bindings = dict(vars(rigor_foundry))
     bindings["AuditPolicy"] = 7
-    assert public_api_contract_errors(rigor_foundry.__all__, bindings) == (
-        "AuditPolicy: stable export kind changed",
+    errors = public_api_contract_errors(rigor_foundry.__all__, bindings)
+    assert "AuditPolicy: stable export kind changed" in errors
+    assert "AuditPolicy: stable export object changed" in errors
+
+    def replacement(*args: object, **kwargs: object) -> object:
+        return args, kwargs
+
+    canonical = rigor_foundry.scan_repository
+    replacement.__module__ = canonical.__module__
+    replacement.__qualname__ = canonical.__qualname__
+    bindings = dict(vars(rigor_foundry))
+    bindings["scan_repository"] = replacement
+    assert "scan_repository: stable export object changed" in public_api_contract_errors(
+        rigor_foundry.__all__, bindings
     )
 
 
@@ -125,6 +145,22 @@ def test_contract_rejects_missing_and_malformed_binding_records() -> None:
         stable=frozenset(),
         provisional=frozenset(),
         stable_bindings={"extra": StableApiBinding("str", None, None)},
+    )
+    assert "stable object targets are missing: value" in public_api_contract_errors(
+        ("value",),
+        {"value": "value"},
+        stable=frozenset({"value"}),
+        provisional=frozenset(),
+        stable_bindings={"value": StableApiBinding("str", None, None)},
+        stable_targets={},
+    )
+    assert "stable object targets are unknown: extra" in public_api_contract_errors(
+        (),
+        {},
+        stable=frozenset(),
+        provisional=frozenset(),
+        stable_bindings={},
+        stable_targets={"extra": "extra"},
     )
     assert "value: stable binding kind is invalid" in public_api_contract_errors(
         ("value",),

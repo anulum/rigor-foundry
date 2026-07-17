@@ -1,7 +1,7 @@
 # Public API stability
 
 RigorFoundry inventories every name in the package-level `rigor_foundry.__all__`
-under API-stability schema `1.0`. The authoritative machine-readable inventory
+under API-stability schema `1.1`. The authoritative machine-readable inventory
 is returned by:
 
 ```python
@@ -13,8 +13,9 @@ manifest = public_api_manifest()
 The result has sorted `stable` and `provisional` name arrays, exact stable
 runtime-binding records, and structured `deprecated` records. Compatibility
 tests require every top-level export to have exactly one classification. Every
-stable binding is also checked for its object kind, implementation module, and
-qualified name, so retaining a spelling while rebinding it incompatibly fails.
+stable binding is also checked for its exact canonical object identity, object
+kind, implementation module, and qualified name, so retaining or spoofing a
+spelling while rebinding it fails.
 
 ## Stable imports
 
