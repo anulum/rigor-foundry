@@ -810,14 +810,14 @@ def test_maturity_policy_mutation_rebinds_the_complete_rule_assessment() -> None
     before_policy = _maturity_policy()
     after_policy = _maturity_policy(maximum_p90_effort_seconds=120)
     adapter, pack, lock = _effective_records()
-    stable: dict[str, str] = {
+    stable: DigestSnapshot = {
         "adapter-lock": adapter.adapter_digest,
         "standard-pack": pack.pack_digest,
         "effective-profile": lock.lock_digest,
     }
-    before: dict[str, str] = dict(stable)
+    before: DigestSnapshot = dict(stable)
     before.update(_maturity_snapshot(before_policy))
-    after: dict[str, str] = dict(stable)
+    after: DigestSnapshot = dict(stable)
     after.update(_maturity_snapshot(after_policy))
 
     _assert_transition("maturity-policy", before, after)

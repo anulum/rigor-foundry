@@ -169,6 +169,11 @@ def test_observe_records_candidates_but_native_required_failure_blocks() -> None
     assert not blocked.passed
     assert "native audit security failed" in blocked.blockers[0]
 
+    pinned = _report(maturity_policy_digest="a" * 64)
+    pinned_observe = evaluate_enforcement(pinned, (), "observe")
+    assert pinned_observe.maturity_digest is None
+    type(pinned_observe).from_dict(pinned_observe.to_dict()).assert_report(pinned)
+
 
 def test_enforcement_schema_version_declares_sandbox_provenance_migration() -> None:
     """Enforcement 1.3 binds maturity policy alongside maturity evidence."""

@@ -120,6 +120,20 @@ def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path
     assert assessment.status == "active"
     assert assessment.probation_reasons == ()
 
+    observed = repository.run_audit(
+        "gate",
+        "--root",
+        ".",
+        "--policy",
+        POLICY,
+        "--review",
+        str(review_path),
+    )
+    assert observed.returncode == 0, observed.stderr
+    observed_gate = json.loads(observed.stdout)
+    assert observed_gate["mode"] == "observe"
+    assert observed_gate["maturity_digest"] is None
+
     no_maturity = repository.run_audit(
         "gate",
         "--root",

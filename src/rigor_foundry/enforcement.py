@@ -345,6 +345,7 @@ class EnforcementResult:
             raise ValueError("enforcement artifact uses a different maturity policy")
         if (
             expected_maturity_policy is not None
+            and self.maturity_digest is not None
             and expected_maturity_policy != self.maturity_policy_digest
         ):
             raise ValueError("enforcement artifact uses a different maturity policy")
@@ -429,7 +430,8 @@ def evaluate_enforcement(
         validated_maturity.policy.policy_digest if validated_maturity is not None else None
     )
     if (
-        expected_maturity_policy is not None
+        validated_maturity is not None
+        and expected_maturity_policy is not None
         and observed_maturity_policy != expected_maturity_policy
     ):
         raise ValueError("rule maturity evidence uses a different repository maturity policy")
