@@ -74,6 +74,36 @@ def test_cli_rejects_invalid_outputs_reviews_selection_and_weaker_mode(
         )
         == 0
     )
+    contradictory_document = json.loads(review_path.read_text(encoding="utf-8"))
+    contradictory_document["reviews"][0]["severity"] = "P0"
+    contradictory_path = repository.root / ".coordination/contradictory-reviews.json"
+    contradictory_path.write_text(json.dumps(contradictory_document), encoding="utf-8")
+    assert (
+        main(
+            [
+                "validate-review",
+                "--report",
+                str(report_path),
+                "--review",
+                str(contradictory_path),
+            ]
+        )
+        == 1
+    )
+    assert "only a valid finding may carry severity" in capsys.readouterr().out
+    assert (
+        main(
+            [
+                "sarif",
+                "--report",
+                str(report_path),
+                "--review",
+                str(contradictory_path),
+            ]
+        )
+        == 2
+    )
+    assert "only a valid finding may carry severity" in capsys.readouterr().err
     assert (
         main(
             [

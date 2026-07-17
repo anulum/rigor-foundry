@@ -173,11 +173,6 @@ def _sarif_document(
         If reviews are duplicated, incomplete, or belong to another report.
     """
     errors = validate_reviews(report, reviews)
-    errors += tuple(
-        f"reviews[{index}]: non-valid SARIF review must not carry severity"
-        for index, review in enumerate(reviews)
-        if review.decision != "valid" and review.severity is not None
-    )
     if errors:
         raise ValueError("invalid SARIF reviews: " + "; ".join(errors))
     review_by_candidate = {review.candidate_id: review for review in reviews}

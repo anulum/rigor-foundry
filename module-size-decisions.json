@@ -15,8 +15,8 @@
       "responsibility": "Normative digest-dependency graph owner proving schema completeness, acyclicity, exact mutation propagation, stable non-edges, canonical identities, and runtime graph queries."
     },
     {
-      "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, and standard-pack records plus signing fixtures. Private _remediation_graph.argv_digest is used only to construct command-bound AdapterLock fixtures; no remediation executor or mutation authority is exercised.",
-      "lines": 710,
+      "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, standard-pack, and canonical-digest records plus signing fixtures. Command-bound AdapterLock fixtures derive their digest through the public canonical_digest contract; no private production helper, remediation executor, or mutation authority is exercised.",
+      "lines": 711,
       "path": "tests/test_remediation_plan.py",
       "reassess_when": "The file exceeds 850 lines, execution authority is introduced, planning and scheduling become independently versioned protocols, or any additional private production helper is required by the tests.",
       "responsibility": "Advisory RemediationPlan protocol owner for gaps, steps, lanes, approval, dependency DAGs, conflict-safe batching, command binding, rollback bounds, and cross-record identity rejection."

@@ -67,6 +67,8 @@ def _common_review_errors(report: AuditReport, review: ReviewRecord) -> list[str
         errors.append("review report_digest does not match the report")
     if review.candidate_id not in candidate_ids:
         errors.append("review candidate_id is absent from the report")
+    if review.decision != "valid" and review.severity is not None:
+        errors.append("only a valid finding may carry severity")
     if review.decision == "needs-evidence":
         return errors
     if not review.reviewer.strip():

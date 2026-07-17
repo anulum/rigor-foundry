@@ -15,7 +15,6 @@ from typing import cast
 import pytest
 from signing_fixtures import pack_signature, trust_store
 
-from rigor_foundry._remediation_graph import argv_digest
 from rigor_foundry.control_assessment import ControlAssessment, EvidenceReference
 from rigor_foundry.effective_profile import (
     AdapterLock,
@@ -23,6 +22,7 @@ from rigor_foundry.effective_profile import (
     EffectiveProfileLock,
     PackVerification,
 )
+from rigor_foundry.models import canonical_digest
 from rigor_foundry.project_profile import (
     REQUIRED_INTENT_CATEGORIES,
     PackSelection,
@@ -83,7 +83,7 @@ def adapter_lock(adapter_id: str, argv: tuple[str, ...]) -> AdapterLock:
         version="1.0.0",
         executable_digest="5" * 64,
         config_digest="6" * 64,
-        command_digest=argv_digest(argv),
+        command_digest=canonical_digest({"argv": list(argv)}),
         environment_digest="8" * 64,
         domains=("architecture-and-wiring",),
     )
@@ -358,6 +358,7 @@ def test_plan_is_advisory_until_independent_exact_approval() -> None:
     assert approved.state == "approved"
     assert approved.body_digest == plan.body_digest
     assert approved.plan_digest != plan.plan_digest
+    assert approved.approval is not None
     assert approved.to_dict()["approval"] == approved.approval.to_dict()
     assert approved.execution_batches() == (("lane-base",), ("lane-dependent",))
     with pytest.raises(ValueError, match="only an advisory"):

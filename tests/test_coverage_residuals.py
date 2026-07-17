@@ -242,6 +242,25 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
     )
 
 
+def test_negative_search_rejects_private_production_imports(tmp_path: Path) -> None:
+    """Protocol tests cannot reconstruct evidence with private production helpers."""
+    root = _copy_contract(tmp_path)
+    remediation_test = root / "tests/test_remediation_plan.py"
+    remediation_test.write_text(
+        remediation_test.read_text(encoding="utf-8")
+        + "\nfrom rigor_foundry._remediation_graph import argv_digest\n",
+        encoding="utf-8",
+    )
+
+    errors = coverage_residual_errors(root)
+
+    assert any(
+        "NS-NO-PRIVATE-SIMULATION: prohibited test simulation matches "
+        "tests/test_remediation_plan.py" in error
+        for error in errors
+    )
+
+
 def test_missing_public_verification_reference_blocks_manifest(tmp_path: Path) -> None:
     """A residual cannot outlive the public regression named as its nearest evidence."""
     root = _copy_contract(tmp_path)

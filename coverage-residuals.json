@@ -324,17 +324,19 @@
         "tests/test_digest_dependencies.py",
         "tests/test_git_provenance.py",
         "tests/test_preflight.py",
+        "tests/test_remediation_plan.py",
         "tests/test_rules.py",
         "tests/test_sandbox_provenance.py",
         "tests/test_trusted_executable.py"
       ],
       "patterns": [
+        "(?:from|import)\\s+rigor_foundry\\._[A-Za-z0-9_]+",
         "\\._(?:snapshot_file|open_no_follow|validate_path|locate|environment|metadata_command|sandbox_contract|mount_parent_arguments)\\(",
         "\\b(?:monkeypatch|patch)\\.setattr\\(",
         "\\bobject\\.__new__\\(",
         "from tools\\.preflight import [^\\n]*\\b_run\\b"
       ],
-      "rationale": "claimed security coverage must use public APIs and real processes, filesystems, or platform CI; production-private calls and monkeypatched internals are prohibited"
+      "rationale": "claimed security and protocol coverage must use public APIs and real processes, filesystems, or platform CI; production-private imports or calls and monkeypatched internals are prohibited"
     }
   ]
 }

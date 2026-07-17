@@ -88,6 +88,10 @@ def test_templates_are_non_promotable_and_valid_review_renders_bounded_todo(
     assert len(template) == 1
     assert template[0].decision == "needs-evidence"
     assert validate_reviews(report, template) == ()
+    contradictory = replace(template[0], severity="P0")
+    assert validate_reviews(report, (contradictory,)) == (
+        "reviews[0]: only a valid finding may carry severity",
+    )
     with pytest.raises(ValueError, match="only reviewed valid"):
         render_todo_entry(report, template[0])
 

@@ -190,7 +190,7 @@ def test_export_carries_repository_tree_anchor_and_rejects_bad_reviews(tmp_path:
     with pytest.raises(ValueError, match="valid finding requires severity"):
         rigor_foundry.report_sarif(report, (incomplete,))
     contradictory = ReviewRecord.from_dict({**template.to_dict(), "severity": "P0"})
-    with pytest.raises(ValueError, match="non-valid SARIF review must not carry severity"):
+    with pytest.raises(ValueError, match="only a valid finding may carry severity"):
         rigor_foundry.report_sarif(report, (contradictory,))
 
 
