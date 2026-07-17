@@ -80,30 +80,39 @@ def test_distributable_hook_requires_locked_runtime_and_defaults_to_passive_gate
 def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     """Distribution CI runs the local Action and cloned hook outside the source tree."""
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    match = re.search(
+        r"^  distribution:\n(?P<body>.*?)(?=^  [a-zA-Z0-9_-]+:\n|\Z)",
+        workflow,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert match is not None
+    distribution = match.group("body")
 
-    assert "Run consumer action against external fixture" in workflow
-    assert "uses: ./" in workflow
-    assert "repository-root: /tmp/rigor-adopter" in workflow
-    assert "'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore" in workflow
-    assert "report-path: /tmp/rigor-adopter/reports/action-report.json" in workflow
-    assert "gate-report-path: /tmp/rigor-adopter/reports/action-gate.json" in workflow
-    assert 'allow-native-audits: "false"' in workflow
-    assert "Install and run distributable hook in external fixture" in workflow
-    assert "RF_DISTRIBUTION_PYTHON=%s" in workflow
-    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run' in workflow
-    assert 'PATH="/tmp/rigor-wheel/bin:$PATH"' in workflow
-    assert '"  - repo: file://${SOURCE_REPOSITORY}"' in workflow
-    assert '"    rev: ${SOURCE_REVISION}"' in workflow
+    bind = distribution.index("Bind distribution Python before nested Actions")
+    action = distribution.index("Run consumer action against external fixture")
+    hook = distribution.index("Install and run distributable hook in external fixture")
+    assert bind < action < hook
+    assert "uses: ./" in distribution
+    assert "repository-root: /tmp/rigor-adopter" in distribution
+    assert "'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore" in distribution
+    assert "report-path: /tmp/rigor-adopter/reports/action-report.json" in distribution
+    assert "gate-report-path: /tmp/rigor-adopter/reports/action-gate.json" in distribution
+    assert 'allow-native-audits: "false"' in distribution
+    assert "RF_DISTRIBUTION_PYTHON=%s" in distribution
+    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run' in distribution
+    assert 'PATH="/tmp/rigor-wheel/bin:$PATH"' in distribution
+    assert '"  - repo: file://${SOURCE_REPOSITORY}"' in distribution
+    assert '"    rev: ${SOURCE_REVISION}"' in distribution
     for argument in ("gate", "--root", "--policy", "--mode", "--scope", "--output"):
-        assert f"'          - {argument}'" in workflow
-    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run --all-files' in workflow
+        assert f"'          - {argument}'" in distribution
+    assert '"$RF_DISTRIBUTION_PYTHON" -m pre_commit run --all-files' in distribution
     for output in (
         "reports/pre-commit-gate.json",
         "reports/action-report.json",
         "reports/action-gate.json",
     ):
-        assert f"test -s {output}" in workflow
-    assert "/tmp/rigor-adopter/reports/*.json" in workflow
+        assert f"test -s {output}" in distribution
+    assert "/tmp/rigor-adopter/reports/*.json" in distribution
 
 
 def test_public_integration_examples_use_the_immutable_successor_revision() -> None:
