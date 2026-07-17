@@ -87,7 +87,7 @@
       "guard": "policy parent changed during bootstrap",
       "source_digest": "391d7d243a06a49ac005043ec2da804aa7fb5e60a0b5ec4c157d2e6bdc940fe6",
       "owner": "onboarding-security",
-      "rationale": "final root, policy, TODO, ledger-parent, leaf, and Git ownership guards detect mutation after exclusive creation; deterministic activation requires a public staged transaction boundary or kernel scheduler control, while patched Python syscalls and timing-dependent process races are forbidden evidence",
+      "rationale": "final root, policy, TODO, ledger-parent, leaf, and Git ownership guards sample those identities after exclusive creation; deterministic activation requires a public staged transaction boundary or kernel scheduler control, while patched Python syscalls and timing-dependent process races are forbidden evidence; the separate ledger-postcheck residual records the absence-sample limitation",
       "public_verification": [
         "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
         "tests/test_bootstrap.py::test_bootstrap_preserves_created_policy_when_private_todo_cannot_be_created"
@@ -114,6 +114,26 @@
       "revisit_triggers": [
         "a deterministic Git-command boundary mutation hook becomes public",
         "bootstrap Git checks move behind a kernel transaction"
+      ],
+      "reviewed_on": "2026-07-17",
+      "review_by": "2026-10-15"
+    },
+    {
+      "residual_id": "CR-BOOTSTRAP-LEDGER-POSTCHECK",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/bootstrap.py",
+      "symbol": "bootstrap_repository",
+      "guard": "_require_absent(ledger_parent, ledger_name, \"review-ledger path\")",
+      "source_digest": "391d7d243a06a49ac005043ec2da804aa7fb5e60a0b5ec4c157d2e6bdc940fe6",
+      "owner": "onboarding-security",
+      "rationale": "review-ledger absence is sampled before writes and again before final Git checks, but cannot reserve a path the tool intentionally does not create; a concurrent owner can populate it after the last sample, so the successful result carries point-in-time absence rather than an atomic no-adoption guarantee",
+      "public_verification": [
+        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
+        "tests/test_bootstrap.py::test_bootstrap_rejects_tracked_internal_paths_and_invalid_thresholds"
+      ],
+      "revisit_triggers": [
+        "a public staged bootstrap transaction boundary is introduced",
+        "adopters accept bootstrap creating an atomic ledger reservation"
       ],
       "reviewed_on": "2026-07-17",
       "review_by": "2026-10-15"

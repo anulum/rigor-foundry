@@ -36,7 +36,7 @@ execution, or production promotion.
 | Signature domains | Exact message vector, invalid domains, legacy raw signatures, schema migration, and cross-protocol replay | Same contracts plus supported Python matrix |
 | Digest dependencies | Production-record mutation propagation, stable non-edges, graph schema, and strict closure tampering | Same contracts plus full supported Python matrix |
 | Classified residuals | Exact source-symbol binding, expiry, public-test references, and preregistered negative searches | Same contract plus aggregate branch-aware coverage evidence |
-| Onboarding/API stability | Real Git bootstrap, no-adoption/no-overwrite, preserved failure evidence, exact version, binding-aware export inventory, and deprecation-window tests | Installed-wheel version, binding-aware API, and real Git bootstrap/no-overwrite smoke |
+| Onboarding/API stability | Real Git bootstrap, rejection of pre-existing canonical state, point-in-time ledger absence, preserved failure evidence, exact version, binding-aware export inventory, and deprecation-window tests | Installed-wheel version, binding-aware API, and real Git bootstrap/no-overwrite smoke |
 
 The onboarding/API-stability owner tests execute bootstrap through real Git
 repositories and filesystem objects. They require exact-path success,

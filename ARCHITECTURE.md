@@ -28,11 +28,12 @@ append-only ignored storage, and disagreement comparison.
 binds every filesystem write to retained no-follow directory descriptors,
 requires internal TODO/review paths to be ignored and the policy to remain
 trackable, and preserves created incident evidence after a failed attempt. It
-does not discover or create parents, adopt an existing TODO or review ledger,
-or infer domain applicability. `version.py` owns the import-safe package
-identity, while `api_stability.py` inventories every package-level export and
-enforces disjoint stable, provisional, and deprecated lifecycle classes plus
-exact stable runtime identities.
+does not discover or create parents, adopt a TODO or review ledger observed at
+either validation sample, or infer domain applicability. Ledger absence is a
+point-in-time observation rather than an atomic reservation. `version.py` owns
+the import-safe package identity, while `api_stability.py` inventories every
+package-level export and enforces disjoint stable, provisional, and deprecated
+lifecycle classes plus exact stable runtime identities.
 
 ### Inventory
 

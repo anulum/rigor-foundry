@@ -18,9 +18,10 @@ generator.
 Adopter initialization is a separate, explicit write boundary. `bootstrap.py`
 requires the caller to name the policy, canonical TODO, review ledger, and
 source/test roots; it creates only the absent policy and TODO through retained
-no-follow directory descriptors. It never infers applicability or adopts an
-existing ledger. `version.py` owns package/CLI identity, and
-`api_stability.py` classifies every package-level export under a versioned
+no-follow directory descriptors. It never infers applicability and rejects a
+ledger present at either validation sample. Ledger absence is not atomically
+reserved against a concurrent creator. `version.py` owns package/CLI identity,
+and `api_stability.py` classifies every package-level export under a versioned
 stable, provisional, or deprecated contract.
 
 Portable scanner scope is projected from one typed language-capability
