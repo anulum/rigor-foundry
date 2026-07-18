@@ -73,6 +73,30 @@ _INSECURE_TEMP = _Signal(
         "descriptor."
     ),
 )
+_DISABLED_TLS = _Signal(
+    rule_id="AS012-disabled-tls-verification",
+    confidence="high",
+    rationale=(
+        "verify=False disables certificate verification, so a network attacker can present any "
+        "certificate and read or alter the traffic."
+    ),
+    verification=(
+        "Restore verification (verify=True or a trusted CA bundle); if a self-signed host is truly "
+        "required, pin its certificate instead of disabling verification."
+    ),
+)
+_INSECURE_SSL = _Signal(
+    rule_id="AS013-insecure-ssl-context",
+    confidence="high",
+    rationale=(
+        "ssl._create_unverified_context returns a context that accepts any certificate, so the peer "
+        "is never authenticated."
+    ),
+    verification=(
+        "Use ssl.create_default_context, or a context with an explicit trusted CA, so the peer "
+        "certificate is verified."
+    ),
+)
 
 
 def _line_evidence(item: TrackedFile, line: int) -> str:
@@ -102,6 +126,16 @@ def _has_shell_true(node: ast.Call) -> bool:
     )
 
 
+def _has_verify_false(node: ast.Call) -> bool:
+    """Return whether the call passes a literal ``verify=False`` keyword."""
+    return any(
+        keyword.arg == "verify"
+        and isinstance(keyword.value, ast.Constant)
+        and keyword.value.value is False
+        for keyword in node.keywords
+    )
+
+
 def _is_attribute(node: ast.expr, module: str, attributes: frozenset[str]) -> bool:
     """Return whether ``node`` is ``module.<attr>`` for one accepted attribute."""
     return (
@@ -127,6 +161,10 @@ def _classify(node: ast.Call) -> _Signal | None:
         return _WEAK_HASH
     if _is_attribute(func, "tempfile", frozenset({"mktemp"})):
         return _INSECURE_TEMP
+    if _has_verify_false(node):
+        return _DISABLED_TLS
+    if _is_attribute(func, "ssl", frozenset({"_create_unverified_context"})):
+        return _INSECURE_SSL
     return None
 
 

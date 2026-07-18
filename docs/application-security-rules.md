@@ -22,8 +22,10 @@ low; breadth is not an acceptance metric.
 | `AS009-c-unsafe-libc` | native C/C++ `gets`, `strcpy`, `strcat`, `sprintf`, `vsprintf`, `system`, or `popen` | high |
 | `AS010-julia-unsafe-memory` | native Julia `unsafe_load`, `unsafe_store!`, `unsafe_wrap`, `unsafe_string`, `unsafe_copyto!`, or `unsafe_pointer_to_objref` | medium |
 | `AS011-shell-eval-execution` | native shell `eval` builtin | high |
+| `AS012-disabled-tls-verification` | a `verify=False` keyword (requests/httpx and similar) | high |
+| `AS013-insecure-ssl-context` | `ssl._create_unverified_context(...)` | high |
 
-`AS001`–`AS005` are Python-AST rules. `AS006`–`AS011` are native analysis over a
+`AS001`–`AS005`, `AS012`, and `AS013` are Python-AST rules. `AS006`–`AS011` are native analysis over a
 tree-sitter AST for JavaScript/TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`), Go
 (`.go`), Rust (`.rs`), C/C++ (`.c`, `.h`, `.cc`, `.cpp`, `.hpp`), Julia (`.jl`),
 and Shell (`.sh`); they require the optional `native` extra
@@ -35,7 +37,10 @@ ignores a member access such as `obj.eval(x)`; `AS007` distinguishes
 unqualified call to a dangerous libc function (a namespaced `std::strcpy` and a
 bounded `snprintf` are not flagged); `AS010` flags a Julia `unsafe_*` memory
 intrinsic (`ccall` and safe calls are not flagged); and `AS011` flags the shell
-`eval` builtin as a command name (not the substring elsewhere). `AS008` and
+`eval` builtin as a command name (not the substring elsewhere). `AS012` matches a
+literal `verify=False` keyword and `AS013` the `ssl._create_unverified_context`
+call, so `verify=True` and `ssl.create_default_context` are not flagged. `AS008`
+and
 `AS010` are medium confidence because an `unsafe` block or intrinsic is sometimes
 a reviewed, necessary abstraction; the candidate asks a reviewer to confirm its
 invariants.

@@ -26,8 +26,8 @@ from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.models import AuditPolicy, Candidate
 
 _VULNERABLE = (
-    "import subprocess, os, pickle, yaml, hashlib, tempfile\n\n"
-    "def handle(cmd, data, stream):\n"
+    "import subprocess, os, pickle, yaml, hashlib, tempfile, requests, ssl\n\n"
+    "def handle(cmd, data, stream, url):\n"
     "    eval(cmd)\n"
     "    exec(cmd)\n"
     "    subprocess.run(cmd, shell=True)\n"
@@ -39,17 +39,21 @@ _VULNERABLE = (
     "    hashlib.md5(data)\n"
     "    hashlib.sha1(data)\n"
     "    tempfile.mktemp()\n"
+    "    requests.get(url, verify=False)\n"
+    "    ssl._create_unverified_context()\n"
 )
 
 _SAFE = (
-    "import subprocess, yaml, hashlib, tempfile, json\n\n"
-    "def handle(cmd, data, stream):\n"
+    "import subprocess, yaml, hashlib, tempfile, json, requests, ssl\n\n"
+    "def handle(cmd, data, stream, url):\n"
     "    subprocess.run([cmd], shell=False)\n"
     "    yaml.safe_load(stream)\n"
     "    yaml.load(stream, Loader=yaml.SafeLoader)\n"
     "    hashlib.sha256(data)\n"
     "    tempfile.mkstemp()\n"
     "    json.loads(data)\n"
+    "    requests.get(url, verify=True)\n"
+    "    ssl.create_default_context()\n"
 )
 
 
@@ -78,6 +82,8 @@ def test_scanner_flags_each_vulnerable_pattern_and_ignores_safe(tmp_path: Path) 
         "AS003-unsafe-deserialization": 3,
         "AS004-weak-hash-primitive": 2,
         "AS005-insecure-temporary-file": 1,
+        "AS012-disabled-tls-verification": 1,
+        "AS013-insecure-ssl-context": 1,
     }
     assert not [item for item in candidates if item.anchor.path == "src/pkg/safe.py"]
     sample = next(item for item in candidates if item.rule_id == "AS005-insecure-temporary-file")
