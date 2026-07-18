@@ -38,10 +38,12 @@ jobs:
           python-version: "3.12.13"
           cache: pip
           cache-dependency-path: |
+            requirements/build.txt
             requirements/runtime.txt
             requirements/fuzz.txt
       - name: Install hash-locked fuzzing environment
         run: |
+          python -m pip install --require-hashes -r requirements/build.txt
           python -m pip install --require-hashes -r requirements/runtime.txt
           python -m pip install --require-hashes -r requirements/fuzz.txt
           python -m pip install --no-build-isolation --no-deps .
