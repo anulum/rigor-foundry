@@ -44,6 +44,7 @@ nav:
   - Claim isolation and fleet views: claim-isolation.md
   - Cross-repository campaigns: cross-repository-campaigns.md
   - Adapter catalogue: adapter-catalogue.md
+  - Remediation execution: remediation-executor.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
