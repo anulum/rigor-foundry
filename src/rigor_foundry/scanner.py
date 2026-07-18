@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
+from .application_security import scan_application_security
 from .architecture import scan_architecture
 from .candidate_anchor import (
     CandidateAnchor,
@@ -176,6 +177,7 @@ def scan_repository(
         *scan_architecture(inventory, policy),
         *scan_polyglot_architecture(inventory, policy),
         *scan_godfiles(inventory, policy),
+        *scan_application_security(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

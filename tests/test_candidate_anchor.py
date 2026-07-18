@@ -176,7 +176,8 @@ def test_actual_alternate_policy_path_anchors_domain_candidates(tmp_path: Path) 
     """Domain findings bind the discovered policy blob, not a hardcoded path."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/core.py", "VALUE = 1\n")
-    policy = repository.write_policy(required_domains=frozenset({"application-security"}))
+    # supply-chain has no portable control, so a required decision still needs an adapter.
+    policy = repository.write_policy(required_domains=frozenset({"supply-chain"}))
     alternate = repository.root / "config/rigor-foundry/policy.json"
     alternate.parent.mkdir(parents=True)
     policy.rename(alternate)

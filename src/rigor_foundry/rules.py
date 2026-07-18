@@ -16,15 +16,17 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.1.0"
+RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
+APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 
-_RULE_ID = re.compile(r"(?:TA|AR|GF|GV)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
     "architecture": "AR",
     "godfile": "GF",
     "governance": "GV",
+    "application-security": "AS",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -187,6 +189,36 @@ RULES: tuple[RuleDefinition, ...] = (
         "GV004-uncontrolled-required-domain",
         "governance",
         "Required audit domain has no active portable rule or required native adapter.",
+    ),
+    RuleDefinition(
+        "AS001-dynamic-code-execution",
+        "application-security",
+        "Dynamic code execution through eval or exec.",
+        APPLICATION_SECURITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AS002-shell-command-execution",
+        "application-security",
+        "Shell command execution surface via shell=True, os.system, or os.popen.",
+        APPLICATION_SECURITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AS003-unsafe-deserialization",
+        "application-security",
+        "Unsafe deserialization via pickle or an unbounded yaml.load.",
+        APPLICATION_SECURITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AS004-weak-hash-primitive",
+        "application-security",
+        "Weak hash primitive md5 or sha1 in a possible security context.",
+        APPLICATION_SECURITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AS005-insecure-temporary-file",
+        "application-security",
+        "Insecure temporary file creation through tempfile.mktemp.",
+        APPLICATION_SECURITY_RULE_PACK_VERSION,
     ),
 )
 

@@ -418,7 +418,13 @@ class Candidate:
             raise ValueError("candidate fields do not match the schema")
         category = _string(data.get("category"), "candidate.category")
         confidence = _string(data.get("confidence"), "candidate.confidence")
-        if category not in {"test-authenticity", "architecture", "godfile", "governance"}:
+        if category not in {
+            "test-authenticity",
+            "architecture",
+            "godfile",
+            "governance",
+            "application-security",
+        }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:
             raise ValueError("candidate.confidence is unsupported")

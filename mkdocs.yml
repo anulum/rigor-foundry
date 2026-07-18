@@ -38,6 +38,7 @@ nav:
   - Source provenance: source-provenance.md
   - CLI: cli.md
   - Built-in adapter profiles: adapter-profiles.md
+  - Application-security rules: application-security-rules.md
   - SARIF export: sarif.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md

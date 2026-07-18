@@ -20,6 +20,7 @@ _PORTABLE_CONTROLS = {
     "architecture-and-wiring": "portable:architecture-and-wiring",
     "godfile-responsibility": "portable:godfile-responsibility",
     "ownership-and-maintenance": "portable:ownership-and-maintenance",
+    "application-security": "portable:application-security",
 }
 
 
