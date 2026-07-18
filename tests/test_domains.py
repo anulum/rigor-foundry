@@ -36,11 +36,11 @@ def test_missing_domain_decisions_and_controls_are_governance_candidates() -> No
 
 def test_required_native_adapter_closes_only_its_declared_domain() -> None:
     """A native control cannot silently cover a domain it does not declare."""
-    # supply-chain has no portable control, so it isolates native-only closure.
+    # api-abi-schema-compatibility has no portable control, so it isolates native-only closure.
     decisions = tuple(
         AuditDomainSpec(
             name,
-            "required" if name == "supply-chain" else "not-applicable",
+            "required" if name == "api-abi-schema-compatibility" else "not-applicable",
             f"decision for {name}",
         )
         for name in AUDIT_DOMAINS
@@ -52,14 +52,16 @@ def test_required_native_adapter_closes_only_its_declared_domain() -> None:
         scope="full",
         working_directory=".",
         required=True,
-        domains=("supply-chain",),
+        domains=("api-abi-schema-compatibility",),
     )
     policy = AuditPolicy(audit_domains=decisions, native_audits=(adapter,))
     configured = audit_domain_coverage(policy)
-    security = next(item for item in configured if item.domain == "supply-chain")
+    security = next(item for item in configured if item.domain == "api-abi-schema-compatibility")
     assert security.controls == ("native:security-control",)
     not_attempted = audit_domain_coverage(policy, attempted_adapters=frozenset())
-    security = next(item for item in not_attempted if item.domain == "supply-chain")
+    security = next(
+        item for item in not_attempted if item.domain == "api-abi-schema-compatibility"
+    )
     assert security.controls == ()
     assert (
         domain_governance_candidates(

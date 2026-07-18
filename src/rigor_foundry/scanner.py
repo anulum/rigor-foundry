@@ -29,6 +29,7 @@ from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
 from .polyglot_architecture import scan_polyglot_architecture
 from .reliability import scan_reliability
+from .supply_chain import scan_supply_chain
 from .test_authenticity import scan_test_authenticity
 
 _DEFAULT_POLICY_PATHS = (
@@ -182,6 +183,7 @@ def scan_repository(
         *scan_application_security(inventory, policy),
         *scan_native(inventory, policy),
         *scan_reliability(inventory, policy),
+        *scan_supply_chain(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

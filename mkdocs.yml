@@ -40,6 +40,7 @@ nav:
   - Built-in adapter profiles: adapter-profiles.md
   - Application-security rules: application-security-rules.md
   - Reliability rules: reliability-rules.md
+  - Supply-chain rules: supply-chain-rules.md
   - SARIF export: sarif.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md

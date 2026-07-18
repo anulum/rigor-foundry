@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.8.0"
+RULE_PACK_VERSION = "rigor-foundry/1.9.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -25,8 +25,9 @@ C_RULE_PACK_VERSION = "rigor-foundry/1.5.0"
 JULIA_SHELL_RULE_PACK_VERSION = "rigor-foundry/1.6.0"
 TLS_RULE_PACK_VERSION = "rigor-foundry/1.7.0"
 RELIABILITY_RULE_PACK_VERSION = "rigor-foundry/1.8.0"
+SUPPLY_CHAIN_RULE_PACK_VERSION = "rigor-foundry/1.9.0"
 
-_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS|RL)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS|RL|SC)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
     "architecture": "AR",
@@ -34,6 +35,7 @@ _CATEGORY_PREFIXES = {
     "governance": "GV",
     "application-security": "AS",
     "reliability": "RL",
+    "supply-chain": "SC",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -286,6 +288,18 @@ RULES: tuple[RuleDefinition, ...] = (
         "reliability",
         "Mutable default argument shared across calls, leaking state between invocations.",
         RELIABILITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC001-unhashed-pinned-requirement",
+        "supply-chain",
+        "Pinned requirement in a hash-mode lock file carries no integrity hash.",
+        SUPPLY_CHAIN_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC002-vcs-url-requirement",
+        "supply-chain",
+        "Dependency installed from a VCS checkout or URL, bypassing index hash pinning.",
+        SUPPLY_CHAIN_RULE_PACK_VERSION,
     ),
 )
 

@@ -425,6 +425,7 @@ class Candidate:
             "governance",
             "application-security",
             "reliability",
+            "supply-chain",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:

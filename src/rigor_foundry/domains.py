@@ -22,6 +22,7 @@ _PORTABLE_CONTROLS = {
     "ownership-and-maintenance": "portable:ownership-and-maintenance",
     "application-security": "portable:application-security",
     "reliability-and-concurrency": "portable:reliability-and-concurrency",
+    "supply-chain": "portable:supply-chain",
 }
 
 
