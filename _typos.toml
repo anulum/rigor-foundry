@@ -10,4 +10,5 @@
 argv = "argv"
 gitlink = "gitlink"
 unparseable = "unparseable"
+uncatalogued = "uncatalogued"
 "Šotek" = "Šotek"

@@ -47,7 +47,7 @@ def test_budget_admits_steps_within_ceiling_and_round_trips() -> None:
 
 
 def test_budget_rejects_out_of_range_and_tampering() -> None:
-    """Below-floor, above-ceiling, mis-schema, and re-digested budgets fail closed."""
+    """Below-floor, above-ceiling, malformed-schema, and re-digested budgets fail closed."""
     with pytest.raises(ValueError, match="integer >= 1"):
         budget(wall_seconds=0)
     with pytest.raises(ValueError, match="aggregate ceiling"):

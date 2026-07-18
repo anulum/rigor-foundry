@@ -156,6 +156,24 @@ enable_error_code = ["ignore-without-code"]
 mypy_path = ["src"]
 files = ["src/rigor_foundry/", "tools/"]
 
+# The optional native tree-sitter runtime and grammars ship no type stubs and are
+# absent whenever the `[native]` extra is not installed (for example the CI type
+# gate). native_analysis imports them only inside a guarded, gracefully-degrading
+# helper, so mypy tolerates their absence for these modules alone.
+[[tool.mypy.overrides]]
+module = [
+    "tree_sitter",
+    "tree_sitter_bash",
+    "tree_sitter_c",
+    "tree_sitter_cpp",
+    "tree_sitter_go",
+    "tree_sitter_javascript",
+    "tree_sitter_julia",
+    "tree_sitter_rust",
+    "tree_sitter_typescript",
+]
+ignore_missing_imports = true
+
 [tool.coverage.run]
 branch = true
 source = ["rigor_foundry"]
