@@ -45,6 +45,7 @@ nav:
   - Cross-repository campaigns: cross-repository-campaigns.md
   - Adapter catalogue: adapter-catalogue.md
   - Remediation execution: remediation-executor.md
+  - Polyglot capability matrix: polyglot-capability-matrix.md
   - Public API stability: api-stability.md
   - Configuration: configuration.md
   - Validation: validation.md
