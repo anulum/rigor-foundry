@@ -38,7 +38,11 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: ${{ github.event.repository.private == false }}
+          # The scorecard action is vendored as a digest-pinned local Docker action,
+          # so the OpenSSF web-app cannot verify a direct `ossf/scorecard-action`
+          # job reference and rejects publication. Keep the SARIF upload to GitHub
+          # code scanning and disable the incompatible public-registry publish.
+          publish_results: false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: scorecard-results
