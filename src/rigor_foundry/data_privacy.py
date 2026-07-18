@@ -149,7 +149,7 @@ def _hardcoded_credentials(tree: ast.Module) -> list[int]:
             continue
         for target in _assignment_targets(node):
             if isinstance(target, ast.Name) and _is_credential_name(target.id):
-                lines.append(node.lineno)
+                lines.append(target.lineno)
                 break
     return lines
 
