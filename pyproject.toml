@@ -137,6 +137,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
+# Atheris fuzz targets must import the instrumented code inside
+# `atheris.instrument_imports()`, which is not a top-of-file import (E402).
+"fuzz/**" = ["D", "E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["rigor_foundry"]

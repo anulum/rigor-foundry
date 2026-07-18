@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — coverage-guided fuzzing of the record parsers
+
+name: Fuzz
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  atheris:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          # Atheris publishes wheels for CPython 3.12 and newer only.
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements/runtime.txt
+            requirements/fuzz.txt
+      - name: Install hash-locked fuzzing environment
+        run: |
+          python -m pip install --require-hashes -r requirements/runtime.txt
+          python -m pip install --require-hashes -r requirements/fuzz.txt
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Run bounded Atheris fuzzing over the record parsers
+        run: |
+          set -euo pipefail
+          for target in fuzz/fuzz_*.py; do
+            echo "::group::${target}"
+            python "${target}" -max_total_time=60 -timeout=25 -error_exitcode=1
+            echo "::endgroup::"
+          done

@@ -53,3 +53,4 @@ nav:
   - Configuration: configuration.md
   - Validation: validation.md
   - Security: security.md
+  - Fuzzing: fuzzing.md
