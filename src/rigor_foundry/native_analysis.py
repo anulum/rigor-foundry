@@ -5,7 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — native tree-sitter analysis
-"""Collect native JavaScript, TypeScript, Go, Rust, and C/C++ signals from tree-sitter ASTs."""
+"""Collect native JS, TS, Go, Rust, C/C++, Julia, and Shell signals from tree-sitter ASTs."""
 
 from __future__ import annotations
 
@@ -83,6 +83,40 @@ _C_UNSAFE_LIBC = _NativeRule(
 _UNSAFE_C_FUNCTIONS: frozenset[bytes] = frozenset(
     {b"gets", b"strcpy", b"strcat", b"sprintf", b"vsprintf", b"system", b"popen"}
 )
+_JULIA_UNSAFE = _NativeRule(
+    rule_id="AS010-julia-unsafe-memory",
+    confidence="medium",
+    rationale=(
+        "The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a "
+        "bad pointer or length reads or writes arbitrary memory."
+    ),
+    verification=(
+        "Confirm the pointer and length come from a live, correctly typed, GC-rooted object, or "
+        "replace the intrinsic with a bounds-checked array or a safe wrapper."
+    ),
+)
+_UNSAFE_JULIA_FUNCTIONS: frozenset[bytes] = frozenset(
+    {
+        b"unsafe_load",
+        b"unsafe_store!",
+        b"unsafe_wrap",
+        b"unsafe_string",
+        b"unsafe_copyto!",
+        b"unsafe_pointer_to_objref",
+    }
+)
+_SHELL_EVAL = _NativeRule(
+    rule_id="AS011-shell-eval-execution",
+    confidence="high",
+    rationale=(
+        "The shell eval builtin re-parses and executes its argument as a command, so any tainted "
+        "value in that argument becomes an injected command."
+    ),
+    verification=(
+        "Remove eval and call the command with an explicit argument vector, or prove every "
+        "interpolated value is a trusted constant."
+    ),
+)
 
 
 def _match_javascript(node: Any) -> tuple[_NativeRule, str] | None:
@@ -143,6 +177,26 @@ def _match_c(node: Any) -> tuple[_NativeRule, str] | None:
     return _C_UNSAFE_LIBC, function.text.decode("utf-8")
 
 
+def _match_julia(node: Any) -> tuple[_NativeRule, str] | None:
+    """Match a Julia unsafe_* memory intrinsic call."""
+    if node.type != "call_expression" or not node.children:
+        return None
+    callee = node.children[0]
+    if callee.type == "identifier" and callee.text in _UNSAFE_JULIA_FUNCTIONS:
+        return _JULIA_UNSAFE, callee.text.decode("utf-8")
+    return None
+
+
+def _match_shell(node: Any) -> tuple[_NativeRule, str] | None:
+    """Match a shell eval builtin invocation."""
+    if node.type != "command":
+        return None
+    name = node.child_by_field_name("name")
+    if name is not None and name.text == b"eval":
+        return _SHELL_EVAL, "eval"
+    return None
+
+
 def _import_grammars() -> tuple[Any, ...]:
     """Import the optional tree-sitter runtime and every native grammar.
 
@@ -150,10 +204,12 @@ def _import_grammars() -> tuple[Any, ...]:
     surfaced as an ``ImportError`` that the caller degrades gracefully.
     """
     import tree_sitter
+    import tree_sitter_bash
     import tree_sitter_c
     import tree_sitter_cpp
     import tree_sitter_go
     import tree_sitter_javascript
+    import tree_sitter_julia
     import tree_sitter_rust
     import tree_sitter_typescript
 
@@ -165,13 +221,15 @@ def _import_grammars() -> tuple[Any, ...]:
         tree_sitter_rust,
         tree_sitter_c,
         tree_sitter_cpp,
+        tree_sitter_julia,
+        tree_sitter_bash,
     )
 
 
 def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
     """Return a per-suffix (parser, matcher) map, or ``None`` when the extra is absent."""
     try:
-        tree_sitter, javascript, typescript, go, rust, c, cpp = _import_grammars()
+        tree_sitter, javascript, typescript, go, rust, c, cpp, julia, bash = _import_grammars()
     except ImportError:
         return None
     js_parser = tree_sitter.Parser(tree_sitter.Language(javascript.language()))
@@ -181,6 +239,8 @@ def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
     rust_parser = tree_sitter.Parser(tree_sitter.Language(rust.language()))
     c_parser = tree_sitter.Parser(tree_sitter.Language(c.language()))
     cpp_parser = tree_sitter.Parser(tree_sitter.Language(cpp.language()))
+    julia_parser = tree_sitter.Parser(tree_sitter.Language(julia.language()))
+    bash_parser = tree_sitter.Parser(tree_sitter.Language(bash.language()))
     return {
         ".js": (js_parser, _match_javascript),
         ".jsx": (js_parser, _match_javascript),
@@ -193,6 +253,8 @@ def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
         ".cc": (cpp_parser, _match_c),
         ".cpp": (cpp_parser, _match_c),
         ".hpp": (cpp_parser, _match_c),
+        ".jl": (julia_parser, _match_julia),
+        ".sh": (bash_parser, _match_shell),
     }
 
 
@@ -222,7 +284,7 @@ def scan_native(
     inventory: GitInventory,
     policy: AuditPolicy,
 ) -> tuple[Candidate, ...]:
-    """Return native JavaScript, TypeScript, Go, Rust, and C/C++ candidates.
+    """Return native JS, TS, Go, Rust, C/C++, Julia, and Shell candidates.
 
     Parameters
     ----------

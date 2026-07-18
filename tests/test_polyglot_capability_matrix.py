@@ -29,7 +29,7 @@ def test_matrix_reflects_actual_scanner_techniques() -> None:
     """Each language reports exactly the techniques the scanner applies to it."""
     matrix = capability_matrix()
     assert {row.language for row in matrix.rows} == set(get_args(LanguageName))
-    # Python, JavaScript, TypeScript, Go, Rust, and C/C++ have native AST controls.
+    # Python plus the native-extra languages have native AST controls.
     assert {row.language for row in matrix.rows if row.ast_semantic_controls} == {
         "python",
         "javascript",
@@ -37,6 +37,8 @@ def test_matrix_reflects_actual_scanner_techniques() -> None:
         "go",
         "rust",
         "c",
+        "julia",
+        "shell",
     }
     python = matrix.row("python")
     assert python.ast_semantic_controls and python.structural_controls

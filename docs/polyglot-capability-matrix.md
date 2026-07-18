@@ -31,19 +31,20 @@ cannot drift from the scanner's behaviour.
 | javascript | ✅† | ✅ | ✅ | ✅ | ✅ |
 | typescript | ✅† | ✅ | ✅ | ✅ | ✅ |
 | rust | ✅† | ✅ | ✅ | ✅ | ✅ |
-| julia | — | ✅ | ✅ | ✅ | ✅ |
+| julia | ✅† | ✅ | ✅ | ✅ | ✅ |
 | go | ✅† | ✅ | ✅ | — | ✅ |
 | lean | — | ✅ | ✅ | — | ✅ |
 | mojo | — | ✅ | ✅ | — | ✅ |
 | systemverilog | — | ✅ | ✅ | — | ✅ |
 | verilog | — | ✅ | ✅ | — | ✅ |
-| shell | — | ✅ | — | — | ✅ |
+| shell | ✅† | ✅ | — | — | ✅ |
 | yaml | — | — | — | — | — |
 
 `✅` marks an applied technique; `—` marks one the scanner does not apply to that
 language today. `†` marks the native AST/semantic analysis for JavaScript,
-TypeScript, Go, Rust, and C/C++, which is implemented through tree-sitter parsers
-but requires the optional `native` extra (`pip install rigor-foundry[native]`);
+TypeScript, Go, Rust, C/C++, Julia, and Shell, which is implemented through
+tree-sitter parsers but requires the optional `native` extra
+(`pip install rigor-foundry[native]`);
 without the extra a deployment degrades to the structural controls for those
 languages. YAML is scope-scannable data only — it participates in the
 tracked-content scope rule but carries no size, ownership, or dependency control.
@@ -53,12 +54,11 @@ ownership but have no native dependency-family parser yet.
 ## Reading a scan honestly
 
 A green scan means the applied techniques found no candidate — not that the
-language was analysed as deeply as Python. JavaScript, TypeScript, Go, Rust, and
-C/C++ now have a native AST pass (via the `native` extra); for the remaining
-non-Python languages no AST-semantic control ran, so semantic defects that only
-an AST pass would surface are out of scope until native analysis for that
-language lands. Julia and the remaining languages are the next AST candidates,
-guided by adopter evidence.
+language was analysed as deeply as Python. JavaScript, TypeScript, Go, Rust,
+C/C++, Julia, and Shell now have a native AST pass (via the `native` extra); the
+remaining languages (Lean, Mojo, the hardware-description languages, and YAML) run
+only their structural or scope controls, so semantic defects that only an AST pass
+would surface are out of scope for them, guided by adopter evidence.
 
 ## Programmatic access
 

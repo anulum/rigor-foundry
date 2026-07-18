@@ -20,19 +20,25 @@ low; breadth is not an acceptance metric.
 | `AS007-go-command-execution` | native Go `exec.Command(...)` or `exec.CommandContext(...)` | high |
 | `AS008-rust-unsafe-block` | native Rust `unsafe { … }` block | medium |
 | `AS009-c-unsafe-libc` | native C/C++ `gets`, `strcpy`, `strcat`, `sprintf`, `vsprintf`, `system`, or `popen` | high |
+| `AS010-julia-unsafe-memory` | native Julia `unsafe_load`, `unsafe_store!`, `unsafe_wrap`, `unsafe_string`, `unsafe_copyto!`, or `unsafe_pointer_to_objref` | medium |
+| `AS011-shell-eval-execution` | native shell `eval` builtin | high |
 
-`AS001`–`AS005` are Python-AST rules. `AS006`–`AS009` are native analysis over a
+`AS001`–`AS005` are Python-AST rules. `AS006`–`AS011` are native analysis over a
 tree-sitter AST for JavaScript/TypeScript (`.js`, `.jsx`, `.ts`, `.tsx`), Go
-(`.go`), Rust (`.rs`), and C/C++ (`.c`, `.h`, `.cc`, `.cpp`, `.hpp`); they require
-the optional `native` extra (`pip install rigor-foundry[native]`) and a
-deployment without the extra simply produces no `AS006`–`AS009` candidate. Being
-AST-based, they are precise: `AS006` ignores a member access such as
-`obj.eval(x)`; `AS007` distinguishes `exec.Command` from `other.Command` or
-`exec.LookPath`; `AS008` flags a real `unsafe` block, not the word `unsafe` in a
-string or comment; and `AS009` flags an unqualified call to a dangerous libc
-function (a namespaced `std::strcpy` and a bounded `snprintf` are not flagged).
-`AS008` is medium confidence because an `unsafe` block is sometimes a reviewed,
-necessary abstraction; the candidate asks a reviewer to confirm its invariants.
+(`.go`), Rust (`.rs`), C/C++ (`.c`, `.h`, `.cc`, `.cpp`, `.hpp`), Julia (`.jl`),
+and Shell (`.sh`); they require the optional `native` extra
+(`pip install rigor-foundry[native]`) and a deployment without the extra simply
+produces no `AS006`–`AS011` candidate. Being AST-based, they are precise: `AS006`
+ignores a member access such as `obj.eval(x)`; `AS007` distinguishes
+`exec.Command` from `other.Command` or `exec.LookPath`; `AS008` flags a real
+`unsafe` block, not the word `unsafe` in a string or comment; `AS009` flags an
+unqualified call to a dangerous libc function (a namespaced `std::strcpy` and a
+bounded `snprintf` are not flagged); `AS010` flags a Julia `unsafe_*` memory
+intrinsic (`ccall` and safe calls are not flagged); and `AS011` flags the shell
+`eval` builtin as a command name (not the substring elsewhere). `AS008` and
+`AS010` are medium confidence because an `unsafe` block or intrinsic is sometimes
+a reviewed, necessary abstraction; the candidate asks a reviewer to confirm its
+invariants.
 
 Each candidate carries a repository-tree anchor (path, line, content SHA-256), a
 neutral rationale, and a concrete verification procedure — for example, prove the

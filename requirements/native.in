@@ -4,7 +4,7 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — optional native tree-sitter analysis lock inputs (JS/TS/Go/Rust/C/C++)
+# RigorFoundry — optional native tree-sitter analysis lock inputs (JS/TS/Go/Rust/C/C++/Julia/Shell)
 
 tree-sitter==0.26.0
 tree-sitter-javascript==0.25.0
@@ -13,3 +13,5 @@ tree-sitter-go==0.25.0
 tree-sitter-rust==0.24.2
 tree-sitter-c==0.24.2
 tree-sitter-cpp==0.23.4
+tree-sitter-julia==0.23.1
+tree-sitter-bash==0.25.1

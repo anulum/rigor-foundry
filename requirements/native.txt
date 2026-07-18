@@ -47,6 +47,17 @@ tree-sitter==0.26.0 \
     --hash=sha256:ff527388df14cb5009f9274faf78cc69a7393ae6acf3b04784b8acca249519c5 \
     --hash=sha256:ff80d4833d330a73184a3ac5132abe93c575d2dea31975c6f15c0d21fef238aa
     # via -r requirements/native.in
+tree-sitter-bash==0.25.1 \
+    --hash=sha256:0e6235f59e366d220dde7d830196bed597d01e853e44d8ccd1a82c5dd2500acf \
+    --hash=sha256:3f484c4bb8796cde7a87ca351e6116f09653edac0eb3c6d238566359dd28b117 \
+    --hash=sha256:52a6802d9218f86278aa3e8b459c3abdad67eed0fde1f9f13aca5b6c634217a6 \
+    --hash=sha256:59115057ec2bae319e8082ff29559861045002964c3431ccb0fc92aa4bc9bccb \
+    --hash=sha256:5e76af6df46d958c7f5b6d5884c9743218e3902a00ccb493ec92728b1084430b \
+    --hash=sha256:a3332d71c7b7d5f78259b19d02d0ea111fcb82b72712ee4a93aaa5b226d3f0a8 \
+    --hash=sha256:bfc0bdaa77bc1e86e3c6652e5a6e140c40c0a16b84185c2b63ad7cd809b88f14 \
+    --hash=sha256:e76c4cfb20b076552406782b7f8c2a3946835993df0a44df006de54b7030c7dc \
+    --hash=sha256:f4a34a6504c7c5b2a9b8c5c4065531dea19ca2c35026e706cf2eeeebe2c92512
+    # via -r requirements/native.in
 tree-sitter-c==0.24.2 \
     --hash=sha256:1628584df0299b5a340aa63f8e67b6c97c91517f52fa7e7a4c557e40adb330a9 \
     --hash=sha256:4a2f4371cd816cc3153458f69062135ebb2ea5f275ddd90494e5c823d778204a \
@@ -89,6 +100,16 @@ tree-sitter-javascript==0.25.0 \
     --hash=sha256:b70f887fb269d6e58c349d683f59fa647140c410cfe2bee44a883b20ec92e3dc \
     --hash=sha256:dfcf789064c58dc13c0a4edb550acacfc6f0f280577f1e7a00de3e89fc7f8ddc \
     --hash=sha256:e5ed840f5bd4a3f0272e441d19429b26eedc257abe5574c8546da6b556865e3c
+    # via -r requirements/native.in
+tree-sitter-julia==0.23.1 \
+    --hash=sha256:07607c4fc902b21e6821622f56b08aa2321b921fe0644e2ab4aba1747e6c8808 \
+    --hash=sha256:13031aa4c9ac7d0665aa3ecd9fbc6f9c6afd601c68f6ae67a8eeaca01465aeed \
+    --hash=sha256:4bd4d8e76ab780a2de9af90cefada494cb174991d74993b6a243f28081e9432b \
+    --hash=sha256:673ad3079f2328c28affbee5dbedb63c7e6dab248579aabdb813bc7b862a0261 \
+    --hash=sha256:7708a4a01831dd7cb7e6ee25146e654a0bf89077e85ffe8b5025b63a302af145 \
+    --hash=sha256:7d4f6ae938198fc0be9b6ea76313ade24fcdb89be01a791e0cc90c88fae5743d \
+    --hash=sha256:8197c8d9b0cb51421aa2832f3fb539504d7b514cbb1fc79130bb1445c0b4a457 \
+    --hash=sha256:a8aa8e959e73158632687423f4c6c61aa52dea65a451220e3e0223b67149a046
     # via -r requirements/native.in
 tree-sitter-rust==0.24.2 \
     --hash=sha256:01a46622735498493f29f3e628a90de95c96a07bfbeb88996243eb986b1cee36 \
