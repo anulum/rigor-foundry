@@ -52,7 +52,7 @@ duplicate owner/field pair is ambiguous.
 
 `policy_digest` and `review_digest` are first-class properties over the entire
 canonical serialisation. They remove caller-specific hashing conventions.
-Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.3.0` bind the
+Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.4.0` bind the
 registry version, ordered rule definitions, and every definition field into
 one envelope. Existing rules retain their original introduction version.
 

@@ -24,9 +24,9 @@ from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitRunner, GitTrustPolicy
 from .godfiles import scan_godfiles
 from .ignored_inventory import collect_ignored_inventory
-from .javascript_analysis import scan_javascript
 from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
+from .native_analysis import scan_native
 from .polyglot_architecture import scan_polyglot_architecture
 from .test_authenticity import scan_test_authenticity
 
@@ -179,7 +179,7 @@ def scan_repository(
         *scan_polyglot_architecture(inventory, policy),
         *scan_godfiles(inventory, policy),
         *scan_application_security(inventory, policy),
-        *scan_javascript(inventory, policy),
+        *scan_native(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

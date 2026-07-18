@@ -72,10 +72,12 @@ docs = [
     "mkdocs==1.6.1",
     "mkdocs-material==9.7.6",
 ]
-javascript = [
+native = [
     "tree-sitter>=0.26,<0.27",
     "tree-sitter-javascript>=0.25,<0.26",
     "tree-sitter-typescript>=0.23,<0.24",
+    "tree-sitter-go>=0.25,<0.26",
+    "tree-sitter-rust>=0.24,<0.25",
 ]
 
 [project.urls]

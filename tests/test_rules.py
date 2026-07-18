@@ -29,7 +29,7 @@ def test_rule_registry_is_unique_complete_and_content_addressed() -> None:
     """Every scanner identifier has one stable registry definition and pack digest."""
     assert validate_rule_registry() == ()
     assert len(RULES) == len(RULES_BY_ID)
-    assert rule_pack_digest() == "320741b720e7a74c2569deae3a375395830495573f5cc3b1af8259c400feb1cc"
+    assert rule_pack_digest() == "06244b25823dce03d1c3567a1e1afdd0c992dd41408e15a103c2eff8a24d3800"
     assert {rule.category for rule in RULES} == {
         "test-authenticity",
         "architecture",
@@ -38,11 +38,12 @@ def test_rule_registry_is_unique_complete_and_content_addressed() -> None:
         "application-security",
     }
     assert RULE_PACK_SCHEMA_VERSION == "1.0"
-    assert RULE_PACK_VERSION == "rigor-foundry/1.3.0"
+    assert RULE_PACK_VERSION == "rigor-foundry/1.4.0"
     assert {rule.introduced for rule in RULES} == {
         INITIAL_RULE_PACK_VERSION,
         "rigor-foundry/1.2.0",
         "rigor-foundry/1.3.0",
+        "rigor-foundry/1.4.0",
     }
 
 

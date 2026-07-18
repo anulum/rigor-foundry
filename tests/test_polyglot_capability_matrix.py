@@ -29,11 +29,13 @@ def test_matrix_reflects_actual_scanner_techniques() -> None:
     """Each language reports exactly the techniques the scanner applies to it."""
     matrix = capability_matrix()
     assert {row.language for row in matrix.rows} == set(get_args(LanguageName))
-    # Python, JavaScript, and TypeScript have native AST/semantic controls.
+    # Python, JavaScript, TypeScript, Go, and Rust have native AST/semantic controls.
     assert {row.language for row in matrix.rows if row.ast_semantic_controls} == {
         "python",
         "javascript",
         "typescript",
+        "go",
+        "rust",
     }
     python = matrix.row("python")
     assert python.ast_semantic_controls and python.structural_controls
@@ -43,6 +45,11 @@ def test_matrix_reflects_actual_scanner_techniques() -> None:
         row = matrix.row(language)
         assert row.structural_controls and row.dependency_graph_controls
         assert row.ast_semantic_controls
+    # Go and Rust gain AST controls; Go still has no dependency-family parser.
+    assert (
+        matrix.row("go").ast_semantic_controls and not matrix.row("go").dependency_graph_controls
+    )
+    assert matrix.row("rust").ast_semantic_controls and matrix.row("rust").structural_controls
     # Go is owned for size and ownership but has no dependency-family parser.
     assert not matrix.row("go").dependency_graph_controls
     assert matrix.row("go").ownership_controls
