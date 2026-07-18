@@ -19,11 +19,13 @@ from .models import canonical_digest, require_mapping, require_string, require_s
 MATRIX_SCHEMA_VERSION = "1.0"
 
 # Languages whose source the scanner parses into an abstract syntax tree for
-# semantic controls. This is verified against the scanner: the test-authenticity
-# rules (TA001-TA011) and the Python import-graph architecture rules (AR001-AR004,
-# AR006) operate on a parsed Python AST. Extending native semantic analysis to a
-# new language means adding it here and wiring the matching scanner surface.
-AST_SEMANTIC_LANGUAGES: frozenset[str] = frozenset({"python"})
+# semantic controls. Verified against the scanner: the test-authenticity rules
+# (TA001-TA011) and the Python import-graph architecture rules (AR001-AR004,
+# AR006) operate on a parsed Python AST, and the native JavaScript/TypeScript
+# scanner parses a tree-sitter AST (AS006). JavaScript and TypeScript AST analysis
+# requires the optional ``javascript`` extra (tree-sitter); the capability is
+# implemented, and a deployment without the extra degrades to structural controls.
+AST_SEMANTIC_LANGUAGES: frozenset[str] = frozenset({"python", "javascript", "typescript"})
 
 # Built-in adapter profiles that add native-adapter coverage. They are neither
 # language-partitioned nor enabled by default: a profile is policy-wired into

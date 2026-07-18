@@ -16,6 +16,15 @@ low; breadth is not an acceptance metric.
 | `AS003-unsafe-deserialization` | `pickle.load`/`pickle.loads`, or a `yaml.load` with no explicit loader | high |
 | `AS004-weak-hash-primitive` | `hashlib.md5(...)` or `hashlib.sha1(...)` | low |
 | `AS005-insecure-temporary-file` | `tempfile.mktemp(...)` | high |
+| `AS006-js-dynamic-code-execution` | native JavaScript/TypeScript `eval(...)` or `new Function(...)` | high |
+
+`AS001`–`AS005` are Python-AST rules. `AS006` is native JavaScript and TypeScript
+analysis over a tree-sitter AST (`.js`, `.jsx`, `.ts`, `.tsx`); it requires the
+optional `javascript` extra (`pip install rigor-foundry[javascript]`) and a
+deployment without the extra simply produces no `AS006` candidate. It flags a
+call to the `eval` identifier or the `Function` constructor, and — being
+AST-based — ignores a member access such as `obj.eval(x)` or any other
+identifier.
 
 Each candidate carries a repository-tree anchor (path, line, content SHA-256), a
 neutral rationale, and a concrete verification procedure — for example, prove the

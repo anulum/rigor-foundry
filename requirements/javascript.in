@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — optional JavaScript/TypeScript native-analysis lock inputs
+
+tree-sitter==0.26.0
+tree-sitter-javascript==0.25.0
+tree-sitter-typescript==0.23.2

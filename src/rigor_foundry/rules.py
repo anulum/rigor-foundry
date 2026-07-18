@@ -16,9 +16,10 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.2.0"
+RULE_PACK_VERSION = "rigor-foundry/1.3.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
+JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
 
 _RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 _CATEGORY_PREFIXES = {
@@ -219,6 +220,12 @@ RULES: tuple[RuleDefinition, ...] = (
         "application-security",
         "Insecure temporary file creation through tempfile.mktemp.",
         APPLICATION_SECURITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AS006-js-dynamic-code-execution",
+        "application-security",
+        "Native JavaScript or TypeScript dynamic code execution via eval or Function.",
+        JAVASCRIPT_RULE_PACK_VERSION,
     ),
 )
 

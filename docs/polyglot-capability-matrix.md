@@ -28,8 +28,8 @@ cannot drift from the scanner's behaviour.
 | --- | :---: | :---: | :---: | :---: | :---: |
 | python | ✅ | ✅ | ✅ | ✅ | ✅ |
 | c / c++ | — | ✅ | ✅ | ✅ | ✅ |
-| javascript | — | ✅ | ✅ | ✅ | ✅ |
-| typescript | — | ✅ | ✅ | ✅ | ✅ |
+| javascript | ✅† | ✅ | ✅ | ✅ | ✅ |
+| typescript | ✅† | ✅ | ✅ | ✅ | ✅ |
 | rust | — | ✅ | ✅ | ✅ | ✅ |
 | julia | — | ✅ | ✅ | ✅ | ✅ |
 | go | — | ✅ | ✅ | — | ✅ |
@@ -41,20 +41,23 @@ cannot drift from the scanner's behaviour.
 | yaml | — | — | — | — | — |
 
 `✅` marks an applied technique; `—` marks one the scanner does not apply to that
-language today. YAML is scope-scannable data only — it participates in the
-tracked-content scope rule but carries no size, ownership, or dependency control.
-Go, Lean, Mojo, and the hardware-description languages are owned for size and
-ownership but have no native dependency-family parser yet.
+language today. `†` marks JavaScript and TypeScript AST/semantic analysis, which
+is implemented through a tree-sitter parser but requires the optional
+`javascript` extra (`pip install rigor-foundry[javascript]`); without the extra a
+deployment degrades to the structural controls for those languages. YAML is
+scope-scannable data only — it participates in the tracked-content scope rule but
+carries no size, ownership, or dependency control. Go, Lean, Mojo, and the
+hardware-description languages are owned for size and ownership but have no native
+dependency-family parser yet.
 
 ## Reading a scan honestly
 
 A green scan means the applied techniques found no candidate — not that the
-language was analysed as deeply as Python. For a non-Python language, no
-AST-semantic control ran, so semantic defects that only an AST pass would surface
-are out of scope until native analysis for that language lands. The immediate
-roadmap increment is native AST/semantic analysis for JavaScript and TypeScript,
-which already carry the deepest structural coverage; Go and Rust follow, guided
-by adopter evidence.
+language was analysed as deeply as Python. JavaScript and TypeScript now have a
+native AST pass (via the `javascript` extra); for the remaining non-Python
+languages no AST-semantic control ran, so semantic defects that only an AST pass
+would surface are out of scope until native analysis for that language lands. Go
+and Rust are the next AST targets, guided by adopter evidence.
 
 ## Programmatic access
 
