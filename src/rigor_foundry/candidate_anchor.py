@@ -424,6 +424,7 @@ class Candidate:
             "godfile",
             "governance",
             "application-security",
+            "reliability",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:

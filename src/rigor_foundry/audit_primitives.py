@@ -38,7 +38,12 @@ POLICY_FIELDS = frozenset(
 )
 
 Category = Literal[
-    "test-authenticity", "architecture", "godfile", "governance", "application-security"
+    "test-authenticity",
+    "architecture",
+    "godfile",
+    "governance",
+    "application-security",
+    "reliability",
 ]
 Confidence = Literal["low", "medium", "high"]
 Decision = Literal["valid", "invalid", "accepted-boundary", "needs-evidence"]

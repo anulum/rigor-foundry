@@ -21,6 +21,7 @@ _PORTABLE_CONTROLS = {
     "godfile-responsibility": "portable:godfile-responsibility",
     "ownership-and-maintenance": "portable:ownership-and-maintenance",
     "application-security": "portable:application-security",
+    "reliability-and-concurrency": "portable:reliability-and-concurrency",
 }
 
 
