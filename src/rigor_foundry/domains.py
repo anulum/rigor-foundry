@@ -24,6 +24,7 @@ _PORTABLE_CONTROLS = {
     "reliability-and-concurrency": "portable:reliability-and-concurrency",
     "supply-chain": "portable:supply-chain",
     "packaging-deployment-iac": "portable:packaging-deployment-iac",
+    "data-and-privacy": "portable:data-and-privacy",
 }
 
 

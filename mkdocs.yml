@@ -42,6 +42,7 @@ nav:
   - Reliability rules: reliability-rules.md
   - Supply-chain rules: supply-chain-rules.md
   - Container rules: container-rules.md
+  - Data-and-privacy rules: data-privacy-rules.md
   - SARIF export: sarif.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md
