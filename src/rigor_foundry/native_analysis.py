@@ -5,7 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — native tree-sitter analysis
-"""Collect native JavaScript, TypeScript, Go, and Rust signals from tree-sitter ASTs."""
+"""Collect native JavaScript, TypeScript, Go, Rust, and C/C++ signals from tree-sitter ASTs."""
 
 from __future__ import annotations
 
@@ -68,6 +68,21 @@ _RUST_UNSAFE = _NativeRule(
         "replaced by a safe abstraction; record why each unsafe operation is sound."
     ),
 )
+_C_UNSAFE_LIBC = _NativeRule(
+    rule_id="AS009-c-unsafe-libc",
+    confidence="high",
+    rationale=(
+        "gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow "
+        "and command-injection surfaces when their input is not strictly bounded and trusted."
+    ),
+    verification=(
+        "Replace the call with a length-bounded equivalent (fgets, snprintf, strncpy with an "
+        "explicit size) or an argument-vector exec, and prove the input is trusted and bounded."
+    ),
+)
+_UNSAFE_C_FUNCTIONS: frozenset[bytes] = frozenset(
+    {b"gets", b"strcpy", b"strcat", b"sprintf", b"vsprintf", b"system", b"popen"}
+)
 
 
 def _match_javascript(node: Any) -> tuple[_NativeRule, str] | None:
@@ -114,6 +129,20 @@ def _match_rust(node: Any) -> tuple[_NativeRule, str] | None:
     return None
 
 
+def _match_c(node: Any) -> tuple[_NativeRule, str] | None:
+    """Match a C or C++ call to an unbounded or command-executing libc function."""
+    if node.type != "call_expression":
+        return None
+    function = node.child_by_field_name("function")
+    if (
+        function is None
+        or function.type != "identifier"
+        or function.text not in _UNSAFE_C_FUNCTIONS
+    ):
+        return None
+    return _C_UNSAFE_LIBC, function.text.decode("utf-8")
+
+
 def _import_grammars() -> tuple[Any, ...]:
     """Import the optional tree-sitter runtime and every native grammar.
 
@@ -121,6 +150,8 @@ def _import_grammars() -> tuple[Any, ...]:
     surfaced as an ``ImportError`` that the caller degrades gracefully.
     """
     import tree_sitter
+    import tree_sitter_c
+    import tree_sitter_cpp
     import tree_sitter_go
     import tree_sitter_javascript
     import tree_sitter_rust
@@ -132,13 +163,15 @@ def _import_grammars() -> tuple[Any, ...]:
         tree_sitter_typescript,
         tree_sitter_go,
         tree_sitter_rust,
+        tree_sitter_c,
+        tree_sitter_cpp,
     )
 
 
 def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
     """Return a per-suffix (parser, matcher) map, or ``None`` when the extra is absent."""
     try:
-        tree_sitter, javascript, typescript, go, rust = _import_grammars()
+        tree_sitter, javascript, typescript, go, rust, c, cpp = _import_grammars()
     except ImportError:
         return None
     js_parser = tree_sitter.Parser(tree_sitter.Language(javascript.language()))
@@ -146,6 +179,8 @@ def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
     tsx_parser = tree_sitter.Parser(tree_sitter.Language(typescript.language_tsx()))
     go_parser = tree_sitter.Parser(tree_sitter.Language(go.language()))
     rust_parser = tree_sitter.Parser(tree_sitter.Language(rust.language()))
+    c_parser = tree_sitter.Parser(tree_sitter.Language(c.language()))
+    cpp_parser = tree_sitter.Parser(tree_sitter.Language(cpp.language()))
     return {
         ".js": (js_parser, _match_javascript),
         ".jsx": (js_parser, _match_javascript),
@@ -153,6 +188,11 @@ def _load_routes() -> dict[str, tuple[Any, _Matcher]] | None:
         ".tsx": (tsx_parser, _match_javascript),
         ".go": (go_parser, _match_go),
         ".rs": (rust_parser, _match_rust),
+        ".c": (c_parser, _match_c),
+        ".h": (c_parser, _match_c),
+        ".cc": (cpp_parser, _match_c),
+        ".cpp": (cpp_parser, _match_c),
+        ".hpp": (cpp_parser, _match_c),
     }
 
 
@@ -182,7 +222,7 @@ def scan_native(
     inventory: GitInventory,
     policy: AuditPolicy,
 ) -> tuple[Candidate, ...]:
-    """Return native JavaScript, TypeScript, Go, and Rust candidates.
+    """Return native JavaScript, TypeScript, Go, Rust, and C/C++ candidates.
 
     Parameters
     ----------

@@ -22,12 +22,12 @@ MATRIX_SCHEMA_VERSION = "1.0"
 # semantic controls. Verified against the scanner: the test-authenticity rules
 # (TA001-TA011) and the Python import-graph architecture rules (AR001-AR004,
 # AR006) operate on a parsed Python AST, and the native scanner parses a
-# tree-sitter AST for JavaScript/TypeScript (AS006), Go (AS007), and Rust (AS008).
-# The non-Python native analysis requires the optional ``native`` extra
-# (tree-sitter); the capability is implemented, and a deployment without the extra
-# degrades to structural controls.
+# tree-sitter AST for JavaScript/TypeScript (AS006), Go (AS007), Rust (AS008), and
+# C/C++ (AS009). The non-Python native analysis requires the optional ``native``
+# extra (tree-sitter); the capability is implemented, and a deployment without the
+# extra degrades to structural controls.
 AST_SEMANTIC_LANGUAGES: frozenset[str] = frozenset(
-    {"python", "javascript", "typescript", "go", "rust"}
+    {"python", "javascript", "typescript", "go", "rust", "c"}
 )
 
 # Built-in adapter profiles that add native-adapter coverage. They are neither

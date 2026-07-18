@@ -47,6 +47,27 @@ tree-sitter==0.26.0 \
     --hash=sha256:ff527388df14cb5009f9274faf78cc69a7393ae6acf3b04784b8acca249519c5 \
     --hash=sha256:ff80d4833d330a73184a3ac5132abe93c575d2dea31975c6f15c0d21fef238aa
     # via -r requirements/native.in
+tree-sitter-c==0.24.2 \
+    --hash=sha256:1628584df0299b5a340aa63f8e67b6c97c91517f52fa7e7a4c557e40adb330a9 \
+    --hash=sha256:4a2f4371cd816cc3153458f69062135ebb2ea5f275ddd90494e5c823d778204a \
+    --hash=sha256:4d4579a8b54f0a442f903d88d3304cab77cd5c2031d4015baa4f2f8e15d6dcb7 \
+    --hash=sha256:5041ef67eb68ce6bc8bb0b1f8ef3a5585ce523dae0c7eec109ab0627dd75aede \
+    --hash=sha256:82842c5a5f2acd93f4de10038c33ac179c8979defc39376f990348d6289e933b \
+    --hash=sha256:97bc80a224d48215d4e6e6376bf30d114f4c317b8145ff1b02afe785d4ba7bdd \
+    --hash=sha256:abb549225091f7b25df2dd3a0143ece6e208f7055d8bcb4700b41ee79b9ef1e1 \
+    --hash=sha256:c098bedcd5ac86ff93fa734d51d1dd86aed40fd5ed7d634c7af11380a0469969 \
+    --hash=sha256:e2b42e8e22202c251f8629306f9321233542e07a6e01611b5fe83489272143eb
+    # via -r requirements/native.in
+tree-sitter-cpp==0.23.4 \
+    --hash=sha256:247d127f0eb6574b0f6b30c0151e0bd0774e2e7acf9c558bdf9fbb8adc2e80c0 \
+    --hash=sha256:68606a45bea92669d155399e1239f771a7767d8683cd8f8e30e7d813107030ca \
+    --hash=sha256:6a59c4cebb1ad1dc2e8d586cf8a72b39d21b8108b7b139d089719e81a339e41d \
+    --hash=sha256:712f84f18be94cbe2a148fa4fdf40fcf4a8c25a8f7670efb9f8a47ddec2fc281 \
+    --hash=sha256:773d2cafc08bbc0f998687fa33f42f378c1a371cdb582870c4d13abb06092706 \
+    --hash=sha256:aacb1759f0efd9dbc25bd8ee88184a340483018869f75412d9c3bc32c039a520 \
+    --hash=sha256:bc3c404d9f0cbd87951213a85440afbf4c31e718f8d907fa9ee12bea4b8d276f \
+    --hash=sha256:ccc43ddf1279d5d5a4ef190373f4cb16522801bec4492bcd4754edf2aeba2b7b
+    # via -r requirements/native.in
 tree-sitter-go==0.25.0 \
     --hash=sha256:04b3b3cb4aff18e74e28d49b716c6f24cb71ddfdd66768987e26e4d0fa812f74 \
     --hash=sha256:148255aca2f54b90d48c48a9dbb4c7faad6cad310a980b2c5a5a9822057ed145 \

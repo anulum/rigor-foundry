@@ -27,7 +27,7 @@ cannot drift from the scanner's behaviour.
 | Language | AST / semantic | Size (GF001) | Ownership | Dependency graph | Structural |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | python | ✅ | ✅ | ✅ | ✅ | ✅ |
-| c / c++ | — | ✅ | ✅ | ✅ | ✅ |
+| c / c++ | ✅† | ✅ | ✅ | ✅ | ✅ |
 | javascript | ✅† | ✅ | ✅ | ✅ | ✅ |
 | typescript | ✅† | ✅ | ✅ | ✅ | ✅ |
 | rust | ✅† | ✅ | ✅ | ✅ | ✅ |
@@ -42,8 +42,8 @@ cannot drift from the scanner's behaviour.
 
 `✅` marks an applied technique; `—` marks one the scanner does not apply to that
 language today. `†` marks the native AST/semantic analysis for JavaScript,
-TypeScript, Go, and Rust, which is implemented through tree-sitter parsers but
-requires the optional `native` extra (`pip install rigor-foundry[native]`);
+TypeScript, Go, Rust, and C/C++, which is implemented through tree-sitter parsers
+but requires the optional `native` extra (`pip install rigor-foundry[native]`);
 without the extra a deployment degrades to the structural controls for those
 languages. YAML is scope-scannable data only — it participates in the
 tracked-content scope rule but carries no size, ownership, or dependency control.
@@ -53,12 +53,12 @@ ownership but have no native dependency-family parser yet.
 ## Reading a scan honestly
 
 A green scan means the applied techniques found no candidate — not that the
-language was analysed as deeply as Python. JavaScript, TypeScript, Go, and Rust
-now have a native AST pass (via the `native` extra); for the remaining non-Python
-languages no AST-semantic control ran, so semantic defects that only an AST pass
-would surface are out of scope until native analysis for that language lands. C,
-Julia, and the remaining languages are the next AST candidates, guided by adopter
-evidence.
+language was analysed as deeply as Python. JavaScript, TypeScript, Go, Rust, and
+C/C++ now have a native AST pass (via the `native` extra); for the remaining
+non-Python languages no AST-semantic control ran, so semantic defects that only
+an AST pass would surface are out of scope until native analysis for that
+language lands. Julia and the remaining languages are the next AST candidates,
+guided by adopter evidence.
 
 ## Programmatic access
 
