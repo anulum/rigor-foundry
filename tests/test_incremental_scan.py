@@ -104,7 +104,9 @@ def test_cli_changed_since_summarises_and_gates_only_changed_files(
     # Adding a vulnerable module makes the changed-since gate fail on the new code.
     repository.write_text("src/pkg/added.py", _VULNERABLE)
     head = repository.commit()
-    assert main(["scan", "--root", root, "--changed-since", head + "~1", "--fail-on-candidates"]) == 1
+    assert (
+        main(["scan", "--root", root, "--changed-since", head + "~1", "--fail-on-candidates"]) == 1
+    )
     flagged = capsys.readouterr().out
     assert "AS001-dynamic-code-execution src/pkg/added.py:2" in flagged
     assert "legacy.py" not in flagged
