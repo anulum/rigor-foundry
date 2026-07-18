@@ -66,6 +66,19 @@ Ignored evidence is collected only for exact paths declared by policy schema
 values, or recursive directory members. `missing` and `unavailable` remain
 evidence states and do not create findings by themselves.
 
+### Incremental changed-file view
+
+`rigor scan --changed-since REF` restricts the reported and gated candidates to
+files changed between the Git revision `REF` and `HEAD`. The full deterministic
+report is still computed (`--json-out`/`--markdown-out` write the complete
+report); `--changed-since` prints a summary — the number of candidates in changed
+files, the total, the changed-file count, and the full report digest — followed by
+those candidates, and makes `--fail-on-candidates` gate only on the changed set.
+This lets a pull-request or pre-commit check fail only when the changed code
+introduces a candidate, without hiding the full-tree report. `REF` is validated
+as a plain Git revision (a leading dash can never reach Git as a flag), and the
+diff runs through the same trusted, provenance-bound Git executable as the scan.
+
 ## SARIF export
 
 `rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]`

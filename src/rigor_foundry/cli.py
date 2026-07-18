@@ -25,7 +25,7 @@ from .campaign_workflow import (
     create_campaign,
     execute_campaign,
 )
-from .candidate_anchor import RepositoryTreeAnchor
+from .candidate_anchor import Candidate, RepositoryTreeAnchor
 from .coverage_residuals import (
     DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
     coverage_residual_errors,
@@ -34,8 +34,10 @@ from .enforcement import evaluate_enforcement
 from .git_provenance import (
     DEFAULT_MAXIMUM_GIT_VERSION_EXCLUSIVE,
     DEFAULT_MINIMUM_GIT_VERSION,
+    GitRunner,
     GitTrustPolicy,
 )
+from .incremental_scan import resolve_changed_paths, select_changed_candidates
 from .models import (
     AuditReport,
     ReviewRecord,
@@ -185,11 +187,18 @@ def _add_git_trust_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _scan_command(args: argparse.Namespace) -> int:
     """Execute the read-only scan command."""
-    report = scan_repository(
-        args.root,
-        args.policy,
-        git_trust_policy=_git_trust_policy(args),
-    )
+    trust_policy = _git_trust_policy(args)
+    report = scan_repository(args.root, args.policy, git_trust_policy=trust_policy)
+    gating_candidates = report.candidates
+    changed_summary: str | None = None
+    if args.changed_since is not None:
+        changed_paths = resolve_changed_paths(
+            GitRunner(trust_policy), args.root, args.changed_since
+        )
+        gating_candidates = select_changed_candidates(report.candidates, changed_paths)
+        changed_summary = _changed_scan_summary(
+            args.changed_since, report, changed_paths, gating_candidates
+        )
     wrote_output = False
     if args.json_out is not None:
         _write_explicit(args.json_out, report.to_json())
@@ -197,11 +206,32 @@ def _scan_command(args: argparse.Namespace) -> int:
     if args.markdown_out is not None:
         _write_explicit(args.markdown_out, report_markdown(report))
         wrote_output = True
-    if not wrote_output:
+    if changed_summary is not None:
+        print(changed_summary)
+    elif not wrote_output:
         print(report.to_json(), end="")
-    if args.fail_on_candidates and report.candidates:
+    if args.fail_on_candidates and gating_candidates:
         return 1
     return 0
+
+
+def _changed_scan_summary(
+    reference: str,
+    report: AuditReport,
+    changed_paths: frozenset[str],
+    gating_candidates: tuple[Candidate, ...],
+) -> str:
+    """Return a deterministic human summary of the changed-files scan view."""
+    header = (
+        f"changed-files view since {reference}: {len(gating_candidates)} of "
+        f"{len(report.candidates)} candidate(s) in {len(changed_paths)} changed file(s) "
+        f"(report digest {report.report_digest})"
+    )
+    lines = [
+        f"- {candidate.rule_id} {candidate.path}:{candidate.line}"
+        for candidate in gating_candidates
+    ]
+    return "\n".join([header, *lines])
 
 
 def _review_template_command(args: argparse.Namespace) -> int:
@@ -464,6 +494,13 @@ def _parser() -> argparse.ArgumentParser:
     scan.add_argument("--json-out", type=Path)
     scan.add_argument("--markdown-out", type=Path)
     scan.add_argument("--fail-on-candidates", action="store_true")
+    scan.add_argument(
+        "--changed-since",
+        help=(
+            "Report and gate only candidates in files changed between this Git "
+            "revision and HEAD; the full report output is unchanged."
+        ),
+    )
     _add_git_trust_arguments(scan)
     scan.set_defaults(handler=_scan_command)
 
