@@ -212,7 +212,7 @@ def test_builtin_templates_are_complete_and_honest() -> None:
 
     iso = by_id["iso-iec-27001-2022"]
     assert "2022" in iso.standard.version
-    assert iso.standard.source_url.startswith("https://www.iso.org")
+    assert iso.standard.source_url == "https://www.iso.org/standard/27001"
     soc2 = by_id["aicpa-tsc-2017"]
     assert "2017" in soc2.standard.version
     assert soc2.mapping_for("documentation-claims-ip").supported is False
