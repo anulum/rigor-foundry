@@ -45,6 +45,7 @@ Category = Literal[
     "application-security",
     "reliability",
     "supply-chain",
+    "container",
 ]
 Confidence = Literal["low", "medium", "high"]
 Decision = Literal["valid", "invalid", "accepted-boundary", "needs-evidence"]

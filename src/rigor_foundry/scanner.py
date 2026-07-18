@@ -19,6 +19,7 @@ from .candidate_anchor import (
     TrackedBlobAnchor,
     candidate_anchor_errors,
 )
+from .container import scan_container
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitRunner, GitTrustPolicy
@@ -184,6 +185,7 @@ def scan_repository(
         *scan_native(inventory, policy),
         *scan_reliability(inventory, policy),
         *scan_supply_chain(inventory, policy),
+        *scan_container(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

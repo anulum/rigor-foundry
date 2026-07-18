@@ -23,6 +23,7 @@ _PORTABLE_CONTROLS = {
     "application-security": "portable:application-security",
     "reliability-and-concurrency": "portable:reliability-and-concurrency",
     "supply-chain": "portable:supply-chain",
+    "packaging-deployment-iac": "portable:packaging-deployment-iac",
 }
 
 
