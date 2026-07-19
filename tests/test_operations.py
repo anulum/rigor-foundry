@@ -277,13 +277,16 @@ def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path
         "src/pkg/logs.py",
         _HEADER + "import logging\n"
         "from logging import getLogger as factory\n\n"
-        "audit: object = factory(__name__)\n\n"
+        "audit: object = factory(__name__)\n"
+        "primary, secondary = logging.getLogger('primary'), factory('secondary')\n\n"
         "def emit(obj, authToken, password_digest, api_key):\n"
         "    audit.debug(authToken)\n"
         "    logging.info(obj.privateKey)\n"
         "    logging.warning(password_digest)\n"
         "    logging.getLogger('nested').exception(api_key)\n"
         "    factory('direct').critical(api_key)\n"
+        "    primary.info(api_key)\n"
+        "    secondary.error(api_key)\n"
         "    custom.info(api_key)\n",
     )
     policy_path = repository.write_policy()
@@ -292,10 +295,12 @@ def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path
         load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
     )
     assert [(item.symbol, item.anchor.line_start) for item in candidates] == [
-        ("debug", 8),
-        ("info", 9),
-        ("exception", 11),
-        ("critical", 12),
+        ("debug", 9),
+        ("info", 10),
+        ("exception", 12),
+        ("critical", 13),
+        ("info", 14),
+        ("error", 15),
     ]
     assert all(item.rule_id == "OP002-credential-in-log-call" for item in candidates)
     assert all(item.confidence == "high" for item in candidates)

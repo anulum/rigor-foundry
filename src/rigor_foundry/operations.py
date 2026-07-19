@@ -83,11 +83,23 @@ def _logging_bindings(
             )
     loggers: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or not isinstance(
-            node.value, ast.Call
-        ):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
             continue
-        function = node.value.func
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            loggers.update(_logger_target_names(target, node.value, modules, factories))
+    return frozenset(modules), frozenset(factories), frozenset(loggers)
+
+
+def _logger_target_names(
+    target: ast.expr,
+    value: ast.expr,
+    modules: set[str],
+    factories: set[str],
+) -> frozenset[str]:
+    """Return target names paired with import-bound ``getLogger`` calls."""
+    if isinstance(value, ast.Call):
+        function = value.func
         factory = isinstance(function, ast.Name) and function.id in factories
         module_factory = (
             isinstance(function, ast.Attribute)
@@ -95,12 +107,18 @@ def _logging_bindings(
             and function.value.id in modules
             and function.attr == "getLogger"
         )
-        if not (factory or module_factory):
-            continue
-        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-        for target in targets:
-            loggers.update(bound_target_names(target))
-    return frozenset(modules), frozenset(factories), frozenset(loggers)
+        return bound_target_names(target) if factory or module_factory else frozenset()
+    if (
+        isinstance(target, (ast.Tuple, ast.List))
+        and isinstance(value, (ast.Tuple, ast.List))
+        and len(target.elts) == len(value.elts)
+    ):
+        return frozenset(
+            name
+            for child_target, child_value in zip(target.elts, value.elts, strict=True)
+            for name in _logger_target_names(child_target, child_value, modules, factories)
+        )
+    return frozenset()
 
 
 def _credential_argument(call: ast.Call) -> bool:

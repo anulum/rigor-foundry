@@ -25,6 +25,19 @@ def bound_target_names(node: ast.expr) -> frozenset[str]:
     return frozenset()
 
 
+def _type_alias_name(node: ast.AST) -> str | None:
+    """Return a PEP 695 type-alias binding without requiring Python 3.12 AST types."""
+    if node.__class__.__name__ != "TypeAlias":
+        return None
+    name = getattr(node, "name", None)
+    return name.id if isinstance(name, ast.Name) else None
+
+
+def _type_parameter_names(node: ast.AST) -> frozenset[str]:
+    """Return PEP 695 type-parameter names when the running parser exposes them."""
+    return frozenset(str(parameter.name) for parameter in getattr(node, "type_params", ()))
+
+
 def _scope_nodes(body: Sequence[ast.AST]) -> tuple[ast.AST, ...]:
     """Return nodes evaluated in one lexical scope, excluding nested scope bodies."""
     pending: list[ast.AST] = list(reversed(body))
@@ -59,6 +72,9 @@ def _bound_names(node: ast.AST) -> frozenset[str]:
         return frozenset({node.name})
     if isinstance(node, ast.MatchMapping) and node.rest is not None:
         return frozenset({node.rest})
+    type_alias = _type_alias_name(node)
+    if type_alias is not None:
+        return frozenset({type_alias})
     if isinstance(node, ast.Delete):
         return frozenset(name for target in node.targets for name in bound_target_names(target))
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -86,6 +102,17 @@ def _builtin_print_aliases(body: Sequence[ast.AST]) -> frozenset[str]:
     )
 
 
+def _builtin_module_aliases(body: Sequence[ast.AST]) -> frozenset[str]:
+    """Return explicit aliases introduced by ``import builtins`` in one scope."""
+    return frozenset(
+        alias.asname or "builtins"
+        for node in _scope_nodes(body)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+        if alias.name == "builtins"
+    )
+
+
 def _module_bindings(tree: ast.Module) -> frozenset[str]:
     """Return non-builtin-print names explicitly bound at module scope."""
     aliases = _builtin_print_aliases(tree.body)
@@ -104,6 +131,14 @@ def _module_bindings(tree: ast.Module) -> frozenset[str]:
     )
 
 
+def _module_binds_builtin_module(tree: ast.Module, name: str) -> bool:
+    """Return whether a module binding shadows one ``builtins`` module alias."""
+    return any(
+        name in _bound_names(node) and not _is_builtin_module_import(node, name)
+        for node in _scope_nodes(tree.body)
+    )
+
+
 def _function_declaration(function: _Function, name: str) -> str | None:
     """Return an explicit ``global`` or ``nonlocal`` declaration for one name."""
     for node in _scope_nodes(_function_body(function)):
@@ -118,6 +153,8 @@ def _function_binds(function: _Function, name: str) -> bool:
     """Return whether Python resolves one name as local to the function."""
     if _function_declaration(function, name) is not None:
         return False
+    if name in _type_parameter_names(function):
+        return True
     arguments = (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)
     if any(argument.arg == name for argument in arguments):
         return True
@@ -136,6 +173,25 @@ def _function_binds(function: _Function, name: str) -> bool:
                 alias.name == "print" and (alias.asname or "print") == name for alias in node.names
             )
         )
+        for node in _scope_nodes(_function_body(function))
+    )
+
+
+def _function_binds_builtin_module(function: _Function, name: str) -> bool:
+    """Return whether a function binding shadows one ``builtins`` module alias."""
+    if _function_declaration(function, name) is not None:
+        return False
+    if name in _type_parameter_names(function):
+        return True
+    arguments = (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)
+    if any(argument.arg == name for argument in arguments):
+        return True
+    if function.args.vararg is not None and function.args.vararg.arg == name:
+        return True
+    if function.args.kwarg is not None and function.args.kwarg.arg == name:
+        return True
+    return any(
+        name in _bound_names(node) and not _is_builtin_module_import(node, name)
         for node in _scope_nodes(_function_body(function))
     )
 
@@ -181,9 +237,18 @@ def _is_builtin_print_import(node: ast.AST, name: str) -> bool:
     )
 
 
-def _class_binding(scope: ast.ClassDef, node: ast.AST, name: str) -> bool | None:
+def _is_builtin_module_import(node: ast.AST, name: str) -> bool:
+    """Return whether one node binds a name through ``import builtins``."""
+    return isinstance(node, ast.Import) and any(
+        alias.name == "builtins" and (alias.asname or "builtins") == name for alias in node.names
+    )
+
+
+def _class_binding(
+    scope: ast.ClassDef, node: ast.AST, name: str, *, module_alias: bool = False
+) -> bool | None:
     """Return class-suite binding state established before one call."""
-    state: bool | None = None
+    state: bool | None = False if name in _type_parameter_names(scope) else None
     position = (getattr(node, "lineno", 0), getattr(node, "col_offset", 0))
     for candidate in _scope_nodes(scope.body):
         candidate_position = (
@@ -192,8 +257,22 @@ def _class_binding(scope: ast.ClassDef, node: ast.AST, name: str) -> bool | None
         )
         if candidate_position >= position or name not in _bound_names(candidate):
             continue
-        state = _is_builtin_print_import(candidate, name)
+        if isinstance(candidate, ast.Delete):
+            state = None
+        elif module_alias:
+            state = _is_builtin_module_import(candidate, name)
+        else:
+            state = _is_builtin_print_import(candidate, name)
     return state
+
+
+def _function_scope_active(
+    scope: _Function, node: ast.AST, parents: dict[ast.AST, ast.AST]
+) -> bool:
+    """Return whether a call executes inside a function body, not its definition syntax."""
+    if isinstance(scope, ast.Lambda):
+        return _contains(node, scope.body, parents)
+    return any(_contains(node, statement, parents) for statement in scope.body)
 
 
 def _name_resolves_to_builtin_print(
@@ -214,15 +293,16 @@ def _name_resolves_to_builtin_print(
                     return False
                 class_visible = False
         elif isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-            declaration = _function_declaration(current, name)
-            if declaration == "global":
-                break
-            aliases = _builtin_print_aliases(_function_body(current))
-            if name in aliases and not _function_binds(current, name):
-                return True
-            if _function_binds(current, name):
-                return False
-            class_visible = False
+            if _function_scope_active(current, node, parents):
+                declaration = _function_declaration(current, name)
+                if declaration == "global":
+                    break
+                aliases = _builtin_print_aliases(_function_body(current))
+                if name in aliases and not _function_binds(current, name):
+                    return True
+                if _function_binds(current, name):
+                    return False
+                class_visible = False
         elif isinstance(current, ast.ClassDef):
             if class_visible:
                 binding = _class_binding(current, node, name)
@@ -233,17 +313,49 @@ def _name_resolves_to_builtin_print(
     return (name == "print" or name in module_aliases) and name not in module_bindings
 
 
+def _name_resolves_to_builtin_module(
+    name: str,
+    node: ast.AST,
+    tree: ast.Module,
+    parents: dict[ast.AST, ast.AST],
+    module_aliases: frozenset[str],
+) -> bool:
+    """Return whether one lexical name resolves to the ``builtins`` module."""
+    current = parents.get(node)
+    class_visible = True
+    while current is not None:
+        if isinstance(current, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+            bindings = _comprehension_bindings(current, node, parents)
+            if bindings is not None:
+                if name in bindings:
+                    return False
+                class_visible = False
+        elif isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            if _function_scope_active(current, node, parents):
+                declaration = _function_declaration(current, name)
+                if declaration == "global":
+                    break
+                aliases = _builtin_module_aliases(_function_body(current))
+                if name in aliases and not _function_binds_builtin_module(current, name):
+                    return True
+                if _function_binds_builtin_module(current, name):
+                    return False
+                class_visible = False
+        elif isinstance(current, ast.ClassDef):
+            if class_visible:
+                binding = _class_binding(current, node, name, module_alias=True)
+                if binding is not None:
+                    return binding
+            class_visible = False
+        current = parents.get(current)
+    return name in module_aliases and not _module_binds_builtin_module(tree, name)
+
+
 def print_lines(tree: ast.Module) -> tuple[int, ...]:
     """Return calls that resolve to builtin print rather than a lexical binding."""
     module_bindings = _module_bindings(tree)
     module_aliases = _builtin_print_aliases(tree.body)
-    builtins_aliases = frozenset(
-        alias.asname or "builtins"
-        for node in tree.body
-        if isinstance(node, ast.Import)
-        for alias in node.names
-        if alias.name == "builtins"
-    )
+    builtins_aliases = _builtin_module_aliases(tree.body)
     parents = {
         child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
     }
@@ -254,7 +366,9 @@ def print_lines(tree: ast.Module) -> tuple[int, ...]:
         if (
             isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Name)
-            and node.func.value.id in builtins_aliases
+            and _name_resolves_to_builtin_module(
+                node.func.value.id, node, tree, parents, builtins_aliases
+            )
             and node.func.attr == "print"
         ):
             lines.add(node.lineno)
