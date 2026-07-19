@@ -28,6 +28,7 @@ _PORTABLE_CONTROLS = {
     "documentation-claims-ip": "portable:documentation-claims-ip",
     "scientific-numerical-correctness": "portable:scientific-numerical-correctness",
     "operations-and-observability": "portable:operations-and-observability",
+    "performance-and-reproducibility": "portable:performance-and-reproducibility",
 }
 
 

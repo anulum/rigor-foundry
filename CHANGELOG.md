@@ -7,6 +7,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A performance/reproducibility rule flags import-bound wall-clock calls in
+  Python test assertions unless a local freeze or dominating monkeypatch makes
+  the timestamp explicit. It remains an anchored review candidate in maturity
+  probation.
 - Operations rules flag builtin output in Python library owners and
   credential-named expressions passed to import-bound logging calls. Both
   remain anchored review candidates in maturity probation.
