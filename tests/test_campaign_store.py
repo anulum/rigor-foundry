@@ -429,7 +429,7 @@ def test_load_runs_rejects_self_consistent_wrong_bindings(tmp_path: Path) -> Non
         ("campaign_id", "OTHER-PROJECT", "different campaign"),
         ("input_contract_digest", "0" * 64, "different input contract"),
         ("report_digest", "0" * 64, "report digest mismatch"),
-        ("candidate_count", 1, "candidate count mismatch"),
+        ("candidate_count", None, "candidate count mismatch"),
     )
     for index, (field, value, message) in enumerate(cases):
         _repository, campaign_path, _campaign, stored = _campaign_bundle(
@@ -437,7 +437,7 @@ def test_load_runs_rejects_self_consistent_wrong_bindings(tmp_path: Path) -> Non
         )
         run_directory = campaign_path.parent / "runs" / stored.attestation.run_id
         changed = stored.attestation.to_dict()
-        changed[field] = value
+        changed[field] = stored.attestation.candidate_count + 1 if value is None else value
         _rewrite_attestation(run_directory, changed)
         with pytest.raises(ValueError, match=message):
             load_runs(campaign_path)
