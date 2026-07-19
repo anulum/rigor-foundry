@@ -26,7 +26,20 @@ API_MANIFEST_SCHEMA_VERSION = "1.0"
 _MANIFEST_FIELDS = frozenset({"schema_version", "surfaces"})
 _SURFACE_FIELDS = frozenset({"path", "exports"})
 _MUTATING_SEQUENCE_METHODS = frozenset(
-    {"append", "clear", "extend", "insert", "pop", "remove", "reverse", "sort"}
+    {
+        "__delitem__",
+        "__iadd__",
+        "__imul__",
+        "__setitem__",
+        "append",
+        "clear",
+        "extend",
+        "insert",
+        "pop",
+        "remove",
+        "reverse",
+        "sort",
+    }
 )
 
 
@@ -81,20 +94,68 @@ def _root_name(expression: ast.expr) -> str | None:
 class _PublicDeclarationMutation(ast.NodeVisitor):
     """Detect direct ``__all__`` writes without descending into nested scopes."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, evaluate_annotations: bool) -> None:
         self.detected = False
+        self.evaluate_annotations = evaluate_annotations
+
+    def _visit_function_header(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> None:
+        """Visit expressions evaluated while defining a function, never its body."""
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        for default in (*node.args.defaults, *node.args.kw_defaults):
+            if default is not None:
+                self.visit(default)
+        if self.evaluate_annotations:
+            arguments = (
+                *node.args.posonlyargs,
+                *node.args.args,
+                *node.args.kwonlyargs,
+            )
+            for argument in arguments:
+                if argument.annotation is not None:
+                    self.visit(argument.annotation)
+            for optional_argument in (node.args.vararg, node.args.kwarg):
+                if optional_argument is not None and optional_argument.annotation is not None:
+                    self.visit(optional_argument.annotation)
+        if self.evaluate_annotations and node.returns is not None:
+            self.visit(node.returns)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Do not treat a nested synchronous function body as module execution."""
+        """Inspect synchronous definition-time expressions but not its deferred body."""
+        self._visit_function_header(node)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Do not treat a nested asynchronous function body as module execution."""
+        """Inspect asynchronous definition-time expressions but not its deferred body."""
+        self._visit_function_header(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        """Do not treat a class namespace as a module public declaration."""
+        """Inspect class header expressions while ignoring class-local declarations."""
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        for base in node.bases:
+            self.visit(base)
+        for keyword in node.keywords:
+            self.visit(keyword.value)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
-        """Do not treat a deferred lambda body as module execution."""
+        """Inspect lambda defaults evaluated now, never its deferred body."""
+        for default in (*node.args.defaults, *node.args.kw_defaults):
+            if default is not None:
+                self.visit(default)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        """Inspect an annotated assignment without forcing deferred annotations."""
+        self.visit(node.target)
+        if node.value is not None:
+            self.visit(node.value)
+        if self.evaluate_annotations:
+            self.visit(node.annotation)
+
+    def visit_TypeAlias(self, node: ast.AST) -> None:
+        """Ignore PEP 695 aliases because their values and bounds are lazy."""
 
     def visit_Name(self, node: ast.Name) -> None:
         """Recognise direct assignment, deletion, loops, and named expressions."""
@@ -124,9 +185,20 @@ class _PublicDeclarationMutation(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def _writes_public_declaration(statement: ast.stmt) -> bool:
+def _writes_public_declaration(
+    statement: ast.stmt,
+    *,
+    evaluate_annotations: bool,
+) -> bool:
     """Return whether one module-level statement directly mutates ``__all__``."""
-    detector = _PublicDeclarationMutation()
+    if (
+        isinstance(statement, ast.AnnAssign)
+        and isinstance(statement.target, ast.Name)
+        and statement.target.id == "__all__"
+        and statement.value is None
+    ):
+        return False
+    detector = _PublicDeclarationMutation(evaluate_annotations=evaluate_annotations)
     detector.visit(statement)
     return detector.detected
 
@@ -171,8 +243,19 @@ def _declared_surface(item: TrackedFile, policy: AuditPolicy) -> _DeclaredSurfac
         tree = ast.parse(item.text, filename=item.path)
     except SyntaxError:
         return None
+    evaluate_annotations = not any(
+        isinstance(statement, ast.ImportFrom)
+        and statement.module == "__future__"
+        and any(alias.name == "annotations" for alias in statement.names)
+        for statement in tree.body
+    )
     statements = tuple(
-        statement for statement in tree.body if _writes_public_declaration(statement)
+        statement
+        for statement in tree.body
+        if _writes_public_declaration(
+            statement,
+            evaluate_annotations=evaluate_annotations,
+        )
     )
     if not statements:
         return None
