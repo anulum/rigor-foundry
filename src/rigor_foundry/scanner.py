@@ -32,6 +32,7 @@ from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
 from .polyglot_architecture import scan_polyglot_architecture
 from .reliability import scan_reliability
+from .scientific import scan_scientific
 from .supply_chain import scan_supply_chain
 from .test_authenticity import scan_test_authenticity
 
@@ -190,6 +191,7 @@ def scan_repository(
         *scan_container(inventory, policy),
         *scan_data_privacy(inventory, policy),
         *scan_documentation(inventory, policy),
+        *scan_scientific(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

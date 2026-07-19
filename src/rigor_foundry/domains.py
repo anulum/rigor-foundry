@@ -26,6 +26,7 @@ _PORTABLE_CONTROLS = {
     "packaging-deployment-iac": "portable:packaging-deployment-iac",
     "data-and-privacy": "portable:data-and-privacy",
     "documentation-claims-ip": "portable:documentation-claims-ip",
+    "scientific-numerical-correctness": "portable:scientific-numerical-correctness",
 }
 
 
