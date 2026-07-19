@@ -206,6 +206,30 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  coverage:
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: coverage-python-3.12
+      - name: Upload exact Python coverage through OIDC
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true
+          files: coverage.xml
+          disable_search: true
+          fail_ci_if_error: true
+          flags: python
+          name: python-3.12
+
   distribution:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
