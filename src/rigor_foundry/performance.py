@@ -50,6 +50,14 @@ class _Aliases:
     travel_functions: frozenset[str]
 
 
+@dataclass(frozen=True)
+class _SuiteScan:
+    """Findings and surviving monkeypatch controls after one statement suite."""
+
+    findings: tuple[tuple[int, _ClockSource], ...]
+    patch_controls: frozenset[_ClockSource]
+
+
 class _ScopeBindings(ast.NodeVisitor):
     """Collect imports and conservative same-scope shadowing."""
 
@@ -319,6 +327,14 @@ def _monkeypatch_undo(call: ast.Call, *, fixture_available: bool) -> bool:
     )
 
 
+def _statement_call(statement: ast.stmt) -> ast.Call | None:
+    """Return a direct call evaluated by one straight-line statement."""
+    value: ast.expr | None = None
+    if isinstance(statement, (ast.Expr, ast.Assign, ast.AnnAssign)):
+        value = statement.value
+    return value if isinstance(value, ast.Call) else None
+
+
 def _assertion_calls(node: ast.Assert, aliases: _Aliases) -> tuple[tuple[int, _ClockSource], ...]:
     """Return supported clock calls evaluated by one assertion condition."""
     visitor = _ClockCalls(aliases)
@@ -329,40 +345,47 @@ def _assertion_calls(node: ast.Assert, aliases: _Aliases) -> tuple[tuple[int, _C
 def _scan_suite(
     statements: list[ast.stmt],
     aliases: _Aliases,
-    base_controls: frozenset[_ClockSource],
+    fixed_controls: frozenset[_ClockSource],
     *,
+    patch_controls: frozenset[_ClockSource] = frozenset(),
     monkeypatch_available: bool,
-) -> tuple[tuple[int, _ClockSource], ...]:
-    """Scan one statement suite while preserving straight-line patch dominance."""
+) -> _SuiteScan:
+    """Scan one suite and retain deterministic straight-line patch state."""
     findings: list[tuple[int, _ClockSource]] = []
-    patch_controls: set[_ClockSource] = set()
+    current_patches = set(patch_controls)
+
+    def nested(
+        suite: list[ast.stmt],
+        nested_fixed_controls: frozenset[_ClockSource],
+        nested_patch_controls: frozenset[_ClockSource],
+    ) -> _SuiteScan:
+        return _scan_suite(
+            suite,
+            aliases,
+            nested_fixed_controls,
+            patch_controls=nested_patch_controls,
+            monkeypatch_available=monkeypatch_available,
+        )
+
     for statement in statements:
-        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
+        call = _statement_call(statement)
+        if call is not None:
             if _monkeypatch_undo(
-                statement.value,
+                call,
                 fixture_available=monkeypatch_available,
             ):
-                patch_controls.clear()
+                current_patches.clear()
             else:
-                patch_controls.update(
+                current_patches.update(
                     _monkeypatch_controls(
-                        statement.value,
+                        call,
                         aliases,
                         fixture_available=monkeypatch_available,
                     )
                 )
             continue
-        controls = base_controls | patch_controls
-
-        def nested(
-            suite: list[ast.stmt], inherited: frozenset[_ClockSource]
-        ) -> tuple[tuple[int, _ClockSource], ...]:
-            return _scan_suite(
-                suite,
-                aliases,
-                inherited,
-                monkeypatch_available=monkeypatch_available,
-            )
+        controls = fixed_controls | current_patches
+        inherited_patches = frozenset(current_patches)
 
         if isinstance(statement, ast.Assert):
             findings.extend(
@@ -372,21 +395,36 @@ def _scan_suite(
             )
         elif isinstance(statement, (ast.With, ast.AsyncWith)):
             frozen = any(_freeze_callable(item.context_expr, aliases) for item in statement.items)
-            nested_controls = _ALL_CLOCK_SOURCES if frozen else frozenset(controls)
-            findings.extend(nested(statement.body, nested_controls))
-        elif isinstance(statement, (ast.If, ast.For, ast.AsyncFor, ast.While)):
-            findings.extend(nested(statement.body, frozenset(controls)))
-            findings.extend(nested(statement.orelse, frozenset(controls)))
+            nested_fixed = _ALL_CLOCK_SOURCES if frozen else fixed_controls
+            findings.extend(nested(statement.body, nested_fixed, inherited_patches).findings)
+        elif isinstance(statement, ast.If):
+            body = nested(statement.body, fixed_controls, inherited_patches)
+            orelse = nested(statement.orelse, fixed_controls, inherited_patches)
+            findings.extend(body.findings)
+            findings.extend(orelse.findings)
+            current_patches = set(body.patch_controls & orelse.patch_controls)
+        elif isinstance(statement, (ast.For, ast.AsyncFor, ast.While)):
+            body = nested(statement.body, fixed_controls, inherited_patches)
+            orelse = nested(statement.orelse, fixed_controls, inherited_patches)
+            findings.extend(body.findings)
+            findings.extend(orelse.findings)
+            current_patches.intersection_update(body.patch_controls, orelse.patch_controls)
         elif isinstance(statement, (ast.Try, ast.TryStar)):
-            findings.extend(nested(statement.body, frozenset(controls)))
+            findings.extend(nested(statement.body, fixed_controls, inherited_patches).findings)
             for handler in statement.handlers:
-                findings.extend(nested(handler.body, frozenset(controls)))
-            findings.extend(nested(statement.orelse, frozenset(controls)))
-            findings.extend(nested(statement.finalbody, frozenset(controls)))
+                findings.extend(nested(handler.body, fixed_controls, inherited_patches).findings)
+            findings.extend(nested(statement.orelse, fixed_controls, inherited_patches).findings)
+            finalbody = nested(statement.finalbody, fixed_controls, inherited_patches)
+            findings.extend(finalbody.findings)
+            current_patches = set(finalbody.patch_controls)
         elif isinstance(statement, ast.Match):
+            case_controls: list[frozenset[_ClockSource]] = []
             for case in statement.cases:
-                findings.extend(nested(case.body, frozenset(controls)))
-    return tuple(findings)
+                result = nested(case.body, fixed_controls, inherited_patches)
+                findings.extend(result.findings)
+                case_controls.append(result.patch_controls)
+            current_patches.intersection_update(*case_controls)
+    return _SuiteScan(tuple(findings), frozenset(current_patches))
 
 
 def _line_evidence(
@@ -440,7 +478,7 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                     aliases,
                     _ALL_CLOCK_SOURCES if frozen else frozenset(),
                     monkeypatch_available=monkeypatch_available,
-                )
+                ).findings
             )
         )
         if not findings:

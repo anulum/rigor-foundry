@@ -217,6 +217,43 @@ def test_controls_are_binding_and_control_flow_precise(tmp_path: Path) -> None:
     assert "occurrences=2" in candidates[-1].evidence
 
 
+def test_assigned_patch_and_finally_undo_preserve_runtime_state(tmp_path: Path) -> None:
+    """Assigned patches suppress candidates and deterministic finalisers restore them."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "tests/test_patch_state.py",
+        "import time as clock\n\n"
+        f"def test_assigned_patch({_PYTEST_PATCH}):\n"
+        f"    _ = {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() == 1.0\n\n"
+        f"def test_annotated_patch({_PYTEST_PATCH}):\n"
+        f"    ignored: object = {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert ignored is None and clock.time() == 1.0\n\n"
+        f"def test_finally_undo({_PYTEST_PATCH}):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    try:\n"
+        "        assert clock.time() == 1.0\n"
+        "    finally:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_conditional_undo({_PYTEST_PATCH}, enabled):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    if enabled:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    assert clock.time() > 0\n",
+    )
+    policy_path = repository.write_policy()
+    repository.commit()
+
+    candidates = scan_performance(
+        load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
+    )
+    assert [item.symbol for item in candidates] == ["test_finally_undo", "test_conditional_undo"]
+    assert [item.anchor.line_start for item in candidates] == [17, 23]
+    assert all("clock_apis=time.time" in item.evidence for item in candidates)
+    assert all("occurrences=1" in item.evidence for item in candidates)
+
+
 def test_import_shadowing_deferred_code_and_scope_are_conservative(tmp_path: Path) -> None:
     """Only executable assertions with unambiguous imports inside test scope qualify."""
     repository = GitRepository.create(tmp_path / "repository")
