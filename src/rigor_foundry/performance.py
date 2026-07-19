@@ -52,10 +52,11 @@ class _Aliases:
 
 @dataclass(frozen=True)
 class _SuiteScan:
-    """Findings and surviving monkeypatch controls after one statement suite."""
+    """Findings plus normal and exceptional monkeypatch state for one suite."""
 
     findings: tuple[tuple[int, _ClockSource], ...]
     patch_controls: frozenset[_ClockSource]
+    exception_controls: frozenset[_ClockSource]
 
 
 class _ScopeBindings(ast.NodeVisitor):
@@ -335,6 +336,23 @@ def _statement_call(statement: ast.stmt) -> ast.Call | None:
     return value if isinstance(value, ast.Call) else None
 
 
+def _match_is_exhaustive(statement: ast.Match) -> bool:
+    """Return whether a match ends in an unguarded irrefutable case."""
+    final = statement.cases[-1]
+    return (
+        final.guard is None
+        and isinstance(final.pattern, ast.MatchAs)
+        and final.pattern.pattern is None
+    )
+
+
+def _suite_has_break(statements: list[ast.stmt]) -> bool:
+    """Return whether a loop body can bypass its else suite with ``break``."""
+    return any(
+        isinstance(node, ast.Break) for statement in statements for node in ast.walk(statement)
+    )
+
+
 def _assertion_calls(node: ast.Assert, aliases: _Aliases) -> tuple[tuple[int, _ClockSource], ...]:
     """Return supported clock calls evaluated by one assertion condition."""
     visitor = _ClockCalls(aliases)
@@ -353,6 +371,7 @@ def _scan_suite(
     """Scan one suite and retain deterministic straight-line patch state."""
     findings: list[tuple[int, _ClockSource]] = []
     current_patches = set(patch_controls)
+    exception_floor = set(patch_controls)
 
     def nested(
         suite: list[ast.stmt],
@@ -383,6 +402,7 @@ def _scan_suite(
                         fixture_available=monkeypatch_available,
                     )
                 )
+            exception_floor.intersection_update(current_patches)
             continue
         controls = fixed_controls | current_patches
         inherited_patches = frozenset(current_patches)
@@ -396,35 +416,68 @@ def _scan_suite(
         elif isinstance(statement, (ast.With, ast.AsyncWith)):
             frozen = any(_freeze_callable(item.context_expr, aliases) for item in statement.items)
             nested_fixed = _ALL_CLOCK_SOURCES if frozen else fixed_controls
-            findings.extend(nested(statement.body, nested_fixed, inherited_patches).findings)
+            body = nested(statement.body, nested_fixed, inherited_patches)
+            findings.extend(body.findings)
+            exception_floor.intersection_update(body.exception_controls)
         elif isinstance(statement, ast.If):
             body = nested(statement.body, fixed_controls, inherited_patches)
             orelse = nested(statement.orelse, fixed_controls, inherited_patches)
             findings.extend(body.findings)
             findings.extend(orelse.findings)
+            exception_floor.intersection_update(body.exception_controls, orelse.exception_controls)
             current_patches = set(body.patch_controls & orelse.patch_controls)
         elif isinstance(statement, (ast.For, ast.AsyncFor, ast.While)):
             body = nested(statement.body, fixed_controls, inherited_patches)
-            orelse = nested(statement.orelse, fixed_controls, inherited_patches)
+            loop_controls = inherited_patches & body.patch_controls
+            orelse = nested(statement.orelse, fixed_controls, loop_controls)
             findings.extend(body.findings)
             findings.extend(orelse.findings)
-            current_patches.intersection_update(body.patch_controls, orelse.patch_controls)
+            exception_floor.intersection_update(body.exception_controls, orelse.exception_controls)
+            current_patches = set(orelse.patch_controls)
+            if _suite_has_break(statement.body):
+                current_patches.intersection_update(loop_controls)
         elif isinstance(statement, (ast.Try, ast.TryStar)):
-            findings.extend(nested(statement.body, fixed_controls, inherited_patches).findings)
+            body = nested(statement.body, fixed_controls, inherited_patches)
+            findings.extend(body.findings)
+            handler_results: list[_SuiteScan] = []
             for handler in statement.handlers:
-                findings.extend(nested(handler.body, fixed_controls, inherited_patches).findings)
-            findings.extend(nested(statement.orelse, fixed_controls, inherited_patches).findings)
-            finalbody = nested(statement.finalbody, fixed_controls, inherited_patches)
+                result = nested(handler.body, fixed_controls, body.exception_controls)
+                findings.extend(result.findings)
+                handler_results.append(result)
+            orelse = nested(statement.orelse, fixed_controls, body.patch_controls)
+            findings.extend(orelse.findings)
+            pre_finally = set(orelse.patch_controls)
+            for result in handler_results:
+                pre_finally.intersection_update(result.patch_controls)
+            finalbody = nested(statement.finalbody, fixed_controls, frozenset(pre_finally))
             findings.extend(finalbody.findings)
             current_patches = set(finalbody.patch_controls)
+            exception_floor.intersection_update(
+                body.exception_controls,
+                orelse.exception_controls,
+                finalbody.exception_controls,
+                *(result.exception_controls for result in handler_results),
+            )
         elif isinstance(statement, ast.Match):
-            case_controls: list[frozenset[_ClockSource]] = []
+            results: list[_SuiteScan] = []
             for case in statement.cases:
                 result = nested(case.body, fixed_controls, inherited_patches)
                 findings.extend(result.findings)
-                case_controls.append(result.patch_controls)
-            current_patches.intersection_update(*case_controls)
-    return _SuiteScan(tuple(findings), frozenset(current_patches))
+                results.append(result)
+            case_controls = set(results[0].patch_controls)
+            for result in results[1:]:
+                case_controls.intersection_update(result.patch_controls)
+            exception_floor.intersection_update(*(result.exception_controls for result in results))
+            if _match_is_exhaustive(statement):
+                current_patches = case_controls
+            else:
+                current_patches.intersection_update(case_controls)
+        exception_floor.intersection_update(current_patches)
+    return _SuiteScan(
+        tuple(findings),
+        frozenset(current_patches),
+        frozenset(exception_floor),
+    )
 
 
 def _line_evidence(
