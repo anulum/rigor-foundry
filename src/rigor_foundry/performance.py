@@ -419,6 +419,7 @@ def _scan_suite(
             body = nested(statement.body, nested_fixed, inherited_patches)
             findings.extend(body.findings)
             exception_floor.intersection_update(body.exception_controls)
+            current_patches = set(body.patch_controls)
         elif isinstance(statement, ast.If):
             body = nested(statement.body, fixed_controls, inherited_patches)
             orelse = nested(statement.orelse, fixed_controls, inherited_patches)

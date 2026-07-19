@@ -330,6 +330,52 @@ def test_composed_try_and_exhaustive_join_state(tmp_path: Path) -> None:
     assert all("occurrences=1" in item.evidence for item in candidates)
 
 
+def test_with_suites_publish_normal_patch_state(tmp_path: Path) -> None:
+    """Normal exits from synchronous and asynchronous contexts retain patch state."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "tests/test_with_patch_state.py",
+        "import time as clock\n"
+        "from freezegun import freeze_time\n\n"
+        f"def test_with_undo({_PYTEST_PATCH}, manager):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    with manager:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_with_setattr({_PYTEST_PATCH}, manager):\n"
+        "    with manager:\n"
+        f"        {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() > 0\n\n"
+        f"async def test_async_with_undo({_PYTEST_PATCH}, manager):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    async with manager:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    assert clock.time() > 0\n\n"
+        f"async def test_async_with_setattr({_PYTEST_PATCH}, manager):\n"
+        "    async with manager:\n"
+        f"        {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_frozen_with_undo({_PYTEST_PATCH}):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    with freeze_time('2026-01-01'):\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    assert clock.time() > 0\n",
+    )
+    policy_path = repository.write_policy()
+    repository.commit()
+
+    candidates = scan_performance(
+        load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
+    )
+    assert [item.symbol for item in candidates] == [
+        "test_with_undo",
+        "test_async_with_undo",
+        "test_frozen_with_undo",
+    ]
+    assert all("clock_apis=time.time" in item.evidence for item in candidates)
+    assert all("occurrences=1" in item.evidence for item in candidates)
+
+
 def test_import_shadowing_deferred_code_and_scope_are_conservative(tmp_path: Path) -> None:
     """Only executable assertions with unambiguous imports inside test scope qualify."""
     repository = GitRepository.create(tmp_path / "repository")
