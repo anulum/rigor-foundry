@@ -109,6 +109,15 @@ def test_import_aliases_seed_order_none_and_class_tests_are_bounded(tmp_path: Pa
         "    async def test_none_seed(self):\n"
         "        seed(None)\n"
         "        assert random() >= 0\n\n"
+        "    def test_auxiliary_version_is_not_seed(self):\n"
+        "        seed(a=None, version=2)\n"
+        "        assert random() >= 0\n\n"
+        "    def test_positional_none_is_not_seed(self):\n"
+        "        seed(None, 2)\n"
+        "        assert random() >= 0\n\n"
+        "    def test_version_only_is_not_seed(self):\n"
+        "        seed(version=2)\n"
+        "        assert random() >= 0\n\n"
         "def test_numpy_alias():\n"
         "    assert npr.normal() >= 0\n\n"
         "def test_imported_numpy():\n"
@@ -135,6 +144,9 @@ def test_import_aliases_seed_order_none_and_class_tests_are_bounded(tmp_path: Pa
     assert [item.symbol for item in candidates] == [
         "test_late_seed",
         "test_none_seed",
+        "test_auxiliary_version_is_not_seed",
+        "test_positional_none_is_not_seed",
+        "test_version_only_is_not_seed",
         "test_numpy_alias",
         "test_imported_numpy",
         "test_constructors",

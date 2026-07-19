@@ -199,8 +199,16 @@ def _binding(call: ast.Call, aliases: _Aliases) -> tuple[_Framework, _Kind] | No
 
 
 def _explicit_seed(call: ast.Call) -> bool:
-    values = [*call.args, *(keyword.value for keyword in call.keywords if keyword.arg is not None)]
-    return any(not (isinstance(value, ast.Constant) and value.value is None) for value in values)
+    """Return whether the call's actual seed parameter is present and non-None."""
+    values = list(call.args[:1])
+    if not values:
+        values.extend(
+            keyword.value for keyword in call.keywords if keyword.arg in {"a", "seed", "x"}
+        )
+    if not values:
+        return False
+    value = values[0]
+    return not (isinstance(value, ast.Constant) and value.value is None)
 
 
 def _unseeded_lines(
