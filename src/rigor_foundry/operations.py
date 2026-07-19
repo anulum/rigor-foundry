@@ -12,13 +12,13 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
-from collections.abc import Sequence
 from pathlib import PurePosixPath
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path, repository_path_under_roots
 from .models import AuditPolicy, Candidate, Confidence
+from .python_output import bound_target_names, print_lines
 
 _SCRIPT_ROOTS = frozenset({"bin", "scripts", "tools"})
 _CLI_STEMS = frozenset({"__main__", "cli"})
@@ -66,204 +66,6 @@ def _production_python(item: TrackedFile, policy: AuditPolicy) -> bool:
     )
 
 
-def _target_names(node: ast.expr) -> frozenset[str]:
-    """Return names bound by one assignment target."""
-    if isinstance(node, ast.Name):
-        return frozenset({node.id})
-    if isinstance(node, (ast.Tuple, ast.List)):
-        return frozenset(name for item in node.elts for name in _target_names(item))
-    return frozenset()
-
-
-def _scope_nodes(body: Sequence[ast.AST]) -> tuple[ast.AST, ...]:
-    """Return nodes evaluated in one lexical scope, excluding nested scope bodies."""
-    pending: list[ast.AST] = list(reversed(body))
-    nodes: list[ast.AST] = []
-    while pending:
-        node = pending.pop()
-        nodes.append(node)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
-            continue
-        pending.extend(reversed(list(ast.iter_child_nodes(node))))
-    return tuple(nodes)
-
-
-def _bound_names(node: ast.AST) -> frozenset[str]:
-    """Return names bound by one scope-local syntax node."""
-    if isinstance(node, ast.Assign):
-        return frozenset(name for target in node.targets for name in _target_names(target))
-    if isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.NamedExpr)):
-        return _target_names(node.target)
-    if isinstance(node, (ast.For, ast.AsyncFor)):
-        return _target_names(node.target)
-    if isinstance(node, (ast.With, ast.AsyncWith)):
-        return frozenset(
-            name
-            for item in node.items
-            if item.optional_vars is not None
-            for name in _target_names(item.optional_vars)
-        )
-    if isinstance(node, ast.ExceptHandler) and node.name is not None:
-        return frozenset({node.name})
-    if isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name is not None:
-        return frozenset({node.name})
-    if isinstance(node, ast.MatchMapping) and node.rest is not None:
-        return frozenset({node.rest})
-    if isinstance(node, ast.Delete):
-        return frozenset(name for target in node.targets for name in _target_names(target))
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-        return frozenset({node.name})
-    if isinstance(node, (ast.Import, ast.ImportFrom)):
-        return frozenset(
-            alias.asname or alias.name.split(".", maxsplit=1)[0] for alias in node.names
-        )
-    return frozenset()
-
-
-def _function_body(
-    function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda,
-) -> Sequence[ast.AST]:
-    """Return syntax evaluated in one function or lambda body."""
-    return (function.body,) if isinstance(function, ast.Lambda) else function.body
-
-
-def _builtin_print_aliases(body: Sequence[ast.AST]) -> frozenset[str]:
-    """Return explicit names imported from ``builtins.print`` in one scope."""
-    return frozenset(
-        alias.asname or "print"
-        for node in _scope_nodes(body)
-        if isinstance(node, ast.ImportFrom) and node.module == "builtins"
-        for alias in node.names
-        if alias.name == "print"
-    )
-
-
-def _module_bindings(tree: ast.Module) -> frozenset[str]:
-    """Return non-builtin-print names explicitly bound at module scope."""
-    aliases = _builtin_print_aliases(tree.body)
-    return frozenset(
-        name
-        for node in _scope_nodes(tree.body)
-        for name in _bound_names(node)
-        if not (
-            name in aliases
-            and isinstance(node, ast.ImportFrom)
-            and node.module == "builtins"
-            and any(
-                alias.name == "print" and (alias.asname or "print") == name for alias in node.names
-            )
-        )
-    )
-
-
-def _function_declaration(
-    function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda, name: str
-) -> str | None:
-    """Return an explicit ``global`` or ``nonlocal`` declaration for one name."""
-    for node in _scope_nodes(_function_body(function)):
-        if isinstance(node, ast.Global) and name in node.names:
-            return "global"
-        if isinstance(node, ast.Nonlocal) and name in node.names:
-            return "nonlocal"
-    return None
-
-
-def _function_binds(
-    function: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda, name: str
-) -> bool:
-    """Return whether Python resolves one name as local to the function."""
-    if _function_declaration(function, name) is not None:
-        return False
-    arguments = (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)
-    if any(argument.arg == name for argument in arguments):
-        return True
-    if function.args.vararg is not None and function.args.vararg.arg == name:
-        return True
-    if function.args.kwarg is not None and function.args.kwarg.arg == name:
-        return True
-    aliases = _builtin_print_aliases(_function_body(function))
-    return any(
-        name in _bound_names(node)
-        and not (
-            name in aliases
-            and isinstance(node, ast.ImportFrom)
-            and node.module == "builtins"
-            and any(
-                alias.name == "print" and (alias.asname or "print") == name for alias in node.names
-            )
-        )
-        for node in _scope_nodes(_function_body(function))
-    )
-
-
-def _enclosing_functions(
-    node: ast.AST, parents: dict[ast.AST, ast.AST]
-) -> tuple[ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda, ...]:
-    """Return lexical function owners from nearest to outermost."""
-    functions: list[ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda] = []
-    current = parents.get(node)
-    while current is not None:
-        if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-            functions.append(current)
-        current = parents.get(current)
-    return tuple(functions)
-
-
-def _name_resolves_to_builtin_print(
-    name: str,
-    functions: tuple[ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda, ...],
-    module_bindings: frozenset[str],
-    module_aliases: frozenset[str],
-) -> bool:
-    """Return whether one lexical name resolves to builtin ``print``."""
-    inherited_alias = name in module_aliases
-    for function in functions:
-        declaration = _function_declaration(function, name)
-        if declaration == "global":
-            break
-        aliases = _builtin_print_aliases(_function_body(function))
-        if name in aliases and not _function_binds(function, name):
-            return True
-        if _function_binds(function, name):
-            return False
-    return (name == "print" or inherited_alias) and name not in module_bindings
-
-
-def _print_lines(tree: ast.Module) -> tuple[int, ...]:
-    """Return calls that resolve to builtin print rather than a local binding."""
-    module_bindings = _module_bindings(tree)
-    module_print_aliases = _builtin_print_aliases(tree.body)
-    builtins_aliases = frozenset(
-        alias.asname or "builtins"
-        for node in tree.body
-        if isinstance(node, ast.Import)
-        for alias in node.names
-        if alias.name == "builtins"
-    )
-    parents = {
-        child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
-    }
-    lines: set[int] = set()
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        if (
-            isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id in builtins_aliases
-            and node.func.attr == "print"
-        ):
-            lines.add(node.lineno)
-            continue
-        if not isinstance(node.func, ast.Name):
-            continue
-        name = node.func.id
-        functions = _enclosing_functions(node, parents)
-        if _name_resolves_to_builtin_print(name, functions, module_bindings, module_print_aliases):
-            lines.add(node.lineno)
-    return tuple(sorted(lines))
-
-
 def _logging_bindings(
     tree: ast.Module,
 ) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
@@ -297,7 +99,7 @@ def _logging_bindings(
             continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for target in targets:
-            loggers.update(_target_names(target))
+            loggers.update(bound_target_names(target))
     return frozenset(modules), frozenset(factories), frozenset(loggers)
 
 
@@ -360,7 +162,7 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
             "Library code writes directly to process output, bypassing caller-controlled observability and output routing.",
             "Replace incidental output with a returned value or structured logger, or prove the module is an intentional command boundary.",
         )
-        for line in _print_lines(tree)
+        for line in print_lines(tree)
     )
     findings.extend(
         (
