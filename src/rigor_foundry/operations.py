@@ -74,26 +74,87 @@ def _target_names(node: ast.expr) -> frozenset[str]:
     return frozenset()
 
 
+def _scope_nodes(body: list[ast.stmt]) -> tuple[ast.AST, ...]:
+    """Return nodes evaluated in one lexical scope, excluding nested scope bodies."""
+    pending: list[ast.AST] = list(reversed(body))
+    nodes: list[ast.AST] = []
+    while pending:
+        node = pending.pop()
+        nodes.append(node)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            continue
+        pending.extend(reversed(list(ast.iter_child_nodes(node))))
+    return tuple(nodes)
+
+
+def _bound_names(node: ast.AST) -> frozenset[str]:
+    """Return names bound by one scope-local syntax node."""
+    if isinstance(node, ast.Assign):
+        return frozenset(name for target in node.targets for name in _target_names(target))
+    if isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.NamedExpr)):
+        return _target_names(node.target)
+    if isinstance(node, (ast.For, ast.AsyncFor)):
+        return _target_names(node.target)
+    if isinstance(node, (ast.With, ast.AsyncWith)):
+        return frozenset(
+            name
+            for item in node.items
+            if item.optional_vars is not None
+            for name in _target_names(item.optional_vars)
+        )
+    if isinstance(node, ast.ExceptHandler) and node.name is not None:
+        return frozenset({node.name})
+    if isinstance(node, ast.Delete):
+        return frozenset(name for target in node.targets for name in _target_names(target))
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return frozenset({node.name})
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        return frozenset(
+            alias.asname or alias.name.split(".", maxsplit=1)[0] for alias in node.names
+        )
+    return frozenset()
+
+
+def _builtin_print_aliases(body: list[ast.stmt]) -> frozenset[str]:
+    """Return explicit names imported from ``builtins.print`` in one scope."""
+    return frozenset(
+        alias.asname or "print"
+        for node in _scope_nodes(body)
+        if isinstance(node, ast.ImportFrom) and node.module == "builtins"
+        for alias in node.names
+        if alias.name == "print"
+    )
+
+
 def _module_bindings(tree: ast.Module) -> frozenset[str]:
-    """Return names explicitly bound at module scope."""
-    names: set[str] = set()
-    for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            names.add(node.name)
-        elif isinstance(node, ast.Assign):
-            for target in node.targets:
-                names.update(_target_names(target))
-        elif isinstance(node, ast.AnnAssign):
-            names.update(_target_names(node.target))
-        elif isinstance(node, (ast.Import, ast.ImportFrom)):
-            names.update(
-                alias.asname or alias.name.split(".", maxsplit=1)[0] for alias in node.names
+    """Return non-builtin-print names explicitly bound at module scope."""
+    aliases = _builtin_print_aliases(tree.body)
+    return frozenset(
+        name
+        for node in _scope_nodes(tree.body)
+        for name in _bound_names(node)
+        if not (
+            name in aliases
+            and isinstance(node, ast.ImportFrom)
+            and node.module == "builtins"
+            and any(
+                alias.name == "print" and (alias.asname or "print") == name for alias in node.names
             )
-    return frozenset(names)
+        )
+    )
 
 
 def _function_binds(function: ast.FunctionDef | ast.AsyncFunctionDef, name: str) -> bool:
     """Return whether Python resolves one name as local to the function."""
+    declarations = tuple(
+        node
+        for node in _scope_nodes(function.body)
+        if isinstance(node, (ast.Global, ast.Nonlocal)) and name in node.names
+    )
+    if any(isinstance(node, ast.Global) for node in declarations):
+        return False
+    if declarations:
+        return True
     arguments = (*function.args.posonlyargs, *function.args.args, *function.args.kwonlyargs)
     if any(argument.arg == name for argument in arguments):
         return True
@@ -101,24 +162,19 @@ def _function_binds(function: ast.FunctionDef | ast.AsyncFunctionDef, name: str)
         return True
     if function.args.kwarg is not None and function.args.kwarg.arg == name:
         return True
-    for node in ast.walk(function):
-        if isinstance(node, ast.Assign) and any(
-            name in _target_names(item) for item in node.targets
-        ):
-            return True
-        if isinstance(node, ast.AnnAssign) and name in _target_names(node.target):
-            return True
-        if (
-            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
-            and node is not function
-            and node.name == name
-        ):
-            return True
-        if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
-            (alias.asname or alias.name.split(".", maxsplit=1)[0]) == name for alias in node.names
-        ):
-            return True
-    return False
+    aliases = _builtin_print_aliases(function.body)
+    return any(
+        name in _bound_names(node)
+        and not (
+            name in aliases
+            and isinstance(node, ast.ImportFrom)
+            and node.module == "builtins"
+            and any(
+                alias.name == "print" and (alias.asname or "print") == name for alias in node.names
+            )
+        )
+        for node in _scope_nodes(function.body)
+    )
 
 
 def _enclosing_function(
@@ -136,6 +192,7 @@ def _enclosing_function(
 def _print_lines(tree: ast.Module) -> tuple[int, ...]:
     """Return calls that resolve to builtin print rather than a local binding."""
     module_bindings = _module_bindings(tree)
+    module_print_aliases = _builtin_print_aliases(tree.body)
     builtins_aliases = frozenset(
         alias.asname or "builtins"
         for node in tree.body
@@ -158,17 +215,23 @@ def _print_lines(tree: ast.Module) -> tuple[int, ...]:
         ):
             lines.add(node.lineno)
             continue
-        if not isinstance(node.func, ast.Name) or node.func.id != "print":
+        if not isinstance(node.func, ast.Name):
             continue
         function = _enclosing_function(node, parents)
-        if "print" not in module_bindings and (
-            function is None or not _function_binds(function, "print")
-        ):
+        name = node.func.id
+        local_aliases = (
+            _builtin_print_aliases(function.body) if function is not None else frozenset()
+        )
+        builtin_name = name == "print" or name in local_aliases or name in module_print_aliases
+        locally_bound = function is not None and _function_binds(function, name)
+        if builtin_name and not locally_bound and name not in module_bindings:
             lines.add(node.lineno)
     return tuple(sorted(lines))
 
 
-def _logging_bindings(tree: ast.Module) -> tuple[frozenset[str], frozenset[str]]:
+def _logging_bindings(
+    tree: ast.Module,
+) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
     """Return logging-module aliases and logger instances."""
     modules: set[str] = set()
     factories: set[str] = set()
@@ -200,7 +263,7 @@ def _logging_bindings(tree: ast.Module) -> tuple[frozenset[str], frozenset[str]]
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for target in targets:
             loggers.update(_target_names(target))
-    return frozenset(modules), frozenset(loggers)
+    return frozenset(modules), frozenset(factories), frozenset(loggers)
 
 
 def _credential_argument(call: ast.Call) -> bool:
@@ -216,21 +279,30 @@ def _credential_argument(call: ast.Call) -> bool:
 
 def _log_lines(tree: ast.Module) -> tuple[tuple[int, str], ...]:
     """Return import-bound logging calls that carry credential-named expressions."""
-    modules, loggers = _logging_bindings(tree)
+    modules, factories, loggers = _logging_bindings(tree)
     findings: set[tuple[int, str]] = set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
             continue
         receiver = node.func.value
         bound = isinstance(receiver, ast.Name) and receiver.id in modules | loggers
-        chained = (
+        chained_module = (
             isinstance(receiver, ast.Call)
             and isinstance(receiver.func, ast.Attribute)
             and isinstance(receiver.func.value, ast.Name)
             and receiver.func.value.id in modules
             and receiver.func.attr == "getLogger"
         )
-        if (bound or chained) and node.func.attr in _LOG_METHODS and _credential_argument(node):
+        chained_factory = (
+            isinstance(receiver, ast.Call)
+            and isinstance(receiver.func, ast.Name)
+            and receiver.func.id in factories
+        )
+        if (
+            (bound or chained_module or chained_factory)
+            and node.func.attr in _LOG_METHODS
+            and _credential_argument(node)
+        ):
             findings.add((node.lineno, node.func.attr))
     return tuple(sorted(findings))
 

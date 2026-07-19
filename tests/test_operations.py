@@ -117,6 +117,72 @@ def test_print_scope_excludes_commands_tests_and_shadowed_names(tmp_path: Path) 
     ]
 
 
+def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
+    tmp_path: Path,
+) -> None:
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "src/pkg/nested_scopes.py",
+        _HEADER + "def outer():\n"
+        "    print('builtin')\n"
+        "    def inner():\n"
+        "        print = lambda value: value\n"
+        "        print('local')\n"
+        "    class Holder:\n"
+        "        print = object()\n",
+    )
+    repository.write_text(
+        "src/pkg/imported_builtin.py",
+        _HEADER + "from builtins import print\n"
+        "from builtins import print as output\n\n"
+        "print('module')\n"
+        "output('alias')\n\n"
+        "def emit():\n"
+        "    print('function')\n",
+    )
+    repository.write_text(
+        "src/pkg/local_bindings.py",
+        _HEADER + "def walrus():\n"
+        "    (print := lambda value: value)\n"
+        "    print('local')\n\n"
+        "def loop(items):\n"
+        "    for print in items:\n"
+        "        print('local')\n\n"
+        "def context(manager):\n"
+        "    with manager as print:\n"
+        "        print('local')\n\n"
+        "def handler():\n"
+        "    try:\n"
+        "        raise RuntimeError\n"
+        "    except RuntimeError as print:\n"
+        "        print('local')\n\n"
+        "async def async_bindings(items, manager):\n"
+        "    async for print in items:\n"
+        "        print('local')\n"
+        "    async with manager as print:\n"
+        "        print('local')\n\n"
+        "def deleted():\n"
+        "    del print\n"
+        "    print('unreachable local')\n\n"
+        "def global_output():\n"
+        "    global print\n"
+        "    print('builtin')\n",
+    )
+    policy_path = repository.write_policy()
+    repository.commit()
+
+    candidates = scan_operations(
+        load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
+    )
+    assert [(item.anchor.path, item.anchor.line_start) for item in candidates] == [
+        ("src/pkg/imported_builtin.py", 5),
+        ("src/pkg/imported_builtin.py", 6),
+        ("src/pkg/imported_builtin.py", 9),
+        ("src/pkg/local_bindings.py", 32),
+        ("src/pkg/nested_scopes.py", 3),
+    ]
+
+
 def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path) -> None:
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
@@ -129,6 +195,7 @@ def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path
         "    logging.info(obj.privateKey)\n"
         "    logging.warning(password_digest)\n"
         "    logging.getLogger('nested').exception(api_key)\n"
+        "    factory('direct').critical(api_key)\n"
         "    custom.info(api_key)\n",
     )
     policy_path = repository.write_policy()
@@ -140,6 +207,7 @@ def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path
         ("debug", 8),
         ("info", 9),
         ("exception", 11),
+        ("critical", 12),
     ]
     assert all(item.rule_id == "OP002-credential-in-log-call" for item in candidates)
     assert all(item.confidence == "high" for item in candidates)
