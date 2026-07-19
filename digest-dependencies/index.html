@@ -1,0 +1,1582 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evidence-bound codebase transformation">
+      
+      
+      
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/digest-dependencies/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../source-provenance/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/anulum_logo_company.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Digest dependencies - RigorFoundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#spdx-license-identifier-apache-20" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RigorFoundry" class="md-header__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RigorFoundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Digest dependencies
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RigorFoundry" class="md-nav__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    RigorFoundry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First repository
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consumer integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vscode-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VS Code integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digest dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../application-security-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application-security rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supply-chain-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Container rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-privacy-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-and-privacy rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation and licence rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific and numerical rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-observability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations and observability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-reproducibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance and reproducibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-compatibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API and schema compatibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SARIF export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance maps and OSCAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assisted-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assisted-review drafting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claim-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claim isolation and fleet views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross-repository-campaigns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-repository campaigns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapter catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remediation-executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remediation execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polyglot-capability-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polyglot capability matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fuzzing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="spdx-license-identifier-apache-20">SPDX-License-Identifier: Apache-2.0<a class="headerlink" href="#spdx-license-identifier-apache-20" title="Permanent link">&para;</a></h1>
+<h1 id="apache-license-20-see-license">Apache License 2.0; see LICENSE.<a class="headerlink" href="#apache-license-20-see-license" title="Permanent link">&para;</a></h1>
+<h1 id="concepts-19962026-miroslav-sotek-all-rights-reserved">© Concepts 1996–2026 Miroslav Šotek. All rights reserved.<a class="headerlink" href="#concepts-19962026-miroslav-sotek-all-rights-reserved" title="Permanent link">&para;</a></h1>
+<h1 id="code-20202026-miroslav-sotek-all-rights-reserved">© Code 2020–2026 Miroslav Šotek. All rights reserved.<a class="headerlink" href="#code-20202026-miroslav-sotek-all-rights-reserved" title="Permanent link">&para;</a></h1>
+<h1 id="orcid-0009-0009-3560-0851">ORCID: 0009-0009-3560-0851<a class="headerlink" href="#orcid-0009-0009-3560-0851" title="Permanent link">&para;</a></h1>
+<h1 id="contact-wwwanulumli-protoscienceanulumli">Contact: www.anulum.li | protoscience@anulum.li<a class="headerlink" href="#contact-wwwanulumli-protoscienceanulumli" title="Permanent link">&para;</a></h1>
+<h1 id="rigorfoundry-normative-digest-dependency-graph">RigorFoundry — normative digest-dependency graph<a class="headerlink" href="#rigorfoundry-normative-digest-dependency-graph" title="Permanent link">&para;</a></h1>
+<h1 id="digest-dependencies">Digest dependencies<a class="headerlink" href="#digest-dependencies" title="Permanent link">&para;</a></h1>
+<p>The schema 1.6 graph returned by <code>digest_dependency_graph()</code> is the normative,
+machine-readable registry of unconditional identity bindings between public
+audit records. <code>digest_dependency_graph_digest()</code> identifies that graph using
+the same canonical SHA-256 primitive as the records themselves.</p>
+<p>An edge <code>A → B</code> means that rebuilding <code>B</code> after a semantic mutation of <code>A</code>
+must change <code>B</code>'s digest. Records without a path from <code>A</code> must remain stable.
+Conditional observations that only sometimes alter a comparison are described
+separately and are not misrepresented as unconditional digest edges.</p>
+<h2 id="canonical-identities">Canonical identities<a class="headerlink" href="#canonical-identities" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Identity</th>
+<th>Owning module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inventory</td>
+<td><code>tracked_content_digest</code></td>
+<td><code>git_inventory</code></td>
+</tr>
+<tr>
+<td>Ignored inventory</td>
+<td><code>ignored_inventory_digest</code></td>
+<td><code>ignored_inventory</code></td>
+</tr>
+<tr>
+<td>Git provenance</td>
+<td><code>git_provenance.identity_digest</code></td>
+<td><code>git_provenance</code></td>
+</tr>
+<tr>
+<td>Policy</td>
+<td><code>policy_digest</code></td>
+<td><code>policy_models</code></td>
+</tr>
+<tr>
+<td>Rule pack</td>
+<td><code>rule_pack_digest</code></td>
+<td><code>rules</code></td>
+</tr>
+<tr>
+<td>Maturity policy</td>
+<td><code>policy_digest</code></td>
+<td><code>rule_maturity</code></td>
+</tr>
+<tr>
+<td>Rule maturity</td>
+<td><code>maturity_digest</code></td>
+<td><code>rule_maturity</code></td>
+</tr>
+<tr>
+<td>Source claim</td>
+<td><code>claim_digest</code></td>
+<td><code>source_provenance</code></td>
+</tr>
+<tr>
+<td>Source retrieval policy</td>
+<td><code>policy_digest</code></td>
+<td><code>source_capture</code></td>
+</tr>
+<tr>
+<td>Source capture</td>
+<td><code>capture_digest</code></td>
+<td><code>source_capture</code></td>
+</tr>
+<tr>
+<td>Source verification</td>
+<td><code>verification_digest</code></td>
+<td><code>source_provenance</code></td>
+</tr>
+<tr>
+<td>Adapter profile</td>
+<td><code>evidence_digest</code></td>
+<td><code>adapter_profiles</code></td>
+</tr>
+<tr>
+<td>Adapter lock</td>
+<td><code>adapter_digest</code></td>
+<td><code>effective_profile</code></td>
+</tr>
+<tr>
+<td>Standard pack</td>
+<td><code>pack_digest</code></td>
+<td><code>standard_pack</code></td>
+</tr>
+<tr>
+<td>Toolchain</td>
+<td><code>toolchain.identity_digest</code></td>
+<td><code>campaign_models</code></td>
+</tr>
+<tr>
+<td>Effective profile</td>
+<td><code>lock_digest</code></td>
+<td><code>effective_profile</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td><code>report_digest</code></td>
+<td><code>models</code></td>
+</tr>
+<tr>
+<td>Review</td>
+<td><code>review_digest</code></td>
+<td><code>models</code></td>
+</tr>
+<tr>
+<td>Campaign</td>
+<td><code>contract_digest</code></td>
+<td><code>campaign_models</code></td>
+</tr>
+<tr>
+<td>Run attestation</td>
+<td><code>attestation_digest</code></td>
+<td><code>campaign_models</code></td>
+</tr>
+<tr>
+<td>Comparison</td>
+<td><code>comparison_digest</code></td>
+<td><code>campaign_compare</code></td>
+</tr>
+<tr>
+<td>Task</td>
+<td><code>definition_digest</code></td>
+<td><code>work_models</code></td>
+</tr>
+<tr>
+<td>Closure</td>
+<td><code>closure_digest</code></td>
+<td><code>work_closure</code></td>
+</tr>
+</tbody>
+</table>
+<p>Identity-field names are scoped by their owning protocol record. Two distinct
+owners may expose the same real field name, such as <code>policy_digest</code>; only a
+duplicate owner/field pair is ambiguous.</p>
+<p><code>policy_digest</code> and <code>review_digest</code> are first-class properties over the entire
+canonical serialisation. They remove caller-specific hashing conventions.
+Rule-pack schema 1.0 and rule-pack version <code>rigor-foundry/1.16.0</code> bind the
+registry version, ordered rule definitions, and every definition field into
+one envelope. Existing rules retain their original introduction version.</p>
+<p>The root <code>rigor-public-api.json</code> declaration manifest is ordinary tracked
+inventory input rather than a new protocol identity node. A semantic manifest
+mutation therefore changes <code>tracked_content_digest</code>, the resulting report,
+and every existing inventory-dependent downstream identity. AA001 additionally
+binds candidate evidence to canonical per-surface SHA-256 identities without
+introducing an undeclared digest-graph edge.</p>
+<p>Git provenance binds the resolved executable path, selected root, executable
+SHA-256, observed version, complete trust policy, and trust-policy digest.
+Toolchain identity binds Python implementation/version, platform, and
+interpreter executable SHA-256. Campaign schema 1.9 embeds both complete
+records plus the ignored evidence tuple and digest; effective-profile locks
+bind the toolchain digest used for profile resolution.</p>
+<p><code>WorkClosure</code> schema 1.0 binds <code>WorkTask.definition_digest</code> to the exact
+<code>closed</code> event digest and its sequence number. The event digest already binds
+the preceding event chain. Archiving a closed record therefore does not alter
+the earlier closure identity, while substituting a different task definition
+or closed event does. <code>WorkRecord</code> also rejects a proposal that differs from
+the task baseline and a revalidation that names another candidate or report.</p>
+<h2 id="direct-dependency-graph">Direct dependency graph<a class="headerlink" href="#direct-dependency-graph" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Upstream</th>
+<th>Downstream</th>
+<th>Canonical binding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inventory</td>
+<td>Report</td>
+<td><code>tracked_content_digest</code></td>
+</tr>
+<tr>
+<td>Ignored inventory</td>
+<td>Report</td>
+<td>complete evidence tuple plus <code>ignored_inventory_digest</code></td>
+</tr>
+<tr>
+<td>Git provenance</td>
+<td>Report</td>
+<td>complete <code>git_provenance</code> record</td>
+</tr>
+<tr>
+<td>Policy</td>
+<td>Report</td>
+<td>complete <code>policy</code> plus <code>policy_digest</code></td>
+</tr>
+<tr>
+<td>Rule pack</td>
+<td>Report</td>
+<td><code>rule_pack_digest</code></td>
+</tr>
+<tr>
+<td>Rule pack</td>
+<td>Rule maturity</td>
+<td><code>rule_pack_digest</code></td>
+</tr>
+<tr>
+<td>Maturity policy</td>
+<td>Rule maturity</td>
+<td>complete policy plus <code>policy_digest</code></td>
+</tr>
+<tr>
+<td>Source claim</td>
+<td>Source verification</td>
+<td>complete claim</td>
+</tr>
+<tr>
+<td>Source retrieval policy</td>
+<td>Source capture</td>
+<td>policy plus <code>retrieval_policy_digest</code></td>
+</tr>
+<tr>
+<td>Source capture</td>
+<td>Source verification</td>
+<td>complete capture</td>
+</tr>
+<tr>
+<td>Inventory</td>
+<td>Adapter profile</td>
+<td><code>input_digest</code></td>
+</tr>
+<tr>
+<td>Adapter profile</td>
+<td>Run attestation</td>
+<td><code>adapter_evidence[*].profile_evidence</code></td>
+</tr>
+<tr>
+<td>Adapter lock</td>
+<td>Effective profile</td>
+<td>complete <code>adapters[*]</code> record</td>
+</tr>
+<tr>
+<td>Standard pack</td>
+<td>Effective profile</td>
+<td><code>pack_digests[*]</code> plus verified pack-derived records</td>
+</tr>
+<tr>
+<td>Toolchain</td>
+<td>Effective profile</td>
+<td><code>toolchain_digest</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Review</td>
+<td><code>report_digest</code></td>
+</tr>
+<tr>
+<td>Inventory</td>
+<td>Campaign</td>
+<td><code>tracked_content_digest</code></td>
+</tr>
+<tr>
+<td>Ignored inventory</td>
+<td>Campaign</td>
+<td>complete evidence tuple plus <code>ignored_inventory_digest</code></td>
+</tr>
+<tr>
+<td>Git provenance</td>
+<td>Campaign</td>
+<td>complete <code>git_provenance</code> record</td>
+</tr>
+<tr>
+<td>Policy</td>
+<td>Campaign</td>
+<td><code>policy_digest</code></td>
+</tr>
+<tr>
+<td>Rule pack</td>
+<td>Campaign</td>
+<td><code>rule_pack_digest</code></td>
+</tr>
+<tr>
+<td>Toolchain</td>
+<td>Campaign</td>
+<td>complete <code>toolchain</code> record</td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Run attestation</td>
+<td><code>report_digest</code></td>
+</tr>
+<tr>
+<td>Campaign</td>
+<td>Run attestation</td>
+<td><code>input_contract_digest</code></td>
+</tr>
+<tr>
+<td>Toolchain</td>
+<td>Run attestation</td>
+<td>complete <code>toolchain</code> record</td>
+</tr>
+<tr>
+<td>Campaign</td>
+<td>Comparison</td>
+<td><code>input_contract_digest</code></td>
+</tr>
+<tr>
+<td>Inventory</td>
+<td>Task</td>
+<td><code>baseline_tracked_content_digest</code></td>
+</tr>
+<tr>
+<td>Policy</td>
+<td>Task</td>
+<td><code>source_policy_digest</code></td>
+</tr>
+<tr>
+<td>Rule pack</td>
+<td>Task</td>
+<td><code>source_rule_pack_digest</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Task</td>
+<td><code>source_report_digest</code> and selected candidate</td>
+</tr>
+<tr>
+<td>Review</td>
+<td>Task</td>
+<td><code>review_digest</code></td>
+</tr>
+<tr>
+<td>Task</td>
+<td>Closure</td>
+<td><code>definition_digest</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>direct_dependents()</code> and <code>transitive_dependents()</code> query this exact graph in
+normative node order. <code>validate_digest_dependency_graph()</code> checks unique node
+and identity names, unique edges, non-empty bindings, known endpoints, and the
+absence of cycles.</p>
+<h2 id="deliberate-stable-non-edges">Deliberate stable non-edges<a class="headerlink" href="#deliberate-stable-non-edges" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A candidate-only report change does not change the campaign contract. A
+  campaign freezes scanner inputs, not one scanner output. It does change the
+  report, rebound review, task, and closure identities.</li>
+<li>Standard packs, adapter locks, and effective-profile locks form a separate
+  desired-state subgraph. Current repository reports and campaigns do not bind
+  that lock, although the same toolchain identity can independently affect a
+  campaign contract and an effective-profile lock.</li>
+<li>A standard-pack mutation does not change an adapter lock, and an adapter-lock
+  mutation does not change a standard pack. Both change an effective-profile
+  lock that contains them.</li>
+<li>Review rationale, evidence, reviewer, and time can change a review and any
+  resulting task without changing the source report or campaign.</li>
+<li>A maturity report may contain no adjudications, so report and review are not
+  unconditional graph parents. Each populated maturity evidence row does bind
+  its exact <code>report_digest</code>, candidate identifier, and <code>review_digest</code>; the
+  report recomputes those conditional member identities. Likewise, observe-mode
+  enforcement may omit maturity, while ratchet and zero require and bind it.</li>
+<li>External source provenance is a separate evidence subgraph. Current reports,
+  profiles, waivers, and standard packs do not unconditionally consume it.
+  Consumers must reference a specific verification digest in a separately
+  versioned schema migration rather than infer authority from source presence.</li>
+<li>Comparison logic embeds the exact participating attestation, report, and
+  review digests, plus the collapsed model-witness identities. The set of
+  participating records is campaign-instance data rather than a fixed schema
+  dependency, so only the campaign contract remains an unconditional normative
+  comparison edge. A run attestation separately binds its campaign contract,
+  report, toolchain, and any adapter-profile evidence; it is not part of the
+  earlier campaign identity. Promotion reconstructs the conditional comparison
+  bindings from durable records before accepting a selected report and review.</li>
+</ul>
+<p>These non-edges are compatibility contracts, not omissions hidden by the
+diagram. Adding a new binding requires a schema/version migration and updated
+mutation and non-interference vectors.</p>
+<h2 id="proof-requirements">Proof requirements<a class="headerlink" href="#proof-requirements" title="Permanent link">&para;</a></h2>
+<p>The owning schema tests rebuild production records through public constructors.
+For each declared upstream class they assert both sides of the contract:</p>
+<ol>
+<li>the upstream identity and every reachable dependent identity change; and</li>
+<li>every unrelated identity in the exercised graph remains byte-for-byte
+   stable.</li>
+</ol>
+<p>The tests compare all 23 identities and cover inventory, ignored inventory, Git
+provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
+adapter-profile, report, review, campaign, run attestation, task, adapter-lock,
+standard-pack, effective-profile, closure, source claim, retrieval policy,
+capture, and verification mutations.
+Strict parsing vectors reject altered closure schemas, fields, references, counts, and
+digests. An archived work record and its original closed record reproduce the
+same closure identity.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

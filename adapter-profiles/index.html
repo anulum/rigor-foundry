@@ -1,0 +1,1635 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evidence-bound codebase transformation">
+      
+      
+      
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/adapter-profiles/">
+      
+      
+        <link rel="prev" href="../cli/">
+      
+      
+        <link rel="next" href="../application-security-rules/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/anulum_logo_company.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Built-in adapter profiles - RigorFoundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#built-in-adapter-profiles" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RigorFoundry" class="md-header__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RigorFoundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Built-in adapter profiles
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RigorFoundry" class="md-nav__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    RigorFoundry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First repository
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consumer integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vscode-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VS Code integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digest-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digest dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#policy-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy declaration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-input-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact input projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sandbox-and-executable-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sandbox and executable identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence-and-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence and enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-and-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation and CI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measured-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../application-security-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application-security rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supply-chain-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Container rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-privacy-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-and-privacy rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation and licence rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific and numerical rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-observability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations and observability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-reproducibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance and reproducibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-compatibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API and schema compatibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SARIF export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance maps and OSCAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assisted-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assisted-review drafting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claim-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claim isolation and fleet views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross-repository-campaigns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-repository campaigns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapter catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remediation-executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remediation execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polyglot-capability-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polyglot capability matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fuzzing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#policy-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy declaration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-input-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact input projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sandbox-and-executable-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sandbox and executable identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence-and-enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence and enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-and-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation and CI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measured-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="built-in-adapter-profiles">Built-in adapter profiles<a class="headerlink" href="#built-in-adapter-profiles" title="Permanent link">&para;</a></h1>
+<p>RigorFoundry supplies three immutable repository-audit profiles. They remove
+adopter-specific command reconstruction while retaining explicit consent,
+tracked-input identity, tool identity, and fail-closed interpretation.</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Fixed analyser</th>
+<th>Claimed domain</th>
+<th>Accepted complete result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>semgrep-local-json-v1</code></td>
+<td>local Semgrep rules</td>
+<td><code>application-security</code></td>
+<td>strict JSON with at least one scanned path and no analyser errors</td>
+</tr>
+<tr>
+<td><code>trivy-repository-json-v1</code></td>
+<td>offline <code>misconfig,secret</code> filesystem scan</td>
+<td><code>application-security</code></td>
+<td>Trivy schema 2 JSON with at least one result target</td>
+</tr>
+<tr>
+<td><code>osv-lockfile-offline-json-v1</code></td>
+<td>offline lockfile scan against a verified local OSV snapshot</td>
+<td><code>supply-chain</code></td>
+<td>strict OSV JSON with at least one scanned lockfile and no scan errors</td>
+</tr>
+</tbody>
+</table>
+<p>The Trivy profile does <strong>not</strong> load or update a vulnerability database and
+does not claim dependency-vulnerability, CVE, SBOM, licence, or supply-chain
+coverage. Its fixed scanners are repository misconfiguration and secret
+detection only. Use a separately specified and evidence-bound adapter when
+those other domains are required.</p>
+<h2 id="policy-declaration">Policy declaration<a class="headerlink" href="#policy-declaration" title="Permanent link">&para;</a></h2>
+<p>Repository policy schema 1.3 accepts this strict profile form in
+<code>native_audits</code>:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;semgrep-local&quot;,
+  &quot;profile&quot;: &quot;semgrep-local-json-v1&quot;,
+  &quot;configuration_path&quot;: &quot;config/semgrep.yml&quot;,
+  &quot;target_paths&quot;: [&quot;src&quot;, &quot;tests&quot;],
+  &quot;timeout_seconds&quot;: 120,
+  &quot;scope&quot;: &quot;full&quot;,
+  &quot;working_directory&quot;: &quot;.&quot;,
+  &quot;required&quot;: true
+}
+</code></pre>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;trivy-repository&quot;,
+  &quot;profile&quot;: &quot;trivy-repository-json-v1&quot;,
+  &quot;configuration_path&quot;: &quot;config/trivy.yml&quot;,
+  &quot;target_paths&quot;: [&quot;.&quot;],
+  &quot;timeout_seconds&quot;: 120,
+  &quot;scope&quot;: &quot;full&quot;,
+  &quot;working_directory&quot;: &quot;.&quot;,
+  &quot;required&quot;: true
+}
+</code></pre>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;osv-lockfiles&quot;,
+  &quot;profile&quot;: &quot;osv-lockfile-offline-json-v1&quot;,
+  &quot;configuration_path&quot;: &quot;config/osv-database.json&quot;,
+  &quot;target_paths&quot;: [&quot;requirements.txt&quot;, &quot;package-lock.json&quot;],
+  &quot;timeout_seconds&quot;: 120,
+  &quot;scope&quot;: &quot;full&quot;,
+  &quot;working_directory&quot;: &quot;.&quot;,
+  &quot;required&quot;: true
+}
+</code></pre>
+<p>Profile declarations cannot override the executable, argv, parser, or domains.
+The working directory is always <code>.</code>. Trivy accepts exactly one target; Semgrep
+and OSV accept one or more. For OSV, <code>configuration_path</code> names a tracked strict
+JSON database manifest, not an OSV TOML configuration. The manifest uses schema
+1.0 and contains a sorted, unique list of ecosystem, <code>all.zip</code> byte length, and
+SHA-256 records plus a canonical aggregate <code>database_digest</code>. Configuration and
+targets must be canonical
+repository-relative paths. The profile declaration, immutable profile, and
+derived command are independently digest-bound. Run construction and durable
+store/load require the ordered evidence name, required flag, specification
+digest, and profile identity to match every policy adapter selected for a full
+run. The context-free <code>AuditRunAttestation.from_dict()</code> parser validates record
+integrity only; callers must use the campaign store boundary to validate an
+imported attestation against its report policy and campaign contract. Campaign
+comparison repeats the adapter-policy relation check for every supplied run;
+context-invalid evidence is retained as unresolved divergence and can never
+produce a promotion-eligible comparison record.</p>
+<h2 id="exact-input-projection">Exact input projection<a class="headerlink" href="#exact-input-projection" title="Permanent link">&para;</a></h2>
+<p>Execution requires a clean tracked worktree. RigorFoundry builds a temporary
+read-only snapshot from the Git inventory and includes only the declared
+configuration and target trees. Every selected entry must be a present,
+single-link regular tracked file whose observed byte count, SHA-256, and Git
+blob identity match the frozen inventory. Symlinks, gitlinks, ignored files,
+untracked files, replacement races, empty target sets, and files larger than
+32 MiB fail closed. The aggregate selected input is limited to 256 MiB.</p>
+<p>The input digest binds HEAD, tree, Git object format, complete tracked-content
+digest, configuration path and digest, ordered targets, and every copied file
+record. Temporary host paths are excluded from durable identity and removed
+after execution.</p>
+<p>The OSV database bytes are deliberately outside the repository snapshot. The
+operator must set <code>OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY</code> to an absolute host
+directory containing the official cache layout
+<code>osv-scanner/&lt;ecosystem&gt;/all.zip</code>. RigorFoundry opens every directory without
+following symlinks, requires single-link regular archives, verifies exact size
+and SHA-256 against the tracked manifest, rejects unsafe or unbounded ZIP
+members, and copies only verified archives into the private workspace. The
+tracked manifest digest binds the expected database to the profile
+configuration; the sandbox repository identity additionally binds its canonical
+<code>database_digest</code>. Missing or changed database bytes produce unavailable
+evidence and are never fetched automatically.</p>
+<h2 id="sandbox-and-executable-identity">Sandbox and executable identity<a class="headerlink" href="#sandbox-and-executable-identity" title="Permanent link">&para;</a></h2>
+<p>The selected executable is resolved from fixed runtime roots, opened through a
+retained descriptor, checked for trusted ownership and unsafe write bits, and
+mounted read-only at <code>/run/rigor-adapter-tool</code>. The tracked snapshot is mounted
+read-only at <code>/workspace</code>. Bubblewrap unshares the network and all namespaces,
+uses UID/GID 65534, clears the environment, provides a private tmpfs, disables
+telemetry and Semgrep metrics/version checks, and binds the system CA bundle's
+content digest. Version output and the executable bytes are recorded and the
+retained descriptor is revalidated after the scan.</p>
+<p>Semgrep runs local configuration only:</p>
+<pre><code class="language-text">semgrep scan --config CONFIG --json --error --metrics off
+  --disable-version-check --no-rewrite-rule-ids TARGET...
+</code></pre>
+<p>Trivy runs without update or network-backed database acquisition:</p>
+<pre><code class="language-text">trivy filesystem --config CONFIG --format json --exit-code 1
+  --skip-db-update --skip-java-db-update --skip-check-update --offline-scan
+  --scanners misconfig,secret --include-non-failures TARGET
+</code></pre>
+<p>OSV-Scanner runs only against the verified local snapshot:</p>
+<pre><code class="language-text">osv-scanner scan source --offline --format=json --verbosity=error
+  --no-resolve --all-packages --lockfile TARGET...
+</code></pre>
+<p>These wrapped lines are descriptive; the production registry owns one exact
+argv tuple and its profile digest.</p>
+<h2 id="evidence-and-enforcement">Evidence and enforcement<a class="headerlink" href="#evidence-and-enforcement" title="Permanent link">&para;</a></h2>
+<p>Adapter result schema 2.0 embeds profile-evidence schema 1.0. The nested record
+binds the profile and profile digest, tool version and version-output digest,
+configuration/input/output digests, finding count, scanned-target count, and a
+finite status/reason pair:</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Complete</th>
+<th>Pass</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clean</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>Valid output, scanned targets, zero findings</td>
+</tr>
+<tr>
+<td><code>findings</code></td>
+<td>yes</td>
+<td>no</td>
+<td>Valid output with one or more findings</td>
+</tr>
+<tr>
+<td><code>partial</code></td>
+<td>no</td>
+<td>no</td>
+<td>Timeout, truncation, malformed output, analyser errors, invalid return code, or no scanned target</td>
+</tr>
+<tr>
+<td><code>unavailable</code></td>
+<td>no</td>
+<td>no</td>
+<td>Executable, trustworthy version evidence, or the exact OSV database snapshot was unavailable or invalid</td>
+</tr>
+</tbody>
+</table>
+<p>Imported records must reproduce the outer execution output digest and exact
+return-code/timeout/truncation relation. Unavailable evidence has return code
+126, zero output bytes, zero result counts, no tool-version claim, and neither
+timeout nor truncation. These relations are validated after digest
+recomputation; a self-consistent but cross-wired nested record is rejected.
+Invalid-output, timeout, and truncation reasons also require zero result counts;
+no-scanned-target evidence requires a zero scanned count; invalid-return-code
+evidence requires scanned targets and an outer return code that contradicts the
+finding-derived expected code. Scan-error evidence is valid only for Semgrep
+and OSV because the Trivy parser has no corresponding production outcome.</p>
+<p>Only complete evidence contributes declared domain coverage. A required
+<code>findings</code>, <code>partial</code>, or <code>unavailable</code> result blocks enforcement; findings
+remain complete evidence and are not relabelled as execution failure. Campaign
+schema 1.9 retains the exact nested evidence in each run attestation.
+Enforcement schema 1.4 names the profile status and reason in its blocker.
+Digest-dependency schema 1.6 binds inventory to profile evidence and binds that
+evidence into the run attestation; policy remains bound through the separate
+campaign contract that the attestation also embeds.</p>
+<h2 id="installation-and-ci">Installation and CI<a class="headerlink" href="#installation-and-ci" title="Permanent link">&para;</a></h2>
+<p>Semgrep is supplied by the hash-locked Python environment. CI installs Trivy
+<code>0.72.0</code> and OSV-Scanner <code>2.4.0</code> for Linux x86-64 with:</p>
+<pre><code class="language-bash">python -m tools.install_trivy
+python -m tools.install_osv_scanner
+</code></pre>
+<p>The installer retrieves only the immutable GitHub release assets, bounds both
+downloads, verifies the pinned checksum-list SHA-256, verifies the pinned
+archive SHA-256, requires that the checksum list names that exact archive, and
+extracts only the sole regular <code>trivy</code> member. It never calls <code>extractall</code>.
+The OSV installer applies the same bounded-host, pinned checksum-document,
+exact-asset SHA-256, and atomic mode-<code>0700</code> policy to the immutable Linux
+binary. The resulting binaries are atomically installed. These downloaders are
+source-checkout/CI tools, not part of the local-only runtime wheel. PyPI adopters
+must provision the exact analyser through an independently verified deployment
+step. Other platforms need an independently pinned installer before this
+profile can be claimed available.</p>
+<p>The fixed contracts follow the upstream
+<a href="https://semgrep.dev/docs/category/local-and-cli-scans">Semgrep local/CLI scan guidance</a>,
+<a href="https://trivy.dev/docs/latest/guide/target/filesystem/">Trivy filesystem target</a>,
+and <a href="https://trivy.dev/docs/latest/configuration/reporting/">Trivy reporting</a>,
+<a href="https://google.github.io/osv-scanner/usage/offline-mode/">OSV offline mode</a>,
+and <a href="https://google.github.io/osv-scanner/output/">OSV output</a>
+interfaces. Installer pins refer to the immutable
+<a href="https://github.com/aquasecurity/trivy/releases/tag/v0.72.0">Trivy 0.72.0 release</a>,
+and <a href="https://github.com/google/osv-scanner/releases/tag/v2.4.0">OSV-Scanner 2.4.0 release</a>,
+not to moving latest-release URLs.</p>
+<h2 id="measured-performance">Measured performance<a class="headerlink" href="#measured-performance" title="Permanent link">&para;</a></h2>
+<p><code>benchmarks/adapter_profiles.py</code> measures all three real tools through the same
+descriptor-bound Bubblewrap execution path against a committed seven-file
+fixture with Dockerfile, Python, requirements, and Rust targets. It emits
+machine-readable JSON including
+host, Python and tool versions plus minimum, median, and maximum wall time.</p>
+<pre><code class="language-bash">.venv/bin/python benchmarks/adapter_profiles.py --iterations 3
+</code></pre>
+<p>On 2026-07-19, one bounded integration run per profile on a non-isolated Linux 6.17 x86-64
+workstation (12 logical CPUs, CPython 3.12.3) measured:</p>
+<table>
+<thead>
+<tr>
+<th>Profile/tool</th>
+<th style="text-align: right;">Minimum</th>
+<th style="text-align: right;">Median</th>
+<th style="text-align: right;">Maximum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OSV-Scanner 2.4.0</td>
+<td style="text-align: right;">2315.169 ms</td>
+<td style="text-align: right;">2315.169 ms</td>
+<td style="text-align: right;">2315.169 ms</td>
+</tr>
+<tr>
+<td>Semgrep 1.170.0</td>
+<td style="text-align: right;">8804.784 ms</td>
+<td style="text-align: right;">8804.784 ms</td>
+<td style="text-align: right;">8804.784 ms</td>
+</tr>
+<tr>
+<td>Trivy 0.72.0</td>
+<td style="text-align: right;">3270.411 ms</td>
+<td style="text-align: right;">3270.411 ms</td>
+<td style="text-align: right;">3270.411 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Results are non-isolated workstation observations, not throughput guarantees.
+External analyser startup dominates this orchestration boundary. There is no
+native Rust implementation or polyglot counterpart of the Python control-plane
+runtime to compare; the fixture includes multiple languages only to verify that
+input projection is language-neutral. Adding a native runtime is a separate
+architecture decision and must establish evidence-schema parity before making
+performance claims.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

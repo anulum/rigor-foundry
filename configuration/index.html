@@ -1,0 +1,1653 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evidence-bound codebase transformation">
+      
+      
+      
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/configuration/">
+      
+      
+        <link rel="prev" href="../api-stability/">
+      
+      
+        <link rel="next" href="../validation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/anulum_logo_company.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Configuration - RigorFoundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RigorFoundry" class="md-header__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RigorFoundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RigorFoundry" class="md-nav__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    RigorFoundry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First repository
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consumer integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vscode-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VS Code integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digest-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digest dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../application-security-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application-security rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supply-chain-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Container rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-privacy-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-and-privacy rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation and licence rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific and numerical rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-observability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations and observability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-reproducibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance and reproducibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-compatibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API and schema compatibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SARIF export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance maps and OSCAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assisted-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assisted-review drafting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claim-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claim isolation and fleet views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross-repository-campaigns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-repository campaigns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapter catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remediation-executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remediation execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polyglot-capability-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polyglot capability matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#candidate-anchor-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Candidate anchor schemas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#declared-ignored-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declared ignored inventory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-maturity-policy-and-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule-maturity policy and cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-source-retrieval-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External source retrieval policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-executable-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git executable trust
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#classified-coverage-residuals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classified coverage residuals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desired-state-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desired-state inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fuzzing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#candidate-anchor-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Candidate anchor schemas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#declared-ignored-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declared ignored inventory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-maturity-policy-and-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule-maturity policy and cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#external-source-retrieval-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External source retrieval policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-executable-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git executable trust
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#classified-coverage-residuals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classified coverage residuals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desired-state-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desired-state inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
+<p>Without an adopter policy, RigorFoundry uses portable defaults and emits a
+governance candidate explaining that the repository-specific contract is
+missing.</p>
+<p>Policy discovery is deterministic:</p>
+<ol>
+<li>an explicit repository-relative CLI path;</li>
+<li><code>rigor-foundry-policy.json</code>;</li>
+<li><code>config/rigor-foundry/policy.json</code>.</li>
+</ol>
+<p>The selected policy must be a tracked, non-symlink UTF-8 file inside the
+audited repository. External, parent-relative, ignored, and symlinked policy
+inputs fail closed rather than silently controlling the audit.</p>
+<p><code>rigor bootstrap</code> creates a starting policy only when the adopter explicitly
+names the policy, canonical TODO, review ledger, and every source/test root.
+The policy path must be trackable; internal paths must already be Git-ignored.
+Parents and code roots must already exist. The generated policy uses observe
+mode, production/test line thresholds of 700/1000, and marks all audit domains
+required. It does not infer applicability, production packages, size
+registries, native commands, or internal paths. Review those fields before the
+first baseline; see <a href="../getting-started/">First repository</a>.</p>
+<h2 id="candidate-anchor-schemas">Candidate anchor schemas<a class="headerlink" href="#candidate-anchor-schemas" title="Permanent link">&para;</a></h2>
+<p>Candidate-anchor schema 1.0 is a strict discriminated union:</p>
+<ul>
+<li><code>tracked-blob</code> binds a canonical path, inclusive line span, scanned Git blob
+  identity, and content SHA-256;</li>
+<li><code>repository-tree</code> binds a path locus, fixed state span <code>1:1</code>, HEAD tree
+  identity, and complete tracked-content SHA-256.</li>
+</ul>
+<p>Report schema 1.3 requires one anchor on every candidate and records
+<code>git_object_format</code>. Scanner version 0.3.0 verifies all anchors against the
+inventory that produced the report. Campaign schema 1.5 carries the object
+format into independent-run input comparison. Campaign schema 1.9 additionally
+binds ignored inventory, campaign purpose, witness requirements, explicit
+inference identity, and structured built-in adapter evidence. Earlier report or campaign
+records must be regenerated; unknown or mixed anchor fields have no
+compatibility fallback.</p>
+<p>Repository policy controls source and test roots, production packages,
+mandatory audit domains, size registries, enforcement mode, the expected
+rule-maturity policy digest, and declared native adapters. The desired-state API adds typed adopter variables, namespaced custom
+controls, applicability decisions, exact standard-pack selections, and
+secret-provider references.</p>
+<p>Source and test roots are interpreted as repository-relative component
+sequences; absolute and parent-traversing values never match. A source root
+must prefix a path by whole components; when roots overlap, the longest
+component sequence owns the module. A test root may occur
+below a workspace prefix, but it must match complete contiguous components, so
+<code>tests</code> does not match <code>contest</code> or <code>tests-old</code>. Common <code>test_</code>, <code>_test.py</code>,
+<code>.test.</code>, and <code>.spec.</code> conventions apply to the generic scanners. Polyglot
+ownership additionally recognises native <code>_test.&lt;suffix&gt;</code> and
+<code>_tests.&lt;suffix&gt;</code> names. These naming profiles are fixed scanner capabilities,
+not policy-controlled aliases. Python module ownership deliberately preserves
+the narrower historical contract: configured test roots are repository
+prefixes, and only <code>test_</code>/<code>_test.py</code> names apply outside them.</p>
+<h2 id="declared-ignored-inventory">Declared ignored inventory<a class="headerlink" href="#declared-ignored-inventory" title="Permanent link">&para;</a></h2>
+<p>Policy schema 1.3 accepts an <code>ignored_inventory</code> array sorted by
+<code>evidence_id</code>, <code>path</code>, and <code>capture</code>. Every declaration contains a unique
+portable <code>evidence_id</code>, a unique exact normalised repository-relative path,
+and either <code>presence</code> or <code>file-sha256</code>. Globs, absolute paths, parent traversal,
+tracked paths, and paths outside Git ignore rules are rejected.</p>
+<p>Collection never recursively inventories a directory and never records file
+content, symlink targets, environment values, or undeclared paths. Evidence is
+limited to <code>observed</code>, <code>missing</code>, or <code>unavailable</code>, the observed entry kind, a
+regular-file byte size, an optional SHA-256 for <code>file-sha256</code>, and a bounded
+reason. No-follow descriptor walks prevent parent or final symlink traversal.
+Concurrent mutation or replacement becomes unavailable evidence. Missing and
+unavailable observations are evidence gaps, not automatic control failures.</p>
+<h2 id="rule-maturity-policy-and-cases">Rule-maturity policy and cases<a class="headerlink" href="#rule-maturity-policy-and-cases" title="Permanent link">&para;</a></h2>
+<p>Rule-maturity policy is deliberately separate from repository scan policy. It
+controls whether a rule may influence ratchet or zero enforcement, not whether
+the scanner may emit a candidate. The schema-1.0 policy requires these exact
+integer fields and its canonical <code>policy_digest</code>:</p>
+<ul>
+<li><code>minimum_adjudicated_reviews</code>;</li>
+<li><code>minimum_distinct_repositories</code>;</li>
+<li><code>minimum_distinct_reviewers</code>;</li>
+<li><code>minimum_positive_reviews</code>;</li>
+<li><code>maximum_false_positive_basis_points</code>, from 0 through 10,000;</li>
+<li><code>maximum_median_effort_seconds</code>; and</li>
+<li><code>maximum_p90_effort_seconds</code>.</li>
+</ul>
+<p>All minima are at least one, positive reviews cannot exceed the total review
+minimum, and the median limit cannot exceed the p90 limit. RigorFoundry supplies
+no universal threshold values; adopters must justify them against their corpus
+and operating costs.</p>
+<p>Repository policy schema 1.3 binds that separate calibration through
+<code>maturity_policy_digest</code>. Observe mode may leave it <code>null</code>, but a repository
+whose <code>enforcement_mode</code> is <code>ratchet</code> or <code>zero</code> must name the exact 64-character
+lowercase policy digest. A CLI request may strengthen observe mode only when
+the repository already binds the supplied maturity report's policy digest.
+Consequently an operator cannot select an empty or weaker calibration report
+at gate time and silently turn repository candidates into probation.</p>
+<p>The case manifest has exact top-level fields <code>schema_version</code>, <code>policy</code>, and
+<code>cases</code>. Every case has <code>repository_id</code>, <code>report</code>, <code>review</code>, <code>candidate_id</code>,
+<code>reviewer_effort_seconds</code>, and non-empty <code>effort_evidence</code>. A source-validated
+case projects the exact tree, tracked-content, scan-policy, report, candidate,
+rule, review, reviewer, decision, timestamp, duration, and effort references
+into one evidence digest. Reusing the same report/candidate pair twice is
+rejected. The resulting maturity report binds the current rule-pack version and
+digest, complete threshold policy, sorted evidence, all rule assessments, and
+one <code>maturity_digest</code>.</p>
+<h2 id="external-source-retrieval-policy">External source retrieval policy<a class="headerlink" href="#external-source-retrieval-policy" title="Permanent link">&para;</a></h2>
+<p>External source provenance uses a standalone schema 1.0 retrieval policy; it
+is not silently inherited from repository scan policy. The policy requires a
+sorted unique host allowlist, explicit cross-origin redirect decision, at most
+ten redirects, positive timeout and freshness bounds, a byte limit no greater
+than 32 MiB, and sorted lowercase media types without parameters. Capture
+metadata must reproduce the complete policy and its digest. See
+<a href="../source-provenance/">Verified external source provenance</a>.</p>
+<h2 id="git-executable-trust">Git executable trust<a class="headerlink" href="#git-executable-trust" title="Permanent link">&para;</a></h2>
+<p>Git bootstrap trust is runtime configuration, not repository-controlled policy:
+the audited repository cannot choose which executable reads its own index. By
+default, RigorFoundry searches the basename <code>git</code> only in fixed platform roots,
+never in ambient <code>PATH</code>. The default supported interval is Git 2.35.2 or newer
+and lower than 3.0.0.</p>
+<p>Every Git-using CLI command accepts the same controls:</p>
+<pre><code class="language-bash">rigor scan --root /workspace \
+  --git-executable /opt/toolchain/bin/git \
+  --git-trust-root /opt/toolchain/bin \
+  --git-min-version 2.43.0 \
+  --git-max-version-exclusive 3.0.0
+</code></pre>
+<p><code>--git-trust-root</code> is repeatable and ordered. Roots must be normalised absolute
+directories. An absolute executable requires at least one explicit root; a
+relative executable must be one basename and is searched only below the roots.
+The root, intervening components, and executable must not be symlinks.
+The executable must be a single-link regular file; POSIX mode checks also
+reject group/world-write, set-user-ID, and set-group-ID bits.
+Each Git invocation overrides repository-local <code>core.fsmonitor</code> and
+<code>core.hooksPath</code>. Hooks are redirected to a reserved absent directory below the
+selected trust root; if that reserved path exists, execution fails closed.
+Execution also fails closed on platforms that cannot execute the already
+validated open descriptor.
+<code>campaign-run</code> must receive the same explicit options used by
+<code>campaign-create</code>; otherwise frozen Git provenance diverges and the run is
+rejected. It must also receive explicit provider, exact-model,
+model-correlation-family, and operator identities. These values are evidence,
+not labels inferred from a session or agent name. Operator declarations must be
+authenticated by the surrounding deployment; the campaign record does not
+claim a cryptographic operator signature.</p>
+<p>Python callers pass <code>GitTrustPolicy</code> through the keyword-only
+<code>git_trust_policy</code> argument of <code>scan_repository</code>, <code>load_git_inventory</code>, campaign
+workflow functions, ignored-path storage, or TODO promotion. The durable report
+records <code>GitExecutableProvenance</code>: resolved path, selected root, parsed version,
+executable SHA-256, complete versioned trust policy, derived policy SHA-256,
+and its own identity digest. Portable policy JSON uses canonical forward-slash
+POSIX or Windows absolute paths and can be verified on another host. The trust
+root is an operator assertion and must be protected from untrusted writers.
+Campaign storage and TODO promotion reproduce the report or campaign identity
+before using Git ignore rules; a different policy-compliant binary is still
+treated as input divergence.</p>
+<h2 id="classified-coverage-residuals">Classified coverage residuals<a class="headerlink" href="#classified-coverage-residuals" title="Permanent link">&para;</a></h2>
+<p>Repository self-governance uses the tracked <code>coverage-residuals.json</code> manifest.
+It is separate from adopter audit policy because it describes this tool's own
+test-evidence boundary, not a finding in the repository being audited.</p>
+<p>Each residual must identify one exact source symbol and guard, bind the
+symbol's SHA-256, use one of <code>platform-primitive</code>, <code>runtime-invariant</code>, or
+<code>race-window</code>, name an accountable owner, cite public regression tests, list
+specific revisit triggers, and expire no later than 90 days after review. A
+source edit, removed guard, missing test, expired review, unknown field, or
+duplicate identifier fails validation.</p>
+<p>The manifest also contains preregistered regular-expression searches over
+explicit test owners. Their expected result is empty. They currently reject
+private production-helper calls, <code>object.__new__</code> construction, monkeypatched
+production internals, and direct use of the private preflight runner.</p>
+<p>Validate the contract directly with:</p>
+<pre><code class="language-bash">rigor residuals-check --root .
+</code></pre>
+<p><code>python -m tools.audit</code>, <code>make audit</code>, local preflight, and the CI quality job
+run the same validator. Residuals never count as covered lines and do not lower
+the aggregate branch-coverage threshold.</p>
+<p>Repository guard CLIs print only fixed pass/fail status. Precise diagnostic
+strings remain available to trusted in-process callers, while validation
+exceptions also fail closed without a traceback. Neither enters shared logs,
+because repository paths and metadata can be attacker-controlled. The secret
+guard additionally replaces every programmatic path with its full SHA-256
+identifier.</p>
+<h2 id="desired-state-inputs">Desired-state inputs<a class="headerlink" href="#desired-state-inputs" title="Permanent link">&para;</a></h2>
+<p>A <code>StandardPack</code> defines versioned controls, evidence contracts, remediation
+contracts, licence and source metadata, a detached signature envelope, and a
+content digest. A <code>ProjectProfile</code> selects exact pack versions and digests and
+records project intent without copying or weakening the pack silently.</p>
+<p>Standard-pack schema 1.1, signature-envelope schema 1.0, and pack-verification
+schema 1.0 require and bind the <code>rigor-foundry.standard-pack.v1</code> signature
+domain. Reviewer-attestation schema 2.0 requires
+<code>rigor-foundry.reviewer-attestation.v1</code>. Both sign the public
+<code>ed25519_signature_message()</code> encoding: the fixed
+<code>RIGOR-FOUNDRY-ED25519\0v1\0</code> prefix, a two-byte big-endian domain length, the
+ASCII domain, and the 32 payload-digest bytes. Earlier pack schema 1.0,
+unversioned reviewer records, missing domains, and raw-digest signatures must be
+regenerated and re-signed; the parser and verifier provide no legacy fallback.</p>
+<p>Project variables support <code>string</code>, <code>integer</code>, <code>number</code>, <code>boolean</code>, and
+<code>string-list</code> values. Every variable declares project, environment, or control
+scope and public, internal, or secret sensitivity. Definitions can constrain
+allowed values, regular-expression matches, numeric ranges, and list sizes.
+Assignments and definitions are digest-bound so a stale value cannot be
+mistaken for the current contract.</p>
+<p>Secret values do not belong in profiles or effective locks. A secret variable
+contains only an opaque provider, reference, and version. Secret resolution is
+an authorised adapter responsibility and the resulting bytes must not enter
+reports, plans, logs, or public output.</p>
+<p>Declared native adapters are executable policy, not passive configuration.
+<code>gate</code> and <code>campaign-run</code> refuse to run them unless the operator supplies
+<code>--allow-native-audits</code>. Consent still uses a fixed credential-free
+environment, a no-network read-only bubblewrap sandbox, mandatory timeouts,
+process-tree termination, disabled nested user namespaces, and a streaming
+output hard cap. Native execution currently requires the Debian-family
+<code>/usr/bin/bwrap</code> and <code>/usr/bin/dpkg-query</code> surfaces, a root-owned single-link
+launcher and query executable without group/world-write, set-user-ID, or
+set-group-ID bits, Bubblewrap version 0.9.0 or newer and lower
+than 1.0.0, an installed <code>bubblewrap</code> package,
+and every option named by <code>BubblewrapCompatibilityPolicy</code>. Missing dpkg
+association, an unsupported version, option drift, or identity change during
+an adapter run fails closed. Gate and campaign records embed the complete
+policy and observed secret-free package-database evidence. The dpkg fields do
+not prove repository signatures or installed-payload checksums; the executable
+SHA-256 identifies the bytes inspected and executed.</p>
+<p>Policy schema 1.3 also accepts immutable built-in Semgrep, offline Trivy, and
+offline OSV lockfile profiles. They project an exact clean tracked-only
+workspace, bind structured profile evidence, and withhold domain coverage for
+partial or unavailable results. The OSV profile additionally verifies an exact
+operator-provided local database snapshot against a tracked manifest; it never
+downloads or updates vulnerability data. Adopters cannot override a profile's
+command, parser, or domain mapping.
+See <a href="../adapter-profiles/">Built-in adapter profiles</a>.</p>
+<p>Conditions use a bounded declarative expression tree. They can read declared
+context values and combine supported comparisons and boolean operations; they
+cannot import code, invoke a shell, access the network, or mutate the audited
+repository. Missing references and malformed or oversized expressions fail
+closed.</p>
+<p>Profile resolution verifies exact pack pins and actual domain-separated
+Ed25519 signature bytes against an explicit public-key trust store, resolves
+typed assignments, applies overlays and finite waivers, retains contradictions,
+and emits an <code>EffectiveProfileLock</code>. The verification record binds the key,
+signature domain, signature, pack, and trust-store digests; a caller-supplied
+<code>valid</code> label is never accepted. A lock is ready only when required inputs are
+complete and no blocking contradiction remains. Stronger targets and explicit
+denial win over unauthorised weakening.</p>
+<p>Every weakening waiver is exact: control, field, previous value, new value,
+and active time window must match. Risk acceptance uses a dedicated
+<code>assessment-status</code> waiver from <code>fail</code> to <code>accepted-risk</code>; its identifier is
+kept separate from applicability, target, and mode waiver identifiers. Those
+other waiver classes cannot authorise an accepted-risk assessment.</p>
+<p>Evidence names an exact <code>AdapterLock</code> digest whose declared domains include the
+control domain. Reviewer attestations carry an Ed25519 signature over the exact
+assessment body, identity, decision, and validity window. Clearance reverifies
+that signature against an explicit reviewer trust store and binds that store's
+digest into the assessment before counting distinct reviewer identities and
+keys. Remediation and rollback argv must match the exact command digest recorded
+in their adapter locks.</p>
+<p>Local campaign records, review ledgers, and optional TODO promotion default to
+<code>.rigor/</code>. The adopter must keep that directory Git-ignored; commands that
+would write there fail closed when the ignore boundary is absent.
+Campaign creation validates and prepares that ignored storage root before
+freezing the repository input projection, so the tool's own durable storage
+cannot create a post-freeze ignored-inventory divergence.</p>
+<p>Diagnostic campaigns may use one model witness. Promotion campaigns require at
+least two expected runs, at least two correlation witnesses, and at least two
+declared operator identities. Repeated runs from one model family or the same
+provider/exact-model pair remain useful for repeatability evidence but join one
+transitive correlation component and count as one promotion witness.
+Witness schema 1.2 stores each provider/exact-model pair and forbids families
+or exact pairs from appearing in more than one durable comparison component.</p>
+<p>Configuration schemas are versioned. Unknown schema versions, contradictory
+variables, unavailable adapters, and unresolved controls remain explicit
+errors or evidence gaps.</p>
+<p>The desired-state records are currently a Python API. Stable CLI profile
+import/export and an authorised remediation executor remain roadmap work.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
