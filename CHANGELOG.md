@@ -7,6 +7,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A workspace-scoped VS Code extension displays structurally checked audit
+  evidence and review sources, opens exact tracked-blob spans, runs scans only
+  on explicit commands, and delegates canonical review validation to the real
+  `rigor` CLI. Strict TypeScript unit tests, a real Extension Development Host
+  test, and a hash-pinned VSIX build keep the editor layer outside remediation
+  and promotion authority.
 - A per-rule maturity schema keeps every rule in probation until an explicit
   adopter policy is met by source-bound completed reviews, distinct repository
   and reviewer declarations, positive adjudications, bounded false-positive
