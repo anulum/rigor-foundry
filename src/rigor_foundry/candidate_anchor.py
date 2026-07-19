@@ -431,6 +431,7 @@ class Candidate:
             "documentation",
             "scientific",
             "operations",
+            "performance",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:

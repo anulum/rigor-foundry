@@ -121,7 +121,7 @@ def test_candidate_rejects_unregistered_or_wrong_category_rule() -> None:
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("category", "performance", "category"),
+        ("category", "unknown-category", "category"),
         ("confidence", "certain", "confidence"),
     ],
 )

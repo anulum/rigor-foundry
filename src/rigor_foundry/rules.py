@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.14.0"
+RULE_PACK_VERSION = "rigor-foundry/1.15.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -31,9 +31,10 @@ DATA_PRIVACY_RULE_PACK_VERSION = "rigor-foundry/1.11.0"
 DOCUMENTATION_RULE_PACK_VERSION = "rigor-foundry/1.12.0"
 SCIENTIFIC_RULE_PACK_VERSION = "rigor-foundry/1.13.0"
 OPERATIONS_RULE_PACK_VERSION = "rigor-foundry/1.14.0"
+PERFORMANCE_RULE_PACK_VERSION = "rigor-foundry/1.15.0"
 
 _RULE_ID = re.compile(
-    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
+    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
 )
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
@@ -48,6 +49,7 @@ _CATEGORY_PREFIXES = {
     "documentation": "DC",
     "scientific": "SN",
     "operations": "OP",
+    "performance": "PR",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -372,6 +374,12 @@ RULES: tuple[RuleDefinition, ...] = (
         "operations",
         "Import-bound logging call receives a credential-named expression.",
         OPERATIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "PR001-wall-clock-in-test",
+        "performance",
+        "Python test assertion reads an imported wall clock without explicit local control.",
+        PERFORMANCE_RULE_PACK_VERSION,
     ),
 )
 

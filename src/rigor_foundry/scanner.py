@@ -31,6 +31,7 @@ from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
 from .operations import scan_operations
+from .performance import scan_performance
 from .polyglot_architecture import scan_polyglot_architecture
 from .reliability import scan_reliability
 from .scientific import scan_scientific
@@ -194,6 +195,7 @@ def scan_repository(
         *scan_documentation(inventory, policy),
         *scan_scientific(inventory, policy),
         *scan_operations(inventory, policy),
+        *scan_performance(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

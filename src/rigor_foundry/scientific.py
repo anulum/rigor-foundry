@@ -18,6 +18,7 @@ from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path
 from .models import AuditPolicy, Candidate
+from .python_test_functions import collect_test_functions
 
 _RANDOM_DRAWS = frozenset(
     {
@@ -74,24 +75,6 @@ def _line_evidence(item: TrackedFile, line: int, occurrences: int) -> str:
     content = lines[line - 1] if 0 < line <= len(lines) else ""
     digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
     return f"file_sha256={item.content_digest}; line_sha256={digest}; occurrences={occurrences}"
-
-
-def _test_functions(tree: ast.Module) -> tuple[ast.FunctionDef | ast.AsyncFunctionDef, ...]:
-    """Return top-level and class-owned pytest-style test functions."""
-    functions: list[ast.FunctionDef | ast.AsyncFunctionDef] = []
-    for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith(
-            "test_"
-        ):
-            functions.append(node)
-        elif isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
-            functions.extend(
-                member
-                for member in node.body
-                if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and member.name.startswith("test_")
-            )
-    return tuple(functions)
 
 
 def _aliases(tree: ast.Module, function: ast.FunctionDef | ast.AsyncFunctionDef) -> _Aliases:
@@ -280,7 +263,7 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
     except SyntaxError:
         return ()
     findings: list[tuple[int, str, str, int, str, str]] = []
-    for function in _test_functions(tree):
+    for function in collect_test_functions(tree):
         exact = _exact_float_lines(function)
         if exact:
             findings.append(
