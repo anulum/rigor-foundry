@@ -5,11 +5,14 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — built-in adapter campaign integration tests
-"""Run Semgrep and Trivy through the public durable campaign boundary."""
+"""Run built-in profiles through the public durable campaign boundary."""
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
+import zipfile
 from dataclasses import replace
 from pathlib import Path
 
@@ -23,6 +26,7 @@ from rigor_foundry.campaign_models import AuditRunAttestation
 from rigor_foundry.campaign_store import load_runs, store_run
 from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
 from rigor_foundry.models import canonical_digest
+from rigor_foundry.osv_database import OSVDatabaseArchive, OSVDatabaseManifest
 
 
 def _profile(
@@ -42,6 +46,110 @@ def _profile(
         "working_directory": ".",
         "required": True,
     }
+
+
+def _write_osv_fixture(repository: GitRepository, cache: Path) -> None:
+    """Write a tracked manifest plus one non-matching external PyPI database."""
+    vulnerability = {
+        "id": "OSV-CAMPAIGN-1",
+        "modified": "2026-07-19T00:00:00Z",
+        "published": "2026-07-19T00:00:00Z",
+        "affected": [
+            {
+                "package": {"ecosystem": "PyPI", "name": "different-package"},
+                "ranges": [
+                    {
+                        "type": "ECOSYSTEM",
+                        "events": [{"introduced": "0"}, {"fixed": "2"}],
+                    }
+                ],
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        info = zipfile.ZipInfo("OSV-CAMPAIGN-1.json", date_time=(2026, 7, 19, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        archive.writestr(
+            info,
+            json.dumps(vulnerability, sort_keys=True, separators=(",", ":")),
+        )
+    payload = output.getvalue()
+    archive_path = cache / "osv-scanner" / "PyPI" / "all.zip"
+    archive_path.parent.mkdir(parents=True)
+    archive_path.write_bytes(payload)
+    manifest = OSVDatabaseManifest.build(
+        (
+            OSVDatabaseArchive(
+                ecosystem="PyPI",
+                archive_sha256=hashlib.sha256(payload).hexdigest(),
+                archive_bytes=len(payload),
+            ),
+        )
+    )
+    repository.write_text("requirements.txt", "urllib3==1.26.0\n")
+    repository.write_text(
+        "security/osv-database.json",
+        json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n",
+    )
+
+
+def test_campaign_attests_real_offline_osv_profile(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A durable campaign counts only verified offline OSV evidence."""
+    repository = GitRepository.create(tmp_path / "repository")
+    cache = tmp_path / "osv-cache"
+    _write_osv_fixture(repository, cache)
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    repository.write_policy(
+        native_audits=[
+            _profile(
+                "osv-lockfile-security",
+                "osv-lockfile-offline-json-v1",
+                "security/osv-database.json",
+                "requirements.txt",
+            )
+        ],
+        required_domains=frozenset({"supply-chain"}),
+    )
+    repository.commit()
+    campaign_path, _campaign = create_campaign(
+        repository.root,
+        Path("rigor-foundry-policy.json"),
+        audit_root=Path(".rigor/audits"),
+        project="OSV-ADOPTER",
+        campaign_id="osv-profile-e2e",
+        actor="coordinator/one",
+        expected_runs=1,
+    )
+
+    _run_path, attestation = execute_campaign(
+        campaign_path,
+        run_id="osv-profile-agent",
+        agent_identity="OSV-ADOPTER/profile-agent",
+        session_identity="terminal/osv-profile",
+        inference_identity=InferenceIdentity.build(
+            provider="provider.example",
+            model="model-v1",
+            model_family="model-family",
+            operator="operator-one",
+        ),
+        trusted_native_audits=True,
+    )
+
+    assert attestation.status == "complete"
+    assert attestation.covered_domains == ("supply-chain",)
+    assert attestation.omitted_domains == ()
+    assert len(attestation.adapter_evidence) == 1
+    evidence = attestation.adapter_evidence[0]
+    assert evidence.name == "osv-lockfile-security"
+    assert evidence.profile_evidence is not None
+    assert evidence.profile_evidence.complete
+    assert evidence.profile_evidence.profile == "osv-lockfile-offline-json-v1"
+    stored = load_runs(campaign_path)[0].attestation
+    assert stored.adapter_evidence == attestation.adapter_evidence
 
 
 def test_campaign_attests_both_real_profiles_and_complete_domain_coverage(

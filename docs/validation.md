@@ -47,16 +47,19 @@ It requires all three resulting JSON
 artifacts to be non-empty. This verifies installation and wiring, not domain
 completeness or remediation authority.
 
-Built-in adapter-profile owners execute real Semgrep and Trivy binaries through
+Built-in adapter-profile owners execute real Semgrep, Trivy, and OSV-Scanner binaries through
 the public descriptor-bound Bubblewrap boundary. They cover strict policy and
 output schemas, clean/findings/partial/unavailable relations, tracked-only
 snapshot construction, linked/oversized/dirty/drifting inputs, durable campaign
-round trips, missing executables, and exact version/config/input/output
-identity. CI installs Trivy, Typos, Buildx, Bubblewrap, and the CodeQL bundle
+round trips, missing executables or OSV database archives, and exact
+version/config/database/input/output identity. The OSV database owner has 100%
+statement and branch coverage, including manifest, link, ZIP-bound, mutation,
+and projection-cleanup failures. CI installs OSV-Scanner, Trivy, Typos, Buildx,
+Bubblewrap, and the CodeQL bundle
 only after their pinned manifest and final-asset identities are verified.
 Digest-bound local Docker actions cover Scorecard and PyPI publication. The
 focused benchmark records non-isolated wall time
-for both profiles; it is evidence about orchestration overhead, not a
+for all three profiles; it is evidence about orchestration overhead, not a
 throughput or cross-language implementation claim.
 
 The focused SARIF owner scans real Git repositories and exercises the public

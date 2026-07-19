@@ -254,10 +254,13 @@ policy and observed secret-free package-database evidence. The dpkg fields do
 not prove repository signatures or installed-payload checksums; the executable
 SHA-256 identifies the bytes inspected and executed.
 
-Policy schema 1.3 also accepts immutable built-in Semgrep and offline Trivy
-profiles. They project an exact clean tracked-only workspace, bind structured
-profile evidence, and withhold domain coverage for partial or unavailable
-results. Adopters cannot override their command, parser, or domain mapping.
+Policy schema 1.3 also accepts immutable built-in Semgrep, offline Trivy, and
+offline OSV lockfile profiles. They project an exact clean tracked-only
+workspace, bind structured profile evidence, and withhold domain coverage for
+partial or unavailable results. The OSV profile additionally verifies an exact
+operator-provided local database snapshot against a tracked manifest; it never
+downloads or updates vulnerability data. Adopters cannot override a profile's
+command, parser, or domain mapping.
 See [Built-in adapter profiles](adapter-profiles.md).
 
 Conditions use a bounded declarative expression tree. They can read declared

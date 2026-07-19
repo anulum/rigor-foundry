@@ -5,7 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — verified built-in adapter profiles
-"""Define immutable Semgrep and Trivy execution and evidence contracts."""
+"""Define immutable Semgrep, Trivy, and offline OSV execution contracts."""
 
 from __future__ import annotations
 
@@ -15,7 +15,11 @@ from typing import Literal, cast
 
 from .audit_primitives import canonical_digest, require_integer, require_mapping, require_string
 
-ProfileName = Literal["semgrep-local-json-v1", "trivy-repository-json-v1"]
+ProfileName = Literal[
+    "osv-lockfile-offline-json-v1",
+    "semgrep-local-json-v1",
+    "trivy-repository-json-v1",
+]
 ProfileStatus = Literal["clean", "findings", "partial", "unavailable"]
 ProfileReason = Literal[
     "clean",
@@ -23,6 +27,8 @@ ProfileReason = Literal[
     "executable-unavailable",
     "invalid-output",
     "invalid-returncode",
+    "database-invalid",
+    "database-unavailable",
     "no-scanned-targets",
     "output-truncated",
     "scan-errors",
@@ -91,7 +97,7 @@ class AdapterProfile:
     executable: str
     version_arguments: tuple[str, ...]
     domains: tuple[str, ...]
-    parser: Literal["semgrep", "trivy"]
+    parser: Literal["osv", "semgrep", "trivy"]
 
     @property
     def profile_digest(self) -> str:
@@ -126,6 +132,21 @@ class AdapterProfile:
                 "--no-rewrite-rule-ids",
                 *target_paths,
             )
+        if self.parser == "osv":
+            if not target_paths:
+                raise ValueError("the OSV lockfile profile requires at least one target")
+            arguments: list[str] = [
+                "scan",
+                "source",
+                "--offline",
+                "--format=json",
+                "--verbosity=error",
+                "--no-resolve",
+                "--all-packages",
+            ]
+            for target in target_paths:
+                arguments.extend(("--lockfile", target))
+            return tuple(arguments)
         if len(target_paths) != 1:
             raise ValueError("the Trivy repository profile requires exactly one target")
         return (
@@ -148,6 +169,13 @@ class AdapterProfile:
 
 
 _PROFILES: dict[ProfileName, AdapterProfile] = {
+    "osv-lockfile-offline-json-v1": AdapterProfile(
+        name="osv-lockfile-offline-json-v1",
+        executable="osv-scanner",
+        version_arguments=("--version",),
+        domains=("supply-chain",),
+        parser="osv",
+    ),
     "semgrep-local-json-v1": AdapterProfile(
         name="semgrep-local-json-v1",
         executable="semgrep",
@@ -245,6 +273,8 @@ class AdapterProfileEvidence:
         statuses = {"clean", "findings", "partial", "unavailable"}
         reasons = {
             "clean",
+            "database-invalid",
+            "database-unavailable",
             "findings",
             "executable-unavailable",
             "invalid-output",
@@ -280,7 +310,14 @@ class AdapterProfileEvidence:
                     "timed-out",
                 }
             ),
-            "unavailable": frozenset({"executable-unavailable", "version-unavailable"}),
+            "unavailable": frozenset(
+                {
+                    "database-invalid",
+                    "database-unavailable",
+                    "executable-unavailable",
+                    "version-unavailable",
+                }
+            ),
         }
         if reason not in expected_reason[status]:
             raise ValueError("profile evidence reason contradicts status")
@@ -307,8 +344,10 @@ class AdapterProfileEvidence:
             raise ValueError("no-scanned-targets evidence requires zero scanned targets")
         if reason == "invalid-returncode" and scanned_target_count == 0:
             raise ValueError("invalid-returncode evidence requires scanned targets")
-        if reason == "scan-errors" and profile.parser != "semgrep":
-            raise ValueError("scan-errors evidence is supported only by the Semgrep profile")
+        if reason == "scan-errors" and profile.parser not in {"osv", "semgrep"}:
+            raise ValueError("scan-errors evidence is unsupported by this profile")
+        if reason in {"database-invalid", "database-unavailable"} and profile.parser != "osv":
+            raise ValueError("database evidence reasons are supported only by the OSV profile")
         if _digest(fields.get("profile_digest"), "profile_evidence.profile_digest") != (
             profile.profile_digest
         ):
@@ -424,10 +463,55 @@ def _trivy_counts(document: object) -> tuple[int, int]:
     return finding_count, scanned_count
 
 
+def _osv_counts(document: object) -> tuple[int, int]:
+    """Return vulnerability and unique scanned-source counts from OSV JSON."""
+    data = require_mapping(document, "OSV output")
+    results = data.get("results")
+    if not isinstance(results, list):
+        raise ValueError("OSV results must be an array")
+    findings = 0
+    scanned: set[str] = set()
+    for index, raw in enumerate(results):
+        result = require_mapping(raw, f"OSV output.results[{index}]")
+        source = require_mapping(result.get("source"), f"OSV output.results[{index}].source")
+        source_path = source.get("path")
+        source_type = source.get("type")
+        if not isinstance(source_path, str) or not source_path:
+            raise ValueError("OSV result source path is invalid")
+        if source_type != "lockfile":
+            raise ValueError("OSV result source type is not a lockfile")
+        packages = result.get("packages")
+        if not isinstance(packages, list):
+            raise ValueError("OSV result packages must be an array")
+        scanned.add(source_path)
+        for package_index, raw_package in enumerate(packages):
+            package_result = require_mapping(
+                raw_package,
+                f"OSV output.results[{index}].packages[{package_index}]",
+            )
+            package = require_mapping(
+                package_result.get("package"),
+                f"OSV output.results[{index}].packages[{package_index}].package",
+            )
+            for field in ("name", "version", "ecosystem"):
+                if not isinstance(package.get(field), str) or not package[field]:
+                    raise ValueError(f"OSV package {field} is invalid")
+            vulnerabilities = package_result.get("vulnerabilities", [])
+            if not isinstance(vulnerabilities, list):
+                raise ValueError("OSV package vulnerabilities must be an array")
+            for raw_vulnerability in vulnerabilities:
+                vulnerability = require_mapping(raw_vulnerability, "OSV vulnerability")
+                if not isinstance(vulnerability.get("id"), str) or not vulnerability["id"]:
+                    raise ValueError("OSV vulnerability identity is invalid")
+                findings += 1
+    return findings, len(scanned)
+
+
 def interpret_profile_output(
     profile: AdapterProfile,
     *,
     stdout: bytes,
+    stderr: bytes = b"",
     returncode: int,
     timed_out: bool,
     truncated: bool,
@@ -442,6 +526,10 @@ def interpret_profile_output(
         if profile.parser == "semgrep":
             findings, scanned, errors = _semgrep_counts(document)
             if errors:
+                return "partial", "scan-errors", findings, scanned
+        elif profile.parser == "osv":
+            findings, scanned = _osv_counts(document)
+            if stderr.strip():
                 return "partial", "scan-errors", findings, scanned
         else:
             findings, scanned = _trivy_counts(document)

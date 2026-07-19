@@ -41,6 +41,12 @@ and archive members as adversarial input.
   replacement, malformed output, timeouts, truncation, and analyser errors
   cannot become clean evidence. The offline Trivy profile claims only
   misconfiguration and secret scanning, never CVE or supply-chain coverage.
+  The offline OSV profile requires an exact tracked database manifest, verifies
+  every externally supplied official-layout archive without following links,
+  and mounts only the verified snapshot into the no-network sandbox. Missing,
+  mutated, linked, malformed, unsafe, or oversized database content is
+  unavailable evidence, never a clean result. OSV matches do not establish
+  reachability, exploitability, remediation priority, or an adjudicated verdict.
 - Repository policies must be tracked, non-symlink UTF-8 files inside the
   audited root, and Git index modes and object ids bind every tracked entry.
 - Bootstrap writes walk existing parents through retained no-follow directory

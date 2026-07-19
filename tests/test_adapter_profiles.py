@@ -5,13 +5,16 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — built-in adapter profile tests
-"""Exercise strict profile parsing and real sandboxed Semgrep/Trivy scans."""
+"""Exercise strict profile parsing and real sandboxed Semgrep/Trivy/OSV scans."""
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 import stat
 import sys
+import zipfile
 from dataclasses import replace
 from pathlib import Path
 
@@ -26,6 +29,7 @@ from rigor_foundry.adapter_profiles import (
 )
 from rigor_foundry.adapters import AdapterResult, run_adapter
 from rigor_foundry.models import AdapterSpec, canonical_digest
+from rigor_foundry.osv_database import OSVDatabaseArchive, OSVDatabaseManifest
 
 
 def _profile_spec(name: str, profile: str, configuration: str, target: str) -> AdapterSpec:
@@ -54,6 +58,53 @@ def _redigest_profile(
     fields = {key: value for key, value in changed.items() if key != "evidence_digest"}
     changed["evidence_digest"] = canonical_digest(fields)
     return changed
+
+
+def _osv_archive(package: str) -> bytes:
+    """Return a deterministic PyPI database with one vulnerable package."""
+    vulnerability = {
+        "id": "OSV-TEST-1",
+        "modified": "2026-07-19T00:00:00Z",
+        "published": "2026-07-19T00:00:00Z",
+        "affected": [
+            {
+                "package": {"ecosystem": "PyPI", "name": package},
+                "ranges": [
+                    {
+                        "type": "ECOSYSTEM",
+                        "events": [{"introduced": "0"}, {"fixed": "1.26.1"}],
+                    }
+                ],
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        info = zipfile.ZipInfo("OSV-TEST-1.json", date_time=(2026, 7, 19, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        archive.writestr(info, json.dumps(vulnerability, sort_keys=True, separators=(",", ":")))
+    return output.getvalue()
+
+
+def _write_osv_database(repository: GitRepository, cache: Path, package: str) -> None:
+    """Write a tracked manifest and its matching external local database."""
+    payload = _osv_archive(package)
+    database = cache / "osv-scanner" / "PyPI" / "all.zip"
+    database.parent.mkdir(parents=True, exist_ok=True)
+    database.write_bytes(payload)
+    manifest = OSVDatabaseManifest.build(
+        (
+            OSVDatabaseArchive(
+                ecosystem="PyPI",
+                archive_sha256=hashlib.sha256(payload).hexdigest(),
+                archive_bytes=len(payload),
+            ),
+        )
+    )
+    repository.write_text(
+        "security/osv-database.json",
+        json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n",
+    )
 
 
 def test_profile_evidence_round_trip_rejects_static_contradictions() -> None:
@@ -105,6 +156,20 @@ def test_profile_registry_and_evidence_schema_fail_closed() -> None:
     trivy = profile_by_name("trivy-repository-json-v1")
     with pytest.raises(ValueError, match="exactly one target"):
         trivy.command_arguments("config.yml", ("first", "second"))
+    osv = profile_by_name("osv-lockfile-offline-json-v1")
+    with pytest.raises(ValueError, match="at least one target"):
+        osv.command_arguments("database.json", ())
+    assert osv.command_arguments("database.json", ("requirements.txt",)) == (
+        "scan",
+        "source",
+        "--offline",
+        "--format=json",
+        "--verbosity=error",
+        "--no-resolve",
+        "--all-packages",
+        "--lockfile",
+        "requirements.txt",
+    )
 
     profile = profile_by_name("semgrep-local-json-v1")
     base = {
@@ -167,17 +232,27 @@ def test_profile_registry_and_evidence_schema_fail_closed() -> None:
             },
             "requires scanned targets",
         ),
+        (
+            {
+                "status": "unavailable",
+                "reason": "database-unavailable",
+                "tool_version": "",
+                "scanned_target_count": 0,
+            },
+            "only by the OSV profile",
+        ),
     )
     for changes, message in invalid_relations:
         with pytest.raises(ValueError, match=message):
             AdapterProfileEvidence.build(**{**base, **changes})  # type: ignore[arg-type]
 
     evidence = AdapterProfileEvidence.build(**base)  # type: ignore[arg-type]
-    for changes, message in (
+    tampered_fields: tuple[tuple[dict[str, object], str], ...] = (
         ({"implicit": True}, "fields do not match"),
         ({"schema_version": "9.0"}, "schema version"),
         ({"evidence_digest": "A" * 64}, "lowercase SHA-256"),
-    ):
+    )
+    for changes, message in tampered_fields:
         with pytest.raises(ValueError, match=message):
             AdapterProfileEvidence.from_dict({**evidence.to_dict(), **changes})
 
@@ -211,7 +286,7 @@ def test_profile_registry_and_evidence_schema_fail_closed() -> None:
             AdapterProfileEvidence.from_dict(_redigest_profile(evidence, **changes))
 
     trivy = profile_by_name("trivy-repository-json-v1")
-    with pytest.raises(ValueError, match="only by the Semgrep profile"):
+    with pytest.raises(ValueError, match="unsupported by this profile"):
         AdapterProfileEvidence.build(
             profile=trivy,
             status="partial",
@@ -400,6 +475,138 @@ def test_trivy_parser_counts_only_failures_and_secrets() -> None:
     ) == ("findings", "findings", 2, 1)
 
 
+def test_osv_parser_counts_lockfiles_and_vulnerabilities() -> None:
+    """OSV JSON counts unique lockfile sources and concrete vulnerability records."""
+    payload = {
+        "results": [
+            {
+                "source": {"path": "/workspace/requirements.txt", "type": "lockfile"},
+                "packages": [
+                    {
+                        "package": {
+                            "name": "urllib3",
+                            "version": "1.26.0",
+                            "ecosystem": "PyPI",
+                        },
+                        "vulnerabilities": [{"id": "OSV-TEST-1"}],
+                    },
+                    {
+                        "package": {
+                            "name": "click",
+                            "version": "8.1.0",
+                            "ecosystem": "PyPI",
+                        }
+                    },
+                ],
+            }
+        ]
+    }
+    profile = profile_by_name("osv-lockfile-offline-json-v1")
+    assert interpret_profile_output(
+        profile,
+        stdout=json.dumps(payload).encode(),
+        returncode=1,
+        timed_out=False,
+        truncated=False,
+    ) == ("findings", "findings", 1, 1)
+    assert interpret_profile_output(
+        profile,
+        stdout=json.dumps(payload).encode(),
+        stderr=b"database parse failed",
+        returncode=1,
+        timed_out=False,
+        truncated=False,
+    ) == ("partial", "scan-errors", 1, 1)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"results": {}},
+        {"results": [1]},
+        {"results": [{"source": {}, "packages": []}]},
+        {"results": [{"source": {"path": "x", "type": "sbom"}, "packages": []}]},
+        {
+            "results": [
+                {
+                    "source": {"path": "x", "type": "lockfile"},
+                    "packages": {},
+                }
+            ]
+        },
+        {
+            "results": [
+                {
+                    "source": {"path": "x", "type": "lockfile"},
+                    "packages": [{"package": {"name": "pkg"}}],
+                }
+            ]
+        },
+        {
+            "results": [
+                {
+                    "source": {"path": "x", "type": "lockfile"},
+                    "packages": [
+                        {
+                            "package": {
+                                "name": "pkg",
+                                "version": "1",
+                                "ecosystem": "PyPI",
+                            },
+                            "vulnerabilities": ["invalid"],
+                        }
+                    ],
+                }
+            ]
+        },
+        {
+            "results": [
+                {
+                    "source": {"path": "x", "type": "lockfile"},
+                    "packages": [
+                        {
+                            "package": {
+                                "name": "pkg",
+                                "version": "1",
+                                "ecosystem": "PyPI",
+                            },
+                            "vulnerabilities": {},
+                        }
+                    ],
+                }
+            ]
+        },
+        {
+            "results": [
+                {
+                    "source": {"path": "x", "type": "lockfile"},
+                    "packages": [
+                        {
+                            "package": {
+                                "name": "pkg",
+                                "version": "1",
+                                "ecosystem": "PyPI",
+                            },
+                            "vulnerabilities": [{"id": ""}],
+                        }
+                    ],
+                }
+            ]
+        },
+    ],
+)
+def test_osv_parser_rejects_ambiguous_shapes(payload: dict[str, object]) -> None:
+    """Missing source/package identities and malformed findings remain partial."""
+    assert interpret_profile_output(
+        profile_by_name("osv-lockfile-offline-json-v1"),
+        stdout=json.dumps(payload).encode(),
+        returncode=0,
+        timed_out=False,
+        truncated=False,
+    ) == ("partial", "invalid-output", 0, 0)
+
+
 def test_tool_version_normalisation_is_bounded_utf8() -> None:
     """Version evidence accepts bounded lines and rejects ambiguous encodings or size."""
     assert normalise_version_output(b"tool 1.0\ncommit abc\n") == "tool 1.0 | commit abc"
@@ -546,6 +753,93 @@ def test_real_trivy_profile_scans_tracked_repository_configuration(tmp_path: Pat
     assert result.profile_evidence.status in {"clean", "findings"}
     assert result.profile_evidence.scanned_target_count >= 1
     assert result.complete
+
+
+def test_real_osv_profile_scans_exact_offline_database_and_lockfile(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public boundary produces clean and finding evidence without network access."""
+    repository = GitRepository.create(tmp_path / "osv-repository")
+    cache = tmp_path / "osv-cache"
+    repository.write_text("requirements.txt", "urllib3==1.26.0\n")
+    _write_osv_database(repository, cache, "different-package")
+    repository.commit()
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    spec = _profile_spec(
+        "osv-lockfile-security",
+        "osv-lockfile-offline-json-v1",
+        "security/osv-database.json",
+        "requirements.txt",
+    )
+
+    clean = run_adapter(repository.root, spec, trusted=True)
+    assert clean.profile_evidence is not None
+    assert clean.profile_evidence.tool_version.startswith("osv-scanner version: 2.4.0")
+    assert clean.profile_evidence.status == "clean"
+    assert clean.profile_evidence.scanned_target_count == 1
+    assert clean.complete and clean.passed
+
+    _write_osv_database(repository, cache, "urllib3")
+    repository.commit("test: pin vulnerable OSV snapshot")
+    finding = run_adapter(repository.root, spec, trusted=True)
+    assert finding.profile_evidence is not None
+    assert finding.profile_evidence.status == "findings"
+    assert finding.profile_evidence.finding_count == 1
+    assert finding.complete and not finding.passed
+    assert AdapterResult.from_dict(finding.to_dict()) == finding
+
+
+def test_osv_profile_database_failures_are_durable_unavailable_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A missing or changed snapshot never degrades into a clean vulnerability verdict."""
+    repository = GitRepository.create(tmp_path / "osv-database-failure")
+    cache = tmp_path / "osv-cache"
+    repository.write_text("requirements.txt", "urllib3==1.26.0\n")
+    _write_osv_database(repository, cache, "urllib3")
+    repository.commit()
+    spec = _profile_spec(
+        "osv-lockfile-security",
+        "osv-lockfile-offline-json-v1",
+        "security/osv-database.json",
+        "requirements.txt",
+    )
+
+    monkeypatch.delenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", raising=False)
+    missing = run_adapter(repository.root, spec, trusted=True)
+    assert missing.profile_evidence is not None
+    assert missing.profile_evidence.status == "unavailable"
+    assert missing.profile_evidence.reason == "database-unavailable"
+    assert not missing.complete and not missing.passed
+
+    database = cache / "osv-scanner" / "PyPI" / "all.zip"
+    database.write_bytes(database.read_bytes() + b"changed")
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    changed = run_adapter(repository.root, spec, trusted=True)
+    assert changed.profile_evidence is not None
+    assert changed.profile_evidence.reason == "database-invalid"
+    assert AdapterResult.from_dict(changed.to_dict()) == changed
+
+    repository.write_text("security/osv-database.json", "{}\n")
+    repository.commit("test: corrupt tracked OSV manifest")
+    malformed = run_adapter(repository.root, spec, trusted=True)
+    assert malformed.profile_evidence is not None
+    assert malformed.profile_evidence.reason == "database-invalid"
+
+    _write_osv_database(repository, cache, "urllib3")
+    repository.write_text(".rigor-osv-db/requirements.txt", "urllib3==1.26.0\n")
+    repository.commit("test: occupy reserved OSV projection path")
+    colliding_spec = _profile_spec(
+        "osv-lockfile-security",
+        "osv-lockfile-offline-json-v1",
+        "security/osv-database.json",
+        ".rigor-osv-db/requirements.txt",
+    )
+    colliding = run_adapter(repository.root, colliding_spec, trusted=True)
+    assert colliding.profile_evidence is not None
+    assert colliding.profile_evidence.reason == "database-invalid"
 
 
 def test_profile_unavailable_evidence_is_durable_and_fail_closed(tmp_path: Path) -> None:

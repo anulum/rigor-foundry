@@ -170,6 +170,9 @@ def test_catalogue_selection_is_risk_driven_and_skips_superseded() -> None:
         "osv-scanner",
         "trivy",
     ]
+    osv = next(entry for entry in catalogue.entries if entry.tool_id == "osv-scanner")
+    assert osv.status == "profiled"
+    assert osv.profile_name == "osv-lockfile-offline-json-v1"
     assert [e.tool_id for e in catalogue.select("infrastructure-as-code")] == ["checkov"]
     assert [e.tool_id for e in catalogue.select("secret", "secret")] == ["gitleaks"]
     assert [e.tool_id for e in catalogue.select("supply-chain", "container")] == ["grype", "trivy"]

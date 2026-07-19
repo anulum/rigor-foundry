@@ -128,11 +128,15 @@ def test_ci_test_matrix_installs_every_verified_native_fixture() -> None:
     assert 'tools.install_buildx --destination "$pythonLocation/bin/docker-buildx"' in test_job
     assert "python -m tools.install_typos" in test_job
     assert "python -m tools.install_trivy" in test_job
+    assert "python -m tools.install_osv_scanner" in test_job
     assert 'chmod 0755 "$pythonLocation/bin/semgrep"' in test_job
     assert test_job.index("chmod 0755") < test_job.index("Run exhaustive CI-owned suite")
     assert test_job.index("tools.install_buildx") < test_job.index("Run exhaustive CI-owned suite")
     assert test_job.index("tools.install_typos") < test_job.index("Run exhaustive CI-owned suite")
     assert test_job.index("tools.install_trivy") < test_job.index("Run exhaustive CI-owned suite")
+    assert test_job.index("tools.install_osv_scanner") < test_job.index(
+        "Run exhaustive CI-owned suite"
+    )
 
 
 def test_public_integration_examples_use_the_immutable_successor_revision() -> None:

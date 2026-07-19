@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 
 
-def test_profile_benchmark_executes_both_real_tools() -> None:
-    """One bounded iteration reports complete Semgrep and Trivy measurements."""
+def test_profile_benchmark_executes_all_real_tools() -> None:
+    """One bounded iteration reports complete OSV, Semgrep, and Trivy measurements."""
     script = Path(__file__).parents[1] / "benchmarks" / "adapter_profiles.py"
     completed = subprocess.run(  # nosec B603
         (sys.executable, str(script), "--iterations", "1"),
@@ -30,7 +30,11 @@ def test_profile_benchmark_executes_both_real_tools() -> None:
     assert result["iterations_per_profile"] == 1
     profiles = result["profiles"]
     assert isinstance(profiles, dict)
-    assert set(profiles) == {"semgrep-local-json-v1", "trivy-repository-json-v1"}
+    assert set(profiles) == {
+        "osv-lockfile-offline-json-v1",
+        "semgrep-local-json-v1",
+        "trivy-repository-json-v1",
+    }
     for evidence in profiles.values():
         assert isinstance(evidence, dict)
         assert evidence["tool_version"]

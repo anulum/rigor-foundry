@@ -42,6 +42,14 @@ from .models import (
     require_mapping,
     require_string,
 )
+from .osv_database import (
+    OSV_DATABASE_ENVIRONMENT,
+    OSV_DATABASE_SANDBOX_ROOT,
+    OSVDatabaseInvalid,
+    OSVDatabaseManifest,
+    OSVDatabaseUnavailable,
+    materialise_osv_database,
+)
 from .sandbox_provenance import BubblewrapProvenance, inspect_bubblewrap
 from .trusted_executable import TrustedExecutable, open_trusted_executable, run_trusted_command
 
@@ -275,9 +283,16 @@ def _profile_unavailable_result(
     spec: AdapterSpec,
     workspace: AdapterWorkspace,
     *,
-    reason: Literal["executable-unavailable", "version-unavailable"],
+    reason: Literal[
+        "database-invalid",
+        "database-unavailable",
+        "executable-unavailable",
+        "version-unavailable",
+    ],
     executable_digest: str,
     version_output_digest: str,
+    extra_environment: dict[str, str] | None = None,
+    database_digest: str | None = None,
 ) -> AdapterResult:
     """Return durable fail-closed evidence when a built-in tool cannot run."""
     if spec.profile is None:
@@ -309,6 +324,7 @@ def _profile_unavailable_result(
     child_environment = {
         **CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+        **({} if extra_environment is None else extra_environment),
     }
     command_arguments = profile.command_arguments(
         f"/workspace/{workspace.configuration_path}",
@@ -331,11 +347,45 @@ def _profile_unavailable_result(
                 "version": SANDBOX_VERSION,
                 "state": "unavailable-before-launch",
                 "workspace_input_digest": workspace.input_digest,
+                "database_digest": database_digest,
                 "bubblewrap_provenance_identity": provenance.identity_digest,
             }
         ),
         sandbox_provenance=provenance,
         profile_evidence=evidence,
+    )
+
+
+def _prepare_osv_database(
+    workspace: AdapterWorkspace,
+) -> tuple[
+    dict[str, str],
+    str | None,
+    Literal["database-invalid", "database-unavailable"] | None,
+]:
+    """Verify and project the declared OSV database into the adapter workspace."""
+    manifest_path = workspace.root / workspace.configuration_path
+    try:
+        manifest = OSVDatabaseManifest.from_bytes(manifest_path.read_bytes())
+    except (OSError, ValueError):
+        return {}, None, "database-invalid"
+    source_value = os.environ.get(OSV_DATABASE_ENVIRONMENT)
+    if not source_value:
+        return {}, manifest.database_digest, "database-unavailable"
+    try:
+        materialise_osv_database(
+            manifest,
+            Path(source_value),
+            workspace.root / ".rigor-osv-db",
+        )
+    except OSVDatabaseUnavailable:
+        return {}, manifest.database_digest, "database-unavailable"
+    except (OSError, OSVDatabaseInvalid):
+        return {}, manifest.database_digest, "database-invalid"
+    return (
+        {OSV_DATABASE_ENVIRONMENT: OSV_DATABASE_SANDBOX_ROOT},
+        manifest.database_digest,
+        None,
     )
 
 
@@ -357,6 +407,21 @@ def _run_profile_adapter(
         git_trust_policy=git_trust_policy,
         expected_tracked_content_digest=expected_tracked_content_digest,
     ) as workspace:
+        profile_environment: dict[str, str] = {}
+        database_digest: str | None = None
+        if profile.parser == "osv":
+            profile_environment, database_digest, database_reason = _prepare_osv_database(
+                workspace
+            )
+            if database_reason is not None:
+                return _profile_unavailable_result(
+                    spec,
+                    workspace,
+                    reason=database_reason,
+                    executable_digest=hashlib.sha256(b"").hexdigest(),
+                    version_output_digest=hashlib.sha256(b"").hexdigest(),
+                    database_digest=database_digest,
+                )
         try:
             executable_path = resolved_executable(repository, profile.executable).resolve(
                 strict=True
@@ -369,6 +434,8 @@ def _run_profile_adapter(
                 reason="executable-unavailable",
                 executable_digest=hashlib.sha256(b"").hexdigest(),
                 version_output_digest=hashlib.sha256(b"").hexdigest(),
+                extra_environment=profile_environment,
+                database_digest=database_digest,
             )
         command_arguments = profile.command_arguments(
             f"/workspace/{workspace.configuration_path}",
@@ -379,9 +446,19 @@ def _run_profile_adapter(
             executable_path,
             workspace.root,
             repository_destination=Path("/workspace"),
-            repository_identity=workspace.input_digest,
+            repository_identity=(
+                workspace.input_digest
+                if database_digest is None
+                else canonical_digest(
+                    {
+                        "workspace_input_digest": workspace.input_digest,
+                        "database_digest": database_digest,
+                    }
+                )
+            ),
             executable_digest=executable.snapshot.digest,
             executable_descriptor=executable.descriptor,
+            extra_environment=profile_environment,
         )
         version_output_digest = hashlib.sha256(b"").hexdigest()
         try:
@@ -405,6 +482,8 @@ def _run_profile_adapter(
                     reason="version-unavailable",
                     executable_digest=executable.snapshot.digest,
                     version_output_digest=version_output_digest,
+                    extra_environment=profile_environment,
+                    database_digest=database_digest,
                 )
             version_output_digest = canonical_digest(
                 {
@@ -419,6 +498,8 @@ def _run_profile_adapter(
                     reason="version-unavailable",
                     executable_digest=executable.snapshot.digest,
                     version_output_digest=version_output_digest,
+                    extra_environment=profile_environment,
+                    database_digest=database_digest,
                 )
             try:
                 tool_version = normalise_version_output(version_result.stdout)
@@ -429,6 +510,8 @@ def _run_profile_adapter(
                     reason="version-unavailable",
                     executable_digest=executable.snapshot.digest,
                     version_output_digest=version_output_digest,
+                    extra_environment=profile_environment,
+                    database_digest=database_digest,
                 )
             process = stream_process(
                 (*sandbox, "--", SANDBOX_TOOL, *command_arguments),
@@ -454,6 +537,7 @@ def _run_profile_adapter(
         status, reason, findings, scanned = interpret_profile_output(
             profile,
             stdout=process.stdout,
+            stderr=process.stderr,
             returncode=process.returncode,
             timed_out=process.timed_out,
             truncated=process.truncated,
@@ -473,6 +557,7 @@ def _run_profile_adapter(
         child_environment = {
             **CHILD_ENVIRONMENT,
             "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+            **profile_environment,
         }
         return AdapterResult(
             name=spec.name,

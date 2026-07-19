@@ -26,7 +26,7 @@ An entry has one of three statuses:
 | --- | --- | --- | --- |
 | `semgrep` | application-security | profiled | [semgrep/semgrep](https://github.com/semgrep/semgrep) |
 | `trivy` | container | profiled | [aquasecurity/trivy](https://github.com/aquasecurity/trivy) |
-| `osv-scanner` | dependency-vulnerability | candidate | [google/osv-scanner](https://github.com/google/osv-scanner) |
+| `osv-scanner` | dependency-vulnerability | profiled | [google/osv-scanner](https://github.com/google/osv-scanner) |
 | `grype` | container | candidate | [anchore/grype](https://github.com/anchore/grype) |
 | `checkov` | infrastructure-as-code | candidate | [bridgecrewio/checkov](https://github.com/bridgecrewio/checkov) |
 | `tfsec` | infrastructure-as-code | superseded → `trivy` | [aquasecurity/tfsec](https://github.com/aquasecurity/tfsec) |
