@@ -85,8 +85,8 @@ def test_scan_always_reports_uninitialised_gitlink(tmp_path: Path) -> None:
     assert "content_kind=gitlink" in candidate.evidence
 
 
-def test_language_registry_refactor_preserves_candidate_identity(tmp_path: Path) -> None:
-    """A real multi-language repository retains the pre-refactor candidate tuple digest."""
+def test_multilanguage_repository_has_stable_candidate_identity(tmp_path: Path) -> None:
+    """A real multi-language repository has one rule-pack-specific candidate digest."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/core.py", "def value() -> int:\n    return 1\n")
     repository.write_text(
@@ -115,7 +115,7 @@ def test_language_registry_refactor_preserves_candidate_identity(tmp_path: Path)
         [(item.rule_id, item.path, item.candidate_id) for item in report.candidates]
     )
 
-    assert candidate_identity == "e236ad9c2deb0eb830f7ffbdc06dbdf288526553bcc68c730dbf8dab90381be9"
+    assert candidate_identity == "e9046ede5435152743828b14fc1d7ebdb8eb3e6855326c452fb296b94717cf22"
     yaml_candidate = next(item for item in report.candidates if item.path.endswith(".yaml"))
     assert yaml_candidate.rule_id == "GV002-unscanned-tracked-code"
     assert not any(

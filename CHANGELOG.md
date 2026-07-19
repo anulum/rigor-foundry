@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Documentation rules flag missing SPDX source headers and explicit public
+  package-version guidance that drifts from static PEP 621 metadata. Both emit
+  anchored review candidates and remain in maturity probation.
 - A workspace-scoped VS Code extension displays structurally checked audit
   evidence and review sources, opens exact tracked-blob spans, runs scans only
   on explicit commands, and delegates canonical review validation to the real

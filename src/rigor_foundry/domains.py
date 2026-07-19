@@ -25,6 +25,7 @@ _PORTABLE_CONTROLS = {
     "supply-chain": "portable:supply-chain",
     "packaging-deployment-iac": "portable:packaging-deployment-iac",
     "data-and-privacy": "portable:data-and-privacy",
+    "documentation-claims-ip": "portable:documentation-claims-ip",
 }
 
 
