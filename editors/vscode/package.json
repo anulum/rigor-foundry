@@ -1,0 +1,170 @@
+{
+  "name": "rigor-foundry-vscode",
+  "displayName": "RigorFoundry Evidence Review",
+  "description": "Inspect RigorFoundry audit evidence and validate review ledgers with the canonical CLI.",
+  "version": "0.1.0",
+  "publisher": "anulum",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anulum/rigor-foundry.git",
+    "directory": "editors/vscode"
+  },
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "keywords": [
+    "audit",
+    "evidence",
+    "review",
+    "rigor"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onView:rigorFoundry.candidates",
+    "onCommand:rigorFoundry.loadReport",
+    "onCommand:rigorFoundry.loadReviews",
+    "onCommand:rigorFoundry.scanWorkspace",
+    "onCommand:rigorFoundry.validateReviews"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "The extension reads repository evidence and may run the configured local RigorFoundry CLI on explicit commands."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "RigorFoundry requires a local Git worktree and local evidence files."
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "rigorFoundry.loadReport",
+        "title": "RigorFoundry: Load Audit Report"
+      },
+      {
+        "command": "rigorFoundry.loadReviews",
+        "title": "RigorFoundry: Load Review Ledger"
+      },
+      {
+        "command": "rigorFoundry.scanWorkspace",
+        "title": "RigorFoundry: Scan Workspace"
+      },
+      {
+        "command": "rigorFoundry.validateReviews",
+        "title": "RigorFoundry: Validate Review Ledger"
+      },
+      {
+        "command": "rigorFoundry.openEvidence",
+        "title": "RigorFoundry: Open Candidate Evidence"
+      },
+      {
+        "command": "rigorFoundry.copyCandidateIdentity",
+        "title": "RigorFoundry: Copy Candidate Identity"
+      },
+      {
+        "command": "rigorFoundry.refresh",
+        "title": "RigorFoundry: Refresh Evidence View"
+      }
+    ],
+    "configuration": {
+      "title": "RigorFoundry",
+      "properties": {
+        "rigorFoundry.executable": {
+          "type": "string",
+          "default": "rigor",
+          "description": "Absolute path or command name for the RigorFoundry CLI. It is executed without a shell."
+        },
+        "rigorFoundry.reportPath": {
+          "type": "string",
+          "default": ".rigor/report.json",
+          "description": "Workspace-relative path for the audit report."
+        },
+        "rigorFoundry.reviewPath": {
+          "type": "string",
+          "default": ".rigor/reviews.json",
+          "description": "Workspace-relative path for the review ledger."
+        },
+        "rigorFoundry.policyPath": {
+          "type": "string",
+          "default": "rigor-foundry-policy.json",
+          "description": "Workspace-relative policy used by Scan Workspace."
+        },
+        "rigorFoundry.maximumEvidenceBytes": {
+          "type": "integer",
+          "default": 16777216,
+          "minimum": 1024,
+          "maximum": 67108864,
+          "description": "Maximum UTF-8 bytes accepted for one report or review file."
+        },
+        "rigorFoundry.cliTimeoutSeconds": {
+          "type": "integer",
+          "default": 120,
+          "minimum": 1,
+          "maximum": 900,
+          "description": "Timeout for an explicitly invoked RigorFoundry CLI command."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rigorFoundry",
+          "title": "RigorFoundry",
+          "icon": "media/rigor-foundry.svg"
+        }
+      ]
+    },
+    "views": {
+      "rigorFoundry": [
+        {
+          "id": "rigorFoundry.candidates",
+          "name": "Audit Evidence"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "rigorFoundry.refresh",
+          "when": "view == rigorFoundry.candidates",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rigorFoundry.openEvidence",
+          "when": "view == rigorFoundry.candidates && viewItem == rigorFoundry.candidate",
+          "group": "inline"
+        },
+        {
+          "command": "rigorFoundry.copyCandidateIdentity",
+          "when": "view == rigorFoundry.candidates && viewItem == rigorFoundry.candidate",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "compile": "tsc -p tsconfig.json",
+    "check": "npm run clean && npm run compile && npm run test:unit",
+    "test:unit": "node --test out/test/unit/*.test.js",
+    "test:integration": "npm run compile && node scripts/run-integration-tests.mjs",
+    "package": "vsce package --no-dependencies --out rigor-foundry-vscode.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/vscode": "1.125.0",
+    "@vscode/vsce": "3.9.2",
+    "typescript": "5.9.3"
+  }
+}

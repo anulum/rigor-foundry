@@ -1,0 +1,12 @@
+<!--
+SPDX-License-Identifier: Apache-2.0
+Apache License 2.0; see ../../../LICENSE.
+© Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+© Code 2020–2026 Miroslav Šotek. All rights reserved.
+ORCID: 0009-0009-3560-0851
+Contact: www.anulum.li | protoscience@anulum.li
+RigorFoundry — activity-bar mark
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 3h11l5 5v13H4zM15 3v5h5M8 12h8M8 16h6"/>
+</svg>

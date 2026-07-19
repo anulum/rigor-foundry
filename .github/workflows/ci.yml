@@ -322,3 +322,54 @@ jobs:
             /tmp/rigor-adopter/reports/*.json
           if-no-files-found: error
           retention-days: 14
+
+  vscode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.23.1"
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - name: Install exact VS Code host
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail --location \
+            --output "$RUNNER_TEMP/code.deb" \
+            https://update.code.visualstudio.com/1.125.0/linux-deb-x64/stable
+          printf '%s  %s\n' \
+            7538e2b63e3a32927f7874f4790bbddb60088c80db5c737f907fce5ae56f0462 \
+            "$RUNNER_TEMP/code.deb" | sha256sum --check --strict
+          sudo dpkg -i "$RUNNER_TEMP/code.deb"
+          test "$(code --version | sed -n '1p')" = 1.125.0
+          test "$(code --version | sed -n '2p')" = 07b4ff1883f94da91f6d698744fc7c3638b59720
+      - name: Install canonical CLI and locked extension dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --no-build-isolation --no-deps .
+          npm ci --ignore-scripts --prefix editors/vscode
+      - name: Audit, type-check, test, and package extension
+        run: |
+          npm audit --audit-level=high --prefix editors/vscode
+          npm run check --prefix editors/vscode
+          npm run package --prefix editors/vscode
+      - name: Exercise real Extension Development Host
+        env:
+          RIGOR_FOUNDRY_CLI: ${{ env.pythonLocation }}/bin/rigor
+          VSCODE_EXECUTABLE: /usr/bin/code
+        run: xvfb-run -a npm run test:integration --prefix editors/vscode
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rigor-foundry-vscode-vsix
+          path: editors/vscode/rigor-foundry-vscode.vsix
+          if-no-files-found: error
+          retention-days: 14

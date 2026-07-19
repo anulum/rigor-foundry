@@ -23,6 +23,11 @@ build/
 dist/
 site/
 
+editors/vscode/node_modules/
+editors/vscode/out/
+editors/vscode/.vscode-test/
+editors/vscode/*.vsix
+
 .coordination/
 .rigor/
 docs/internal/
