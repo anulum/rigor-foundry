@@ -155,6 +155,7 @@ def sandbox_contract(
     repository_identity: str | None = None,
     executable_digest: str | None = None,
     executable_descriptor: int | None = None,
+    extra_environment: dict[str, str] | None = None,
 ) -> tuple[
     tuple[str, ...],
     dict[str, str],
@@ -171,9 +172,16 @@ def sandbox_contract(
     destination = repository if repository_destination is None else repository_destination
     profile_mounts = (CA_BUNDLE,) if executable_descriptor is not None else ()
     mounts = _minimal_mounts((Path(sys.prefix), PACKAGE_SOURCE, *profile_mounts))
+    additions = {} if extra_environment is None else extra_environment
+    if any(
+        not key or not value or key in CHILD_ENVIRONMENT or key == "PATH"
+        for key, value in additions.items()
+    ):
+        raise ValueError("native audit extra environment is invalid or overrides a fixed value")
     child_environment = {
         **CHILD_ENVIRONMENT,
         "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+        **additions,
     }
     policy = provenance.policy
     launcher = open_trusted_executable(

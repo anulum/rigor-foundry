@@ -1,6 +1,6 @@
 # Built-in adapter profiles
 
-RigorFoundry supplies two immutable repository-audit profiles. They remove
+RigorFoundry supplies three immutable repository-audit profiles. They remove
 adopter-specific command reconstruction while retaining explicit consent,
 tracked-input identity, tool identity, and fail-closed interpretation.
 
@@ -8,6 +8,7 @@ tracked-input identity, tool identity, and fail-closed interpretation.
 | --- | --- | --- | --- |
 | `semgrep-local-json-v1` | local Semgrep rules | `application-security` | strict JSON with at least one scanned path and no analyser errors |
 | `trivy-repository-json-v1` | offline `misconfig,secret` filesystem scan | `application-security` | Trivy schema 2 JSON with at least one result target |
+| `osv-lockfile-offline-json-v1` | offline lockfile scan against a verified local OSV snapshot | `supply-chain` | strict OSV JSON with at least one scanned lockfile and no scan errors |
 
 The Trivy profile does **not** load or update a vulnerability database and
 does not claim dependency-vulnerability, CVE, SBOM, licence, or supply-chain
@@ -46,9 +47,26 @@ Repository policy schema 1.3 accepts this strict profile form in
 }
 ```
 
+```json
+{
+  "name": "osv-lockfiles",
+  "profile": "osv-lockfile-offline-json-v1",
+  "configuration_path": "config/osv-database.json",
+  "target_paths": ["requirements.txt", "package-lock.json"],
+  "timeout_seconds": 120,
+  "scope": "full",
+  "working_directory": ".",
+  "required": true
+}
+```
+
 Profile declarations cannot override the executable, argv, parser, or domains.
 The working directory is always `.`. Trivy accepts exactly one target; Semgrep
-accepts one or more. Configuration and targets must be canonical
+and OSV accept one or more. For OSV, `configuration_path` names a tracked strict
+JSON database manifest, not an OSV TOML configuration. The manifest uses schema
+1.0 and contains a sorted, unique list of ecosystem, `all.zip` byte length, and
+SHA-256 records plus a canonical aggregate `database_digest`. Configuration and
+targets must be canonical
 repository-relative paths. The profile declaration, immutable profile, and
 derived command are independently digest-bound. Run construction and durable
 store/load require the ordered evidence name, required flag, specification
@@ -74,6 +92,18 @@ The input digest binds HEAD, tree, Git object format, complete tracked-content
 digest, configuration path and digest, ordered targets, and every copied file
 record. Temporary host paths are excluded from durable identity and removed
 after execution.
+
+The OSV database bytes are deliberately outside the repository snapshot. The
+operator must set `OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY` to an absolute host
+directory containing the official cache layout
+`osv-scanner/<ecosystem>/all.zip`. RigorFoundry opens every directory without
+following symlinks, requires single-link regular archives, verifies exact size
+and SHA-256 against the tracked manifest, rejects unsafe or unbounded ZIP
+members, and copies only verified archives into the private workspace. The
+tracked manifest digest binds the expected database to the profile
+configuration; the sandbox repository identity additionally binds its canonical
+`database_digest`. Missing or changed database bytes produce unavailable
+evidence and are never fetched automatically.
 
 ## Sandbox and executable identity
 
@@ -101,6 +131,13 @@ trivy filesystem --config CONFIG --format json --exit-code 1
   --scanners misconfig,secret --include-non-failures TARGET
 ```
 
+OSV-Scanner runs only against the verified local snapshot:
+
+```text
+osv-scanner scan source --offline --format=json --verbosity=error
+  --no-resolve --all-packages --lockfile TARGET...
+```
+
 These wrapped lines are descriptive; the production registry owns one exact
 argv tuple and its profile digest.
 
@@ -116,7 +153,7 @@ finite status/reason pair:
 | `clean` | yes | yes | Valid output, scanned targets, zero findings |
 | `findings` | yes | no | Valid output with one or more findings |
 | `partial` | no | no | Timeout, truncation, malformed output, analyser errors, invalid return code, or no scanned target |
-| `unavailable` | no | no | Executable or trustworthy version evidence was unavailable |
+| `unavailable` | no | no | Executable, trustworthy version evidence, or the exact OSV database snapshot was unavailable or invalid |
 
 Imported records must reproduce the outer execution output digest and exact
 return-code/timeout/truncation relation. Unavailable evidence has return code
@@ -126,8 +163,8 @@ recomputation; a self-consistent but cross-wired nested record is rejected.
 Invalid-output, timeout, and truncation reasons also require zero result counts;
 no-scanned-target evidence requires a zero scanned count; invalid-return-code
 evidence requires scanned targets and an outer return code that contradicts the
-finding-derived expected code. Scan-error evidence is Semgrep-only because the
-Trivy parser has no corresponding production outcome.
+finding-derived expected code. Scan-error evidence is valid only for Semgrep
+and OSV because the Trivy parser has no corresponding production outcome.
 
 Only complete evidence contributes declared domain coverage. A required
 `findings`, `partial`, or `unavailable` result blocks enforcement; findings
@@ -141,18 +178,21 @@ campaign contract that the attestation also embeds.
 ## Installation and CI
 
 Semgrep is supplied by the hash-locked Python environment. CI installs Trivy
-`0.72.0` for Linux x86-64 with:
+`0.72.0` and OSV-Scanner `2.4.0` for Linux x86-64 with:
 
 ```bash
 python -m tools.install_trivy
+python -m tools.install_osv_scanner
 ```
 
 The installer retrieves only the immutable GitHub release assets, bounds both
 downloads, verifies the pinned checksum-list SHA-256, verifies the pinned
 archive SHA-256, requires that the checksum list names that exact archive, and
 extracts only the sole regular `trivy` member. It never calls `extractall`.
-The resulting binary is atomically installed mode `0700`. This downloader is a
-source-checkout/CI tool, not part of the local-only runtime wheel. PyPI adopters
+The OSV installer applies the same bounded-host, pinned checksum-document,
+exact-asset SHA-256, and atomic mode-`0700` policy to the immutable Linux
+binary. The resulting binaries are atomically installed. These downloaders are
+source-checkout/CI tools, not part of the local-only runtime wheel. PyPI adopters
 must provision the exact analyser through an independently verified deployment
 step. Other platforms need an independently pinned installer before this
 profile can be claimed available.
@@ -160,34 +200,39 @@ profile can be claimed available.
 The fixed contracts follow the upstream
 [Semgrep local/CLI scan guidance](https://semgrep.dev/docs/category/local-and-cli-scans),
 [Trivy filesystem target](https://trivy.dev/docs/latest/guide/target/filesystem/),
-and [Trivy reporting](https://trivy.dev/docs/latest/configuration/reporting/)
+and [Trivy reporting](https://trivy.dev/docs/latest/configuration/reporting/),
+[OSV offline mode](https://google.github.io/osv-scanner/usage/offline-mode/),
+and [OSV output](https://google.github.io/osv-scanner/output/)
 interfaces. Installer pins refer to the immutable
 [Trivy 0.72.0 release](https://github.com/aquasecurity/trivy/releases/tag/v0.72.0),
-not to a moving latest-release URL.
+and [OSV-Scanner 2.4.0 release](https://github.com/google/osv-scanner/releases/tag/v2.4.0),
+not to moving latest-release URLs.
 
 ## Measured performance
 
-`benchmarks/adapter_profiles.py` measures both real tools through the same
-descriptor-bound Bubblewrap execution path against a committed five-file
-fixture with Dockerfile, Python, and Rust targets. It emits machine-readable JSON including
+`benchmarks/adapter_profiles.py` measures all three real tools through the same
+descriptor-bound Bubblewrap execution path against a committed seven-file
+fixture with Dockerfile, Python, requirements, and Rust targets. It emits
+machine-readable JSON including
 host, Python and tool versions plus minimum, median, and maximum wall time.
 
 ```bash
 .venv/bin/python benchmarks/adapter_profiles.py --iterations 3
 ```
 
-On 2026-07-17, three runs per profile on a non-isolated Linux 6.17 x86-64
+On 2026-07-19, one bounded integration run per profile on a non-isolated Linux 6.17 x86-64
 workstation (12 logical CPUs, CPython 3.12.3) measured:
 
 | Profile/tool | Minimum | Median | Maximum |
 | --- | ---: | ---: | ---: |
-| Semgrep 1.170.0 | 5453.150 ms | 5560.593 ms | 5577.086 ms |
-| Trivy 0.72.0 | 1975.747 ms | 1998.613 ms | 2054.888 ms |
+| OSV-Scanner 2.4.0 | 2315.169 ms | 2315.169 ms | 2315.169 ms |
+| Semgrep 1.170.0 | 8804.784 ms | 8804.784 ms | 8804.784 ms |
+| Trivy 0.72.0 | 3270.411 ms | 3270.411 ms | 3270.411 ms |
 
 Results are non-isolated workstation observations, not throughput guarantees.
 External analyser startup dominates this orchestration boundary. There is no
 native Rust implementation or polyglot counterpart of the Python control-plane
-runtime to compare; the fixture includes both languages only to verify that
+runtime to compare; the fixture includes multiple languages only to verify that
 input projection is language-neutral. Adding a native runtime is a separate
 architecture decision and must establish evidence-schema parity before making
 performance claims.

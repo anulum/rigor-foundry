@@ -129,6 +129,47 @@ def test_runtime_builds_a_real_descriptor_bound_sandbox_contract(tmp_path: Path)
         launcher.close()
 
 
+def test_runtime_binds_and_validates_profile_environment(tmp_path: Path) -> None:
+    """Profile-only environment is content-bound and cannot override fixed values."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("control.py", "print('bounded')\n")
+    repository.commit()
+    command, _environment, _provenance, first_digest, launcher = sandbox_contract(
+        repository.root,
+        Path(sys.executable),
+        repository.root,
+        extra_environment={"OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY": "/workspace/db"},
+    )
+    try:
+        position = command.index("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY")
+        assert command[position - 1] == "--setenv"
+        assert command[position + 1] == "/workspace/db"
+    finally:
+        launcher.close()
+    _command, _environment, _provenance, changed_digest, launcher = sandbox_contract(
+        repository.root,
+        Path(sys.executable),
+        repository.root,
+        extra_environment={"OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY": "/workspace/changed"},
+    )
+    launcher.close()
+    assert changed_digest != first_digest
+
+    for additions in (
+        {"PATH": "/untrusted"},
+        {"LANG": "other"},
+        {"": "value"},
+        {"KEY": ""},
+    ):
+        with pytest.raises(ValueError, match="extra environment"):
+            sandbox_contract(
+                repository.root,
+                Path(sys.executable),
+                repository.root,
+                extra_environment=additions,
+            )
+
+
 def test_runtime_builds_profile_mount_contract_and_closes_on_invalid_cwd(
     tmp_path: Path,
 ) -> None:

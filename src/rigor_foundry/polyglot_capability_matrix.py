@@ -36,6 +36,7 @@ AST_SEMANTIC_LANGUAGES: frozenset[str] = frozenset(
 # gate before it runs. Recorded here so the matrix distinguishes adapter coverage
 # from the scanner's own AST and structural controls.
 NATIVE_ADAPTER_PROFILES: tuple[str, ...] = (
+    "osv-lockfile-offline-json-v1",
     "semgrep-local-json-v1",
     "trivy-repository-json-v1",
 )

@@ -5,11 +5,13 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — built-in adapter profile benchmark
-"""Measure real Semgrep and Trivy profile execution through Bubblewrap."""
+"""Measure real Semgrep, Trivy, and offline OSV execution through Bubblewrap."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import io
 import json
 import os
 import platform
@@ -18,10 +20,12 @@ import subprocess  # nosec B404
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 from rigor_foundry.adapters import run_adapter
 from rigor_foundry.models import AdapterSpec
+from rigor_foundry.osv_database import OSVDatabaseArchive, OSVDatabaseManifest
 
 _GIT = "/usr/bin/git"
 
@@ -41,7 +45,36 @@ def _git(root: Path, *arguments: str) -> None:
     )
 
 
-def _write_fixture(root: Path) -> None:
+def _osv_archive() -> bytes:
+    """Return one deterministic, non-matching PyPI advisory database."""
+    vulnerability = {
+        "id": "OSV-BENCHMARK-1",
+        "modified": "2026-07-19T00:00:00Z",
+        "published": "2026-07-19T00:00:00Z",
+        "affected": [
+            {
+                "package": {"ecosystem": "PyPI", "name": "different-package"},
+                "ranges": [
+                    {
+                        "type": "ECOSYSTEM",
+                        "events": [{"introduced": "0"}, {"fixed": "2"}],
+                    }
+                ],
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        info = zipfile.ZipInfo("OSV-BENCHMARK-1.json", date_time=(2026, 7, 19, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        archive.writestr(
+            info,
+            json.dumps(vulnerability, sort_keys=True, separators=(",", ":")),
+        )
+    return output.getvalue()
+
+
+def _write_fixture(root: Path, database_root: Path) -> None:
     """Create one committed multi-language benchmark repository."""
     root.mkdir()
     _git(root, "init", "--quiet")
@@ -63,6 +96,24 @@ def _write_fixture(root: Path) -> None:
         "format: json\nexit-code: 1\n",
         encoding="utf-8",
     )
+    database_payload = _osv_archive()
+    database = database_root / "osv-scanner" / "PyPI" / "all.zip"
+    database.parent.mkdir(parents=True)
+    database.write_bytes(database_payload)
+    manifest = OSVDatabaseManifest.build(
+        (
+            OSVDatabaseArchive(
+                ecosystem="PyPI",
+                archive_sha256=hashlib.sha256(database_payload).hexdigest(),
+                archive_bytes=len(database_payload),
+            ),
+        )
+    )
+    (root / "config" / "osv-database.json").write_text(
+        json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    (root / "requirements.txt").write_text("urllib3==1.26.0\n", encoding="utf-8")
     (root / "src" / "safe.py").write_text(
         "def add(left: int, right: int) -> int:\n    return left + right\n",
         encoding="utf-8",
@@ -82,13 +133,20 @@ def _write_fixture(root: Path) -> None:
 def _spec(profile: str) -> AdapterSpec:
     """Return one canonical built-in profile specification."""
     semgrep = profile.startswith("semgrep")
-    configuration = "config/semgrep.yml" if semgrep else "config/trivy.yml"
+    osv = profile.startswith("osv")
+    configuration = (
+        "config/semgrep.yml"
+        if semgrep
+        else "config/osv-database.json"
+        if osv
+        else "config/trivy.yml"
+    )
     return AdapterSpec.from_dict(
         {
             "name": profile,
             "profile": profile,
             "configuration_path": configuration,
-            "target_paths": ["src" if semgrep else "infra"],
+            "target_paths": ["src" if semgrep else "requirements.txt" if osv else "infra"],
             "timeout_seconds": 120,
             "scope": "full",
             "working_directory": ".",
@@ -109,24 +167,37 @@ def _summary(samples: list[float]) -> dict[str, float]:
 
 
 def run_benchmark(iterations: int) -> dict[str, object]:
-    """Run both real profiles and return machine-readable measurements."""
+    """Run all real profiles and return machine-readable measurements."""
     if iterations < 1 or iterations > 20:
         raise ValueError("iterations must be between 1 and 20")
-    profiles = ("semgrep-local-json-v1", "trivy-repository-json-v1")
+    profiles = (
+        "osv-lockfile-offline-json-v1",
+        "semgrep-local-json-v1",
+        "trivy-repository-json-v1",
+    )
     samples: dict[str, list[float]] = {profile: [] for profile in profiles}
     versions: dict[str, str] = {}
     with tempfile.TemporaryDirectory(prefix="rigor-adapter-benchmark-") as directory:
         repository = Path(directory) / "repository"
-        _write_fixture(repository)
-        for profile in profiles:
-            spec = _spec(profile)
-            for _ in range(iterations):
-                started = time.perf_counter()
-                result = run_adapter(repository, spec, trusted=True)
-                samples[profile].append(time.perf_counter() - started)
-                if not result.complete or result.profile_evidence is None:
-                    raise RuntimeError(f"benchmark profile was incomplete: {profile}")
-                versions[profile] = result.profile_evidence.tool_version
+        database_root = Path(directory) / "osv-database"
+        _write_fixture(repository, database_root)
+        previous_database = os.environ.get("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY")
+        os.environ["OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"] = str(database_root)
+        try:
+            for profile in profiles:
+                spec = _spec(profile)
+                for _ in range(iterations):
+                    started = time.perf_counter()
+                    result = run_adapter(repository, spec, trusted=True)
+                    samples[profile].append(time.perf_counter() - started)
+                    if not result.complete or result.profile_evidence is None:
+                        raise RuntimeError(f"benchmark profile was incomplete: {profile}")
+                    versions[profile] = result.profile_evidence.tool_version
+        finally:
+            if previous_database is None:
+                os.environ.pop("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", None)
+            else:
+                os.environ["OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"] = previous_database
     return {
         "schema_version": "1.0",
         "benchmark": "built-in-adapter-profiles",
@@ -137,9 +208,9 @@ def run_benchmark(iterations: int) -> dict[str, object]:
         "platform": platform.platform(),
         "python": platform.python_version(),
         "fixture": {
-            "tracked_files": 5,
-            "target_files": 3,
-            "languages": ["dockerfile", "python", "rust"],
+            "tracked_files": 7,
+            "target_files": 4,
+            "languages": ["dockerfile", "python", "requirements", "rust"],
         },
         "profiles": {
             profile: {"tool_version": versions[profile], **_summary(samples[profile])}
