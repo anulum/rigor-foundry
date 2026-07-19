@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.13.0"
+RULE_PACK_VERSION = "rigor-foundry/1.14.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -30,8 +30,11 @@ CONTAINER_RULE_PACK_VERSION = "rigor-foundry/1.10.0"
 DATA_PRIVACY_RULE_PACK_VERSION = "rigor-foundry/1.11.0"
 DOCUMENTATION_RULE_PACK_VERSION = "rigor-foundry/1.12.0"
 SCIENTIFIC_RULE_PACK_VERSION = "rigor-foundry/1.13.0"
+OPERATIONS_RULE_PACK_VERSION = "rigor-foundry/1.14.0"
 
-_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_RULE_ID = re.compile(
+    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
+)
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
     "architecture": "AR",
@@ -44,6 +47,7 @@ _CATEGORY_PREFIXES = {
     "data-privacy": "DP",
     "documentation": "DC",
     "scientific": "SN",
+    "operations": "OP",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -356,6 +360,18 @@ RULES: tuple[RuleDefinition, ...] = (
         "scientific",
         "Python test uses a supported stochastic API before deterministic local seeding.",
         SCIENTIFIC_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "OP001-print-in-library-code",
+        "operations",
+        "Python library code calls builtin print outside an intentional command surface.",
+        OPERATIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "OP002-credential-in-log-call",
+        "operations",
+        "Import-bound logging call receives a credential-named expression.",
+        OPERATIONS_RULE_PACK_VERSION,
     ),
 )
 

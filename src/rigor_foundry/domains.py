@@ -27,6 +27,7 @@ _PORTABLE_CONTROLS = {
     "data-and-privacy": "portable:data-and-privacy",
     "documentation-claims-ip": "portable:documentation-claims-ip",
     "scientific-numerical-correctness": "portable:scientific-numerical-correctness",
+    "operations-and-observability": "portable:operations-and-observability",
 }
 
 

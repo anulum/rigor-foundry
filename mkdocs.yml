@@ -46,6 +46,7 @@ nav:
   - Data-and-privacy rules: data-privacy-rules.md
   - Documentation and licence rules: documentation-rules.md
   - Scientific and numerical rules: scientific-numerical-rules.md
+  - Operations and observability rules: operations-observability-rules.md
   - SARIF export: sarif.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md
