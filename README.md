@@ -6,6 +6,7 @@
   <a href="https://github.com/anulum/rigor-foundry/actions/workflows/fuzz.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/fuzz.yml/badge.svg" alt="Fuzz"></a>
   <a href="https://github.com/anulum/rigor-foundry/actions/workflows/security.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/security.yml/badge.svg" alt="Security"></a>
   <a href="https://github.com/anulum/rigor-foundry/actions/workflows/codeql.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://app.codecov.io/gh/anulum/rigor-foundry"><img src="https://codecov.io/gh/anulum/rigor-foundry/branch/main/graph/badge.svg" alt="Codecov coverage"></a>
   <a href="https://pypi.org/project/rigor-foundry/"><img src="https://img.shields.io/pypi/v/rigor-foundry" alt="PyPI version"></a>
   <a href="https://pypi.org/project/rigor-foundry/"><img src="https://img.shields.io/pypi/dm/rigor-foundry" alt="PyPI downloads"></a>
   <a href="https://pepy.tech/project/rigor-foundry"><img src="https://static.pepy.tech/badge/rigor-foundry" alt="Total downloads"></a>
