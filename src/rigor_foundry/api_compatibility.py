@@ -25,6 +25,9 @@ API_MANIFEST_PATH = "rigor-public-api.json"
 API_MANIFEST_SCHEMA_VERSION = "1.0"
 _MANIFEST_FIELDS = frozenset({"schema_version", "surfaces"})
 _SURFACE_FIELDS = frozenset({"path", "exports"})
+_MUTATING_SEQUENCE_METHODS = frozenset(
+    {"append", "clear", "extend", "insert", "pop", "remove", "reverse", "sort"}
+)
 
 
 @dataclass(frozen=True)
@@ -67,11 +70,65 @@ def _line_digest(item: TrackedFile, line: int) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-def _touches_public_declaration(statement: ast.stmt) -> bool:
-    """Return whether one module-level statement reads or writes ``__all__``."""
-    if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-        return False
-    return any(isinstance(node, ast.Name) and node.id == "__all__" for node in ast.walk(statement))
+def _root_name(expression: ast.expr) -> str | None:
+    """Return the base name of one attribute or subscript expression."""
+    current = expression
+    while isinstance(current, (ast.Attribute, ast.Subscript)):
+        current = current.value
+    return current.id if isinstance(current, ast.Name) else None
+
+
+class _PublicDeclarationMutation(ast.NodeVisitor):
+    """Detect direct ``__all__`` writes without descending into nested scopes."""
+
+    def __init__(self) -> None:
+        self.detected = False
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        """Do not treat a nested synchronous function body as module execution."""
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        """Do not treat a nested asynchronous function body as module execution."""
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        """Do not treat a class namespace as a module public declaration."""
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        """Do not treat a deferred lambda body as module execution."""
+
+    def visit_Name(self, node: ast.Name) -> None:
+        """Recognise direct assignment, deletion, loops, and named expressions."""
+        if node.id == "__all__" and isinstance(node.ctx, (ast.Store, ast.Del)):
+            self.detected = True
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        """Recognise writes through one ``__all__``-rooted attribute."""
+        if isinstance(node.ctx, (ast.Store, ast.Del)) and _root_name(node) == "__all__":
+            self.detected = True
+        self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript) -> None:
+        """Recognise writes through one ``__all__``-rooted subscript."""
+        if isinstance(node.ctx, (ast.Store, ast.Del)) and _root_name(node) == "__all__":
+            self.detected = True
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        """Recognise direct calls to builtin mutable-sequence operations."""
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in _MUTATING_SEQUENCE_METHODS
+            and _root_name(node.func.value) == "__all__"
+        ):
+            self.detected = True
+        self.generic_visit(node)
+
+
+def _writes_public_declaration(statement: ast.stmt) -> bool:
+    """Return whether one module-level statement directly mutates ``__all__``."""
+    detector = _PublicDeclarationMutation()
+    detector.visit(statement)
+    return detector.detected
 
 
 def _literal_exports(statement: ast.stmt) -> tuple[str, ...] | None:
@@ -115,7 +172,7 @@ def _declared_surface(item: TrackedFile, policy: AuditPolicy) -> _DeclaredSurfac
     except SyntaxError:
         return None
     statements = tuple(
-        statement for statement in tree.body if _touches_public_declaration(statement)
+        statement for statement in tree.body if _writes_public_declaration(statement)
     )
     if not statements:
         return None

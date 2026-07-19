@@ -168,6 +168,52 @@ def test_annotated_tuple_is_static_but_local_and_invalid_python_are_ignored(
     assert _candidates(repository) == ()
 
 
+def test_module_reads_and_deferred_nested_writes_do_not_make_surface_dynamic(
+    tmp_path: Path,
+) -> None:
+    """Reads and unexecuted nested-scope writes preserve one literal module surface."""
+    repository = _repository(
+        tmp_path,
+        '__all__ = ["alpha"]\n'
+        "snapshot = tuple(__all__)\n"
+        "copy = __all__.copy()\n"
+        "if True:\n"
+        "    def deferred():\n"
+        "        global __all__\n"
+        '        __all__ = ["changed"]\n'
+        "factory = lambda: __all__.append('later')\n",
+    )
+    repository.write_text(
+        "rigor-public-api.json",
+        _manifest(("src/pkg/__init__.py", ["alpha"])),
+    )
+    repository.commit()
+    assert _candidates(repository) == ()
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        '__all__ += ["beta"]',
+        '__all__.attribute = "beta"',
+        '__all__[0] = "beta"',
+        "del __all__[0]",
+        '__all__.extend(["beta"])',
+    ],
+)
+def test_direct_module_mutation_remains_dynamic(tmp_path: Path, mutation: str) -> None:
+    """Direct assignment and mutable-sequence operations remain fail-closed."""
+    repository = _repository(tmp_path, f'__all__ = ["alpha"]\n{mutation}\n')
+    repository.write_text(
+        "rigor-public-api.json",
+        _manifest(("src/pkg/__init__.py", ["alpha"])),
+    )
+    repository.commit()
+    candidates = _candidates(repository)
+    assert len(candidates) == 1
+    assert "manifest_state=dynamic" in candidates[0].evidence
+
+
 @pytest.mark.parametrize(
     "manifest",
     [
