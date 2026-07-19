@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Operations rules flag builtin output in Python library owners and
+  credential-named expressions passed to import-bound logging calls. Both
+  remain anchored review candidates in maturity probation.
 - Scientific/numerical rules flag direct float-literal equality in Python
   tests and supported stochastic APIs used without deterministic local seeds.
   Both remain anchored review candidates in maturity probation.

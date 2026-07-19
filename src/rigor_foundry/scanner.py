@@ -30,6 +30,7 @@ from .ignored_inventory import collect_ignored_inventory
 from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
+from .operations import scan_operations
 from .polyglot_architecture import scan_polyglot_architecture
 from .reliability import scan_reliability
 from .scientific import scan_scientific
@@ -192,6 +193,7 @@ def scan_repository(
         *scan_data_privacy(inventory, policy),
         *scan_documentation(inventory, policy),
         *scan_scientific(inventory, policy),
+        *scan_operations(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:
