@@ -108,6 +108,7 @@ include = [
     "/LICENSE",
     "/NOTICE",
     "/README.md",
+    "/rigor-public-api.json",
     "/SECURITY.md",
     "/SUPPORT.md",
     "/VALIDATION.md",

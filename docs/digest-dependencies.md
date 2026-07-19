@@ -52,9 +52,16 @@ duplicate owner/field pair is ambiguous.
 
 `policy_digest` and `review_digest` are first-class properties over the entire
 canonical serialisation. They remove caller-specific hashing conventions.
-Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.15.0` bind the
+Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.16.0` bind the
 registry version, ordered rule definitions, and every definition field into
 one envelope. Existing rules retain their original introduction version.
+
+The root `rigor-public-api.json` declaration manifest is ordinary tracked
+inventory input rather than a new protocol identity node. A semantic manifest
+mutation therefore changes `tracked_content_digest`, the resulting report,
+and every existing inventory-dependent downstream identity. AA001 additionally
+binds candidate evidence to canonical per-surface SHA-256 identities without
+introducing an undeclared digest-graph edge.
 
 Git provenance binds the resolved executable path, selected root, executable
 SHA-256, observed version, complete trust policy, and trust-policy digest.
