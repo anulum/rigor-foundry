@@ -191,6 +191,48 @@ def test_module_reads_and_deferred_nested_writes_do_not_make_surface_dynamic(
     assert _candidates(repository) == ()
 
 
+def test_future_annotations_do_not_execute_mutation(
+    tmp_path: Path,
+) -> None:
+    """Deferred annotation expressions are not module-time mutation."""
+    repository = _repository(
+        tmp_path,
+        "from __future__ import annotations\n"
+        '__all__ = ["alpha"]\n'
+        'def deferred(value: __all__.append("argument")) '
+        '-> __all__.append("return"):\n'
+        "    return value\n"
+        'value: __all__.append("module") = 1\n',
+    )
+    repository.write_text(
+        "rigor-public-api.json",
+        _manifest(("src/pkg/__init__.py", ["alpha"])),
+    )
+    repository.commit()
+    assert _candidates(repository) == ()
+
+
+def test_lazy_type_alias_does_not_execute_mutation(tmp_path: Path) -> None:
+    """A PEP 695 alias expression remains deferred until its value is requested."""
+    repository = _repository(
+        tmp_path,
+        '__all__ = ["alpha"]\ntype Alias = __all__.append("alias")\n',
+    )
+    repository.write_text(
+        "rigor-public-api.json",
+        _manifest(("src/pkg/__init__.py", ["alpha"])),
+    )
+    repository.commit()
+    assert _candidates(repository) == ()
+
+
+def test_bare_annotation_does_not_declare_a_runtime_surface(tmp_path: Path) -> None:
+    """An annotation without a value does not create a module ``__all__`` binding."""
+    repository = _repository(tmp_path, "__all__: list[str]\nVALUE = 1\n")
+    repository.commit()
+    assert _candidates(repository) == ()
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -199,11 +241,47 @@ def test_module_reads_and_deferred_nested_writes_do_not_make_surface_dynamic(
         '__all__[0] = "beta"',
         "del __all__[0]",
         '__all__.extend(["beta"])',
+        '__all__.__iadd__(["beta"])',
+        '__all__.__setitem__(0, "beta")',
     ],
 )
 def test_direct_module_mutation_remains_dynamic(tmp_path: Path, mutation: str) -> None:
     """Direct assignment and mutable-sequence operations remain fail-closed."""
     repository = _repository(tmp_path, f'__all__ = ["alpha"]\n{mutation}\n')
+    repository.write_text(
+        "rigor-public-api.json",
+        _manifest(("src/pkg/__init__.py", ["alpha"])),
+    )
+    repository.commit()
+    candidates = _candidates(repository)
+    assert len(candidates) == 1
+    assert "manifest_state=dynamic" in candidates[0].evidence
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        'def f(value=__all__.append("beta")):\n    return value',
+        'def f(first=__all__.append("beta"), second=__all__.append("gamma")):\n    return first',
+        'def f(*, required, optional=__all__.append("beta")):\n    return required',
+        '@(__all__.append("beta") or (lambda function: function))\ndef f():\n    pass',
+        'async def f(value=__all__.append("beta")):\n    return value',
+        'def f(value: __all__.append("beta")):\n    return value',
+        'def f(*args: __all__.append("beta"), '
+        '**kwargs: __all__.append("gamma")):\n    return args',
+        'def f() -> __all__.append("beta"):\n    pass',
+        'class C(__all__.append("beta") or object):\n    pass',
+        'class C(metaclass=(__all__.append("beta") or type)):\n    pass',
+        '@(__all__.append("beta") or (lambda cls: cls))\nclass C:\n    pass',
+        'function = lambda value=__all__.append("beta"): value',
+        'function = lambda first=__all__.append("beta"), second=__all__.append("gamma"): first',
+        'function = lambda *, required, optional=__all__.append("beta"): required',
+        'value: __all__.append("beta")',
+    ],
+)
+def test_definition_time_mutation_is_dynamic(tmp_path: Path, definition: str) -> None:
+    """Decorators, defaults, bases, and keywords execute while the module loads."""
+    repository = _repository(tmp_path, f'__all__ = ["alpha"]\n{definition}\n')
     repository.write_text(
         "rigor-public-api.json",
         _manifest(("src/pkg/__init__.py", ["alpha"])),

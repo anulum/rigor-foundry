@@ -24,6 +24,14 @@ surfaces remain review candidates because a static scanner cannot bind their
 runtime value. Syntax-invalid Python remains outside AA001; the applicable
 parser or test-authenticity rule owns that condition.
 
+The mutation signal is deliberately syntactic and bounded. It recognises
+direct name, attribute, and subscript writes; mutable-sequence operations;
+and expressions evaluated in decorators, defaults, annotations, class bases,
+and class keywords. Deferred function/lambda bodies, class-local declarations,
+lazy PEP 695 aliases, and indirect mutation through reflective helpers or
+aliases are outside this signal. `from __future__ import annotations` is
+honoured so deferred annotation text does not become a false candidate.
+
 ## Manifest schema
 
 The tracked JSON document uses schema `1.0` and accepts no additional fields:
