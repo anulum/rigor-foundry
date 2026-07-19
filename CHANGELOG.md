@@ -7,6 +7,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- An API-compatibility rule compares literal module-level Python `__all__`
+  declarations with a strict tracked root manifest. Missing, dynamic,
+  mismatched, unrecorded, stale, malformed, and non-text states remain anchored
+  digest-only review candidates in maturity probation; the rule never infers a
+  breaking change from arbitrary source edits.
 - A performance/reproducibility rule flags import-bound wall-clock calls in
   Python test assertions unless a local freeze or dominating monkeypatch makes
   the timestamp explicit. It remains an anchored review candidate in maturity

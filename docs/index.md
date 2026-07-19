@@ -24,6 +24,8 @@ becomes an implicit pass.
 - [Security](security.md) defines the adversarial repository boundary.
 - [Public API stability](api-stability.md) inventories stable, provisional, and
   deprecated top-level imports.
+- [API and schema compatibility rules](api-compatibility-rules.md) define the
+  tracked declared-surface manifest and its candidate-only review boundary.
 
 **Contact:** [protoscience@anulum.li](mailto:protoscience@anulum.li) |
 [GitHub Discussions](https://github.com/anulum/rigor-foundry/discussions) |

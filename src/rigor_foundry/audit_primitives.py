@@ -51,6 +51,7 @@ Category = Literal[
     "scientific",
     "operations",
     "performance",
+    "api-compatibility",
 ]
 Confidence = Literal["low", "medium", "high"]
 Decision = Literal["valid", "invalid", "accepted-boundary", "needs-evidence"]

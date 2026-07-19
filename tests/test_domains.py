@@ -37,9 +37,8 @@ def test_missing_domain_decisions_and_controls_are_governance_candidates() -> No
     assert "documentation-claims-ip" not in uncovered_names
 
 
-def test_required_native_adapter_closes_only_its_declared_domain() -> None:
-    """A native control cannot silently cover a domain it does not declare."""
-    # api-abi-schema-compatibility has no portable control, so it isolates native-only closure.
+def test_required_native_adapter_augments_only_its_declared_domain() -> None:
+    """A native control augments only its declared portable domain control."""
     decisions = tuple(
         AuditDomainSpec(
             name,
@@ -60,12 +59,15 @@ def test_required_native_adapter_closes_only_its_declared_domain() -> None:
     policy = AuditPolicy(audit_domains=decisions, native_audits=(adapter,))
     configured = audit_domain_coverage(policy)
     security = next(item for item in configured if item.domain == "api-abi-schema-compatibility")
-    assert security.controls == ("native:security-control",)
+    assert security.controls == (
+        "native:security-control",
+        "portable:api-abi-schema-compatibility",
+    )
     not_attempted = audit_domain_coverage(policy, attempted_adapters=frozenset())
     security = next(
         item for item in not_attempted if item.domain == "api-abi-schema-compatibility"
     )
-    assert security.controls == ()
+    assert security.controls == ("portable:api-abi-schema-compatibility",)
     assert (
         domain_governance_candidates(
             policy,

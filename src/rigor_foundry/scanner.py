@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
+from .api_compatibility import scan_api_compatibility
 from .application_security import scan_application_security
 from .architecture import scan_architecture
 from .candidate_anchor import (
@@ -196,6 +197,7 @@ def scan_repository(
         *scan_scientific(inventory, policy),
         *scan_operations(inventory, policy),
         *scan_performance(inventory, policy),
+        *scan_api_compatibility(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

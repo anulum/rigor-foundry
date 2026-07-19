@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.15.0"
+RULE_PACK_VERSION = "rigor-foundry/1.16.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -32,9 +32,10 @@ DOCUMENTATION_RULE_PACK_VERSION = "rigor-foundry/1.12.0"
 SCIENTIFIC_RULE_PACK_VERSION = "rigor-foundry/1.13.0"
 OPERATIONS_RULE_PACK_VERSION = "rigor-foundry/1.14.0"
 PERFORMANCE_RULE_PACK_VERSION = "rigor-foundry/1.15.0"
+API_COMPATIBILITY_RULE_PACK_VERSION = "rigor-foundry/1.16.0"
 
 _RULE_ID = re.compile(
-    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
+    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
 )
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
@@ -50,6 +51,7 @@ _CATEGORY_PREFIXES = {
     "scientific": "SN",
     "operations": "OP",
     "performance": "PR",
+    "api-compatibility": "AA",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -380,6 +382,12 @@ RULES: tuple[RuleDefinition, ...] = (
         "performance",
         "Python test assertion reads an imported wall clock without explicit local control.",
         PERFORMANCE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "AA001-unbound-api-manifest",
+        "api-compatibility",
+        "Declared Python public surface differs from its tracked pinned manifest.",
+        API_COMPATIBILITY_RULE_PACK_VERSION,
     ),
 )
 

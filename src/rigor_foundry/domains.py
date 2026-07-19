@@ -29,6 +29,7 @@ _PORTABLE_CONTROLS = {
     "scientific-numerical-correctness": "portable:scientific-numerical-correctness",
     "operations-and-observability": "portable:operations-and-observability",
     "performance-and-reproducibility": "portable:performance-and-reproducibility",
+    "api-abi-schema-compatibility": "portable:api-abi-schema-compatibility",
 }
 
 

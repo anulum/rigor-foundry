@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -176,16 +177,28 @@ def test_actual_alternate_policy_path_anchors_domain_candidates(tmp_path: Path) 
     """Domain findings bind the discovered policy blob, not a hardcoded path."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/core.py", "VALUE = 1\n")
-    # api-abi-schema-compatibility has no portable control, so a required decision needs an adapter.
-    policy = repository.write_policy(required_domains=frozenset({"api-abi-schema-compatibility"}))
+    policy = repository.write_policy()
     alternate = repository.root / "config/rigor-foundry/policy.json"
     alternate.parent.mkdir(parents=True)
     policy.rename(alternate)
+    policy_data = json.loads(alternate.read_text(encoding="utf-8"))
+    policy_data["audit_domains"] = [
+        item
+        for item in policy_data["audit_domains"]
+        if item["name"] != "api-abi-schema-compatibility"
+    ]
+    alternate.write_text(
+        json.dumps(policy_data, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     repository.commit()
 
     report = scan_repository(repository.root)
     candidate = next(
-        item for item in report.candidates if item.rule_id == "GV004-uncontrolled-required-domain"
+        item
+        for item in report.candidates
+        if item.rule_id == "GV003-undeclared-audit-domain"
+        and item.symbol == "api-abi-schema-compatibility"
     )
     assert isinstance(candidate.anchor, TrackedBlobAnchor)
     assert candidate.anchor.path == "config/rigor-foundry/policy.json"

@@ -432,6 +432,7 @@ class Candidate:
             "scientific",
             "operations",
             "performance",
+            "api-compatibility",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:
