@@ -254,6 +254,82 @@ def test_assigned_patch_and_finally_undo_preserve_runtime_state(tmp_path: Path) 
     assert all("occurrences=1" in item.evidence for item in candidates)
 
 
+def test_composed_try_and_exhaustive_join_state(tmp_path: Path) -> None:
+    """Composed finalisers and exhaustive joins retain only guaranteed patch state."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(
+        "tests/test_composed_patch_state.py",
+        "import time as clock\n\n"
+        f"def test_try_body_undo({_PYTEST_PATCH}):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    try:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "    finally:\n"
+        "        pass\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_nested_finally_undo({_PYTEST_PATCH}):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    try:\n"
+        "        try:\n"
+        "            assert clock.time() == 1.0\n"
+        "        finally:\n"
+        f"            {_PYTEST_PATCH}.undo()\n"
+        "    finally:\n"
+        "        pass\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_try_exception_floor({_PYTEST_PATCH}, fail):\n"
+        f"    {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    try:\n"
+        f"        {_PYTEST_PATCH}.undo()\n"
+        "        if fail:\n"
+        "            raise RuntimeError\n"
+        f"        {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 2.0)\n"
+        "    except RuntimeError:\n"
+        "        pass\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_exhaustive_match({_PYTEST_PATCH}, value):\n"
+        "    match value:\n"
+        "        case 1:\n"
+        f"            {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "        case _:\n"
+        f"            {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 2.0)\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_non_exhaustive_match({_PYTEST_PATCH}, value):\n"
+        "    match value:\n"
+        "        case 1:\n"
+        f"            {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_loop_else_patch({_PYTEST_PATCH}, values):\n"
+        "    for value in values:\n"
+        "        assert value is not None\n"
+        "    else:\n"
+        f"        {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() > 0\n\n"
+        f"def test_loop_break({_PYTEST_PATCH}, values):\n"
+        "    for value in values:\n"
+        "        if value:\n"
+        "            break\n"
+        "    else:\n"
+        f"        {_PYTEST_PATCH}.setattr(clock, 'time', lambda: 1.0)\n"
+        "    assert clock.time() > 0\n",
+    )
+    policy_path = repository.write_policy()
+    repository.commit()
+
+    candidates = scan_performance(
+        load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
+    )
+    assert [item.symbol for item in candidates] == [
+        "test_try_body_undo",
+        "test_nested_finally_undo",
+        "test_try_exception_floor",
+        "test_non_exhaustive_match",
+        "test_loop_break",
+    ]
+    assert all("clock_apis=time.time" in item.evidence for item in candidates)
+    assert all("occurrences=1" in item.evidence for item in candidates)
+
+
 def test_import_shadowing_deferred_code_and_scope_are_conservative(tmp_path: Path) -> None:
     """Only executable assertions with unambiguous imports inside test scope qualify."""
     repository = GitRepository.create(tmp_path / "repository")
