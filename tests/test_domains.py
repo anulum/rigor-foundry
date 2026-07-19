@@ -32,6 +32,7 @@ def test_missing_domain_decisions_and_controls_are_governance_candidates() -> No
     uncovered_names = {item.symbol for item in uncovered}
     assert "scientific-numerical-correctness" in uncovered_names
     assert "test-authenticity" not in uncovered_names
+    assert "documentation-claims-ip" not in uncovered_names
 
 
 def test_required_native_adapter_closes_only_its_declared_domain() -> None:

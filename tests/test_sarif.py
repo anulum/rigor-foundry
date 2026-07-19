@@ -23,7 +23,10 @@ from rigor_foundry.rules import RULES
 def _repository(path: Path) -> GitRepository:
     """Create a real repository with independent blob and tree candidates."""
     repository = GitRepository.create(path)
-    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text(
+        "src/pkg/core.py",
+        "# SPDX-License-" + "Identifier: Apache-2.0\nVALUE = 1\n",
+    )
     repository.write_text(
         "src/pkg/optional.py",
         "try:\n    import pkg.extension\nexcept Exception:\n    extension = None\n",
@@ -199,7 +202,10 @@ def test_zero_result_run_retains_exact_repository_and_rule_pack_provenance(
 ) -> None:
     """Run-level identities survive when a clean real repository has no results."""
     repository = GitRepository.create(tmp_path / "repository")
-    repository.write_text("src/pkg/core.py", "VALUE = 1\n")
+    repository.write_text(
+        "src/pkg/core.py",
+        "# SPDX-License-" + "Identifier: Apache-2.0\nVALUE = 1\n",
+    )
     repository.write_text(
         "tests/test_core.py",
         "from pkg.core import VALUE\n\ndef test_value() -> None:\n    assert VALUE == 1\n",

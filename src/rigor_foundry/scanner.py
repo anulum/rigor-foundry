@@ -21,6 +21,7 @@ from .candidate_anchor import (
 )
 from .container import scan_container
 from .data_privacy import scan_data_privacy
+from .documentation import scan_documentation
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitRunner, GitTrustPolicy
@@ -188,6 +189,7 @@ def scan_repository(
         *scan_supply_chain(inventory, policy),
         *scan_container(inventory, policy),
         *scan_data_privacy(inventory, policy),
+        *scan_documentation(inventory, policy),
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:
