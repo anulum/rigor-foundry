@@ -92,7 +92,7 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "Draft4Validator(schema).validate(document)" in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow
-    assert workflow.count("runs-on: ubuntu-24.04") == 4
+    assert workflow.count("runs-on: ubuntu-24.04") == 5
     assert workflow.count("profile bwrap /usr/bin/bwrap flags=(unconfined)") == 2
     assert workflow.count("sudo apparmor_parser --replace /etc/apparmor.d/bwrap") == 2
     profiles = re.findall(
