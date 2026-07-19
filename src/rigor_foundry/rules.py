@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.12.0"
+RULE_PACK_VERSION = "rigor-foundry/1.13.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -29,8 +29,9 @@ SUPPLY_CHAIN_RULE_PACK_VERSION = "rigor-foundry/1.9.0"
 CONTAINER_RULE_PACK_VERSION = "rigor-foundry/1.10.0"
 DATA_PRIVACY_RULE_PACK_VERSION = "rigor-foundry/1.11.0"
 DOCUMENTATION_RULE_PACK_VERSION = "rigor-foundry/1.12.0"
+SCIENTIFIC_RULE_PACK_VERSION = "rigor-foundry/1.13.0"
 
-_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+_RULE_ID = re.compile(r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
     "architecture": "AR",
@@ -42,6 +43,7 @@ _CATEGORY_PREFIXES = {
     "container": "DK",
     "data-privacy": "DP",
     "documentation": "DC",
+    "scientific": "SN",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -342,6 +344,18 @@ RULES: tuple[RuleDefinition, ...] = (
         "documentation",
         "Public package-version guidance differs from static PEP 621 project metadata.",
         DOCUMENTATION_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SN001-exact-float-equality-in-test",
+        "scientific",
+        "Python test uses exact equality against a direct floating-point literal.",
+        SCIENTIFIC_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SN002-unseeded-stochastic-test",
+        "scientific",
+        "Python test uses a supported stochastic API before deterministic local seeding.",
+        SCIENTIFIC_RULE_PACK_VERSION,
     ),
 )
 

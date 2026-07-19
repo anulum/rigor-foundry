@@ -30,7 +30,7 @@ def test_missing_domain_decisions_and_controls_are_governance_candidates() -> No
         anchor,
     )
     uncovered_names = {item.symbol for item in uncovered}
-    assert "scientific-numerical-correctness" in uncovered_names
+    assert "scientific-numerical-correctness" not in uncovered_names
     assert "test-authenticity" not in uncovered_names
     assert "documentation-claims-ip" not in uncovered_names
 

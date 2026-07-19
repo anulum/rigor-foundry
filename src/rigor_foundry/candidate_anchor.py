@@ -429,6 +429,7 @@ class Candidate:
             "container",
             "data-privacy",
             "documentation",
+            "scientific",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:

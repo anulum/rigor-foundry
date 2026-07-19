@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Scientific/numerical rules flag direct float-literal equality in Python
+  tests and supported stochastic APIs used without deterministic local seeds.
+  Both remain anchored review candidates in maturity probation.
 - Documentation rules flag missing SPDX source headers and explicit public
   package-version guidance that drifts from static PEP 621 metadata. Both emit
   anchored review candidates and remain in maturity probation.
