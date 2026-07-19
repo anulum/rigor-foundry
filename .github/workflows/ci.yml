@@ -351,7 +351,7 @@ jobs:
             "$RUNNER_TEMP/code.deb" | sha256sum --check --strict
           sudo dpkg -i "$RUNNER_TEMP/code.deb"
           test "$(code --version | sed -n '1p')" = 1.125.0
-          test "$(code --version | sed -n '2p')" = 07b4ff1883f94da91f6d698744fc7c3638b59720
+          test "$(code --version | sed -n '2p')" = 93cfdd489c3b228840d0f86ec77c3636277c93ea
       - name: Install canonical CLI and locked extension dependencies
         run: |
           python -m pip install --require-hashes -r requirements/ci.txt
