@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -213,7 +214,7 @@ def test_future_annotations_do_not_execute_mutation(
 
 
 def test_lazy_type_alias_does_not_execute_mutation(tmp_path: Path) -> None:
-    """A PEP 695 alias expression remains deferred until its value is requested."""
+    """PEP 695 is lazy where supported and fail-closed on older parsers."""
     repository = _repository(
         tmp_path,
         '__all__ = ["alpha"]\ntype Alias = __all__.append("alias")\n',
@@ -223,7 +224,12 @@ def test_lazy_type_alias_does_not_execute_mutation(tmp_path: Path) -> None:
         _manifest(("src/pkg/__init__.py", ["alpha"])),
     )
     repository.commit()
-    assert _candidates(repository) == ()
+    candidates = _candidates(repository)
+    if sys.version_info < (3, 12):
+        assert len(candidates) == 1
+        assert "manifest_state=stale" in candidates[0].evidence
+    else:
+        assert candidates == ()
 
 
 def test_bare_annotation_does_not_declare_a_runtime_surface(tmp_path: Path) -> None:

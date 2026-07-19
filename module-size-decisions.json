@@ -1,6 +1,13 @@
 {
   "files": [
     {
+      "dependency_boundary": "Public built-in adapter-profile, adapter-runtime, Git inventory, campaign, and candidate contracts; real Git repositories, executable fixtures, offline vulnerability databases, and sandbox provenance exercise Semgrep, Trivy, and OSV integration without reaching CLI or remediation authority.",
+      "lines": 958,
+      "path": "tests/test_adapter_profiles.py",
+      "reassess_when": "The file exceeds 1100 lines, one adapter family adds an independent lifecycle or storage protocol, shared executable/database fixture construction moves beyond this owner, or a fourth built-in profile is introduced.",
+      "responsibility": "Built-in adapter profile integration owner for availability, version and evidence parsing, scoped execution, offline database provenance, sandboxing, truncation and timeout failure, and campaign binding across Semgrep, Trivy, and OSV-Scanner."
+    },
+    {
       "dependency_boundary": "Public ControlAssessment, EvidenceReference, ReviewerAttestation, EffectiveProfileLock, EffectiveControl, project-profile, and standard-pack records; trust-domain and real signing fixtures construct verified inputs. No CLI, campaign, filesystem, or remediation execution.",
       "lines": 844,
       "path": "tests/test_control_assessment.py",
