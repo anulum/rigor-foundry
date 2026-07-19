@@ -388,6 +388,27 @@ the task baseline, candidate, and source-report bindings. This protocol is the
 durable coordination boundary for future worktree and agent-fleet execution;
 it is not itself a process supervisor or permission grant.
 
+## Offline CRA preparation
+
+The CRA P0 boundary is an offline evidence workflow rather than an authority
+integration. `cra_protocol.py` owns exact schema, timestamp, and closed-
+vocabulary primitives. `cra_registration.py`, `cra_events.py`, and
+`cra_submissions.py` own content-addressed product, revision, draft, receipt,
+skip, and user-notice records. `cra_timeline.py` computes pure operational
+clocks. `cra_payloads.py` keeps statutory-minimum fields separate from optional
+operator context and renders deterministic JSON and Markdown with an explicit
+non-legal-advice/manufacturer-submission boundary.
+
+`cra_store.py` reuses the ignored-storage trust primitives for append-only
+records below `.rigor/cra/`. It verifies the complete linear revision chain,
+every record filename and embedded digest, exact payload path and bytes,
+single-link/no-follow file identity, and cross-record binding before returning
+state. Crash replay may reuse only byte-identical content-addressed payloads;
+authoritative records are never replaced. `cra_cli.py` exposes the eight P0
+commands without importing a network client. It records operator declarations
+and retained receipt evidence but never submits, sends, assesses legal
+sufficiency, or claims authority acceptance.
+
 ## Error boundaries
 
 - Invalid or stale external records raise typed validation errors at load or

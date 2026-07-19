@@ -94,6 +94,15 @@ window. Preregistered negative searches prevent those residuals from becoming
 an excuse to restore private-helper tests or monkeypatched production
 internals. Repository audit and CI enforce the contract.
 
+## Offline CRA preparation boundary
+
+Offline CRA preparation is a separate append-only evidence boundary.
+Registration, event revisions, drafts, receipts, skips, and user notices are
+content-addressed below ignored `.rigor/cra/` state. Replay verifies the whole
+linear event chain plus record and payload bytes before the pure timeline
+engine computes clocks. The CLI contains no authority or user transport; see
+[Offline CRA Article 14 preparation](cra-reporting.md).
+
 ## Candidate evidence boundary
 
 Tracked-blob anchors contain the repository-relative path, inclusive line span,

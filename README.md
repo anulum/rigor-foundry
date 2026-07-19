@@ -135,10 +135,23 @@ explicit policy/evidence paths and no remediation authority.
 | `rigor campaign-create` | Freeze an independent-audit input contract. |
 | `rigor campaign-run` | Execute and attest one independent run. |
 | `rigor campaign-compare` | Record disagreement and unresolved evidence. |
+| `rigor cra-bootstrap` | Create fresh Git-ignored offline CRA state and one operator-declared product registration. |
+| `rigor vuln-register` | Append a content-addressed vulnerability or severe-incident revision. |
+| `rigor vuln-timeline` | Print verified 24-hour, 72-hour, and track-specific final-report clocks. |
+| `rigor cra-draft` | Prepare deterministic Article 14 JSON and Markdown without submitting them. |
+| `rigor cra-receipt` | Bind operator-supplied receipt evidence without claiming authority acceptance. |
+| `rigor cra-skip` | Record an explicit later-stage already-provided decision bound to an earlier receipt. |
+| `rigor user-notice` | Prepare an offline Article 14(8) user-notice payload pair. |
+| `rigor cra-status` | Replay all CRA records and return operational alert status. |
 
 `rigor --version` reports the canonical installed package version. The exact
 stable/provisional top-level import inventory and deprecation policy are
 documented in [Public API stability](docs/api-stability.md).
+
+The [offline CRA preparation guide](docs/cra-reporting.md) documents the exact
+operator workflow, evidence boundary, clocks, append-only storage, and exit
+codes. It is a drafting aid, not legal advice, a conformity assessment, or an
+external submission client.
 
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,

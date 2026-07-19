@@ -7,6 +7,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- An offline CRA Article 14 preparation lane stores strict content-addressed
+  product and event records, computes separate vulnerability and severe-
+  incident clocks, prepares deterministic stage and user-notice payloads,
+  binds operator-supplied receipts and explicit already-provided skips, and
+  replays ignored append-only state through eight installed CLI commands. It
+  contains no network client and makes no legal, conformity, authority-
+  acceptance, or successful-submission claim.
 - An API-compatibility rule compares literal module-level Python `__all__`
   declarations with a strict tracked root manifest. Missing, dynamic,
   mismatched, unrecorded, stale, malformed, and non-text states remain anchored

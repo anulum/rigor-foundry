@@ -17,6 +17,15 @@ local closeout may additionally run the hash-locked dependency audit, Semgrep,
 package installation smoke, hardened container smoke, and strict documentation
 build; those local results do not replace the corresponding remote evidence.
 
+CRA P0 has dedicated model, timeline, payload, storage, and CLI owners. The
+focused set covers all vulnerability/incident stage partitions, exact UTC and
+deadline boundaries, end-of-month clamping, revision-chain persistence,
+receipt and skip binding, stale unverified drafts, deterministic payload bytes,
+real Git-ignored append-only storage, crash replay, filename and payload digest
+mutation, symbolic and hard links, cross-wired records, every public command,
+exit codes, and a static no-network import guard. Every new CRA production
+module is required to retain direct 100% statement and branch coverage.
+
 Property assurance uses the hash-locked Hypothesis dependency through public
 production APIs. Dedicated owners cover strict protocol parsing, canonical
 serialization and digests, bounded condition evaluation, repository-relative

@@ -40,6 +40,16 @@ or native coverage therefore remains visible until the adopter records an
 evidence-backed applicability decision. See [First repository](getting-started.md)
 for the complete workflow and failure boundary.
 
+## Offline CRA preparation
+
+`cra-bootstrap`, `vuln-register`, `vuln-timeline`, `cra-draft`, `cra-receipt`,
+`cra-skip`, `user-notice`, and `cra-status` implement the prepare-only CRA P0
+workflow. They retain append-only evidence below `.rigor/cra/` and contain no
+network client. A receipt binds operator-supplied evidence after an external
+manufacturer action; it does not prove submission or authority acceptance.
+See [Offline CRA Article 14 preparation](cra-reporting.md) for exact commands,
+deadline semantics, payload partitions, exit codes, and legal-claims boundary.
+
 ## Read-only inspection
 
 `rigor scan --root PATH` inventories one Git repository and emits candidate

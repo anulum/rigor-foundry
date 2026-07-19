@@ -30,6 +30,7 @@ from .coverage_residuals import (
     DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
     coverage_residual_errors,
 )
+from .cra_cli import add_cra_commands
 from .enforcement import evaluate_enforcement
 from .git_provenance import (
     DEFAULT_MAXIMUM_GIT_VERSION_EXCLUSIVE,
@@ -643,6 +644,7 @@ def _parser() -> argparse.ArgumentParser:
     residuals.set_defaults(handler=_residuals_check_command)
     add_source_provenance_commands(subparsers)
     add_oscal_commands(subparsers)
+    add_cra_commands(subparsers)
     return parser
 
 
