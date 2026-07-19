@@ -37,10 +37,13 @@ jobs:
           cache-dependency-path: requirements/ci.txt
       - run: python -m pip install --require-hashes -r requirements/ci.txt
       - run: python -m mkdocs build --strict
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: github.event_name != 'pull_request' && github.event.repository.private == false
         with:
+          name: rigor-foundry-site
           path: site
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
     if: github.event_name != 'pull_request' && github.event.repository.private == false
@@ -48,12 +51,62 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      pages: write
-      id-token: write
+      contents: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://anulum.github.io/rigor-foundry/
     steps:
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
+      - name: Check out source without persisted credentials
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Download the verified site artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: rigor-foundry-site
+          path: site
+      - name: Publish the bounded gh-pages branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_DIR: ${{ runner.temp }}/rigor-foundry-pages
+        run: |
+          set -euo pipefail
+          test -f site/index.html
+          test -z "$(find site -type l -print -quit)"
+          test -z "$(find site -name .git -print -quit)"
+
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch --no-tags origin refs/heads/gh-pages:refs/remotes/origin/gh-pages
+            git worktree add --detach "$PAGES_DIR" refs/remotes/origin/gh-pages
+            git -C "$PAGES_DIR" switch --force-create gh-pages refs/remotes/origin/gh-pages
+          else
+            git worktree add --detach "$PAGES_DIR"
+            git -C "$PAGES_DIR" switch --orphan gh-pages
+          fi
+          git -C "$PAGES_DIR" rm --recursive --force . >/dev/null 2>&1 || true
+          cp --archive site/. "$PAGES_DIR/"
+          : > "$PAGES_DIR/.nojekyll"
+          git -C "$PAGES_DIR" add --all
+          test -f "$PAGES_DIR/index.html"
+
+          if git -C "$PAGES_DIR" diff --cached --quiet; then
+            echo "Generated site is unchanged."
+            exit 0
+          fi
+          git -C "$PAGES_DIR" config user.name "github-actions[bot]"
+          git -C "$PAGES_DIR" config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$PAGES_DIR" commit \
+            --message "docs: publish ${GITHUB_SHA}" \
+            --message "Generated from main commit ${GITHUB_SHA}."
+
+          askpass_path="$RUNNER_TEMP/rigor-foundry-pages-askpass"
+          printf '%s\n' \
+            '#!/bin/sh' \
+            "case \"\$1\" in" \
+            "*Username*) printf '%s\\n' git ;;" \
+            "*) printf '%s\\n' \"\$GH_TOKEN\" ;;" \
+            'esac' > "$askpass_path"
+          chmod 700 "$askpass_path"
+          GIT_ASKPASS="$askpass_path" GIT_TERMINAL_PROMPT=0 \
+            git -C "$PAGES_DIR" push origin gh-pages
