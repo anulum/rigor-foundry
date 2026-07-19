@@ -201,6 +201,44 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
         "        print('nonlocal')\n",
     )
     repository.write_text(
+        "src/pkg/class_scopes.py",
+        _HEADER + "class Local:\n"
+        "    print = lambda *values: values\n"
+        "    print('class local')\n\n"
+        "class BuiltinFirst:\n"
+        "    print('builtin before bind')\n"
+        "    print = lambda *values: values\n\n"
+        "class Methods:\n"
+        "    print = lambda *values: values\n"
+        "    def method(self):\n"
+        "        print('method builtin')\n\n"
+        "def outer():\n"
+        "    class Local:\n"
+        "        print = lambda *values: values\n"
+        "        print('nested class local')\n"
+        "    class Builtin:\n"
+        "        print('nested class builtin')\n",
+    )
+    repository.write_text(
+        "src/pkg/comprehensions.py",
+        _HEADER + "def local_targets(values, groups):\n"
+        "    list_result = [print(value) for print in [str] for value in values]\n"
+        "    set_result = {print(value) for print in [str] for value in values}\n"
+        "    dict_result = {print(value): value for print in [str] for value in values}\n"
+        "    generator = tuple(print(value) for print in [str] for value in values)\n"
+        "    nested = [print(value) for group in groups for print in group for value in values]\n\n"
+        "def builtin(values):\n"
+        "    return [print(value) for value in values]\n\n"
+        "def outer_iterable():\n"
+        "    return [value for value in print()]\n\n"
+        "def staged_iterable(values):\n"
+        "    return [value for print in [lambda: values] for value in print()]\n\n"
+        "def staged_condition(values):\n"
+        "    return [value for print in [lambda item: True] for value in values if print(value)]\n\n"
+        "def early_condition(values):\n"
+        "    return [value for value in values if print(value) for print in [str]]\n",
+    )
+    repository.write_text(
         "src/pkg/lambdas.py",
         _HEADER + "local = lambda print: print('local')\n"
         "builtin = lambda: print('builtin')\n"
@@ -216,7 +254,13 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
         load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
     )
     assert [(item.anchor.path, item.anchor.line_start) for item in candidates] == [
+        ("src/pkg/class_scopes.py", 7),
+        ("src/pkg/class_scopes.py", 13),
+        ("src/pkg/class_scopes.py", 20),
         ("src/pkg/closures_and_matches.py", 11),
+        ("src/pkg/comprehensions.py", 10),
+        ("src/pkg/comprehensions.py", 13),
+        ("src/pkg/comprehensions.py", 22),
         ("src/pkg/imported_builtin.py", 5),
         ("src/pkg/imported_builtin.py", 6),
         ("src/pkg/imported_builtin.py", 9),
