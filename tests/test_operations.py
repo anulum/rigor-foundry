@@ -138,7 +138,10 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
         "print('module')\n"
         "output('alias')\n\n"
         "def emit():\n"
-        "    print('function')\n",
+        "    print('function')\n\n"
+        "def local_alias():\n"
+        "    from builtins import print as local_output\n"
+        "    local_output('function alias')\n",
     )
     repository.write_text(
         "src/pkg/local_bindings.py",
@@ -168,6 +171,44 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
         "    global print\n"
         "    print('builtin')\n",
     )
+    repository.write_text(
+        "src/pkg/closures_and_matches.py",
+        _HEADER + "def closure():\n"
+        "    print = lambda value: value\n"
+        "    def inner():\n"
+        "        print('free local')\n\n"
+        "def global_closure():\n"
+        "    print = lambda value: value\n"
+        "    def inner():\n"
+        "        global print\n"
+        "        print('builtin')\n\n"
+        "def captures(value):\n"
+        "    match value:\n"
+        "        case [print]:\n"
+        "            print('sequence capture')\n"
+        "        case {'value': print, **remaining}:\n"
+        "            print('mapping capture')\n"
+        "        case [*print]:\n"
+        "            print('star capture')\n\n"
+        "def mapping_rest(value):\n"
+        "    match value:\n"
+        "        case {**print}:\n"
+        "            print('mapping rest capture')\n\n"
+        "def nonlocal_closure():\n"
+        "    print = lambda value: value\n"
+        "    def inner():\n"
+        "        nonlocal print\n"
+        "        print('nonlocal')\n",
+    )
+    repository.write_text(
+        "src/pkg/lambdas.py",
+        _HEADER + "local = lambda print: print('local')\n"
+        "builtin = lambda: print('builtin')\n"
+        "walrus = lambda: ((print := str), print('local'))\n\n"
+        "def closure():\n"
+        "    print = lambda value: value\n"
+        "    return lambda: print('free local')\n",
+    )
     policy_path = repository.write_policy()
     repository.commit()
 
@@ -175,9 +216,12 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
         load_git_inventory(repository.root), AuditPolicy.from_path(policy_path)
     )
     assert [(item.anchor.path, item.anchor.line_start) for item in candidates] == [
+        ("src/pkg/closures_and_matches.py", 11),
         ("src/pkg/imported_builtin.py", 5),
         ("src/pkg/imported_builtin.py", 6),
         ("src/pkg/imported_builtin.py", 9),
+        ("src/pkg/imported_builtin.py", 13),
+        ("src/pkg/lambdas.py", 3),
         ("src/pkg/local_bindings.py", 32),
         ("src/pkg/nested_scopes.py", 3),
     ]
