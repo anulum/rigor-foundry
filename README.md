@@ -214,6 +214,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Discussions](https://github.com/anulum/rigor-foundry/discussions)
 - [Support](SUPPORT.md)
 - [Security reporting](SECURITY.md)
+- [Sponsor the public core](https://github.com/sponsors/anulum)
 
 ## Licence
 
