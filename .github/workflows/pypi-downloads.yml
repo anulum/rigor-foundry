@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — daily PyPI download snapshot on the bounded metrics branch
+
+name: PyPI downloads
+
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-downloads-metrics
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the source branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12.13"
+      - name: Snapshot the bounded metrics branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          METRICS_DIR: ${{ runner.temp }}/rigor-foundry-metrics
+        run: |
+          set -euo pipefail
+          package="$(python tools/pypi_downloads.py --print-package)"
+          csv_path="downloads/${package}.csv"
+
+          if git ls-remote --exit-code --heads origin metrics >/dev/null 2>&1; then
+            git fetch --no-tags origin refs/heads/metrics:refs/remotes/origin/metrics
+            git worktree add --detach "$METRICS_DIR" refs/remotes/origin/metrics
+            git -C "$METRICS_DIR" switch --force-create metrics refs/remotes/origin/metrics
+          else
+            git worktree add --detach "$METRICS_DIR"
+            git -C "$METRICS_DIR" switch --orphan metrics
+            git -C "$METRICS_DIR" rm --recursive --force . >/dev/null 2>&1 || true
+          fi
+
+          python tools/pypi_downloads.py \
+            --package "$package" \
+            --csv "$METRICS_DIR/$csv_path"
+          git -C "$METRICS_DIR" config user.name "github-actions[bot]"
+          git -C "$METRICS_DIR" config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$METRICS_DIR" add -- "$csv_path"
+
+          mapfile -t tracked_paths < <(git -C "$METRICS_DIR" ls-files)
+          test "${#tracked_paths[@]}" -eq 1
+          test "${tracked_paths[0]}" = "$csv_path"
+          if git -C "$METRICS_DIR" diff --cached --quiet; then
+            echo "No download changes to record."
+            exit 0
+          fi
+          git -C "$METRICS_DIR" commit \
+            --message "metrics: pypi download snapshot for ${package}"
+          askpass_path="$RUNNER_TEMP/rigor-foundry-git-askpass"
+          printf '%s\n' \
+            '#!/bin/sh' \
+            "case \"\$1\" in" \
+            "*Username*) printf '%s\\n' git ;;" \
+            "*) printf '%s\\n' \"\$GH_TOKEN\" ;;" \
+            'esac' > "$askpass_path"
+          chmod 700 "$askpass_path"
+          GIT_ASKPASS="$askpass_path" GIT_TERMINAL_PROMPT=0 \
+            git -C "$METRICS_DIR" push origin metrics

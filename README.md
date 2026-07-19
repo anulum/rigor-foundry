@@ -1,9 +1,22 @@
 # RigorFoundry
 
-[![CI](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml)
-[![Documentation](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml/badge.svg)](https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](pyproject.toml)
+<p align="center">
+  <a href="https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/docs.yml/badge.svg" alt="Documentation"></a>
+  <a href="https://github.com/anulum/rigor-foundry/actions/workflows/fuzz.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/fuzz.yml/badge.svg" alt="Fuzz"></a>
+  <a href="https://github.com/anulum/rigor-foundry/actions/workflows/security.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+  <a href="https://github.com/anulum/rigor-foundry/actions/workflows/codeql.yml"><img src="https://github.com/anulum/rigor-foundry/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://pypi.org/project/rigor-foundry/"><img src="https://img.shields.io/pypi/v/rigor-foundry" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/rigor-foundry/"><img src="https://img.shields.io/pypi/dm/rigor-foundry" alt="PyPI downloads"></a>
+  <a href="https://pepy.tech/project/rigor-foundry"><img src="https://static.pepy.tech/badge/rigor-foundry" alt="Total downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
+  <a href="https://www.anulum.li/"><img src="https://img.shields.io/badge/commercial%20licence-available-0a7d3c" alt="Commercial licence available"></a>
+  <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.11--3.13-blue.svg" alt="Python 3.11–3.13"></a>
+  <a href="https://reuse.software/"><img src="https://api.reuse.software/badge/github.com/anulum/rigor-foundry" alt="REUSE status"></a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/anulum/rigor-foundry"><img src="https://api.securityscorecards.dev/projects/github.com/anulum/rigor-foundry/badge" alt="OpenSSF Scorecard"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
+  <a href="https://github.com/sponsors/anulum"><img src="https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors" alt="Sponsor on GitHub"></a>
+</p>
 
 ![RigorFoundry audit forge](docs/assets/rigor_foundry_repo_header.png)
 
