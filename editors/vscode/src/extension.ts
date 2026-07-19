@@ -115,7 +115,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
       } catch (error: unknown) {
         const message = errorMessage(error);
         output.appendLine(message);
-        await vscode.window.showErrorMessage(`RigorFoundry: ${message}`);
+        void vscode.window.showErrorMessage(`RigorFoundry: ${message}`);
       }
     };
   };
@@ -199,10 +199,9 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
         const folder = workspaceFolder();
         const root = folder.uri.fsPath;
         const config = configuration(folder);
-        const policy = await verifyExistingRegularWorkspacePath(
-          root,
-          resolveWorkspacePath(root, config.policyPath),
-        );
+        const configuredPolicy = resolveWorkspacePath(root, config.policyPath);
+        await verifyExistingRegularWorkspacePath(root, configuredPolicy);
+        const policy = path.relative(root, configuredPolicy);
         const report = resolveWorkspacePath(root, config.reportPath);
         await mkdir(path.dirname(report), {recursive: true});
         const reportParent = await verifyExistingWorkspacePath(root, path.dirname(report));
@@ -220,7 +219,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
           output.append(result.stderr);
         }
         await loadReport(root, reportTarget, config.maximumEvidenceBytes);
-        await vscode.window.showInformationMessage("RigorFoundry scan completed; evidence report loaded.");
+        void vscode.window.showInformationMessage("RigorFoundry scan completed; evidence report loaded.");
       }),
     ),
     vscode.commands.registerCommand(
@@ -250,7 +249,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
         await loadReviews(root, snapshot.reviewPath, config.maximumEvidenceBytes);
         store.markCanonicallyValidated();
         refresh();
-        await vscode.window.showInformationMessage("Review ledger passed canonical RigorFoundry CLI validation.");
+        void vscode.window.showInformationMessage("Review ledger passed canonical RigorFoundry CLI validation.");
       }),
     ),
     vscode.commands.registerCommand("rigorFoundry.refresh", refresh),

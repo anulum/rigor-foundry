@@ -55,6 +55,7 @@ try {
   run("git", ["commit", "-m", "test: create extension integration fixture"]);
   run(cli, ["scan", "--root", ".", "--policy", "rigor-foundry-policy.json", "--json-out", ".rigor/report.json"]);
   run(cli, ["review-template", "--report", ".rigor/report.json", "--output", ".rigor/reviews.json"]);
+  await rm(path.join(fixture, ".rigor", "report.json"));
   await writeFile(
     path.join(fixture, ".vscode", "settings.json"),
     `${JSON.stringify({
@@ -66,30 +67,46 @@ try {
     "utf8",
   );
 
+  const detached = process.platform !== "win32";
   const child = spawn(code, [
-    "--new-window",
-    "--wait",
     "--disable-workspace-trust",
     "--skip-welcome",
     "--skip-release-notes",
     "--disable-telemetry",
-    "--user-data-dir", userData,
-    "--extensions-dir", extensions,
+    `--user-data-dir=${userData}`,
+    `--extensions-dir=${extensions}`,
     `--extensionDevelopmentPath=${extensionRoot}`,
     `--extensionTestsPath=${path.join(extensionRoot, "out", "test", "suite", "index.js")}`,
     fixture,
   ], {
     cwd: extensionRoot,
+    detached,
     env: {...process.env, RF_VSCODE_FIXTURE: fixture},
     stdio: "inherit",
   });
   const exitCode = await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
+      if (child.pid !== undefined) {
+        try {
+          if (detached) {
+            process.kill(-child.pid, "SIGKILL");
+          } else {
+            child.kill("SIGKILL");
+          }
+        } catch (error) {
+          if (!(error instanceof Error && "code" in error && error.code === "ESRCH")) {
+            reject(error);
+            return;
+          }
+        }
+      }
       reject(new Error("VS Code extension integration tests timed out after 180 seconds"));
     }, 180_000);
     timeout.unref();
-    child.once("error", reject);
+    child.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
     child.once("close", (codeValue) => {
       clearTimeout(timeout);
       resolve(codeValue ?? 1);

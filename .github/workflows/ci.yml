@@ -365,7 +365,7 @@ jobs:
       - name: Exercise real Extension Development Host
         env:
           RIGOR_FOUNDRY_CLI: ${{ env.pythonLocation }}/bin/rigor
-          VSCODE_EXECUTABLE: /usr/bin/code
+          VSCODE_EXECUTABLE: /usr/share/code/code
         run: xvfb-run -a npm run test:integration --prefix editors/vscode
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
