@@ -492,6 +492,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
         
   
@@ -1462,18 +1489,21 @@ not policy-controlled aliases. Python module ownership deliberately preserves
 the narrower historical contract: configured test roots are repository
 prefixes, and only <code>test_</code>/<code>_test.py</code> names apply outside them.</p>
 <h2 id="declared-ignored-inventory">Declared ignored inventory<a class="headerlink" href="#declared-ignored-inventory" title="Permanent link">&para;</a></h2>
-<p>Policy schema 1.3 accepts an <code>ignored_inventory</code> array sorted by
+<p>Policy schema 1.3 and later accept an <code>ignored_inventory</code> array sorted by
 <code>evidence_id</code>, <code>path</code>, and <code>capture</code>. Every declaration contains a unique
 portable <code>evidence_id</code>, a unique exact normalised repository-relative path,
-and either <code>presence</code> or <code>file-sha256</code>. Globs, absolute paths, parent traversal,
-tracked paths, and paths outside Git ignore rules are rejected.</p>
-<p>Collection never recursively inventories a directory and never records file
-content, symlink targets, environment values, or undeclared paths. Evidence is
-limited to <code>observed</code>, <code>missing</code>, or <code>unavailable</code>, the observed entry kind, a
-regular-file byte size, an optional SHA-256 for <code>file-sha256</code>, and a bounded
-reason. No-follow descriptor walks prevent parent or final symlink traversal.
-Concurrent mutation or replacement becomes unavailable evidence. Missing and
-unavailable observations are evidence gaps, not automatic control failures.</p>
+and <code>presence</code>, <code>file-sha256</code>, or <code>directory-sha256</code>. Globs, absolute paths,
+parent traversal, tracked paths, and paths outside Git ignore rules are
+rejected.</p>
+<p>Collection never records file content, symlink targets, environment values, or
+undeclared roots. <code>directory-sha256</code> recursively hashes only the declared tree
+through descriptor-relative no-follow reads, stores byte paths as hexadecimal
+inside a versioned canonical manifest, and caps depth, entry count, and total
+regular-file bytes. Evidence is limited to <code>observed</code>, <code>missing</code>, or
+<code>unavailable</code>, the observed entry kind, bounded byte size, an optional SHA-256,
+and a finite reason. Symlinks, special files, hard links, resource-limit
+breaches, and concurrent mutation fail closed. Missing and unavailable
+observations are evidence gaps, not automatic control failures.</p>
 <h2 id="rule-maturity-policy-and-cases">Rule-maturity policy and cases<a class="headerlink" href="#rule-maturity-policy-and-cases" title="Permanent link">&para;</a></h2>
 <p>Rule-maturity policy is deliberately separate from repository scan policy. It
 controls whether a rule may influence ratchet or zero enforcement, not whether

@@ -16,7 +16,7 @@
         <link rel="prev" href="../source-provenance/">
       
       
-        <link rel="next" href="../cli/">
+        <link rel="next" href="../cra-rules/">
       
       
         
@@ -644,6 +644,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1486,6 +1513,10 @@
 
 
 <h1 id="offline-cra-article-14-preparation">Offline CRA Article 14 preparation<a class="headerlink" href="#offline-cra-article-14-preparation" title="Permanent link">&para;</a></h1>
+<p>This page covers the P0/P1 reporting and imported-inventory workflow. The
+optional P2 policy, CR001–CR006 candidates, fixed-vulnerability advisory
+evidence, and signed StandardPack are documented in <a href="../cra-rules/">CRA readiness rules and
+StandardPack</a>.</p>
 <p>RIGOR-FOUNDRY can prepare evidence-bound drafts and operational timelines for
 Article 14 of Regulation (EU) 2024/2847. The feature is deliberately offline:
 it does not contact the Single Reporting Platform, ENISA, a CSIRT, users,
@@ -1705,9 +1736,10 @@ claim that the notice is timely.</p>
 <li>exit <code>2</code>: invalid arguments, malformed or unsafe state, digest mismatch,
   ambiguous chain, or I/O failure.</li>
 </ul>
-<p>Fixed-vulnerability advisories, CRA rule packs, policy extensions, editor UI,
-fleet aggregation, network submission, and user delivery remain outside the
-P0/P1 boundary.</p>
+<p>Fixed-vulnerability advisories, the CRA rule family, policy extension, and
+signed StandardPack are implemented as the separately activated P2 lane and
+remain outside the P0/P1 boundary. Editor UI, fleet aggregation, network
+submission, and user delivery are not implemented by these commands.</p>
 
 
 

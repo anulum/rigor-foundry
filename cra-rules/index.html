@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/sarif/">
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/cra-rules/">
       
       
-        <link rel="prev" href="../api-compatibility-rules/">
+        <link rel="prev" href="../cra-reporting/">
       
       
-        <link rel="next" href="../compliance-maps/">
+        <link rel="next" href="../cli/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>SARIF export - RigorFoundry</title>
+        <title>CRA readiness rules and StandardPack - RigorFoundry</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sarif-export" class="md-skip">
+        <a href="#cra-readiness-rules-and-standardpack" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SARIF export
+              CRA readiness rules and StandardPack
             
           </span>
         </div>
@@ -489,10 +489,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../cra-rules/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -508,6 +535,81 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-activation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit activation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#probation-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Probation rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advisory-evidence-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advisory evidence lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signed-cra-standardpack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signed CRA StandardPack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enforcement-prohibition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement prohibition
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -840,37 +942,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SARIF export
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
         
   
   
@@ -886,48 +961,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#state-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        State mapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#identity-and-anchors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Identity and anchors
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1283,10 +1316,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#state-mapping" class="md-nav__link">
+  <a href="#explicit-activation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        State mapping
+        Explicit activation
       
     </span>
   </a>
@@ -1294,10 +1327,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#identity-and-anchors" class="md-nav__link">
+  <a href="#probation-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Identity and anchors
+        Probation rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advisory-evidence-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advisory evidence lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signed-cra-standardpack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signed CRA StandardPack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enforcement-prohibition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement prohibition
       
     </span>
   </a>
@@ -1324,82 +1390,147 @@
   
 
 
-<h1 id="sarif-export">SARIF export<a class="headerlink" href="#sarif-export" title="Permanent link">&para;</a></h1>
-<p>RigorFoundry emits deterministic
-<a href="https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/sarif-v2.1.0-errata01-os-complete.html">SARIF 2.1.0 Errata 01</a>
-without converting static audit candidates into defect verdicts.</p>
-<pre><code class="language-bash">rigor sarif --report report.json --output results.sarif
-rigor sarif --report report.json --review reviews.json --output results.sarif
+<h1 id="cra-readiness-rules-and-standardpack">CRA readiness rules and StandardPack<a class="headerlink" href="#cra-readiness-rules-and-standardpack" title="Permanent link">&para;</a></h1>
+<p>RigorFoundry rule pack <code>rigor-foundry/1.17.0</code> adds six CRA readiness
+signals. They are review candidates, not findings, legal conclusions, or a
+claim that a product complies with Regulation (EU) 2024/2847. All six rules
+enter maturity probation with no calibration credit.</p>
+<p>The mapping uses the <a href="https://eur-lex.europa.eu/eli/reg/2024/2847/oj">official EUR-Lex text of Regulation (EU)
+2024/2847</a>. Article 14 applies
+from 11 September 2026; most other provisions apply from 11 December 2027.
+Only the manufacturer decides product and operator applicability.</p>
+<h2 id="explicit-activation">Explicit activation<a class="headerlink" href="#explicit-activation" title="Permanent link">&para;</a></h2>
+<p>Legacy policy schema 1.3 remains unchanged and does not read <code>.rigor/cra</code>.
+Policy schema 1.4 activates the lane only through an explicit <code>cra</code> block:</p>
+<pre><code class="language-json">{
+  &quot;schema_version&quot;: &quot;1.4&quot;,
+  &quot;ignored_inventory&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;cra-state&quot;,
+      &quot;path&quot;: &quot;.rigor/cra&quot;,
+      &quot;capture&quot;: &quot;directory-sha256&quot;
+    }
+  ],
+  &quot;cra&quot;: {
+    &quot;schema_version&quot;: &quot;1.0&quot;,
+    &quot;applicability&quot;: &quot;required&quot;,
+    &quot;rationale&quot;: &quot;Manufacturer-declared CRA audit scope for this product.&quot;,
+    &quot;product_key&quot;: &quot;widget&quot;,
+    &quot;disclosure_policy_path&quot;: &quot;SECURITY.md&quot;,
+    &quot;state_evidence_id&quot;: &quot;cra-state&quot;,
+    &quot;cra_policy_digest&quot;: &quot;&lt;canonical digest of the preceding CRA fields&gt;&quot;
+  }
+}
 </code></pre>
-<p>The command verifies report integrity and validates every supplied review.
-Duplicate, incomplete, foreign, or stale review records fail closed. Omitting
-<code>--output</code> writes the same deterministic JSON to stdout.</p>
-<h2 id="state-mapping">State mapping<a class="headerlink" href="#state-mapping" title="Permanent link">&para;</a></h2>
+<p>The snippet shows only the changed fields; a real policy still contains every
+ordinary repository-policy field. Generate the CRA block through the Python
+<code>CraPolicy.build</code> API or another schema-aware tool so the digest is derived,
+not typed by hand. <code>not-applicable</code> requires a rationale and null product,
+policy-path, and state-evidence fields. Absence of <code>cra</code>, or explicit
+<code>not-applicable</code>, is fully inert.</p>
+<p>Required scope binds <code>state_evidence_id</code> to exactly one ignored-inventory
+<code>directory-sha256</code> declaration for <code>.rigor/cra</code>. A scan hashes one bounded,
+no-follow manifest before replaying the append-only record chains under the CRA
+lock, then hashes it again. Any content, entry, or directory drift aborts the
+scan instead of producing a mixed-state report. Exact registration, event,
+inventory, or advisory digests also remain in candidate evidence. Missing,
+unsafe, or over-limit state is unresolved evidence; it is never a pass.</p>
+<h2 id="probation-rules">Probation rules<a class="headerlink" href="#probation-rules" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>RigorFoundry state</th>
-<th>SARIF <code>kind</code></th>
-<th>SARIF <code>level</code></th>
+<th>Rule</th>
+<th>Bounded signal</th>
+<th>Verification boundary</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>unreviewed candidate</td>
-<td><code>review</code></td>
-<td><code>note</code></td>
+<td><code>CR001-missing-disclosure-policy</code></td>
+<td>The explicitly declared CVD policy path is not one tracked UTF-8 file.</td>
+<td>Confirm applicability and independently review the tracked policy.</td>
 </tr>
 <tr>
-<td><code>needs-evidence</code></td>
-<td><code>review</code></td>
-<td><code>note</code></td>
+<td><code>CR002-missing-security-contact</code></td>
+<td>The tracked CVD policy has no bounded public email-address signal.</td>
+<td>Verify that a public contact is monitored and operational; syntax is not delivery proof.</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P0/P1</td>
-<td><code>fail</code></td>
-<td><code>error</code></td>
+<td><code>CR003-stale-component-inventory</code></td>
+<td>The latest imported inventory's commit, tree, object format, or tracked-content digest differs from the scan inventory.</td>
+<td>Review repository/SBOM drift and import only an externally generated SBOM when appropriate.</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P2</td>
-<td><code>fail</code></td>
-<td><code>warning</code></td>
+<td><code>CR004-untracked-reporting-timeline</code></td>
+<td>A started Article 14 operational stage has no bound draft, receipt, or explicit already-provided skip; unavailable CRA state produces the same unresolved rule family.</td>
+<td>Recompute the timeline and inspect operator evidence. RigorFoundry never submits.</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P3/P4</td>
-<td><code>fail</code></td>
-<td><code>note</code></td>
+<td><code>CR005-support-period-too-short</code></td>
+<td>Support is below 60 months and no internally consistent shorter expected-use declaration supports it.</td>
+<td>Review Article 13(8), expected use, and retained evidence. Below 60 months is not automatically a legal failure.</td>
 </tr>
 <tr>
-<td>reviewed <code>invalid</code></td>
-<td><code>notApplicable</code></td>
-<td><code>none</code></td>
-</tr>
-<tr>
-<td>reviewed <code>accepted-boundary</code></td>
-<td><code>informational</code></td>
-<td><code>note</code></td>
+<td><code>CR006-fixed-vuln-without-advisory</code></td>
+<td>A vulnerability is <code>fix-available</code> or <code>disclosed</code> without operator-declared publication or justified-delay evidence.</td>
+<td>Review the security update and advisory record. RigorFoundry never publishes.</td>
 </tr>
 </tbody>
 </table>
-<p>Every report candidate remains a result. The property bag records separate
-<code>rigorFoundry/candidateState</code> and <code>rigorFoundry/verdictState</code> values, so a SARIF
-consumer can distinguish scanner evidence from a human evidence decision.
-Severity provenance is <code>review-record</code> only when a validated review provides a
-severity.</p>
-<h2 id="identity-and-anchors">Identity and anchors<a class="headerlink" href="#identity-and-anchors" title="Permanent link">&para;</a></h2>
-<p>Rule IDs and indices come from the complete versioned RigorFoundry rule pack.
-The content-addressed candidate ID is exported as the exact <code>rigorFoundry/v1</code>
-fingerprint. RigorFoundry does not claim a GitHub <code>primaryLocationLineHash</code>
-without the scanned line bytes required to compute that separate identity.
-Locations use percent-encoded repository-relative paths and inclusive spans.</p>
-<p>The <code>rigorFoundry/anchor</code> property preserves the strict anchor schema. A
-tracked-blob result includes the exact scanned Git blob OID and content
-SHA-256. A repository-tree result includes the exact HEAD tree OID and complete
-tracked-content SHA-256. Run properties also bind the report, policy, ignored
-inventory, tracked content, rule-pack, HEAD, tree, and Git object format.</p>
-<p>The schema URI is exported as <code>SARIF_SCHEMA_URI</code>; its current value identifies
-the OASIS SARIF 2.1.0 Errata 01 JSON schema. <code>report_sarif</code> and the schema/version
-constants are provisional package-level APIs during the pre-1.0 series.</p>
+<p>Every candidate carries a tracked policy or disclosure-policy anchor. Dynamic
+evidence is content-addressed inside the candidate and therefore changes the
+report and campaign run digest when the verified CRA state changes. Campaigns
+retain the same ignored-state directory digest and run the ordinary
+independent-review workflow.</p>
+<h2 id="advisory-evidence-lifecycle">Advisory evidence lifecycle<a class="headerlink" href="#advisory-evidence-lifecycle" title="Permanent link">&para;</a></h2>
+<p>The lifecycle is append-only and prepare-only:</p>
+<pre><code class="language-bash">rigor advisory-draft VULN-2026-001 \
+  --root . \
+  --security-update-ref release/v1.2.3 \
+  --advisory-path SECURITY/ADV-2026-001.md \
+  --drafted-at 2026-09-12T10:00:00Z
+
+rigor advisory-publish VULN-2026-001 \
+  --root . \
+  --published-at 2026-09-13T10:00:00Z \
+  --evidence operator-publication-evidence.txt
+</code></pre>
+<p>The draft binds the advisory file's exact SHA-256. Publication and delay
+revisions require a separate bounded repository-local operator-evidence file
+and bind its normalised relative path plus exact SHA-256. Replay rehashes the
+advisory and every historical publication or delay evidence file, and fails
+closed if any bytes no longer match the chain. If publication is delayed,
+<code>advisory-delay --reason TEXT --review-at TS --evidence FILE</code> records the
+manufacturer's declaration and review time. It does not adjudicate whether the
+reason is legally sufficient. A later <code>advisory-publish</code> revision may close
+that delay. No command sends or publishes content.</p>
+<h2 id="signed-cra-standardpack">Signed CRA StandardPack<a class="headerlink" href="#signed-cra-standardpack" title="Permanent link">&para;</a></h2>
+<p><code>cra-pack</code> emits a real <code>StandardPack</code> signed with a caller-supplied Ed25519
+PEM key. Private key material is bounded-read, used in memory, and never copied
+into the repository or pack. On POSIX, the command rejects any signing-key file
+with group or other permissions:</p>
+<pre><code class="language-bash">rigor cra-pack \
+  --out cra-standard-pack.json \
+  --signing-key /secure/path/cra-pack-key.pem \
+  --key-id organisation-cra-pack-2026
+</code></pre>
+<p>The output maps Annex I Part I(2)(a), Annex I Part II(1–8), and Article 14 to
+nine evidence contracts. The mapping manifest has its own digest and names the
+official CELEX identifier; it does not claim to hash or reproduce the external
+legal text. Consumers must independently provision the matching public key in
+their verification trust store.</p>
+<p>The built-in <code>eu-cra-2024-2847</code> compliance-map template records <code>supporting</code>
+and <code>partial</code> relations and explicit unsupported domain gaps. In particular,
+secure, timely, free update distribution remains operator evidence. Pack
+controls use the ordinary <code>EffectiveProfileLock</code> and <code>ControlAssessment</code>
+pipeline; without fresh evidence and independent review they remain
+<code>needs-evidence</code> or <code>blocked</code>, never pass.</p>
+<h2 id="enforcement-prohibition">Enforcement prohibition<a class="headerlink" href="#enforcement-prohibition" title="Permanent link">&para;</a></h2>
+<p>CR001–CR006 have no rule-specific adjudicated corpus on landing. A ratchet or
+zero gate may activate a CR rule only after the normal maturity report proves
+the configured repository, reviewer, positive-review, false-positive, and
+reviewer-effort thresholds for that exact rule-pack digest. A clean scan alone
+cannot provide that evidence.</p>
 
 
 

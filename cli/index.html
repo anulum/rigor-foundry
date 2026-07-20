@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://anulum.github.io/rigor-foundry/cli/">
       
       
-        <link rel="prev" href="../cra-reporting/">
+        <link rel="prev" href="../cra-rules/">
       
       
         <link rel="next" href="../adapter-profiles/">
@@ -473,6 +473,33 @@
     
   
     Offline CRA reporting preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
   
 
     
@@ -1603,8 +1630,18 @@ active-exploitation evidence. The commands retain append-only evidence below
 <code>.rigor/cra/</code> and contain no network client. A receipt binds operator-supplied
 evidence after an external manufacturer action; it does not prove submission
 or authority acceptance.
+<code>advisory-draft</code>, <code>advisory-publish</code>, and <code>advisory-delay</code> add P2 append-only
+fixed-vulnerability advisory evidence without publishing. Publication and
+delay evidence remains under the repository root because replay binds its
+relative path and current bytes. <code>cra-pack</code> emits the fixed CRA StandardPack
+using a caller-supplied Ed25519 signing key; the key is never retained. Policy
+schema 1.4 explicitly activates CR001–CR006, while schema 1.3 and
+absent/not-applicable CRA blocks remain inert.
 See <a href="../cra-reporting/">Offline CRA Article 14 preparation</a> for exact commands,
-deadline semantics, payload partitions, exit codes, and legal-claims boundary.</p>
+deadline semantics, payload partitions, exit codes, and legal-claims boundary.
+See <a href="../cra-rules/">CRA readiness rules and StandardPack</a> for policy activation,
+rule verification, pack signing, campaign integration, and the enforcement
+prohibition.</p>
 <h2 id="read-only-inspection">Read-only inspection<a class="headerlink" href="#read-only-inspection" title="Permanent link">&para;</a></h2>
 <p><code>rigor scan --root PATH</code> inventories one Git repository and emits candidate
 evidence. It does not modify the inspected repository.</p>

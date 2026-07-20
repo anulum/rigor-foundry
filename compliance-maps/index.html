@@ -492,6 +492,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
         
   
@@ -1359,11 +1386,16 @@ copyrighted control text.</p>
 <td>AICPA Trust Services Criteria</td>
 <td>2017 with revised points of focus, 2022 (<a href="https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022">aicpa-cima.com</a>)</td>
 </tr>
+<tr>
+<td><code>eu-cra-2024-2847</code></td>
+<td>Regulation (EU) 2024/2847 CRA evidence crosswalk</td>
+<td>Official Journal text, 20 November 2024 (<a href="https://eur-lex.europa.eu/eli/reg/2024/2847/oj">EUR-Lex</a>)</td>
+</tr>
 </tbody>
 </table>
 <pre><code class="language-python">from rigor_foundry.compliance_maps import builtin_template, builtin_template_ids
 
-print(builtin_template_ids())            # ('aicpa-tsc-2017', 'iso-iec-27001-2022')
+print(builtin_template_ids())            # includes 'eu-cra-2024-2847'
 template = builtin_template(&quot;iso-iec-27001-2022&quot;)
 mapping = template.mapping_for(&quot;application-security&quot;)
 print([reference.reference for reference in mapping.references])
