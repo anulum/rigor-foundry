@@ -1,6 +1,27 @@
 {
   "files": [
     {
+      "dependency_boundary": "Public audit-domain constants and canonical model primitives define strict compliance-map records; built-in AICPA TSC, EU CRA, and ISO/IEC 27001 templates are consumed by the OSCAL exporter, CLI, documentation, and CRA pack source binding. No evidence collection, conformity adjudication, network retrieval, or external-standard content is owned here.",
+      "lines": 827,
+      "path": "src/rigor_foundry/compliance_maps.py",
+      "reassess_when": "The file exceeds 950 lines, another built-in standard adds an independently versioned mapping lifecycle, template data moves beyond static declarations, or evidence verification is introduced.",
+      "responsibility": "Versioned compliance-map protocol and built-in template owner for strict standard identities, supporting/partial/context relations, explicit unsupported domains, deterministic digests, non-certification language, and complete audit-domain coverage."
+    },
+    {
+      "dependency_boundary": "CRA registration, event, payload, submission, advisory, timeline-stage, Git-safe-read, and ignored internal-storage primitives define the persisted records and filesystem boundary. CLI argument parsing, network transport, authority submission, legal sufficiency, and conformity adjudication remain outside this owner.",
+      "lines": 782,
+      "path": "src/rigor_foundry/cra_store.py",
+      "reassess_when": "The file exceeds 900 lines, advisory and Article 14 record replay become independently versioned storage protocols, another persistence backend is introduced, or filesystem custody separates from cross-record validation.",
+      "responsibility": "Offline CRA append-only repository owner for bootstrap, registrations, event revisions, prepared payloads, receipts, skips, user notices, fixed-vulnerability advisories, content-addressed evidence replay, and fail-closed record-chain integrity."
+    },
+    {
+      "dependency_boundary": "Canonical audit primitives, GitInventory, GitRunner, and descriptor-based stable-read helpers provide identity and Git-ignore checks; scanner, campaign, CRA, and policy owners consume the resulting declarations and evidence. No rule verdict, CRA interpretation, or ignored-content persistence is owned here.",
+      "lines": 736,
+      "path": "src/rigor_foundry/ignored_inventory.py",
+      "reassess_when": "The file exceeds 850 lines, directory manifests gain an independently versioned public protocol, another capture family introduces a separate resource model, or descriptor traversal becomes a reusable storage subsystem.",
+      "responsibility": "Policy-declared ignored-inventory protocol and collector owner for strict declarations, canonical evidence parsing and digests, bounded no-follow file and directory capture, resource limits, and concurrent filesystem-mutation rejection."
+    },
+    {
       "dependency_boundary": "Public built-in adapter-profile, adapter-runtime, Git inventory, campaign, and candidate contracts; real Git repositories, executable fixtures, offline vulnerability databases, and sandbox provenance exercise Semgrep, Trivy, and OSV integration without reaching CLI or remediation authority.",
       "lines": 958,
       "path": "tests/test_adapter_profiles.py",
@@ -16,7 +37,7 @@
     },
     {
       "dependency_boundary": "Public CRA repository, product-registration, security-event, prepared-payload, submission-receipt, stage-skip, and user-notice records; real temporary Git repositories exercise the ignored local store and append-only replay boundary. No CLI parsing, network transport, remote submission, or conformity adjudication is exercised.",
-      "lines": 734,
+      "lines": 870,
       "path": "tests/test_cra_store.py",
       "reassess_when": "The file exceeds 850 lines, repository replay and submission-record validation become independently versioned protocols, another persistence backend is introduced, or its Git/store fixtures become shared by another test module.",
       "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
@@ -27,6 +48,13 @@
       "path": "tests/test_digest_dependencies.py",
       "reassess_when": "The file exceeds 900 lines, the normative graph partitions into independently versioned registries, a node family cannot remain mutation-tested through its separate owner, or another test-owner fixture dependency is introduced.",
       "responsibility": "Cross-protocol digest-mutation owner proving exact propagation, stable non-edges, canonical identities, and runtime graph queries over established production records."
+    },
+    {
+      "dependency_boundary": "Public ignored-inventory declarations, evidence, digest, scanner, policy, and real-Git test repository fixtures exercise descriptor and Git-ignore behavior. Monkeypatched filesystem primitives create deterministic replacement, mutation, hardlink, non-UTF-8, inaccessible, and resource-limit cases without reaching CRA rule semantics or external storage.",
+      "lines": 1024,
+      "path": "tests/test_ignored_inventory.py",
+      "reassess_when": "The file exceeds 1150 lines, directory-manifest and single-file capture require independent fixture lifecycles, another operating-system implementation is added, or race-fixture construction becomes shared test support.",
+      "responsibility": "Ignored-inventory protocol and real-filesystem integration test owner for strict parsing, canonical evidence, file and directory capture, no-follow path custody, hardlink and special-file rejection, bounded resources, and deterministic concurrent-mutation failure."
     },
     {
       "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, standard-pack, and canonical-digest records plus signing fixtures. Command-bound AdapterLock fixtures derive their digest through the public canonical_digest contract; no private production helper, remediation executor, or mutation authority is exercised.",
