@@ -26,6 +26,20 @@ content-digest claim against the exact capture and payload. See
 [Verified external source provenance](source-provenance.md) for the complete
 contract and examples.
 
+## Offline evidence verification
+
+`rigor verify --bundle BUNDLE.json --trust-policy TRUST.json --at TIMESTAMP
+[--output RESULT.json]` verifies signed reports, review attestations,
+StandardPacks, model-alias collapse, key lifecycle, expiry, and explicit
+unavailable evidence using only local supplied bytes. The separate trust
+policy is caller-selected and cannot be replaced from inside the evidence
+bundle. `--at` is mandatory UTC so the result is deterministic.
+
+Exit status is zero only when every entry verifies, one for a parseable
+invalid/stale/unavailable result, and two for malformed or unsafe input. See
+[Offline evidence verification](offline-verification.md) for schemas,
+signature domains, input restrictions, and the assurance boundary.
+
 ## Explicit adopter bootstrap
 
 `rigor bootstrap` creates one new trackable policy and one new Git-ignored

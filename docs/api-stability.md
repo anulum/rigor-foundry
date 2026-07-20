@@ -63,6 +63,14 @@ compatibility.
 declared retrieval metadata from publisher authority and bind claim, policy,
 capture, and successful offline verification through separate digests.
 
+`VerificationBundle`, `EvidenceEntry`, `DetachedEvidenceSignature`,
+`ReviewEvidence`, `ModelAliasEvidence`, `OfflineTrustPolicy`,
+`VerificationKeyPolicy`, `EvidenceVerificationResult`,
+`OfflineVerificationReport`, `verify_evidence_bundle`, and their schema/domain
+constants are provisional Python imports. The installed `rigor verify` command
+and its schema-1.0 bundle/trust-policy/result contracts form the stable M3 CLI
+boundary. See [Offline evidence verification](offline-verification.md).
+
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
 version `0.1.1`. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a

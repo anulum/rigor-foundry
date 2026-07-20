@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.7"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.8"
 
 DigestNode = Literal[
     "inventory",
@@ -31,11 +31,19 @@ DigestNode = Literal[
     "adapter-profile",
     "adapter-lock",
     "standard-pack",
+    "verification-key-policy",
+    "offline-trust-policy",
     "toolchain",
     "effective-profile",
     "report",
     "report-diff",
     "review",
+    "model-aliases",
+    "evidence-signature",
+    "review-evidence",
+    "verification-bundle",
+    "verification-result",
+    "offline-verification",
     "campaign",
     "attestation",
     "comparison",
@@ -113,11 +121,47 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     DigestNodeSpec("adapter-profile", "evidence_digest", "adapter_profiles"),
     DigestNodeSpec("adapter-lock", "adapter_digest", "effective_profile"),
     DigestNodeSpec("standard-pack", "pack_digest", "standard_pack"),
+    DigestNodeSpec(
+        "verification-key-policy",
+        "key_policy_digest",
+        "verification_policy",
+    ),
+    DigestNodeSpec(
+        "offline-trust-policy",
+        "policy_digest",
+        "verification_policy",
+    ),
     DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
     DigestNodeSpec("effective-profile", "lock_digest", "effective_profile"),
     DigestNodeSpec("report", "report_digest", "models"),
     DigestNodeSpec("report-diff", "diff_digest", "report_diff"),
     DigestNodeSpec("review", "review_digest", "models"),
+    DigestNodeSpec("model-aliases", "alias_digest", "offline_verification_models"),
+    DigestNodeSpec(
+        "evidence-signature",
+        "envelope_digest",
+        "offline_verification_models",
+    ),
+    DigestNodeSpec(
+        "review-evidence",
+        "evidence_digest",
+        "offline_verification_models",
+    ),
+    DigestNodeSpec(
+        "verification-bundle",
+        "bundle_digest",
+        "offline_verification_models",
+    ),
+    DigestNodeSpec(
+        "verification-result",
+        "result_digest",
+        "offline_verification_report",
+    ),
+    DigestNodeSpec(
+        "offline-verification",
+        "report_digest",
+        "offline_verification_report",
+    ),
     DigestNodeSpec("campaign", "contract_digest", "campaign_models"),
     DigestNodeSpec("attestation", "attestation_digest", "campaign_models"),
     DigestNodeSpec("comparison", "comparison_digest", "campaign_compare"),
@@ -148,12 +192,60 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     ),
     DigestDependency("adapter-lock", "effective-profile", "adapters[*]"),
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
+    DigestDependency(
+        "verification-key-policy",
+        "offline-trust-policy",
+        "keys[*] + key_policy_digest",
+    ),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),
     DigestDependency("report", "review", "report_digest"),
     DigestDependency(
         "report",
         "report-diff",
         "before_report_digest + after_report_digest",
+    ),
+    DigestDependency("report", "evidence-signature", "artifact_digest"),
+    DigestDependency("model-aliases", "evidence-signature", "artifact_digest"),
+    DigestDependency("review", "review-evidence", "review + review_digest"),
+    DigestDependency("report", "verification-bundle", "entries[*].expected_digest"),
+    DigestDependency(
+        "standard-pack",
+        "verification-bundle",
+        "entries[*].expected_digest",
+    ),
+    DigestDependency(
+        "model-aliases",
+        "verification-bundle",
+        "entries[*].expected_digest",
+    ),
+    DigestDependency(
+        "evidence-signature",
+        "verification-bundle",
+        "entries[*].signature",
+    ),
+    DigestDependency(
+        "review-evidence",
+        "verification-bundle",
+        "entries[*].expected_digest",
+    ),
+    DigestDependency("report", "verification-result", "artifact_digest"),
+    DigestDependency("standard-pack", "verification-result", "artifact_digest"),
+    DigestDependency("model-aliases", "verification-result", "artifact_digest"),
+    DigestDependency("review-evidence", "verification-result", "artifact_digest"),
+    DigestDependency(
+        "offline-trust-policy",
+        "offline-verification",
+        "policy_digest",
+    ),
+    DigestDependency(
+        "verification-bundle",
+        "offline-verification",
+        "bundle_digest",
+    ),
+    DigestDependency(
+        "verification-result",
+        "offline-verification",
+        "results[*] + result_digest",
     ),
     DigestDependency("inventory", "campaign", "tracked_content_digest"),
     DigestDependency(

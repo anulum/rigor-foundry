@@ -7,6 +7,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A stable no-network `rigor verify` path verifies signed audit reports,
+  reviews, StandardPacks, and model-alias declarations against a separate
+  caller-selected key-lifecycle policy. Schema-1.0 bundles and replayable
+  results preserve tamper, wrong-domain, revocation, expiry, alias-collapse,
+  stale, and unavailable-evidence states without granting assurance, fleet, or
+  remediation authority.
 - A schema-1.0 content-addressed report-diff record partitions exact candidate
   identities into retained, appeared, resolved, and anchor-changed evidence.
   Deterministic replay binds both reports; compatibility changes and ambiguous
@@ -85,6 +91,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The normative digest-dependency graph advances to schema 1.8 and binds
+  verification-key policy, caller trust policy, model aliases, detached
+  evidence signatures, review evidence, bundles, per-entry results, and the
+  aggregate offline verification report.
 - Ratchet and zero enforcement require an exact maturity report. Candidates
   from probationary rules remain counted and identified in the gate artifact
   but cannot silently become blocking debt. Repository policy schema 1.2 binds

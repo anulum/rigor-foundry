@@ -22,11 +22,11 @@
       "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
     },
     {
-      "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, rule-maturity policy and assessment, external source claim/policy/capture/verification, report, report diff, review, campaign, run attestation, comparison, adapter, standard pack, effective profile, task, event, and closure. Source-provenance and adapter-profile evidence mutation construction remain in their separate dedicated test owners. This registry test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
-      "lines": 892,
+      "dependency_boundary": "Public content-addressed protocol constructors for inventory, Git provenance, policy, maturity, external sources, reports and report differences, reviews, campaigns, attestations, comparisons, adapters, StandardPacks, effective profiles, tasks, events, and closures. Normative graph schema/topology validation is owned separately by test_digest_dependency_graph.py; source-provenance, adapter-profile, and offline-verification mutation construction remain in their dedicated owners. This test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
+      "lines": 760,
       "path": "tests/test_digest_dependencies.py",
       "reassess_when": "The file exceeds 900 lines, the normative graph partitions into independently versioned registries, a node family cannot remain mutation-tested through its separate owner, or another test-owner fixture dependency is introduced.",
-      "responsibility": "Normative digest-dependency graph owner proving schema completeness, acyclicity, exact mutation propagation, stable non-edges, canonical identities, and runtime graph queries."
+      "responsibility": "Cross-protocol digest-mutation owner proving exact propagation, stable non-edges, canonical identities, and runtime graph queries over established production records."
     },
     {
       "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, standard-pack, and canonical-digest records plus signing fixtures. Command-bound AdapterLock fixtures derive their digest through the public canonical_digest contract; no private production helper, remediation executor, or mutation authority is exercised.",

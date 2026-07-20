@@ -45,6 +45,7 @@ from .models import (
     reviews_from_path,
     reviews_to_json,
 )
+from .offline_verification_cli import add_offline_verify_command
 from .oscal_cli import add_oscal_commands
 from .report_diff_cli import add_report_diff_command
 from .review import (
@@ -646,6 +647,7 @@ def _parser() -> argparse.ArgumentParser:
     add_source_provenance_commands(subparsers)
     add_oscal_commands(subparsers)
     add_report_diff_command(subparsers)
+    add_offline_verify_command(subparsers)
     add_cra_commands(subparsers)
     return parser
 

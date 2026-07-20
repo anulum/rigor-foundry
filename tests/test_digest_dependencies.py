@@ -20,7 +20,6 @@ from test_effective_profile import profile as project_profile
 from test_effective_profile import standard_pack
 from test_work_models import lifecycle, source_records
 
-import rigor_foundry
 from rigor_foundry.campaign_compare import AuditComparison, compare_campaign
 from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.campaign_models import (
@@ -29,17 +28,9 @@ from rigor_foundry.campaign_models import (
     ToolchainIdentity,
 )
 from rigor_foundry.digest_dependencies import (
-    DIGEST_DEPENDENCIES,
-    DIGEST_DEPENDENCY_SCHEMA_VERSION,
-    DIGEST_NODES,
-    DigestDependency,
     DigestNode,
-    DigestNodeSpec,
-    digest_dependency_graph,
-    digest_dependency_graph_digest,
     direct_dependents,
     transitive_dependents,
-    validate_digest_dependency_graph,
 )
 from rigor_foundry.effective_profile import (
     AdapterLock,
@@ -387,129 +378,6 @@ def _assert_transition(
     changed = {node for node in before if before[node] != after[node]}
     expected = {mutated, *transitive_dependents(mutated)}.intersection(before)
     assert changed == expected
-
-
-def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
-    """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.7"
-    assert tuple(node.name for node in DIGEST_NODES) == (
-        "inventory",
-        "ignored-inventory",
-        "git-provenance",
-        "policy",
-        "rule-pack",
-        "maturity-policy",
-        "rule-maturity",
-        "source-claim",
-        "source-retrieval-policy",
-        "source-capture",
-        "source-verification",
-        "adapter-profile",
-        "adapter-lock",
-        "standard-pack",
-        "toolchain",
-        "effective-profile",
-        "report",
-        "report-diff",
-        "review",
-        "campaign",
-        "attestation",
-        "comparison",
-        "task",
-        "closure",
-    )
-    assert len(DIGEST_DEPENDENCIES) == 33
-    assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.7"
-    assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
-    assert rigor_foundry.WorkClosure is WorkClosure
-    assert direct_dependents("standard-pack") == ("effective-profile",)
-    assert direct_dependents("maturity-policy") == ("rule-maturity",)
-    assert direct_dependents("source-claim") == ("source-verification",)
-    assert transitive_dependents("source-retrieval-policy") == (
-        "source-capture",
-        "source-verification",
-    )
-    assert transitive_dependents("review") == ("task", "closure")
-    assert transitive_dependents("toolchain") == (
-        "effective-profile",
-        "campaign",
-        "attestation",
-        "comparison",
-    )
-    assert transitive_dependents("adapter-profile") == ("attestation",)
-    assert transitive_dependents("inventory") == (
-        "adapter-profile",
-        "report",
-        "report-diff",
-        "review",
-        "campaign",
-        "attestation",
-        "comparison",
-        "task",
-        "closure",
-    )
-    assert (
-        digest_dependency_graph_digest()
-        == "290da57afc8e792de6c8bba1ae78e821f7a6025ff00ebbc502568624fe85fd4d"
-    )
-
-
-@pytest.mark.parametrize(
-    "nodes, dependencies, messages",
-    [
-        (
-            (DIGEST_NODES[0], DIGEST_NODES[0]),
-            (),
-            ("node names", "identity fields"),
-        ),
-        (
-            DIGEST_NODES,
-            (DIGEST_DEPENDENCIES[0], DIGEST_DEPENDENCIES[0]),
-            ("edges must be unique",),
-        ),
-        (
-            DIGEST_NODES,
-            (DigestDependency("inventory", "report", ""),),
-            ("binding is empty",),
-        ),
-        (
-            DIGEST_NODES,
-            (DigestDependency("inventory", cast(DigestNode, "unknown"), "field"),),
-            ("unknown node",),
-        ),
-        (
-            DIGEST_NODES,
-            (DigestDependency("inventory", "inventory", "field"),),
-            ("self-cycle", "cycle reaches inventory"),
-        ),
-        (
-            DIGEST_NODES,
-            (
-                DigestDependency("inventory", "report", "field"),
-                DigestDependency("report", "inventory", "field"),
-            ),
-            ("cycle reaches inventory", "cycle reaches report"),
-        ),
-        (
-            (
-                DigestNodeSpec("inventory", "shared_digest", "one"),
-                DigestNodeSpec("policy", "shared_digest", "one"),
-            ),
-            (),
-            ("identity fields",),
-        ),
-    ],
-)
-def test_graph_validator_rejects_ambiguous_or_cyclic_schemas(
-    nodes: tuple[DigestNodeSpec, ...],
-    dependencies: tuple[DigestDependency, ...],
-    messages: tuple[str, ...],
-) -> None:
-    """Malformed graph declarations fail with exact structural evidence."""
-    errors = validate_digest_dependency_graph(nodes, dependencies)
-    for message in messages:
-        assert any(message in error for error in errors)
 
 
 def test_inventory_policy_and_rule_mutations_propagate_to_every_dependent(

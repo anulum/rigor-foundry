@@ -71,6 +71,24 @@ from .model_primitives import (
     WorkEvidence,
 )
 from .models import AuditPolicy, AuditReport, Candidate, ReviewRecord
+from .offline_verification import verify_evidence_bundle
+from .offline_verification_models import (
+    AUDIT_REPORT_SIGNATURE_DOMAIN,
+    DETACHED_EVIDENCE_SIGNATURE_SCHEMA_VERSION,
+    MODEL_ALIAS_EVIDENCE_SCHEMA_VERSION,
+    MODEL_ALIASES_SIGNATURE_DOMAIN,
+    OFFLINE_VERIFICATION_SCHEMA_VERSION,
+    REVIEW_EVIDENCE_SCHEMA_VERSION,
+    DetachedEvidenceSignature,
+    EvidenceEntry,
+    ModelAliasEvidence,
+    ReviewEvidence,
+    VerificationBundle,
+)
+from .offline_verification_report import (
+    EvidenceVerificationResult,
+    OfflineVerificationReport,
+)
 from .profile_resolution import resolve_effective_profile
 from .project_profile import (
     ApplicabilityDecision,
@@ -139,13 +157,21 @@ from .trust import (
     VerificationTrustStore,
     ed25519_signature_message,
 )
+from .verification_policy import (
+    OFFLINE_TRUST_POLICY_SCHEMA_VERSION,
+    VERIFICATION_KEY_POLICY_SCHEMA_VERSION,
+    OfflineTrustPolicy,
+    VerificationKeyPolicy,
+)
 from .version import __version__
 from .work_closure import WorkClosure
 from .work_models import WorkEvent, WorkRecord, WorkTask
 
 __all__ = [
     "ANCHOR_SCHEMA_VERSION",
+    "AUDIT_REPORT_SIGNATURE_DOMAIN",
     "COVERAGE_RESIDUAL_SCHEMA_VERSION",
+    "DETACHED_EVIDENCE_SIGNATURE_SCHEMA_VERSION",
     "DIGEST_DEPENDENCIES",
     "DIGEST_DEPENDENCY_SCHEMA_VERSION",
     "DIGEST_NODES",
@@ -153,14 +179,20 @@ __all__ = [
     "IGNORED_INVENTORY_SCHEMA_VERSION",
     "INFERENCE_IDENTITY_SCHEMA_VERSION",
     "MATURITY_CASE_MANIFEST_SCHEMA_VERSION",
+    "MODEL_ALIASES_SIGNATURE_DOMAIN",
+    "MODEL_ALIAS_EVIDENCE_SCHEMA_VERSION",
     "MODEL_WITNESS_SCHEMA_VERSION",
+    "OFFLINE_TRUST_POLICY_SCHEMA_VERSION",
+    "OFFLINE_VERIFICATION_SCHEMA_VERSION",
     "REPORT_DIFF_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
+    "REVIEW_EVIDENCE_SCHEMA_VERSION",
     "RULE_MATURITY_SCHEMA_VERSION",
     "SARIF_SCHEMA_URI",
     "SARIF_VERSION",
     "SOURCE_PROVENANCE_SCHEMA_VERSION",
     "STANDARD_PACK_SIGNATURE_DOMAIN",
+    "VERIFICATION_KEY_POLICY_SCHEMA_VERSION",
     "AdapterLock",
     "ApplicabilityDecision",
     "AuditPolicy",
@@ -177,12 +209,15 @@ __all__ = [
     "ControlOverlay",
     "CoverageResidual",
     "CoverageResidualManifest",
+    "DetachedEvidenceSignature",
     "DigestDependency",
     "DigestNodeSpec",
     "EffectiveControl",
     "EffectiveProfileLock",
     "EvidenceContract",
+    "EvidenceEntry",
     "EvidenceReference",
+    "EvidenceVerificationResult",
     "ExceptionWaiver",
     "ExternalSourceClaim",
     "GitExecutableProvenance",
@@ -190,8 +225,11 @@ __all__ = [
     "IgnoredInventoryDeclaration",
     "IgnoredInventoryEvidence",
     "InferenceIdentity",
+    "ModelAliasEvidence",
     "ModelWitness",
     "NegativeSearch",
+    "OfflineTrustPolicy",
+    "OfflineVerificationReport",
     "PackSelection",
     "PackSignature",
     "PackVerification",
@@ -209,6 +247,7 @@ __all__ = [
     "RepositoryTreeAnchor",
     "RequirementBinding",
     "ResolvedVariable",
+    "ReviewEvidence",
     "ReviewRecord",
     "ReviewerAttestation",
     "RuleMaturityAssessment",
@@ -226,6 +265,8 @@ __all__ = [
     "VariableAssignment",
     "VariableConstraints",
     "VariableDefinition",
+    "VerificationBundle",
+    "VerificationKeyPolicy",
     "VerificationTrustStore",
     "WorkClosure",
     "WorkEvent",
@@ -260,5 +301,6 @@ __all__ = [
     "validate_digest_dependency_graph",
     "validate_promotion_campaign",
     "validate_reviews",
+    "verify_evidence_bundle",
     "verify_external_source",
 ]

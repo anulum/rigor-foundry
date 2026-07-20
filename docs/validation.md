@@ -26,6 +26,17 @@ mutation, symbolic and hard links, cross-wired records, every public command,
 exit codes, and a static no-network import guard. Every new CRA production
 module is required to retain direct 100% statement and branch coverage.
 
+Offline verification has dedicated key-policy, bundle-model, result, engine,
+and subprocess-CLI owners. The focused set uses real Ed25519 signatures and
+covers all four evidence kinds, content and container tampering, cross-domain
+replay, fabricated signatures, unknown/not-yet-valid/revoked/expired keys,
+historical key validity, report and review expiry, contradictory review
+binding, transitive model-alias collapse, explicit unavailable evidence,
+aggregate status precedence, unsafe links, concurrent file-identity drift,
+oversized input, installed-style stdout/output behavior, and deterministic
+replay. Every M3 production owner retains direct 100% statement and branch
+coverage.
+
 Property assurance uses the hash-locked Hypothesis dependency through public
 production APIs. Dedicated owners cover strict protocol parsing, canonical
 serialization and digests, bounded condition evaluation, repository-relative

@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.7 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.8 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -36,11 +36,19 @@ separately and are not misrepresented as unconditional digest edges.
 | Adapter profile | `evidence_digest` | `adapter_profiles` |
 | Adapter lock | `adapter_digest` | `effective_profile` |
 | Standard pack | `pack_digest` | `standard_pack` |
+| Verification key policy | `key_policy_digest` | `verification_policy` |
+| Offline trust policy | `policy_digest` | `verification_policy` |
 | Toolchain | `toolchain.identity_digest` | `campaign_models` |
 | Effective profile | `lock_digest` | `effective_profile` |
 | Report | `report_digest` | `models` |
 | Report diff | `diff_digest` | `report_diff` |
 | Review | `review_digest` | `models` |
+| Model aliases | `alias_digest` | `offline_verification_models` |
+| Evidence signature | `envelope_digest` | `offline_verification_models` |
+| Review evidence | `evidence_digest` | `offline_verification_models` |
+| Verification bundle | `bundle_digest` | `offline_verification_models` |
+| Verification result | `result_digest` | `offline_verification_report` |
+| Offline verification | `report_digest` | `offline_verification_report` |
 | Campaign | `contract_digest` | `campaign_models` |
 | Run attestation | `attestation_digest` | `campaign_models` |
 | Comparison | `comparison_digest` | `campaign_compare` |
@@ -96,9 +104,25 @@ the task baseline and a revalidation that names another candidate or report.
 | Adapter profile | Run attestation | `adapter_evidence[*].profile_evidence` |
 | Adapter lock | Effective profile | complete `adapters[*]` record |
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
+| Verification key policy | Offline trust policy | complete `keys[*]` record plus `key_policy_digest` |
 | Toolchain | Effective profile | `toolchain_digest` |
 | Report | Review | `report_digest` |
 | Report | Report diff | `before_report_digest` plus `after_report_digest` |
+| Report | Evidence signature | `artifact_digest` |
+| Model aliases | Evidence signature | `artifact_digest` |
+| Review | Review evidence | complete review plus `review_digest` |
+| Report | Verification bundle | `entries[*].expected_digest` |
+| Standard pack | Verification bundle | `entries[*].expected_digest` |
+| Model aliases | Verification bundle | `entries[*].expected_digest` |
+| Evidence signature | Verification bundle | `entries[*].signature` |
+| Review evidence | Verification bundle | `entries[*].expected_digest` |
+| Report | Verification result | `artifact_digest` |
+| Standard pack | Verification result | `artifact_digest` |
+| Model aliases | Verification result | `artifact_digest` |
+| Review evidence | Verification result | `artifact_digest` |
+| Offline trust policy | Offline verification | `policy_digest` |
+| Verification bundle | Offline verification | `bundle_digest` |
+| Verification result | Offline verification | complete `results[*]` plus `result_digest` |
 | Inventory | Campaign | `tracked_content_digest` |
 | Ignored inventory | Campaign | complete evidence tuple plus `ignored_inventory_digest` |
 | Git provenance | Campaign | complete `git_provenance` record |
@@ -144,6 +168,11 @@ absence of cycles.
   profiles, waivers, and standard packs do not unconditionally consume it.
   Consumers must reference a specific verification digest in a separately
   versioned schema migration rather than infer authority from source presence.
+- Offline verification is an evidence-consumer subgraph. It binds exact
+  reports, packs, review evidence, model-alias collapse, detached signatures,
+  the selected lifecycle trust policy, bundle, and per-entry results. It does
+  not feed authority back into source reports, assurance campaigns, profiles,
+  enforcement, fleet state, or remediation plans.
 - Comparison logic embeds the exact participating attestation, report, and
   review digests, plus the collapsed model-witness identities. The set of
   participating records is campaign-instance data rather than a fixed schema
@@ -166,11 +195,13 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 24 identities and cover inventory, ignored inventory, Git
+The tests compare all 32 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
 adapter-profile, report, report diff, review, campaign, run attestation, task, adapter-lock,
 standard-pack, effective-profile, closure, source claim, retrieval policy,
-capture, and verification mutations.
+capture, source verification, verification-key policy, offline trust policy,
+model aliases, evidence signatures, review evidence, verification bundles,
+verification results, and offline verification reports.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the
 same closure identity.

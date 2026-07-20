@@ -50,6 +50,8 @@ remediation inputs without treating static heuristics as defect verdicts.
   duplicate findings, and mismatched repositories.
 - Pack and reviewer signatures use distinct versioned Ed25519 message domains;
   legacy raw-digest signatures are rejected rather than reinterpreted.
+- `rigor verify` checks caller-supplied signed evidence, explicit key lifecycle,
+  expiry, unavailable records, and model-alias collapse entirely offline.
 - Native audit adapters use validated argv, bounded execution time, and
   `shell=False`.
 - Internal campaign records are written only below Git-ignored paths.
@@ -127,6 +129,7 @@ explicit policy/evidence paths and no remediation authority.
 | `rigor bootstrap` | Create one explicit policy and ignored canonical TODO without guessing or overwrite. |
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
 | `rigor report-diff` | Compare two exact reports as replay-verifiable candidate-transition evidence. |
+| `rigor verify` | Verify signed reports, reviews, packs, model aliases, freshness, and unavailable evidence offline. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
 | `rigor sarif` | Export every candidate and optional review verdict as deterministic SARIF 2.1.0. |
@@ -158,6 +161,10 @@ The [content-addressed report-diff guide](docs/report-diff.md) documents strict
 compatibility declarations, ambiguous anchor matching, deterministic replay,
 and the boundary between candidate trends and correctness verdicts.
 
+The [offline evidence-verification guide](docs/offline-verification.md)
+documents caller-selected trust, key lifecycle, signature domains, bundle and
+result schemas, exit codes, alias collapse, and the assurance boundary.
+
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,
 hard output and time bounds, process-tree termination, and structured durable
@@ -183,6 +190,7 @@ strict policy form, installation boundary, coverage limits, and benchmark.
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review, each bound to a verified anchor. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `policy_models`, `models` | Versioned rules, strict protocol primitives, applicability, repository policy, and content-addressed report/review records. |
 | Report differences | `report_diff`, `report_diff_cli` | Replay-verifiable candidate transitions over two exact reports, with explicit compatibility and ambiguity evidence. |
+| Offline verification | `verification_policy`, `offline_verification_models`, `offline_verification`, `offline_verification_report`, `offline_verification_cli` | Caller-selected key lifecycle, signed multi-protocol evidence, alias collapse, explicit unavailability, deterministic aggregate results, and a no-network CLI. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |
