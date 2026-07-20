@@ -384,6 +384,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../report-diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report differences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../source-provenance/" class="md-nav__link">
         
   
@@ -563,6 +590,17 @@
     <span class="md-ellipsis">
       
         SARIF export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-addressed-report-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content-addressed report differences
       
     </span>
   </a>
@@ -1379,6 +1417,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#content-addressed-report-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content-addressed report differences
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#oscal-export-candidate-evidence-only" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1530,6 +1579,18 @@ verifies the report and optional review ledger before emitting deterministic
 SARIF 2.1.0. Without <code>--output</code>, JSON is written to stdout. An explicit output
 parent must already exist. Export is read-only and includes every candidate;
 see <a href="../sarif/">SARIF export</a> for the state mapping and anchor contract.</p>
+<h2 id="content-addressed-report-differences">Content-addressed report differences<a class="headerlink" href="#content-addressed-report-differences" title="Permanent link">&para;</a></h2>
+<p><code>rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]</code>
+loads and verifies both historical reports, partitions exact candidate
+identities into retained, appeared, resolved, and anchor-changed classes, and
+binds the result to both report digests. Missing history fails with status 2;
+it is never treated as an empty report.</p>
+<p>Repository, branch, policy, rule-pack, or scanner changes require the matching
+<code>--declare-*-change</code> flag and one <code>--justification</code>. Superfluous declarations
+also fail. Ambiguous relocation can be represented only through a strict
+<code>--anchor-matches</code> JSON document with exact before/after candidate IDs and a
+retained rationale. See <a href="../report-diff/">Content-addressed report differences</a>
+for the schema, replay contract, and non-verdict boundary.</p>
 <h2 id="oscal-export-candidate-evidence-only">OSCAL export (candidate evidence only)<a class="headerlink" href="#oscal-export-candidate-evidence-only" title="Permanent link">&para;</a></h2>
 <p><code>rigor oscal --lock LOCK.json --assessments ASSESSMENTS.json --template TEMPLATE_ID
 --generated-at TIMESTAMP [--output RESULTS.oscal.json]</code> loads a serialised

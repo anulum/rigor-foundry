@@ -486,6 +486,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../report-diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report differences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../source-provenance/" class="md-nav__link">
         
   
@@ -1321,6 +1348,8 @@ generator.</p>
 <li>Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.</li>
 <li>Review records bind decisions to exact report and policy digests.</li>
+<li>Report-diff records bind two exact reports and replay candidate identity and
+   anchor transitions without asserting chronology or correctness.</li>
 <li>A separate maturity report evaluates each rule against explicit adjudication,
    false-positive, reviewer-diversity, and reviewer-effort thresholds.</li>
 <li>SARIF projects candidates and optional review verdicts without merging them.</li>
@@ -1388,6 +1417,12 @@ boolean. The normative design and module map are maintained in
 The <a href="../digest-dependencies/">digest-dependency graph</a> defines every
 unconditional identity edge, its stable non-edges, and the production mutation
 proofs required for a schema change.</p>
+<p>Report differences are a separate evidence boundary. Exact candidate identity
+establishes retention; an anchor-independent semantic digest supports only
+unambiguous relocation matching. Operator-declared pairs resolve ambiguity and
+become content-addressed evidence. Repository, branch, policy, rule-pack, and
+scanner changes require exact compatibility declarations. The comparison does
+not prove ancestry, chronology, remediation, regression, or correctness.</p>
 <p>The tracked classified-residual contract records fail-closed race windows,
 platform primitives, and runtime invariants that cannot be exercised honestly
 through supported public surfaces. Every entry binds an exact symbol digest,

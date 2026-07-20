@@ -16,7 +16,7 @@
         <link rel="prev" href="../architecture/">
       
       
-        <link rel="next" href="../source-provenance/">
+        <link rel="next" href="../report-diff/">
       
       
         
@@ -383,6 +383,33 @@
 
       </a>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report-diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report differences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1162,7 +1189,7 @@
 <h1 id="contact-wwwanulumli-protoscienceanulumli">Contact: www.anulum.li | protoscience@anulum.li<a class="headerlink" href="#contact-wwwanulumli-protoscienceanulumli" title="Permanent link">&para;</a></h1>
 <h1 id="rigorfoundry-normative-digest-dependency-graph">RigorFoundry — normative digest-dependency graph<a class="headerlink" href="#rigorfoundry-normative-digest-dependency-graph" title="Permanent link">&para;</a></h1>
 <h1 id="digest-dependencies">Digest dependencies<a class="headerlink" href="#digest-dependencies" title="Permanent link">&para;</a></h1>
-<p>The schema 1.6 graph returned by <code>digest_dependency_graph()</code> is the normative,
+<p>The schema 1.7 graph returned by <code>digest_dependency_graph()</code> is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. <code>digest_dependency_graph_digest()</code> identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.</p>
@@ -1264,6 +1291,11 @@ separately and are not misrepresented as unconditional digest edges.</p>
 <td>Report</td>
 <td><code>report_digest</code></td>
 <td><code>models</code></td>
+</tr>
+<tr>
+<td>Report diff</td>
+<td><code>diff_digest</code></td>
+<td><code>report_diff</code></td>
 </tr>
 <tr>
 <td>Review</td>
@@ -1414,6 +1446,11 @@ the task baseline and a revalidation that names another candidate or report.</p>
 <td><code>report_digest</code></td>
 </tr>
 <tr>
+<td>Report</td>
+<td>Report diff</td>
+<td><code>before_report_digest</code> plus <code>after_report_digest</code></td>
+</tr>
+<tr>
 <td>Inventory</td>
 <td>Campaign</td>
 <td><code>tracked_content_digest</code></td>
@@ -1503,7 +1540,7 @@ absence of cycles.</p>
 <ul>
 <li>A candidate-only report change does not change the campaign contract. A
   campaign freezes scanner inputs, not one scanner output. It does change the
-  report, rebound review, task, and closure identities.</li>
+  report, report diff, rebound review, task, and closure identities.</li>
 <li>Standard packs, adapter locks, and effective-profile locks form a separate
   desired-state subgraph. Current repository reports and campaigns do not bind
   that lock, although the same toolchain identity can independently affect a
@@ -1542,9 +1579,9 @@ For each declared upstream class they assert both sides of the contract:</p>
 <li>every unrelated identity in the exercised graph remains byte-for-byte
    stable.</li>
 </ol>
-<p>The tests compare all 23 identities and cover inventory, ignored inventory, Git
+<p>The tests compare all 24 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
-adapter-profile, report, review, campaign, run attestation, task, adapter-lock,
+adapter-profile, report, report diff, review, campaign, run attestation, task, adapter-lock,
 standard-pack, effective-profile, closure, source claim, retrieval policy,
 capture, and verification mutations.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
