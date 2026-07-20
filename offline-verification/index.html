@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/api-stability/">
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/offline-verification/">
       
       
-        <link rel="prev" href="../polyglot-capability-matrix/">
+        <link rel="prev" href="../report-diff/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../source-provenance/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Public API stability - RigorFoundry</title>
+        <title>Offline evidence verification - RigorFoundry</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#public-api-stability" class="md-skip">
+        <a href="#offline-evidence-verification" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Public API stability
+              Offline evidence verification
             
           </span>
         </div>
@@ -408,10 +408,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../offline-verification/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline evidence verification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -427,6 +454,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#caller-selected-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caller-selected trust
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bundle-records" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundle records
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assurance-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assurance boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1029,37 +1120,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Public API stability
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
         
   
   
@@ -1075,59 +1139,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#stable-imports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stable imports
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#provisional-imports" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Provisional imports
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deprecation-contract" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deprecation contract
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1267,10 +1278,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#stable-imports" class="md-nav__link">
+  <a href="#caller-selected-trust" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Stable imports
+        Caller-selected trust
       
     </span>
   </a>
@@ -1278,10 +1289,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provisional-imports" class="md-nav__link">
+  <a href="#bundle-records" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provisional imports
+        Bundle records
       
     </span>
   </a>
@@ -1289,10 +1300,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deprecation-contract" class="md-nav__link">
+  <a href="#input-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deprecation contract
+        Input boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assurance-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assurance boundary
       
     </span>
   </a>
@@ -1319,87 +1341,107 @@
   
 
 
-<h1 id="public-api-stability">Public API stability<a class="headerlink" href="#public-api-stability" title="Permanent link">&para;</a></h1>
-<p>RigorFoundry inventories every name in the package-level <code>rigor_foundry.__all__</code>
-under API-stability schema <code>1.1</code>. The authoritative machine-readable inventory
-is returned by:</p>
-<pre><code class="language-python">from rigor_foundry.api_stability import public_api_manifest
-
-manifest = public_api_manifest()
+<h1 id="offline-evidence-verification">Offline evidence verification<a class="headerlink" href="#offline-evidence-verification" title="Permanent link">&para;</a></h1>
+<p><code>rigor verify</code> is the stable free verification boundary for signed
+RigorFoundry evidence. It reads only caller-supplied local files. It contains
+no network client, service discovery, telemetry, fleet authority, or paid
+service dependency.</p>
+<pre><code class="language-bash">rigor verify \
+  --bundle evidence-bundle.json \
+  --trust-policy trust-policy.json \
+  --at 2026-07-20T12:00:00Z \
+  --output verification-result.json
 </code></pre>
-<p>The result has sorted <code>stable</code> and <code>provisional</code> name arrays, exact stable
-runtime-binding records, and structured <code>deprecated</code> records. Compatibility
-tests require every top-level export to have exactly one classification. Every
-stable binding is also checked for its exact canonical object identity, object
-kind, implementation module, and qualified name, so retaining or spoofing a
-spelling while rebinding it fails.</p>
-<h2 id="stable-imports">Stable imports<a class="headerlink" href="#stable-imports" title="Permanent link">&para;</a></h2>
-<p>The current stable top-level import names are:</p>
+<p><code>--at</code> is mandatory and must be UTC. An explicit evaluation time makes expiry
+and revocation results replayable instead of depending on an ambient clock.
+Without <code>--output</code>, the result is written to stdout. Output creation is
+exclusive and never overwrites an existing path.</p>
+<p>The command returns:</p>
 <ul>
-<li><code>AuditPolicy</code></li>
-<li><code>AuditReport</code></li>
-<li><code>Candidate</code></li>
-<li><code>GitTrustPolicy</code></li>
-<li><code>ReviewRecord</code></li>
-<li><code>__version__</code></li>
-<li><code>report_markdown</code></li>
-<li><code>review_templates</code></li>
-<li><code>scan_repository</code></li>
-<li><code>validate_reviews</code></li>
+<li><code>0</code> only when every bundle entry is <code>verified</code>;</li>
+<li><code>1</code> for a parseable result containing <code>invalid</code>, <code>stale</code>, or <code>unavailable</code>
+  evidence;</li>
+<li><code>2</code> for malformed, unsafe, oversized, or unsupported input.</li>
 </ul>
-<p><code>AuditPolicy</code> is implemented by the cohesive <code>policy_models</code> owner, while the
-established <code>rigor_foundry.models.AuditPolicy</code> import and runtime module identity
-remain unchanged. This split is an internal ownership change, not a public API
-migration.</p>
-<p>Within the same major release, these names will not be removed or silently
-rebound to an incompatible kind of object. Record fields and serialized
-protocols retain their own explicit schema/version contracts; stable import
-availability does not erase those migration boundaries.</p>
-<h2 id="provisional-imports">Provisional imports<a class="headerlink" href="#provisional-imports" title="Permanent link">&para;</a></h2>
-<p><code>report_sarif</code>, <code>SARIF_SCHEMA_URI</code>, and <code>SARIF_VERSION</code> are provisional public
-imports. Their emitted document is independently governed by SARIF 2.1.0 and
-the explicit RigorFoundry property names documented in <a href="../sarif/">SARIF export</a>.</p>
-<p><code>RuleMaturityPolicy</code>, <code>RuleReviewEvidence</code>, <code>RuleMaturityAssessment</code>,
-<code>RuleMaturityReport</code>, <code>RULE_MATURITY_SCHEMA_VERSION</code>,
-<code>MATURITY_CASE_MANIFEST_SCHEMA_VERSION</code>, and
-<code>evaluate_rule_maturity_manifest</code> are provisional. Their JSON contracts are
-independently versioned at schema 1.0, and enforcement consumes their exact
-content digest rather than treating top-level import stability as protocol
-compatibility.</p>
-<p><code>ExternalSourceClaim</code>, <code>SourceRetrievalPolicy</code>, <code>SourceCapture</code>,
-<code>SourceVerification</code>, <code>SOURCE_PROVENANCE_SCHEMA_VERSION</code>,
-<code>read_source_payload</code>, <code>source_provenance_to_json</code>, and
-<code>verify_external_source</code> are provisional. Their schema 1.0 records distinguish
-declared retrieval metadata from publisher authority and bind claim, policy,
-capture, and successful offline verification through separate digests.</p>
-<p><code>VerificationBundle</code>, <code>EvidenceEntry</code>, <code>DetachedEvidenceSignature</code>,
-<code>ReviewEvidence</code>, <code>ModelAliasEvidence</code>, <code>OfflineTrustPolicy</code>,
-<code>VerificationKeyPolicy</code>, <code>EvidenceVerificationResult</code>,
-<code>OfflineVerificationReport</code>, <code>verify_evidence_bundle</code>, and their schema/domain
-constants are provisional Python imports. The installed <code>rigor verify</code> command
-and its schema-1.0 bundle/trust-policy/result contracts form the stable M3 CLI
-boundary. See <a href="../offline-verification/">Offline evidence verification</a>.</p>
-<p>Every other current <code>rigor_foundry.__all__</code> name is explicitly provisional in
-version <code>0.1.1</code>. Provisional does not mean untested: these APIs remain typed,
-documented where public, and covered by production-boundary tests. It means a
-minor release may refine or remove the import after an explicit changelog entry
-while the project remains pre-1.0.</p>
-<p>Consumers that need a provisional name should pin an exact RigorFoundry
-version and test the relevant schema or behavior rather than inferring
-compatibility from package import success.</p>
-<h2 id="deprecation-contract">Deprecation contract<a class="headerlink" href="#deprecation-contract" title="Permanent link">&para;</a></h2>
-<p>A stable name must remain exported while deprecated. Its lifecycle record must
-name:</p>
+<h2 id="caller-selected-trust">Caller-selected trust<a class="headerlink" href="#caller-selected-trust" title="Permanent link">&para;</a></h2>
+<p>The trust policy is a separate input, not part of the untrusted evidence
+bundle. Replacing the bundle therefore cannot silently replace its trusted
+keys. Policy schema 1.0 binds each unique Ed25519 key and public-key digest to
+<code>valid_from</code>, <code>valid_until</code>, and an optional <code>revoked_at</code> instant. Duplicate key
+IDs and public-key aliases are rejected.</p>
+<p>Verification distinguishes:</p>
 <ul>
-<li>the final semantic version that introduced the deprecation;</li>
-<li>a different classified replacement, when one exists; and</li>
-<li>a final semantic version no earlier than two minor releases later within the
-  same major line. A new major version may perform the removal explicitly.</li>
+<li><code>unknown</code>, <code>not-yet-valid</code>, and <code>revoked</code> keys as invalid;</li>
+<li>an expired key as stale evidence;</li>
+<li>a key that was not active at the evidence signing time as invalid.</li>
 </ul>
-<p>Compatibility tests reject duplicate or overlapping classifications,
-unclassified exports, classifications for absent names, non-final semantic
-versions, self-replacements, missing replacements, and a too-short same-major
-deprecation window. There are no deprecated top-level imports in <code>0.1.1</code>.</p>
+<p>Report, review, and model-alias signatures bind a signing time. The existing
+StandardPack signature has no signing-time field, so pack verification proves
+the native signature under a key active at the explicit evaluation time; it
+does not reconstruct historical key status.</p>
+<h2 id="bundle-records">Bundle records<a class="headerlink" href="#bundle-records" title="Permanent link">&para;</a></h2>
+<p>Bundle schema 1.0 contains a sorted, unique set of evidence entries. Every
+available entry embeds its strict production protocol document and exact
+digest. Every unavailable entry preserves the expected digest and a non-empty
+reason without inventing document bytes.</p>
+<p>Supported kinds are:</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Verification contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>audit-report</code></td>
+<td>Reparse the complete report and every nested digest, then verify a time-bounded signature in <code>rigor-foundry.audit-report.v1</code>.</td>
+</tr>
+<tr>
+<td><code>review</code></td>
+<td>Reparse the review and reviewer attestation, bind the review digest and decision, and verify the existing reviewer-attestation domain and expiry.</td>
+</tr>
+<tr>
+<td><code>standard-pack</code></td>
+<td>Reparse the pack, controls, native PackSignature, payload digest, and the existing standard-pack domain.</td>
+</tr>
+<tr>
+<td><code>model-aliases</code></td>
+<td>Reparse provider, exact-model, family, operator, and run identities; recompute transitive alias collapse; then verify <code>rigor-foundry.model-aliases.v1</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The review decision mapping is fixed: <code>valid</code> to <code>pass</code>, <code>invalid</code> to <code>fail</code>,
+<code>accepted-boundary</code> to <code>accepted-risk</code>, and <code>needs-evidence</code> to
+<code>needs-evidence</code>. Contradictory signed decisions are invalid.</p>
+<p>Report and model-alias envelopes sign a canonical payload digest containing
+the schema, evidence kind, Ed25519 algorithm, protocol domain, key ID, exact
+artifact digest, signing time, and expiry. A signature from another domain
+cannot be relabelled or replayed.</p>
+<p>The aggregate report is itself content-addressed. It binds the evaluation
+time, selected trust-policy digest, input bundle digest, ordered per-evidence
+results, bounded details, aggregate status, and report digest. Status
+precedence is <code>invalid</code>, <code>stale</code>, <code>unavailable</code>, then <code>verified</code>; partial
+evidence can never be upgraded.</p>
+<h2 id="input-boundary">Input boundary<a class="headerlink" href="#input-boundary" title="Permanent link">&para;</a></h2>
+<p>Bundle and trust-policy inputs must be single-link regular files opened with
+no-follow semantics. Symbolic links, hard links, concurrent identity changes,
+invalid UTF-8 or JSON, and documents above 16 MiB fail closed. This is a local
+file-verification boundary, not a repository mutation command.</p>
+<h2 id="assurance-boundary">Assurance boundary<a class="headerlink" href="#assurance-boundary" title="Permanent link">&para;</a></h2>
+<p>A verified result proves only that the supplied bytes satisfy the declared
+schemas, digests, signatures, key lifecycle, expiry, review binding, and alias
+relations under the caller-selected trust policy. It does not prove:</p>
+<ul>
+<li>that a report is current for a live repository or that its candidates are
+  defect verdicts;</li>
+<li>that the selected trust policy is authoritative for another organisation;</li>
+<li>model independence beyond the explicit correlation declarations;</li>
+<li>remediation success, fleet admission, regulatory conformity, or universal
+  software safety.</li>
+</ul>
+<p>Assurance campaigns, enforcement, fleet views, and remediation authority stay
+outside this free verification path.</p>
 
 
 

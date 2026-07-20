@@ -421,6 +421,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../offline-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline evidence verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../source-provenance/" class="md-nav__link">
         
   
@@ -1189,7 +1216,7 @@
 <h1 id="contact-wwwanulumli-protoscienceanulumli">Contact: www.anulum.li | protoscience@anulum.li<a class="headerlink" href="#contact-wwwanulumli-protoscienceanulumli" title="Permanent link">&para;</a></h1>
 <h1 id="rigorfoundry-normative-digest-dependency-graph">RigorFoundry — normative digest-dependency graph<a class="headerlink" href="#rigorfoundry-normative-digest-dependency-graph" title="Permanent link">&para;</a></h1>
 <h1 id="digest-dependencies">Digest dependencies<a class="headerlink" href="#digest-dependencies" title="Permanent link">&para;</a></h1>
-<p>The schema 1.7 graph returned by <code>digest_dependency_graph()</code> is the normative,
+<p>The schema 1.8 graph returned by <code>digest_dependency_graph()</code> is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. <code>digest_dependency_graph_digest()</code> identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.</p>
@@ -1278,6 +1305,16 @@ separately and are not misrepresented as unconditional digest edges.</p>
 <td><code>standard_pack</code></td>
 </tr>
 <tr>
+<td>Verification key policy</td>
+<td><code>key_policy_digest</code></td>
+<td><code>verification_policy</code></td>
+</tr>
+<tr>
+<td>Offline trust policy</td>
+<td><code>policy_digest</code></td>
+<td><code>verification_policy</code></td>
+</tr>
+<tr>
 <td>Toolchain</td>
 <td><code>toolchain.identity_digest</code></td>
 <td><code>campaign_models</code></td>
@@ -1301,6 +1338,36 @@ separately and are not misrepresented as unconditional digest edges.</p>
 <td>Review</td>
 <td><code>review_digest</code></td>
 <td><code>models</code></td>
+</tr>
+<tr>
+<td>Model aliases</td>
+<td><code>alias_digest</code></td>
+<td><code>offline_verification_models</code></td>
+</tr>
+<tr>
+<td>Evidence signature</td>
+<td><code>envelope_digest</code></td>
+<td><code>offline_verification_models</code></td>
+</tr>
+<tr>
+<td>Review evidence</td>
+<td><code>evidence_digest</code></td>
+<td><code>offline_verification_models</code></td>
+</tr>
+<tr>
+<td>Verification bundle</td>
+<td><code>bundle_digest</code></td>
+<td><code>offline_verification_models</code></td>
+</tr>
+<tr>
+<td>Verification result</td>
+<td><code>result_digest</code></td>
+<td><code>offline_verification_report</code></td>
+</tr>
+<tr>
+<td>Offline verification</td>
+<td><code>report_digest</code></td>
+<td><code>offline_verification_report</code></td>
 </tr>
 <tr>
 <td>Campaign</td>
@@ -1436,6 +1503,11 @@ the task baseline and a revalidation that names another candidate or report.</p>
 <td><code>pack_digests[*]</code> plus verified pack-derived records</td>
 </tr>
 <tr>
+<td>Verification key policy</td>
+<td>Offline trust policy</td>
+<td>complete <code>keys[*]</code> record plus <code>key_policy_digest</code></td>
+</tr>
+<tr>
 <td>Toolchain</td>
 <td>Effective profile</td>
 <td><code>toolchain_digest</code></td>
@@ -1449,6 +1521,81 @@ the task baseline and a revalidation that names another candidate or report.</p>
 <td>Report</td>
 <td>Report diff</td>
 <td><code>before_report_digest</code> plus <code>after_report_digest</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Evidence signature</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Model aliases</td>
+<td>Evidence signature</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Review</td>
+<td>Review evidence</td>
+<td>complete review plus <code>review_digest</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Verification bundle</td>
+<td><code>entries[*].expected_digest</code></td>
+</tr>
+<tr>
+<td>Standard pack</td>
+<td>Verification bundle</td>
+<td><code>entries[*].expected_digest</code></td>
+</tr>
+<tr>
+<td>Model aliases</td>
+<td>Verification bundle</td>
+<td><code>entries[*].expected_digest</code></td>
+</tr>
+<tr>
+<td>Evidence signature</td>
+<td>Verification bundle</td>
+<td><code>entries[*].signature</code></td>
+</tr>
+<tr>
+<td>Review evidence</td>
+<td>Verification bundle</td>
+<td><code>entries[*].expected_digest</code></td>
+</tr>
+<tr>
+<td>Report</td>
+<td>Verification result</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Standard pack</td>
+<td>Verification result</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Model aliases</td>
+<td>Verification result</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Review evidence</td>
+<td>Verification result</td>
+<td><code>artifact_digest</code></td>
+</tr>
+<tr>
+<td>Offline trust policy</td>
+<td>Offline verification</td>
+<td><code>policy_digest</code></td>
+</tr>
+<tr>
+<td>Verification bundle</td>
+<td>Offline verification</td>
+<td><code>bundle_digest</code></td>
+</tr>
+<tr>
+<td>Verification result</td>
+<td>Offline verification</td>
+<td>complete <code>results[*]</code> plus <code>result_digest</code></td>
 </tr>
 <tr>
 <td>Inventory</td>
@@ -1559,6 +1706,11 @@ absence of cycles.</p>
   profiles, waivers, and standard packs do not unconditionally consume it.
   Consumers must reference a specific verification digest in a separately
   versioned schema migration rather than infer authority from source presence.</li>
+<li>Offline verification is an evidence-consumer subgraph. It binds exact
+  reports, packs, review evidence, model-alias collapse, detached signatures,
+  the selected lifecycle trust policy, bundle, and per-entry results. It does
+  not feed authority back into source reports, assurance campaigns, profiles,
+  enforcement, fleet state, or remediation plans.</li>
 <li>Comparison logic embeds the exact participating attestation, report, and
   review digests, plus the collapsed model-witness identities. The set of
   participating records is campaign-instance data rather than a fixed schema
@@ -1579,11 +1731,13 @@ For each declared upstream class they assert both sides of the contract:</p>
 <li>every unrelated identity in the exercised graph remains byte-for-byte
    stable.</li>
 </ol>
-<p>The tests compare all 24 identities and cover inventory, ignored inventory, Git
+<p>The tests compare all 32 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
 adapter-profile, report, report diff, review, campaign, run attestation, task, adapter-lock,
 standard-pack, effective-profile, closure, source claim, retrieval policy,
-capture, and verification mutations.
+capture, source verification, verification-key policy, offline trust policy,
+model aliases, evidence signatures, review evidence, verification bundles,
+verification results, and offline verification reports.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
 digests. An archived work record and its original closed record reproduce the
 same closure identity.</p>

@@ -411,6 +411,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../offline-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline evidence verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../source-provenance/" class="md-nav__link">
         
   
@@ -529,6 +556,17 @@
     <span class="md-ellipsis">
       
         External source provenance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#offline-evidence-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline evidence verification
       
     </span>
   </a>
@@ -1356,6 +1394,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#offline-evidence-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline evidence verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#explicit-adopter-bootstrap" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1522,6 +1571,17 @@ retrieval policy. It does not perform or authorise network access.
 content-digest claim against the exact capture and payload. See
 <a href="../source-provenance/">Verified external source provenance</a> for the complete
 contract and examples.</p>
+<h2 id="offline-evidence-verification">Offline evidence verification<a class="headerlink" href="#offline-evidence-verification" title="Permanent link">&para;</a></h2>
+<p><code>rigor verify --bundle BUNDLE.json --trust-policy TRUST.json --at TIMESTAMP
+[--output RESULT.json]</code> verifies signed reports, review attestations,
+StandardPacks, model-alias collapse, key lifecycle, expiry, and explicit
+unavailable evidence using only local supplied bytes. The separate trust
+policy is caller-selected and cannot be replaced from inside the evidence
+bundle. <code>--at</code> is mandatory UTC so the result is deterministic.</p>
+<p>Exit status is zero only when every entry verifies, one for a parseable
+invalid/stale/unavailable result, and two for malformed or unsafe input. See
+<a href="../offline-verification/">Offline evidence verification</a> for schemas,
+signature domains, input restrictions, and the assurance boundary.</p>
 <h2 id="explicit-adopter-bootstrap">Explicit adopter bootstrap<a class="headerlink" href="#explicit-adopter-bootstrap" title="Permanent link">&para;</a></h2>
 <p><code>rigor bootstrap</code> creates one new trackable policy and one new Git-ignored
 canonical TODO. It requires explicit <code>--policy</code>, <code>--todo</code>, <code>--review-ledger</code>,
