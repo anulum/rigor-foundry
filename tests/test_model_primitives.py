@@ -14,6 +14,8 @@ from copy import deepcopy
 import pytest
 
 from rigor_foundry.model_primitives import (
+    VARIABLE_ASSIGNMENT_SCHEMA_VERSION,
+    VARIABLE_DEFINITION_SCHEMA_VERSION,
     SecretReference,
     VariableAssignment,
     VariableConstraints,
@@ -127,6 +129,7 @@ def definition(*, secret: bool = False) -> VariableDefinition:
 def test_variable_definition_and_assignment_bind_exact_digests() -> None:
     """Definitions and typed assignments round-trip only with exact digest binding."""
     public = definition()
+    assert public.to_dict()["schema_version"] == VARIABLE_DEFINITION_SCHEMA_VERSION == "1.0"
     assert VariableDefinition.from_dict(public.to_dict()) == public
     assignment = VariableAssignment.build(
         public,
@@ -135,6 +138,7 @@ def test_variable_definition_and_assignment_bind_exact_digests() -> None:
         source="project-overlay",
     )
     encoded = assignment.to_dict(public.definition_digest)
+    assert encoded["schema_version"] == VARIABLE_ASSIGNMENT_SCHEMA_VERSION == "1.0"
     assert VariableAssignment.from_dict(encoded, public) == assignment
     altered = deepcopy(encoded)
     altered["value"] = "linux"

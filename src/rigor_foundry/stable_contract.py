@@ -343,6 +343,8 @@ STABLE_SCHEMA_VERSIONS: Mapping[str, str] = MappingProxyType(
         "standard-pack": "1.1",
         "trust-store": "1.0",
         "verification-key-policy": "1.0",
+        "variable-assignment": "1.0",
+        "variable-definition": "1.0",
         "work-closure": "1.0",
         "work-record": "1.0",
     }

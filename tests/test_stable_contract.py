@@ -91,6 +91,8 @@ _SCHEMA_SYMBOLS = {
     "standard-pack": "standard_pack.PACK_SCHEMA_VERSION",
     "trust-store": "trust.TRUST_STORE_SCHEMA_VERSION",
     "verification-key-policy": ("verification_policy.VERIFICATION_KEY_POLICY_SCHEMA_VERSION"),
+    "variable-assignment": "model_primitives.VARIABLE_ASSIGNMENT_SCHEMA_VERSION",
+    "variable-definition": "model_primitives.VARIABLE_DEFINITION_SCHEMA_VERSION",
     "work-closure": "work_closure.WORK_CLOSURE_SCHEMA_VERSION",
     "work-record": "work_models.WORK_SCHEMA_VERSION",
 }
@@ -157,6 +159,43 @@ def _declared_schema_symbols() -> set[str]:
     return discovered
 
 
+def _literal_schema_version_sites() -> tuple[str, ...]:
+    """Find bare string schema identifiers that would evade the named inventory."""
+    package_root = Path(__file__.replace("tests/test_stable_contract.py", "src/rigor_foundry"))
+    sites: list[str] = []
+    for path in package_root.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Dict):
+                for key, value in zip(node.keys, node.values, strict=True):
+                    if (
+                        isinstance(key, ast.Constant)
+                        and key.value == "schema_version"
+                        and isinstance(value, ast.Constant)
+                        and isinstance(value.value, str)
+                    ):
+                        sites.append(f"{path.name}:{node.lineno}")
+            if not isinstance(node, ast.Compare):
+                continue
+            values = (node.left, *node.comparators)
+            has_literal = any(
+                isinstance(value, ast.Constant) and isinstance(value.value, str)
+                for value in values
+            )
+            has_schema_lookup = any(
+                isinstance(value, ast.Call)
+                and isinstance(value.func, ast.Attribute)
+                and value.func.attr == "get"
+                and value.args
+                and isinstance(value.args[0], ast.Constant)
+                and value.args[0].value == "schema_version"
+                for value in values
+            )
+            if has_literal and has_schema_lookup:
+                sites.append(f"{path.name}:{node.lineno}")
+    return tuple(sorted(set(sites)))
+
+
 def test_live_surfaces_match_the_frozen_1_0_contract() -> None:
     """Every supported command, flag, positional, schema, and stable API is exact."""
     assert set(_SCHEMA_SYMBOLS) == set(STABLE_SCHEMA_VERSIONS)
@@ -171,6 +210,11 @@ def test_every_production_schema_version_is_frozen_or_explicitly_private() -> No
     discovered = _declared_schema_symbols()
     assert set(_SCHEMA_DISCOVERY_EXCLUSIONS) <= discovered
     assert discovered - set(_SCHEMA_DISCOVERY_EXCLUSIONS) == observed_symbols
+
+
+def test_production_serializers_do_not_use_bare_schema_version_literals() -> None:
+    """A nested wire format cannot evade discovery by using a bare version string."""
+    assert _literal_schema_version_sites() == ()
 
 
 def test_manifest_is_deterministic_digest_bound_json() -> None:

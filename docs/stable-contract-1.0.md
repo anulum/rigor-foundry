@@ -32,12 +32,14 @@ success as universal compatibility:
 2. **CLI spellings.** Every currently installed command, option spelling, and
    positional name is in the stable CLI set. CI rejects a removed, renamed,
    added-but-unclassified, or silently changed parser surface.
-3. **Serialized protocols.** The manifest names 59 exact schema identifiers
+3. **Serialized protocols.** The manifest names 61 exact schema identifiers
    and versions, including reports, reviews, policies, anchors, campaigns,
    packs, maturity, enforcement, offline verification, CRA evidence, SARIF,
    OSCAL, remediation, provenance, work records, and adapter evidence. An AST
    guard fails when any new non-private production `*_SCHEMA_VERSION`
-   declaration is absent from the inventory. The only exclusions are the
+   declaration is absent from the inventory or a serializer/parser uses a bare
+   string `schema_version` that would evade the named inventory. The only
+   declaration exclusions are the
    `SCHEMA_VERSION` alias of the report schema and one private nested-directory
    helper; both are named with reasons in the test contract.
 

@@ -9,9 +9,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - A digest-bound proposed-1.0 compatibility contract classifies and ratchets
   the stable package-level Python imports, every installed CLI command with its
-  option and positional spellings, and 59 explicitly inventoried schema
-  versions. An AST completeness guard rejects any unclassified non-private
-  production schema declaration. `rigor contract` emits the exact manifest
+  option and positional spellings, and 61 explicitly inventoried schema
+  versions. AST completeness guards reject unclassified non-private top-level
+  schema-version declarations and bare literal `schema_version` gates in
+  production serializers or parsers. `rigor contract` emits the exact manifest
   without repository or network access; incompatible wire changes require a
   new schema identifier and explicit migration rather than reinterpretation.
 

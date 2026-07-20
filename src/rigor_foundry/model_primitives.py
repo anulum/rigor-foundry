@@ -13,7 +13,7 @@ import math
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal, TypeAlias, cast
+from typing import Final, Literal, TypeAlias, cast
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
 
@@ -26,6 +26,9 @@ VariableValue: TypeAlias = str | int | float | bool | tuple[str, ...]
 VariableType = Literal["string", "integer", "number", "boolean", "string-list"]
 VariableScope = Literal["project", "environment", "control"]
 Sensitivity = Literal["public", "internal", "secret"]
+
+VARIABLE_DEFINITION_SCHEMA_VERSION: Final = "1.0"
+VARIABLE_ASSIGNMENT_SCHEMA_VERSION: Final = "1.0"
 
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:/@-]{0,191}\Z")
 _SEMANTIC_VERSION = re.compile(
@@ -434,7 +437,7 @@ class VariableDefinition:
         if normalised_default is not None:
             constraints.validate(normalised_default, value_type)
         fields: dict[str, object] = {
-            "schema_version": "1.0",
+            "schema_version": VARIABLE_DEFINITION_SCHEMA_VERSION,
             "variable_id": require_identifier(variable_id, "variable.variable_id"),
             "value_type": value_type,
             "scope": scope,
@@ -463,7 +466,7 @@ class VariableDefinition:
     def to_dict(self) -> dict[str, object]:
         """Serialise one digest-bound variable definition."""
         return {
-            "schema_version": "1.0",
+            "schema_version": VARIABLE_DEFINITION_SCHEMA_VERSION,
             "variable_id": self.variable_id,
             "value_type": self.value_type,
             "scope": self.scope,
@@ -482,7 +485,7 @@ class VariableDefinition:
     def from_dict(cls, value: object) -> VariableDefinition:
         """Parse and integrity-check one variable definition."""
         data = require_mapping(value, "variable")
-        if data.get("schema_version") != "1.0":
+        if data.get("schema_version") != VARIABLE_DEFINITION_SCHEMA_VERSION:
             raise ValueError("unsupported variable-definition schema version")
         value_type = require_variable_type(data.get("value_type"), "variable.value_type")
         scope = require_string(data.get("scope"), "variable.scope")
@@ -548,7 +551,7 @@ class VariableAssignment:
             )
             definition.constraints.validate(normalised, definition.value_type)
         fields: dict[str, object] = {
-            "schema_version": "1.0",
+            "schema_version": VARIABLE_ASSIGNMENT_SCHEMA_VERSION,
             "variable_id": definition.variable_id,
             "definition_digest": definition.definition_digest,
             "value": serialise_variable_value(normalised),
@@ -566,7 +569,7 @@ class VariableAssignment:
     def to_dict(self, definition_digest: str) -> dict[str, object]:
         """Serialise one assignment with the definition digest it binds."""
         return {
-            "schema_version": "1.0",
+            "schema_version": VARIABLE_ASSIGNMENT_SCHEMA_VERSION,
             "variable_id": self.variable_id,
             "definition_digest": definition_digest,
             "value": serialise_variable_value(self.value),
@@ -583,7 +586,7 @@ class VariableAssignment:
     ) -> VariableAssignment:
         """Parse an assignment and verify its exact definition binding."""
         data = require_mapping(value, "assignment")
-        if data.get("schema_version") != "1.0":
+        if data.get("schema_version") != VARIABLE_ASSIGNMENT_SCHEMA_VERSION:
             raise ValueError("unsupported variable-assignment schema version")
         if data.get("variable_id") != definition.variable_id:
             raise ValueError("assignment references the wrong variable")
