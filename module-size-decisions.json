@@ -22,8 +22,8 @@
       "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
     },
     {
-      "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, rule-maturity policy and assessment, external source claim/policy/capture/verification, report, review, campaign, run attestation, comparison, adapter, standard pack, effective profile, task, event, and closure. Source-provenance and adapter-profile evidence mutation construction remain in their separate dedicated test owners. This registry test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
-      "lines": 888,
+      "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, rule-maturity policy and assessment, external source claim/policy/capture/verification, report, report diff, review, campaign, run attestation, comparison, adapter, standard pack, effective profile, task, event, and closure. Source-provenance and adapter-profile evidence mutation construction remain in their separate dedicated test owners. This registry test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
+      "lines": 892,
       "path": "tests/test_digest_dependencies.py",
       "reassess_when": "The file exceeds 900 lines, the normative graph partitions into independently versioned registries, a node family cannot remain mutation-tested through its separate owner, or another test-owner fixture dependency is introduced.",
       "responsibility": "Normative digest-dependency graph owner proving schema completeness, acyclicity, exact mutation propagation, stable non-edges, canonical identities, and runtime graph queries."
