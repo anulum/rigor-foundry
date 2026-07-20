@@ -36,6 +36,7 @@ nav:
   - VS Code integration: vscode-integration.md
   - Architecture: architecture.md
   - Digest dependencies: digest-dependencies.md
+  - Report differences: report-diff.md
   - Source provenance: source-provenance.md
   - Offline CRA reporting preparation: cra-reporting.md
   - CLI: cli.md

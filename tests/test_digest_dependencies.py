@@ -60,6 +60,7 @@ from rigor_foundry.models import (
     ReviewRecord,
     canonical_digest,
 )
+from rigor_foundry.report_diff import compare_reports
 from rigor_foundry.rule_maturity import RuleMaturityPolicy, RuleMaturityReport
 from rigor_foundry.standard_pack import StandardPack
 from rigor_foundry.work_closure import WorkClosure
@@ -278,6 +279,7 @@ def _workflow_snapshot(
         "rule-pack": report.rule_pack_digest,
         "toolchain": campaign.toolchain.identity_digest,
         "report": report.report_digest,
+        "report-diff": compare_reports(report, report).diff_digest,
         "review": review.review_digest,
         "campaign": campaign.contract_digest,
         "attestation": attestation.attestation_digest,
@@ -389,7 +391,7 @@ def _assert_transition(
 
 def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     """The public graph has one stable identity for every required record family."""
-    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.6"
+    assert DIGEST_DEPENDENCY_SCHEMA_VERSION == "1.7"
     assert tuple(node.name for node in DIGEST_NODES) == (
         "inventory",
         "ignored-inventory",
@@ -408,6 +410,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "toolchain",
         "effective-profile",
         "report",
+        "report-diff",
         "review",
         "campaign",
         "attestation",
@@ -415,9 +418,9 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
         "task",
         "closure",
     )
-    assert len(DIGEST_DEPENDENCIES) == 32
+    assert len(DIGEST_DEPENDENCIES) == 33
     assert validate_digest_dependency_graph() == ()
-    assert digest_dependency_graph()["schema_version"] == "1.6"
+    assert digest_dependency_graph()["schema_version"] == "1.7"
     assert rigor_foundry.digest_dependency_graph() == digest_dependency_graph()
     assert rigor_foundry.WorkClosure is WorkClosure
     assert direct_dependents("standard-pack") == ("effective-profile",)
@@ -438,6 +441,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     assert transitive_dependents("inventory") == (
         "adapter-profile",
         "report",
+        "report-diff",
         "review",
         "campaign",
         "attestation",
@@ -447,7 +451,7 @@ def test_graph_schema_is_complete_acyclic_and_content_addressed() -> None:
     )
     assert (
         digest_dependency_graph_digest()
-        == "3f1fbdda4812ef5442addee2a7f586cf33c38e2eed6cfb539749a50ce6ebdb82"
+        == "290da57afc8e792de6c8bba1ae78e821f7a6025ff00ebbc502568624fe85fd4d"
     )
 
 

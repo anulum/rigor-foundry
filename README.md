@@ -126,6 +126,7 @@ explicit policy/evidence paths and no remediation authority.
 | --- | --- |
 | `rigor bootstrap` | Create one explicit policy and ignored canonical TODO without guessing or overwrite. |
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
+| `rigor report-diff` | Compare two exact reports as replay-verifiable candidate-transition evidence. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
 | `rigor validate-review` | Verify reviews against one exact report. |
 | `rigor sarif` | Export every candidate and optional review verdict as deterministic SARIF 2.1.0. |
@@ -153,6 +154,10 @@ operator workflow, evidence boundary, clocks, append-only storage, and exit
 codes. It is a drafting aid, not legal advice, a conformity assessment, or an
 external submission client.
 
+The [content-addressed report-diff guide](docs/report-diff.md) documents strict
+compatibility declarations, ambiguous anchor matching, deterministic replay,
+and the boundary between candidate trends and correctness verdicts.
+
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,
 hard output and time bounds, process-tree termination, and structured durable
@@ -177,6 +182,7 @@ strict policy form, installation boundary, coverage limits, and benchmark.
 | Candidate anchors | `candidate_anchor` | Strict blob/tree anchor schemas, inclusive line spans, bounded excerpts, and anchor verification. |
 | Candidate collection | `architecture`, `godfiles`, `polyglot_architecture`, `test_authenticity` | Static signals requiring review, each bound to a verified anchor. |
 | Policy and records | `rules`, `domains`, `audit_primitives`, `policy_models`, `models` | Versioned rules, strict protocol primitives, applicability, repository policy, and content-addressed report/review records. |
+| Report differences | `report_diff`, `report_diff_cli` | Replay-verifiable candidate transitions over two exact reports, with explicit compatibility and ambiguity evidence. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |

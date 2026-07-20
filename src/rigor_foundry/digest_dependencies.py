@@ -14,7 +14,7 @@ from typing import Literal
 
 from .audit_primitives import canonical_digest
 
-DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.6"
+DIGEST_DEPENDENCY_SCHEMA_VERSION = "1.7"
 
 DigestNode = Literal[
     "inventory",
@@ -34,6 +34,7 @@ DigestNode = Literal[
     "toolchain",
     "effective-profile",
     "report",
+    "report-diff",
     "review",
     "campaign",
     "attestation",
@@ -115,6 +116,7 @@ DIGEST_NODES: tuple[DigestNodeSpec, ...] = (
     DigestNodeSpec("toolchain", "toolchain.identity_digest", "campaign_models"),
     DigestNodeSpec("effective-profile", "lock_digest", "effective_profile"),
     DigestNodeSpec("report", "report_digest", "models"),
+    DigestNodeSpec("report-diff", "diff_digest", "report_diff"),
     DigestNodeSpec("review", "review_digest", "models"),
     DigestNodeSpec("campaign", "contract_digest", "campaign_models"),
     DigestNodeSpec("attestation", "attestation_digest", "campaign_models"),
@@ -148,6 +150,11 @@ DIGEST_DEPENDENCIES: tuple[DigestDependency, ...] = (
     DigestDependency("standard-pack", "effective-profile", "pack_digests[*]"),
     DigestDependency("toolchain", "effective-profile", "toolchain_digest"),
     DigestDependency("report", "review", "report_digest"),
+    DigestDependency(
+        "report",
+        "report-diff",
+        "before_report_digest + after_report_digest",
+    ),
     DigestDependency("inventory", "campaign", "tracked_content_digest"),
     DigestDependency(
         "ignored-inventory",

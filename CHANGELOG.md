@@ -7,6 +7,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A schema-1.0 content-addressed report-diff record partitions exact candidate
+  identities into retained, appeared, resolved, and anchor-changed evidence.
+  Deterministic replay binds both reports; compatibility changes and ambiguous
+  relocations require explicit operator declarations. The CLI supports
+  integrity-verified historical rule packs without treating candidate drift as
+  correctness, chronology, regression, or remediation proof.
 - An offline CRA Article 14 preparation lane stores strict content-addressed
   product and event records, computes separate vulnerability and severe-
   incident clocks, prepares deterministic stage and user-notice payloads,

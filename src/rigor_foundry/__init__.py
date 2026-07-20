@@ -88,6 +88,14 @@ from .remediation_plan import (
     RemediationPlan,
     TargetGap,
 )
+from .report_diff import (
+    REPORT_DIFF_SCHEMA_VERSION,
+    CandidateAnchorChange,
+    CandidateAnchorMatch,
+    ReportDiff,
+    ReportDiffCompatibility,
+    compare_reports,
+)
 from .review import render_todo_entry, review_errors, review_templates, validate_reviews
 from .review_attestation import ReviewerAttestation
 from .rule_maturity import (
@@ -146,6 +154,7 @@ __all__ = [
     "INFERENCE_IDENTITY_SCHEMA_VERSION",
     "MATURITY_CASE_MANIFEST_SCHEMA_VERSION",
     "MODEL_WITNESS_SCHEMA_VERSION",
+    "REPORT_DIFF_SCHEMA_VERSION",
     "REVIEW_ATTESTATION_SIGNATURE_DOMAIN",
     "RULE_MATURITY_SCHEMA_VERSION",
     "SARIF_SCHEMA_URI",
@@ -160,6 +169,8 @@ __all__ = [
     "BubblewrapProvenance",
     "Candidate",
     "CandidateAnchor",
+    "CandidateAnchorChange",
+    "CandidateAnchorMatch",
     "ConditionExpression",
     "ControlAssessment",
     "ControlDefinition",
@@ -193,6 +204,8 @@ __all__ = [
     "RemediationContract",
     "RemediationLane",
     "RemediationPlan",
+    "ReportDiff",
+    "ReportDiffCompatibility",
     "RepositoryTreeAnchor",
     "RequirementBinding",
     "ResolvedVariable",
@@ -225,6 +238,7 @@ __all__ = [
     "candidate_anchor_errors",
     "collapse_model_witnesses",
     "collect_ignored_inventory",
+    "compare_reports",
     "coverage_residual_errors",
     "digest_dependency_graph",
     "digest_dependency_graph_digest",

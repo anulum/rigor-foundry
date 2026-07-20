@@ -13,6 +13,7 @@ CLI/API
   -> Git inventory
   -> portable candidate collectors
   -> content-addressed report
+  -> content-addressed report difference
   -> evidence review
   -> adjudicated rule maturity
   -> enforcement or explicit promotion
@@ -164,11 +165,17 @@ includes `GitExecutableProvenance`, the Git object format, ignored-inventory
 evidence, and strict anchored candidates; changing any bound input changes the
 report digest. Review-ledger
 schema 1.0 is independent and remains unchanged.
-`digest_dependencies.py` publishes schema 1.6 of the machine-readable graph of
+`report_diff.py` owns schema 1.0 exact-report comparisons. It partitions exact
+candidate identities and only treats a semantic identity with a changed anchor
+as relocation. Ambiguous pairings require operator-declared candidate pairs;
+repository, branch, policy, rule-pack, and scanner changes require exact
+compatibility declarations. Replay binds both parent report digests and does
+not assert chronology or correctness.
+`digest_dependencies.py` publishes schema 1.7 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
 includes ignored inventory, Git provenance, maturity policy, rule maturity,
 and toolchain identities in
-addition to the tracked inventory, policy, rule-pack, desired-state, report,
+addition to the tracked inventory, policy, rule-pack, desired-state, report, report diff,
 review, campaign, comparison, task, and closure records. Policy and review
 records expose one canonical identity each. Rule-pack version 1.1.0 binds its
 schema, registry version, ordered definitions, and definition fields into the

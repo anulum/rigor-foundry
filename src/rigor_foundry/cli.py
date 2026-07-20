@@ -46,6 +46,7 @@ from .models import (
     reviews_to_json,
 )
 from .oscal_cli import add_oscal_commands
+from .report_diff_cli import add_report_diff_command
 from .review import (
     append_todo_entry,
     render_todo_entry,
@@ -644,6 +645,7 @@ def _parser() -> argparse.ArgumentParser:
     residuals.set_defaults(handler=_residuals_check_command)
     add_source_provenance_commands(subparsers)
     add_oscal_commands(subparsers)
+    add_report_diff_command(subparsers)
     add_cra_commands(subparsers)
     return parser
 

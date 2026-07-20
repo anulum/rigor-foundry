@@ -97,6 +97,21 @@ SARIF 2.1.0. Without `--output`, JSON is written to stdout. An explicit output
 parent must already exist. Export is read-only and includes every candidate;
 see [SARIF export](sarif.md) for the state mapping and anchor contract.
 
+## Content-addressed report differences
+
+`rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]`
+loads and verifies both historical reports, partitions exact candidate
+identities into retained, appeared, resolved, and anchor-changed classes, and
+binds the result to both report digests. Missing history fails with status 2;
+it is never treated as an empty report.
+
+Repository, branch, policy, rule-pack, or scanner changes require the matching
+`--declare-*-change` flag and one `--justification`. Superfluous declarations
+also fail. Ambiguous relocation can be represented only through a strict
+`--anchor-matches` JSON document with exact before/after candidate IDs and a
+retained rationale. See [Content-addressed report differences](report-diff.md)
+for the schema, replay contract, and non-verdict boundary.
+
 ## OSCAL export (candidate evidence only)
 
 `rigor oscal --lock LOCK.json --assessments ASSESSMENTS.json --template TEMPLATE_ID

@@ -11,11 +11,13 @@ generator.
 3. Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
-5. A separate maturity report evaluates each rule against explicit adjudication,
+5. Report-diff records bind two exact reports and replay candidate identity and
+   anchor transitions without asserting chronology or correctness.
+6. A separate maturity report evaluates each rule against explicit adjudication,
    false-positive, reviewer-diversity, and reviewer-effort thresholds.
-6. SARIF projects candidates and optional review verdicts without merging them.
-7. Desired-state profiles resolve adopter rules and typed project variables.
-8. Gap records become dependency-ordered remediation plans only after evidence
+7. SARIF projects candidates and optional review verdicts without merging them.
+8. Desired-state profiles resolve adopter rules and typed project variables.
+9. Gap records become dependency-ordered remediation plans only after evidence
    and approval gates pass.
 
 Rule maturity is an enforcement-admission boundary, not a scanner verdict.
@@ -85,6 +87,13 @@ boolean. The normative design and module map are maintained in
 The [digest-dependency graph](digest-dependencies.md) defines every
 unconditional identity edge, its stable non-edges, and the production mutation
 proofs required for a schema change.
+
+Report differences are a separate evidence boundary. Exact candidate identity
+establishes retention; an anchor-independent semantic digest supports only
+unambiguous relocation matching. Operator-declared pairs resolve ambiguity and
+become content-addressed evidence. Repository, branch, policy, rule-pack, and
+scanner changes require exact compatibility declarations. The comparison does
+not prove ancestry, chronology, remediation, regression, or correctness.
 
 The tracked classified-residual contract records fail-closed race windows,
 platform primitives, and runtime invariants that cannot be exercised honestly

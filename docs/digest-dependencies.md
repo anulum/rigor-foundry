@@ -8,7 +8,7 @@
 
 # Digest dependencies
 
-The schema 1.6 graph returned by `digest_dependency_graph()` is the normative,
+The schema 1.7 graph returned by `digest_dependency_graph()` is the normative,
 machine-readable registry of unconditional identity bindings between public
 audit records. `digest_dependency_graph_digest()` identifies that graph using
 the same canonical SHA-256 primitive as the records themselves.
@@ -39,6 +39,7 @@ separately and are not misrepresented as unconditional digest edges.
 | Toolchain | `toolchain.identity_digest` | `campaign_models` |
 | Effective profile | `lock_digest` | `effective_profile` |
 | Report | `report_digest` | `models` |
+| Report diff | `diff_digest` | `report_diff` |
 | Review | `review_digest` | `models` |
 | Campaign | `contract_digest` | `campaign_models` |
 | Run attestation | `attestation_digest` | `campaign_models` |
@@ -97,6 +98,7 @@ the task baseline and a revalidation that names another candidate or report.
 | Standard pack | Effective profile | `pack_digests[*]` plus verified pack-derived records |
 | Toolchain | Effective profile | `toolchain_digest` |
 | Report | Review | `report_digest` |
+| Report | Report diff | `before_report_digest` plus `after_report_digest` |
 | Inventory | Campaign | `tracked_content_digest` |
 | Ignored inventory | Campaign | complete evidence tuple plus `ignored_inventory_digest` |
 | Git provenance | Campaign | complete `git_provenance` record |
@@ -123,7 +125,7 @@ absence of cycles.
 
 - A candidate-only report change does not change the campaign contract. A
   campaign freezes scanner inputs, not one scanner output. It does change the
-  report, rebound review, task, and closure identities.
+  report, report diff, rebound review, task, and closure identities.
 - Standard packs, adapter locks, and effective-profile locks form a separate
   desired-state subgraph. Current repository reports and campaigns do not bind
   that lock, although the same toolchain identity can independently affect a
@@ -164,9 +166,9 @@ For each declared upstream class they assert both sides of the contract:
 2. every unrelated identity in the exercised graph remains byte-for-byte
    stable.
 
-The tests compare all 23 identities and cover inventory, ignored inventory, Git
+The tests compare all 24 identities and cover inventory, ignored inventory, Git
 provenance, policy, rule-pack, maturity policy, rule maturity, toolchain,
-adapter-profile, report, review, campaign, run attestation, task, adapter-lock,
+adapter-profile, report, report diff, review, campaign, run attestation, task, adapter-lock,
 standard-pack, effective-profile, closure, source claim, retrieval policy,
 capture, and verification mutations.
 Strict parsing vectors reject altered closure schemas, fields, references, counts, and
