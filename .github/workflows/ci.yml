@@ -275,7 +275,7 @@ jobs:
           git -C /tmp/rigor-adopter init --initial-branch=main
           git -C /tmp/rigor-adopter config user.name "Distribution Smoke"
           git -C /tmp/rigor-adopter config user.email "distribution-smoke@example.invalid"
-          printf '%s\n' 'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore
+          printf '%s\n' '.rigor/' 'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore
           printf '%s\n' 'VALUE = 1' > /tmp/rigor-adopter/src/example.py
           printf '%s\n' 'def test_value() -> None:' '    assert True' > /tmp/rigor-adopter/tests/test_example.py
           git -C /tmp/rigor-adopter add .gitignore src tests
@@ -284,6 +284,11 @@ jobs:
           /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests
           git add rigor-foundry-policy.json
           git commit -m "test: track installed-wheel adopter policy"
+          /tmp/rigor-wheel/bin/rigor cra-bootstrap --root . --product-key installed-product --product-name "Installed Product" --manufacturer-name "Distribution Smoke" --main-establishment-ms SK --establishment-basis decisions --csirt-endpoint-id installed-csirt --user-notice-channel security-page --support-period-months 60 --registered-at 2026-07-20T10:00:00Z
+          printf '%s\n' '{"bomFormat":"CycloneDX","components":[{"name":"installed-component","purl":"pkg:pypi/installed-component@1.0.0","type":"library","version":"1.0.0"}],"specVersion":"1.6","version":1}' > /tmp/rigor-installed-sbom.json
+          /tmp/rigor-wheel/bin/rigor sbom-import --root . --product-key installed-product --file /tmp/rigor-installed-sbom.json --format cyclonedx-1.6 --source-tool distribution-smoke@1.0.0 --source-evidence workflow:distribution --coverage top-level-only --captured-at 2026-07-20T10:01:00Z
+          /tmp/rigor-wheel/bin/rigor sbom-status --root . --product-key installed-product --observed-at 2026-07-20T10:02:00Z > /tmp/rigor-installed-sbom-status.json
+          /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-installed-sbom-status.json").read_text(encoding="utf-8")); assert document["drift"]["drifted"] is False; assert document["inventory"]["top_level_components"][0]["purl"] == "pkg:pypi/installed-component@1.0.0"'
           /tmp/rigor-wheel/bin/rigor scan --root . --policy rigor-foundry-policy.json --json-out /tmp/rigor-adopter-report.json
           /tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json --output /tmp/rigor-adopter-results.sarif
           /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); assert document["version"] == "2.1.0"; assert document["runs"][0]["results"]'

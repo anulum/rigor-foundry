@@ -85,6 +85,10 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "verification.verified_value is True" in workflow
     assert "/tmp/rigor-wheel/bin/rigor bootstrap --root ." in workflow
     assert 'git commit -m "test: track installed-wheel adopter policy"' in workflow
+    assert "/tmp/rigor-wheel/bin/rigor cra-bootstrap --root ." in workflow
+    assert "/tmp/rigor-wheel/bin/rigor sbom-import --root ." in workflow
+    assert "/tmp/rigor-wheel/bin/rigor sbom-status --root ." in workflow
+    assert 'document["drift"]["drifted"] is False' in workflow
     assert "/tmp/rigor-wheel/bin/rigor scan --root ." in workflow
     assert "/tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json" in workflow
     assert 'document["version"] == "2.1.0"' in workflow

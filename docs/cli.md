@@ -58,9 +58,13 @@ for the complete workflow and failure boundary.
 
 `cra-bootstrap`, `vuln-register`, `vuln-timeline`, `cra-draft`, `cra-receipt`,
 `cra-skip`, `user-notice`, and `cra-status` implement the prepare-only CRA P0
-workflow. They retain append-only evidence below `.rigor/cra/` and contain no
-network client. A receipt binds operator-supplied evidence after an external
-manufacturer action; it does not prove submission or authority acceptance.
+workflow. `sbom-import` and `sbom-status` add P1 imported-inventory and exact
+Git-drift evidence. `vuln-register` accepts a complete content-bound offline
+OSV adapter bundle as awareness evidence, but still requires separate explicit
+active-exploitation evidence. The commands retain append-only evidence below
+`.rigor/cra/` and contain no network client. A receipt binds operator-supplied
+evidence after an external manufacturer action; it does not prove submission
+or authority acceptance.
 See [Offline CRA Article 14 preparation](cra-reporting.md) for exact commands,
 deadline semantics, payload partitions, exit codes, and legal-claims boundary.
 

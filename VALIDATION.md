@@ -41,6 +41,7 @@ execution, or production promotion.
 | Classified residuals | Exact source-symbol binding, expiry, public-test references, and preregistered negative searches | Same contract plus aggregate branch-aware coverage evidence |
 | Onboarding/API stability | Real Git bootstrap, rejection of pre-existing canonical state, point-in-time ledger absence, preserved failure evidence, exact version, binding-aware export inventory, and deprecation-window tests | Installed-wheel version, binding-aware API, and real Git bootstrap/no-overwrite smoke |
 | SARIF 2.1.0 | Real Git candidates, all review states, exact anchors, stable identifiers, deterministic round trip, and 100% isolated branch coverage | Installed-wheel scan/export, digest-pinned official OASIS schema validation, and aggregate branch-aware coverage |
+| CRA P1 SBOM/OSV | Real Git and CLI imports for CycloneDX 1.5/1.6 and SPDX 2.3; stable-file bounds; exact source replay; Git drift; complete OSV adapter binding; explicit exploitation boundary; 100% isolated statement/branch coverage | Supported Python matrix, installed-wheel commands, aggregate branch-aware coverage, and no-network/static import guards |
 
 The onboarding/API-stability owner tests execute bootstrap through real Git
 repositories and filesystem objects. They require exact-path success,
@@ -52,6 +53,22 @@ deterministic manifest serialization, and deprecation-window failures. Mocked
 Git results or fabricated filesystem metadata are not accepted as evidence.
 
 ## Local integration evidence
+
+On 2026-07-20, the CRA P1 owner surface passed 45 focused real-file, real-Git,
+and CLI tests. The five new production modules covered 604 statements and 164
+branches at 100%. The affected P0/P1 regression selection passed 75 tests with
+three deliberately excluded real external-tool cases. Strict Ruff and MyPy,
+Bandit, REUSE 3.3 (417 files), typos, Actionlint, strict MkDocs, repository
+audit, and fast preflight passed. The static CRA import guard found no network
+client dependency.
+
+A non-isolated loaded-workstation parser baseline used CPython 3.12 on an
+Intel i5-11600K while system load moved from 11.84 to 11.21. Twenty warm runs
+parsed a 600,072-byte CycloneDX 1.6 fixture containing 10,000 components at
+67.164 ms median and 101.353 ms observed p95 (49.875–106.002 ms range). This is
+a local regression baseline, not an isolated production performance claim.
+P1 contains bounded protocol parsing and append-only I/O, not a numeric or
+compute kernel, so it has no Rust/native counterpart.
 
 On 2026-07-15:
 

@@ -7,6 +7,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Imported-only CRA component inventories validate bounded CycloneDX 1.5/1.6
+  and SPDX 2.3 JSON profiles, retain exact source bytes and operator-declared
+  coverage, bind Git tree and tracked-content identity, and append explicit
+  drift evidence. A complete offline OSV adapter finding can supply exact
+  awareness evidence to an explicit `vuln-register` invocation, but never
+  substitutes for separately supplied active-exploitation evidence.
 - A stable no-network `rigor verify` path verifies signed audit reports,
   reviews, StandardPacks, and model-alias declarations against a separate
   caller-selected key-lifecycle policy. Schema-1.0 bundles and replayable

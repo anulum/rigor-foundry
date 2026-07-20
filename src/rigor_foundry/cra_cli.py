@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .cra_events import SecurityEventRevision
+from .cra_p1_cli import add_cra_p1_commands, add_osv_register_arguments, bind_osv_awareness
 from .cra_payloads import prepare_stage_payload, prepare_user_notice
 from .cra_protocol import (
     EstablishmentBasis,
@@ -101,18 +102,23 @@ def _event(args: argparse.Namespace) -> SecurityEventRevision:
         if str(exc) != "event has no verified revisions":
             raise
         previous = None
+    recorded_at = _timestamp(args.recorded_at)
+    aware_evidence, external_ids, affected_components = bind_osv_awareness(
+        args,
+        recorded_at=recorded_at,
+    )
     return SecurityEventRevision.build(
         event_key=args.event_key,
         product_key=args.product_key,
         track=cast(Track, args.track),
         aware_at=args.aware_at,
-        aware_evidence_ref=args.aware_evidence,
+        aware_evidence_ref=aware_evidence,
         exploitation_evidence=tuple(args.exploitation_evidence),
         severe_prong=cast(SevereProng | None, args.severe_prong),
         severe_evidence_ref=args.severe_evidence,
         suspected_cause=cast(SuspectedCause | None, args.suspected_cause),
-        external_ids=tuple(args.external_id),
-        affected_components=tuple(args.component),
+        external_ids=external_ids,
+        affected_components=affected_components,
         severity_value=args.severity_value,
         severity_source_ref=args.severity_source,
         member_states=tuple(args.member_state),
@@ -122,7 +128,7 @@ def _event(args: argparse.Namespace) -> SecurityEventRevision:
         intermediate_requested_at=args.intermediate_requested_at,
         intermediate_due_at=args.intermediate_due_at,
         intermediate_evidence_ref=args.intermediate_evidence,
-        recorded_at=_timestamp(args.recorded_at),
+        recorded_at=recorded_at,
         previous_revision_digest=(None if previous is None else previous.revision_digest),
     )
 
@@ -328,7 +334,7 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     register.add_argument("--product-key", required=True)
     register.add_argument("--track", choices=("vulnerability", "incident"), required=True)
     register.add_argument("--aware-at", required=True)
-    register.add_argument("--aware-evidence", required=True)
+    register.add_argument("--aware-evidence")
     register.add_argument("--exploitation-evidence", action="append", default=[])
     register.add_argument("--severe-prong", choices=("data-or-functions", "malicious-code"))
     register.add_argument("--severe-evidence")
@@ -352,6 +358,7 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     register.add_argument("--intermediate-due-at")
     register.add_argument("--intermediate-evidence")
     register.add_argument("--recorded-at")
+    add_osv_register_arguments(register)
     register.set_defaults(handler=_register)
 
     timeline = subparsers.add_parser("vuln-timeline", help="Print one verified CRA timeline.")
@@ -425,3 +432,4 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     status.add_argument("--now")
     status.add_argument("--json", action="store_true")
     status.set_defaults(handler=_status)
+    add_cra_p1_commands(subparsers)
