@@ -40,7 +40,7 @@ def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
     assert "default: full" in action
     assert "staged|full" in action
     assert "maturity-path is required for ratchet and zero modes" in action
-    assert "actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1" in action
+    assert "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97" in action
     assert 'python-version: "3.12.11"' in action
     assert "Tracked policy path relative to repository-root." in action
     assert "absolute or relative to repository-root" not in action

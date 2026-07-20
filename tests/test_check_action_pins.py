@@ -34,7 +34,7 @@ def test_action_guard_rejects_mutable_python_toolchain_selectors(tmp_path: Path)
         "      matrix:\n"
         "        python-version: ['3.11.15', '3.12']\n"
         "    steps:\n"
-        "- uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1\n"
+        "- uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97\n"
         "  with:\n"
         "    python-version: '3.12'\n",
         encoding="utf-8",
@@ -60,7 +60,7 @@ def test_action_guard_accepts_exact_python_matrix_selector(tmp_path: Path) -> No
         "      matrix:\n"
         "        python-version: ['3.11.15', '3.12.13', '3.13.14']\n"
         "    steps:\n"
-        "      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1\n"
+        "      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97\n"
         "        with:\n"
         "          python-version: ${{ matrix.python-version }}\n",
         encoding="utf-8",
