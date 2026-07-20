@@ -148,6 +148,54 @@ def _spdx_purl(package: dict[str, object], field: str) -> str | None:
     return purls[0] if purls else None
 
 
+def _spdx_id_array(value: object, field: str) -> tuple[str, ...]:
+    """Return one non-empty unique SPDX identifier array."""
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{field} must be a non-empty array")
+    identifiers = tuple(
+        require_string(item, f"{field}[{index}]") for index, item in enumerate(value)
+    )
+    if len(identifiers) != len(set(identifiers)):
+        raise ValueError(f"{field} identifiers must be unique")
+    return identifiers
+
+
+def _spdx_described_ids(data: dict[str, object]) -> tuple[str, ...]:
+    """Resolve exact document-level package identities without flattening dependencies."""
+    declared = (
+        ()
+        if data.get("documentDescribes") is None
+        else _spdx_id_array(data.get("documentDescribes"), "documentDescribes")
+    )
+    raw_relationships = data.get("relationships", [])
+    if not isinstance(raw_relationships, list):
+        raise ValueError("relationships must be an array")
+    related: list[str] = []
+    for index, raw in enumerate(cast(list[object], raw_relationships)):
+        field = f"relationships[{index}]"
+        relationship = require_mapping(raw, field)
+        source = require_string(relationship.get("spdxElementId"), f"{field}.spdxElementId")
+        relation = require_string(
+            relationship.get("relationshipType"), f"{field}.relationshipType"
+        )
+        target = require_string(
+            relationship.get("relatedSpdxElement"), f"{field}.relatedSpdxElement"
+        )
+        if source == "SPDXRef-DOCUMENT" and relation == "DESCRIBES":
+            related.append(target)
+        elif target == "SPDXRef-DOCUMENT" and relation == "DESCRIBED_BY":
+            related.append(source)
+    if len(related) != len(set(related)):
+        raise ValueError("document DESCRIBES relationships must be unique")
+    relation_ids = tuple(related)
+    if declared and relation_ids and frozenset(declared) != frozenset(relation_ids):
+        raise ValueError("documentDescribes and DESCRIBES relationships disagree")
+    result = declared or relation_ids
+    if not result:
+        raise ValueError("SPDX SBOM must identify top-level packages with documentDescribes")
+    return result
+
+
 def _spdx_components(document: object) -> tuple[InventoryComponent, ...]:
     """Validate the consumed SPDX 2.3 JSON envelope and package schema."""
     data = require_mapping(document, "SPDX SBOM")
@@ -166,23 +214,22 @@ def _spdx_components(document: object) -> tuple[InventoryComponent, ...]:
         or not all(isinstance(item, str) and item.strip() for item in creators)
     ):
         raise ValueError("SPDX document.creationInfo.creators must contain strings")
-    components: list[InventoryComponent] = []
-    spdx_ids: set[str] = set()
+    components: dict[str, InventoryComponent] = {}
     for index, raw in enumerate(_component_array(data.get("packages"), "packages")):
         field = f"packages[{index}]"
         item = require_mapping(raw, field)
         spdx_id = require_string(item.get("SPDXID"), f"{field}.SPDXID")
-        if not spdx_id.startswith("SPDXRef-") or spdx_id in spdx_ids:
+        if not spdx_id.startswith("SPDXRef-") or spdx_id in components:
             raise ValueError(f"{field}.SPDXID must be a unique SPDXRef identifier")
-        spdx_ids.add(spdx_id)
-        components.append(
-            InventoryComponent.build(
-                name=require_string(item.get("name"), f"{field}.name"),
-                version=require_string(item.get("versionInfo"), f"{field}.versionInfo"),
-                purl=_spdx_purl(item, field),
-            )
+        components[spdx_id] = InventoryComponent.build(
+            name=require_string(item.get("name"), f"{field}.name"),
+            version=require_string(item.get("versionInfo"), f"{field}.versionInfo"),
+            purl=_spdx_purl(item, field),
         )
-    return tuple(components)
+    described_ids = _spdx_described_ids(data)
+    if any(identifier not in components for identifier in described_ids):
+        raise ValueError("SPDX top-level identity does not select an imported package")
+    return tuple(components[identifier] for identifier in described_ids)
 
 
 def parse_sbom(payload: bytes, sbom_format: SbomFormat) -> tuple[InventoryComponent, ...]:

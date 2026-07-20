@@ -165,3 +165,94 @@ def test_spdx_package_without_external_refs_has_no_purl() -> None:
     document = json.loads(spdx())
     document["packages"][0].pop("externalRefs")
     assert parse_sbom(encoded(document), "spdx-2.3")[0].purl is None
+
+
+def test_spdx_top_level_packages_require_exact_document_relationships() -> None:
+    """Flat packages are not top-level unless the document identifies them explicitly."""
+    document = json.loads(spdx())
+    document["packages"].append(
+        {
+            "SPDXID": "SPDXRef-Package-transitive",
+            "name": "transitive",
+            "versionInfo": "2.0",
+        }
+    )
+    components = parse_sbom(encoded(document), "spdx-2.3")
+    assert tuple(item.name for item in components) == ("alpha",)
+
+    document.pop("documentDescribes")
+    with pytest.raises(ValueError, match="identify top-level"):
+        parse_sbom(encoded(document), "spdx-2.3")
+
+    document["relationships"] = [
+        {
+            "spdxElementId": "SPDXRef-DOCUMENT",
+            "relationshipType": "DESCRIBES",
+            "relatedSpdxElement": "SPDXRef-Package-alpha",
+        }
+    ]
+    assert parse_sbom(encoded(document), "spdx-2.3")[0].name == "alpha"
+
+    document["relationships"] = [
+        {
+            "spdxElementId": "SPDXRef-Package-alpha",
+            "relationshipType": "DESCRIBED_BY",
+            "relatedSpdxElement": "SPDXRef-DOCUMENT",
+        }
+    ]
+    assert parse_sbom(encoded(document), "spdx-2.3")[0].name == "alpha"
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"documentDescribes": []}, "non-empty array"),
+        (
+            {"documentDescribes": ["SPDXRef-Package-alpha", "SPDXRef-Package-alpha"]},
+            "must be unique",
+        ),
+        ({"documentDescribes": ["SPDXRef-Missing"]}, "does not select"),
+        ({"relationships": {}}, "relationships must be an array"),
+    ],
+)
+def test_spdx_top_level_declarations_fail_closed(
+    change: dict[str, object],
+    message: str,
+) -> None:
+    """Empty, duplicate, unknown, and malformed root declarations are rejected."""
+    document = {**json.loads(spdx()), **change}
+    with pytest.raises(ValueError, match=message):
+        parse_sbom(encoded(document), "spdx-2.3")
+
+
+def test_spdx_root_declarations_must_agree_and_remain_unique() -> None:
+    """Two root mechanisms cannot disagree or repeat one relationship identity."""
+    document = json.loads(spdx())
+    relationship = {
+        "spdxElementId": "SPDXRef-DOCUMENT",
+        "relationshipType": "DESCRIBES",
+        "relatedSpdxElement": "SPDXRef-Package-alpha",
+    }
+    document["relationships"] = [relationship]
+    assert parse_sbom(encoded(document), "spdx-2.3")[0].name == "alpha"
+
+    document["relationships"] = [relationship, relationship]
+    with pytest.raises(ValueError, match="relationships must be unique"):
+        parse_sbom(encoded(document), "spdx-2.3")
+
+    document["relationships"] = [{**relationship, "relatedSpdxElement": "SPDXRef-Package-other"}]
+    with pytest.raises(ValueError, match="disagree"):
+        parse_sbom(encoded(document), "spdx-2.3")
+
+
+def test_non_describes_relationship_is_validated_but_not_treated_as_root() -> None:
+    """Unrelated edges cannot accidentally promote a package into the top-level set."""
+    document = json.loads(spdx())
+    document["relationships"] = [
+        {
+            "spdxElementId": "SPDXRef-Package-alpha",
+            "relationshipType": "DEPENDS_ON",
+            "relatedSpdxElement": "SPDXRef-Package-transitive",
+        }
+    ]
+    assert parse_sbom(encoded(document), "spdx-2.3")[0].name == "alpha"

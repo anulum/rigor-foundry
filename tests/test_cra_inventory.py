@@ -59,6 +59,7 @@ def spdx() -> bytes:
             "SPDXID": "SPDXRef-DOCUMENT",
             "name": "fixture",
             "documentNamespace": "https://example.invalid/spdx/fixture",
+            "documentDescribes": ["SPDXRef-Package-alpha"],
             "creationInfo": {
                 "created": "2026-07-20T00:00:00Z",
                 "creators": ["Tool: fixture-1.0"],

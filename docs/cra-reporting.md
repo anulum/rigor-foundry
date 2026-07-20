@@ -133,6 +133,9 @@ Supported bounded profiles are CycloneDX 1.5, CycloneDX 1.6, and SPDX 2.3.
 Validation covers the exact document envelope and component/package fields
 consumed by the inventory. It does not certify conformance of unconsumed
 optional fields or infer that the SBOM is complete.
+For SPDX, top-level packages must be identified by `documentDescribes` or an
+equivalent document-level `DESCRIBES`/`DESCRIBED_BY` relationship. A flat
+`packages` array is never treated as top-level by inference.
 
 Format anchors are the upstream [CycloneDX 1.5
 schema](https://raw.githubusercontent.com/CycloneDX/specification/1.5/schema/bom-1.5.schema.json),
