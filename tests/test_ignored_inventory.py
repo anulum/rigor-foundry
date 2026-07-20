@@ -23,6 +23,8 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 import rigor_foundry
+import rigor_foundry.ignored_inventory as ignored_inventory_module
+from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.git_inventory import load_git_inventory, open_directory_no_follow
 from rigor_foundry.git_provenance import GitRunner, GitTrustPolicy
 from rigor_foundry.ignored_inventory import (
@@ -54,11 +56,13 @@ def test_policy_declarations_are_exact_sorted_unique_and_versioned() -> None:
     declarations = parse_ignored_inventory(
         [
             _declaration("cache", ".rigor/cache"),
+            _declaration("state", ".rigor/state", "directory-sha256"),
             _declaration("token", ".rigor/token.txt", "file-sha256"),
         ]
     )
     assert declarations == (
         IgnoredInventoryDeclaration("cache", ".rigor/cache", "presence"),
+        IgnoredInventoryDeclaration("state", ".rigor/state", "directory-sha256"),
         IgnoredInventoryDeclaration("token", ".rigor/token.txt", "file-sha256"),
     )
     policy = AuditPolicy(ignored_inventory=declarations)
@@ -101,6 +105,9 @@ def test_public_scan_collects_bounded_file_directory_missing_and_symlink_evidenc
     repository = GitRepository.create(tmp_path / "repository")
     declarations = [
         _declaration("directory", ".rigor/evidence"),
+        _declaration("directory-digest", ".rigor/tree", "directory-sha256"),
+        _declaration("directory-fifo", ".rigor/fifo-directory", "directory-sha256"),
+        _declaration("directory-regular", ".rigor/not-directory", "directory-sha256"),
         _declaration("directory-sha", ".rigor/evidence-sha", "file-sha256"),
         _declaration("fifo", ".rigor/fifo"),
         _declaration("fifo-sha", ".rigor/fifo-sha", "file-sha256"),
@@ -114,15 +121,51 @@ def test_public_scan_collects_bounded_file_directory_missing_and_symlink_evidenc
     repository.write_text("src/pkg/module.py", "VALUE = 1\n")
     repository.commit()
     repository.write_text(".rigor/evidence/secret.txt", _SENTINEL)
+    repository.write_bytes(".rigor/tree/alpha.txt", b"alpha")
+    repository.write_bytes(".rigor/tree/nested/beta.bin", b"\x00\xff")
+    (repository.root / ".rigor/tree/empty").mkdir()
+    repository.write_text(".rigor/not-directory", "regular")
     (repository.root / ".rigor/evidence-sha").mkdir()
     repository.symlink(".rigor/link", "/tmp/never-serialise-this-target")
     repository.symlink(".rigor/escape", "/tmp")
     os.mkfifo(repository.root / ".rigor/fifo")
+    os.mkfifo(repository.root / ".rigor/fifo-directory")
     os.mkfifo(repository.root / ".rigor/fifo-sha")
 
     report = rigor_foundry.scan_repository(repository.root)
     evidence = {item.evidence_id: item for item in report.ignored_inventory_evidence}
     assert evidence["directory"].observed_kind == "directory"
+    expected_manifest = {
+        "schema_version": "1.0",
+        "entries": [
+            {
+                "path_bytes_hex": b"alpha.txt".hex(),
+                "kind": "regular-file",
+                "byte_size": 5,
+                "content_sha256": hashlib.sha256(b"alpha").hexdigest(),
+            },
+            {"path_bytes_hex": b"empty".hex(), "kind": "directory"},
+            {"path_bytes_hex": b"nested".hex(), "kind": "directory"},
+            {
+                "path_bytes_hex": b"nested/beta.bin".hex(),
+                "kind": "regular-file",
+                "byte_size": 2,
+                "content_sha256": hashlib.sha256(b"\x00\xff").hexdigest(),
+            },
+        ],
+    }
+    assert evidence["directory-digest"] == IgnoredInventoryEvidence(
+        "directory-digest",
+        ".rigor/tree",
+        "directory-sha256",
+        "observed",
+        "directory",
+        7,
+        canonical_digest(expected_manifest),
+        "observed",
+    )
+    assert evidence["directory-fifo"].reason == "not-regular-file"
+    assert evidence["directory-regular"].reason == "not-regular-file"
     assert evidence["directory-sha"].reason == "not-regular-file"
     assert evidence["fifo"].observed_kind == "other"
     assert evidence["fifo-sha"].reason == "not-regular-file"
@@ -190,6 +233,21 @@ def test_evidence_parser_rejects_contradictory_or_unbounded_records() -> None:
             "status": "observed",
             "observed_kind": "directory",
             "content_sha256": "a" * 64,
+        },
+        {
+            "status": "observed",
+            "observed_kind": "directory",
+            "capture": "directory-sha256",
+            "byte_size": 1,
+            "reason": "observed",
+        },
+        {
+            "status": "observed",
+            "observed_kind": "regular-file",
+            "capture": "directory-sha256",
+            "byte_size": 1,
+            "content_sha256": "a" * 64,
+            "reason": "observed",
         },
         {
             "status": "unavailable",
@@ -297,6 +355,342 @@ def test_public_scan_rejects_tracked_and_nonignored_declarations(tmp_path: Path)
     unignored.commit()
     with pytest.raises(ValueError, match="is not ignored"):
         rigor_foundry.scan_repository(unignored.root)
+
+
+def test_directory_digest_changes_for_exact_ignored_content_mutation(tmp_path: Path) -> None:
+    """A real ignored-tree mutation changes both evidence and report identities."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    repository.write_text(".rigor/state/value.txt", "before\n")
+    before = rigor_foundry.scan_repository(repository.root)
+    repository.write_text(".rigor/state/value.txt", "after\n")
+    after = rigor_foundry.scan_repository(repository.root)
+    assert before.ignored_inventory_digest != after.ignored_inventory_digest
+    assert before.report_digest != after.report_digest
+
+
+@pytest.mark.parametrize(
+    ("entry_kind", "expected_reason"),
+    [
+        ("symlink", "symlink"),
+        ("fifo", "not-regular-file"),
+        ("hardlink", "multiple-links"),
+    ],
+)
+def test_directory_digest_rejects_unsafe_nested_entry_kinds(
+    tmp_path: Path,
+    entry_kind: str,
+    expected_reason: str,
+) -> None:
+    """A declared tree never traverses links or reads special and multiply linked files."""
+    repository = GitRepository.create(tmp_path / entry_kind)
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    state = repository.root / ".rigor/state"
+    state.mkdir(parents=True)
+    entry = state / "entry"
+    if entry_kind == "symlink":
+        entry.symlink_to(tmp_path / "outside")
+    elif entry_kind == "fifo":
+        os.mkfifo(entry)
+    else:
+        outside = tmp_path / "outside"
+        outside.write_text("private", encoding="utf-8")
+        os.link(outside, entry)
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert evidence.status == "unavailable"
+    assert evidence.reason == expected_reason
+
+
+def test_directory_digest_canonically_hashes_non_utf8_entry_names(tmp_path: Path) -> None:
+    """Manifest paths preserve arbitrary filesystem bytes without exposing raw names."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    state = repository.root / ".rigor/state"
+    state.mkdir(parents=True)
+    raw_path = os.fsencode(state) + b"/\xff"
+    descriptor = os.open(raw_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    try:
+        assert os.write(descriptor, b"value") == 5
+    finally:
+        os.close(descriptor)
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    manifest = {
+        "schema_version": "1.0",
+        "entries": [
+            {
+                "path_bytes_hex": "ff",
+                "kind": "regular-file",
+                "byte_size": 5,
+                "content_sha256": hashlib.sha256(b"value").hexdigest(),
+            }
+        ],
+    }
+    assert evidence.content_sha256 == canonical_digest(manifest)
+
+
+def test_directory_digest_rejects_nested_directory_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Replacing a nested directory after its read produces unavailable evidence."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    nested = repository.root / ".rigor/state/nested"
+    repository.write_text(".rigor/state/nested/value", "content")
+    displaced = nested.with_name("nested-displaced")
+    real_stat = os.stat
+    nested_stats = 0
+
+    def replace_after_nested_read(
+        path: os.PathLike[str] | str | bytes | int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        nonlocal nested_stats
+        if path == "nested" and dir_fd is not None and not follow_symlinks:
+            nested_stats += 1
+            if nested_stats == 2:
+                nested.rename(displaced)
+                nested.mkdir()
+        return real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "stat", replace_after_nested_read)
+    monkeypatch.setattr(
+        os,
+        "supports_dir_fd",
+        frozenset(
+            replace_after_nested_read if function is real_stat else function
+            for function in os.supports_dir_fd
+        ),
+    )
+    monkeypatch.setattr(
+        os,
+        "supports_follow_symlinks",
+        frozenset(
+            replace_after_nested_read if function is real_stat else function
+            for function in os.supports_follow_symlinks
+        ),
+    )
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert nested_stats == 2
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "changed-while-read"
+
+
+def test_directory_digest_rejects_entry_inserted_during_manifest_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A directory entry inserted before final enumeration invalidates the manifest."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    state = repository.root / ".rigor/state"
+    state.mkdir(parents=True)
+    initial = state.stat()
+    real_listdir = os.listdir
+    enumerations = 0
+
+    def insert_before_final_enumeration(path: os.PathLike[str] | str | bytes | int) -> list[str]:
+        nonlocal enumerations
+        if isinstance(path, int):
+            observed = os.fstat(path)
+            if (observed.st_dev, observed.st_ino) == (initial.st_dev, initial.st_ino):
+                enumerations += 1
+                if enumerations == 2:
+                    (state / "inserted").write_text("new", encoding="utf-8")
+        return real_listdir(path)
+
+    monkeypatch.setattr(os, "listdir", insert_before_final_enumeration)
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert enumerations == 2
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "changed-while-read"
+
+
+@pytest.mark.parametrize("blocked_name", ["state", "nested"])
+def test_directory_digest_reports_inaccessible_directory_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    blocked_name: str,
+) -> None:
+    """An inaccessible declared or nested directory yields bounded unavailable evidence."""
+    repository = GitRepository.create(tmp_path / blocked_name)
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    (repository.root / ".rigor/state/nested").mkdir(parents=True)
+    expected_parent = (
+        repository.root / ".rigor" if blocked_name == "state" else repository.root / ".rigor/state"
+    ).stat()
+    real_open = os.open
+
+    def reject_selected_directory(
+        path: os.PathLike[str] | str | bytes | int,
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        if path == blocked_name and dir_fd is not None and flags & os.O_DIRECTORY:
+            observed_parent = os.fstat(dir_fd)
+            if (observed_parent.st_dev, observed_parent.st_ino) == (
+                expected_parent.st_dev,
+                expected_parent.st_ino,
+            ):
+                raise PermissionError("blocked by test filesystem boundary")
+        if dir_fd is None:
+            return real_open(path, flags, mode)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(os, "open", reject_selected_directory)
+    monkeypatch.setattr(
+        os,
+        "supports_dir_fd",
+        frozenset(
+            reject_selected_directory if function is real_open else function
+            for function in os.supports_dir_fd
+        ),
+    )
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "inaccessible"
+
+
+def test_presence_capture_reports_missing_platform_primitive(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A platform without final-entry path descriptors yields unavailable evidence."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(ignored_inventory=[_declaration("state", ".rigor/state")])
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    state = repository.root / ".rigor/state"
+    state.parent.mkdir()
+    os.mkfifo(state)
+    monkeypatch.delattr(os, "O_PATH")
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "platform-unavailable"
+
+
+def test_directory_digest_rejects_stale_initial_directory_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stale pre-open directory identity cannot authenticate another tree."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", ".rigor/state", "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    state = repository.root / ".rigor/state"
+    decoy = repository.root / ".rigor/decoy"
+    state.mkdir(parents=True)
+    decoy.mkdir()
+    parent_identity = state.parent.stat()
+    real_stat = os.stat
+    intercepted = False
+
+    def stale_initial_directory_stat(
+        path: os.PathLike[str] | str | bytes | int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        nonlocal intercepted
+        if path == "state" and dir_fd is not None and not follow_symlinks and not intercepted:
+            parent = os.fstat(dir_fd)
+            if (parent.st_dev, parent.st_ino) == (
+                parent_identity.st_dev,
+                parent_identity.st_ino,
+            ):
+                intercepted = True
+                return real_stat(decoy, follow_symlinks=False)
+        return real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "stat", stale_initial_directory_stat)
+    monkeypatch.setattr(
+        os,
+        "supports_dir_fd",
+        frozenset(
+            stale_initial_directory_stat if function is real_stat else function
+            for function in os.supports_dir_fd
+        ),
+    )
+    monkeypatch.setattr(
+        os,
+        "supports_follow_symlinks",
+        frozenset(
+            stale_initial_directory_stat if function is real_stat else function
+            for function in os.supports_follow_symlinks
+        ),
+    )
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert intercepted
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "changed-while-read"
+
+
+@pytest.mark.parametrize(
+    ("limit_name", "limit_value", "relative_path"),
+    [
+        ("_DIRECTORY_MAX_ENTRIES", 1, ".rigor/entry-limit"),
+        ("_DIRECTORY_MAX_BYTES", 1, ".rigor/byte-limit"),
+        ("_DIRECTORY_MAX_DEPTH", 0, ".rigor/depth-limit"),
+    ],
+)
+def test_directory_digest_fails_closed_at_each_resource_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    limit_name: str,
+    limit_value: int,
+    relative_path: str,
+) -> None:
+    """Directory capture reports bounded unavailable evidence at every finite limit."""
+    repository = GitRepository.create(tmp_path / limit_name)
+    repository.write_policy(
+        ignored_inventory=[_declaration("state", relative_path, "directory-sha256")]
+    )
+    repository.write_text("src/pkg/module.py", "VALUE = 1\n")
+    repository.commit()
+    if limit_name == "_DIRECTORY_MAX_ENTRIES":
+        repository.write_text(f"{relative_path}/one", "")
+        repository.write_text(f"{relative_path}/two", "")
+    elif limit_name == "_DIRECTORY_MAX_BYTES":
+        repository.write_text(f"{relative_path}/two-bytes", "12")
+    else:
+        repository.write_text(f"{relative_path}/nested/value", "")
+    monkeypatch.setattr(ignored_inventory_module, limit_name, limit_value)
+    evidence = rigor_foundry.scan_repository(repository.root).ignored_inventory_evidence[0]
+    assert evidence.status == "unavailable"
+    assert evidence.reason == "limit-exceeded"
+    assert evidence.byte_size is None
+    assert evidence.content_sha256 is None
 
 
 @pytest.mark.parametrize("capture", ["presence", "file-sha256"])

@@ -28,7 +28,7 @@ from .git_inventory import (
 from .git_provenance import GitRunner
 
 IGNORED_INVENTORY_SCHEMA_VERSION = "1.0"
-IgnoredCapture = Literal["presence", "file-sha256"]
+IgnoredCapture = Literal["presence", "file-sha256", "directory-sha256"]
 IgnoredStatus = Literal["observed", "missing", "unavailable"]
 IgnoredKind = Literal["regular-file", "directory", "other"]
 IgnoredReason = Literal[
@@ -39,6 +39,7 @@ IgnoredReason = Literal[
     "missing-parent",
     "multiple-links",
     "not-regular-file",
+    "limit-exceeded",
     "observed",
     "platform-unavailable",
     "symlink",
@@ -52,6 +53,7 @@ _UNAVAILABLE_REASONS = frozenset(
         "inaccessible-parent",
         "multiple-links",
         "not-regular-file",
+        "limit-exceeded",
         "platform-unavailable",
         "symlink",
         "unsafe-parent",
@@ -96,6 +98,7 @@ class IgnoredInventoryDeclaration:
         if not isinstance(self.capture, str) or self.capture not in {
             "presence",
             "file-sha256",
+            "directory-sha256",
         }:
             raise ValueError("ignored inventory capture is unsupported")
 
@@ -258,18 +261,24 @@ class IgnoredInventoryEvidence:
                 for value in (self.observed_kind, self.byte_size, self.content_sha256)
             ):
                 raise ValueError("unavailable ignored evidence fields contradict status")
-            if self.reason == "not-regular-file" and self.capture != "file-sha256":
-                raise ValueError("not-regular-file requires file-sha256 capture")
+            if self.reason == "not-regular-file" and self.capture == "presence":
+                raise ValueError("not-regular-file requires digest capture")
             return
         if self.reason != "observed" or self.observed_kind is None:
             raise ValueError("observed ignored evidence requires observed kind and reason")
         if self.observed_kind == "regular-file":
             if self.byte_size is None:
                 raise ValueError("regular-file ignored evidence requires byte_size")
+            if self.capture == "directory-sha256":
+                raise ValueError("directory-sha256 evidence requires a directory")
             if self.capture == "file-sha256" and self.content_sha256 is None:
                 raise ValueError("file-sha256 evidence requires content_sha256")
             if self.capture == "presence" and self.content_sha256 is not None:
                 raise ValueError("presence evidence must not carry content_sha256")
+            return
+        if self.observed_kind == "directory" and self.capture == "directory-sha256":
+            if self.byte_size is None or self.content_sha256 is None:
+                raise ValueError("directory-sha256 evidence requires size and content digest")
             return
         if self.capture != "presence" or any(
             value is not None for value in (self.byte_size, self.content_sha256)
@@ -382,7 +391,7 @@ def _observe_present(
         kind: IgnoredKind = "directory"
     else:
         kind = "other"
-    if declaration.capture == "file-sha256":
+    if declaration.capture != "presence":
         return _unavailable(declaration, "not-regular-file")
     return IgnoredInventoryEvidence(
         declaration.evidence_id,
@@ -394,6 +403,157 @@ def _observe_present(
         None,
         "observed",
     )
+
+
+_DIRECTORY_MAX_DEPTH = 64
+_DIRECTORY_MAX_ENTRIES = 10_000
+_DIRECTORY_MAX_BYTES = 128 * 1024 * 1024
+_DIRECTORY_MANIFEST_SCHEMA_VERSION = "1.0"
+
+
+class _DirectoryReadError(Exception):
+    """Carry one bounded ignored-evidence failure reason."""
+
+    def __init__(self, reason: IgnoredReason) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+def _directory_entries(
+    descriptor: int,
+    *,
+    prefix: bytes,
+    depth: int,
+    counters: list[int],
+) -> list[dict[str, object]]:
+    """Hash one no-follow directory tree through descriptor-relative reads."""
+    if depth > _DIRECTORY_MAX_DEPTH:
+        raise _DirectoryReadError("limit-exceeded")
+    before = _snapshot(os.fstat(descriptor))
+    try:
+        names = sorted(os.listdir(descriptor), key=os.fsencode)
+    except OSError as exc:
+        raise _DirectoryReadError("inaccessible") from exc
+    entries: list[dict[str, object]] = []
+    directory_flags = (
+        os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    )
+    for name in names:
+        counters[0] += 1
+        if counters[0] > _DIRECTORY_MAX_ENTRIES:
+            raise _DirectoryReadError("limit-exceeded")
+        name_bytes = os.fsencode(name)
+        relative = prefix + b"/" + name_bytes if prefix else name_bytes
+        try:
+            metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+        except OSError as exc:
+            raise _DirectoryReadError("changed-while-read") from exc
+        if stat.S_ISLNK(metadata.st_mode):
+            raise _DirectoryReadError("symlink")
+        if stat.S_ISDIR(metadata.st_mode):
+            child: int | None = None
+            try:
+                child = os.open(name, directory_flags, dir_fd=descriptor)
+                child_before = _snapshot(os.fstat(child))
+                entries.append({"path_bytes_hex": relative.hex(), "kind": "directory"})
+                entries.extend(
+                    _directory_entries(
+                        child,
+                        prefix=relative,
+                        depth=depth + 1,
+                        counters=counters,
+                    )
+                )
+                path_after = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+                if _snapshot(path_after) != child_before:
+                    raise _DirectoryReadError("changed-while-read")
+            except _DirectoryReadError:
+                raise
+            except OSError as exc:
+                raise _DirectoryReadError("inaccessible") from exc
+            finally:
+                if child is not None:
+                    os.close(child)
+            continue
+        if not stat.S_ISREG(metadata.st_mode):
+            raise _DirectoryReadError("not-regular-file")
+        if metadata.st_nlink != 1:
+            raise _DirectoryReadError("multiple-links")
+        remaining = _DIRECTORY_MAX_BYTES - counters[1]
+        if metadata.st_size > remaining:
+            raise _DirectoryReadError("limit-exceeded")
+        try:
+            result = read_stable_regular_file_at(
+                descriptor,
+                name,
+                relative.hex(),
+                buffer_limit=remaining,
+                maximum_bytes=remaining,
+                require_single_link=True,
+            )
+        except StableReadError as exc:
+            raise _DirectoryReadError(cast(IgnoredReason, exc.reason)) from exc
+        counters[1] += result.byte_size
+        entries.append(
+            {
+                "path_bytes_hex": relative.hex(),
+                "kind": "regular-file",
+                "byte_size": result.byte_size,
+                "content_sha256": result.content_digest,
+            }
+        )
+    try:
+        after_names = sorted(os.listdir(descriptor), key=os.fsencode)
+        after = _snapshot(os.fstat(descriptor))
+    except OSError as exc:
+        raise _DirectoryReadError("changed-while-read") from exc
+    if names != after_names or before != after:
+        raise _DirectoryReadError("changed-while-read")
+    return entries
+
+
+def _observe_directory_hash(
+    parent: int,
+    name: str,
+    declaration: IgnoredInventoryDeclaration,
+    expected: tuple[int, int, int, int, int, int, int],
+) -> IgnoredInventoryEvidence:
+    """Return a bounded canonical digest for one stable ignored directory tree."""
+    descriptor: int | None = None
+    flags = (
+        os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        descriptor = os.open(name, flags, dir_fd=parent)
+        if _snapshot(os.fstat(descriptor)) != expected:
+            return _unavailable(declaration, "changed-while-read")
+        counters = [0, 0]
+        entries = _directory_entries(descriptor, prefix=b"", depth=0, counters=counters)
+        path_after = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        if _snapshot(path_after) != expected:
+            return _unavailable(declaration, "changed-while-read")
+        return IgnoredInventoryEvidence(
+            declaration.evidence_id,
+            declaration.path,
+            declaration.capture,
+            "observed",
+            "directory",
+            counters[1],
+            canonical_digest(
+                {
+                    "schema_version": _DIRECTORY_MANIFEST_SCHEMA_VERSION,
+                    "entries": entries,
+                }
+            ),
+            "observed",
+        )
+    except _DirectoryReadError as exc:
+        return _unavailable(declaration, exc.reason)
+    except OSError:
+        return _unavailable(declaration, "inaccessible")
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def _collect_one(
@@ -468,8 +628,12 @@ def _collect_one(
             )
         except OSError:
             return finish(_unavailable(declaration, "inaccessible"))
+        if stat.S_ISDIR(metadata.st_mode) and declaration.capture == "directory-sha256":
+            return finish(_observe_directory_hash(parent, name, declaration, _snapshot(metadata)))
         if not stat.S_ISREG(metadata.st_mode):
             return finish(_observe_present(parent, name, declaration, _snapshot(metadata)))
+        if declaration.capture == "directory-sha256":
+            return finish(_unavailable(declaration, "not-regular-file"))
         try:
             result = read_stable_regular_file_at(
                 parent,

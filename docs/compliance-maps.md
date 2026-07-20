@@ -29,11 +29,12 @@ copyrighted control text.
 | --- | --- | --- |
 | `iso-iec-27001-2022` | ISO/IEC 27001 information security management systems | 2022, including Amendment 1:2024 ([iso.org](https://www.iso.org/standard/27001)) |
 | `aicpa-tsc-2017` | AICPA Trust Services Criteria | 2017 with revised points of focus, 2022 ([aicpa-cima.com](https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022)) |
+| `eu-cra-2024-2847` | Regulation (EU) 2024/2847 CRA evidence crosswalk | Official Journal text, 20 November 2024 ([EUR-Lex](https://eur-lex.europa.eu/eli/reg/2024/2847/oj)) |
 
 ```python
 from rigor_foundry.compliance_maps import builtin_template, builtin_template_ids
 
-print(builtin_template_ids())            # ('aicpa-tsc-2017', 'iso-iec-27001-2022')
+print(builtin_template_ids())            # includes 'eu-cra-2024-2847'
 template = builtin_template("iso-iec-27001-2022")
 mapping = template.mapping_for("application-security")
 print([reference.reference for reference in mapping.references])

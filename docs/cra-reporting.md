@@ -1,5 +1,10 @@
 # Offline CRA Article 14 preparation
 
+This page covers the P0/P1 reporting and imported-inventory workflow. The
+optional P2 policy, CR001–CR006 candidates, fixed-vulnerability advisory
+evidence, and signed StandardPack are documented in [CRA readiness rules and
+StandardPack](cra-rules.md).
+
 RIGOR-FOUNDRY can prepare evidence-bound drafts and operational timelines for
 Article 14 of Regulation (EU) 2024/2847. The feature is deliberately offline:
 it does not contact the Single Reporting Platform, ENISA, a CSIRT, users,
@@ -275,6 +280,7 @@ Use `--event-key` to inspect one event. All timeline and status commands accept
 - exit `2`: invalid arguments, malformed or unsafe state, digest mismatch,
   ambiguous chain, or I/O failure.
 
-Fixed-vulnerability advisories, CRA rule packs, policy extensions, editor UI,
-fleet aggregation, network submission, and user delivery remain outside the
-P0/P1 boundary.
+Fixed-vulnerability advisories, the CRA rule family, policy extension, and
+signed StandardPack are implemented as the separately activated P2 lane and
+remain outside the P0/P1 boundary. Editor UI, fleet aggregation, network
+submission, and user delivery are not implemented by these commands.

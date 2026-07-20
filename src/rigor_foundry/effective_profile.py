@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
+from .cra_policy import CraPolicy
 from .model_primitives import (
     SecretReference,
     VariableAssignment,
@@ -36,7 +37,8 @@ from .standard_pack import (
 )
 from .trust import VerificationTrustStore
 
-LOCK_SCHEMA_VERSION = "1.0"
+LOCK_SCHEMA_VERSION = "1.1"
+LEGACY_LOCK_SCHEMA_VERSION = "1.0"
 PACK_VERIFICATION_SCHEMA_VERSION = "1.0"
 RESOLVER_VERSION = "0.1.0"
 
@@ -493,6 +495,7 @@ class EffectiveProfileLock:
     warnings: tuple[PolicyContradiction, ...]
     toolchain_digest: str
     resolved_at: str
+    cra_policy_digest: str | None
     lock_digest: str
 
     @classmethod
@@ -509,6 +512,7 @@ class EffectiveProfileLock:
         trust_store: VerificationTrustStore,
         toolchain_digest: str,
         resolved_at: str,
+        cra_policy: CraPolicy | None = None,
     ) -> EffectiveProfileLock:
         """Build a lock only after every blocking contradiction is absent."""
         if any(item.blocking for item in warnings):
@@ -538,8 +542,15 @@ class EffectiveProfileLock:
         pack_digests = {item.pack_digest for item in packs}
         if any(item.source_pack_digest not in pack_digests for item in controls):
             raise ValueError("effective control references an unlocked source pack")
+        cra_policy_digest = (
+            None
+            if cra_policy is None
+            else CraPolicy.from_dict(cra_policy.to_dict()).cra_policy_digest
+        )
         fields: dict[str, object] = {
-            "schema_version": LOCK_SCHEMA_VERSION,
+            "schema_version": (
+                LEGACY_LOCK_SCHEMA_VERSION if cra_policy_digest is None else LOCK_SCHEMA_VERSION
+            ),
             "resolver_version": RESOLVER_VERSION,
             "profile_digest": profile.profile_digest,
             "intent_digest": profile.intent.intent_digest,
@@ -556,6 +567,11 @@ class EffectiveProfileLock:
             "toolchain_digest": require_digest(toolchain_digest, "lock.toolchain_digest"),
             "resolved_at": require_utc_timestamp(resolved_at, "lock.resolved_at"),
         }
+        if cra_policy_digest is not None:
+            fields["cra_policy_digest"] = require_digest(
+                cra_policy_digest,
+                "lock.cra_policy_digest",
+            )
         return cls(
             profile_digest=profile.profile_digest,
             intent_digest=profile.intent.intent_digest,
@@ -567,13 +583,18 @@ class EffectiveProfileLock:
             warnings=warnings,
             toolchain_digest=cast(str, fields["toolchain_digest"]),
             resolved_at=cast(str, fields["resolved_at"]),
+            cra_policy_digest=cast(str | None, fields.get("cra_policy_digest")),
             lock_digest=canonical_digest(fields),
         )
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the complete immutable effective-profile lock."""
-        return {
-            "schema_version": LOCK_SCHEMA_VERSION,
+        result: dict[str, object] = {
+            "schema_version": (
+                LEGACY_LOCK_SCHEMA_VERSION
+                if self.cra_policy_digest is None
+                else LOCK_SCHEMA_VERSION
+            ),
             "resolver_version": RESOLVER_VERSION,
             "profile_digest": self.profile_digest,
             "intent_digest": self.intent_digest,
@@ -587,6 +608,9 @@ class EffectiveProfileLock:
             "resolved_at": self.resolved_at,
             "lock_digest": self.lock_digest,
         }
+        if self.cra_policy_digest is not None:
+            result["cra_policy_digest"] = self.cra_policy_digest
+        return result
 
     @classmethod
     def from_dict(cls, value: object) -> EffectiveProfileLock:

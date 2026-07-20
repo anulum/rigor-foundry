@@ -10,15 +10,15 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import os
-import stat
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 
+from .cra_advisories import FixedVulnerabilityAdvisory
 from .cra_events import SecurityEventRevision
 from .cra_p1_cli import add_cra_p1_commands, add_osv_register_arguments, bind_osv_awareness
+from .cra_pack_cli import add_cra_pack_command
 from .cra_payloads import prepare_stage_payload, prepare_user_notice
 from .cra_protocol import (
     EstablishmentBasis,
@@ -30,11 +30,17 @@ from .cra_protocol import (
     Track,
     json_text,
     require_cra_timestamp,
+    require_relative_path,
 )
 from .cra_registration import ProductRegistration
 from .cra_store import CraRepository
 from .cra_submissions import StageSkip, SubmissionReceipt, UserNoticeDraft
 from .cra_timeline import ReportingTimeline, compute_reporting_timeline
+from .git_inventory import (
+    StableReadError,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
+)
 
 _EVIDENCE_LIMIT = 64 * 1024 * 1024
 
@@ -46,23 +52,47 @@ def _timestamp(value: str | None) -> str:
     return require_cra_timestamp(value, "timestamp")
 
 
-def _evidence_digest(path: Path) -> str:
+def _evidence_digest(path: Path, *, label: str = "receipt evidence") -> str:
     """Hash one bounded regular single-link evidence file without symlink traversal."""
-    descriptor: int | None = None
-    digest = hashlib.sha256()
+    absolute = Path(os.path.abspath(path))
+    parent = open_directory_no_follow(absolute.parent)
     try:
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
-            raise ValueError("receipt evidence must be a single-link regular file")
-        if metadata.st_size > _EVIDENCE_LIMIT:
-            raise ValueError("receipt evidence exceeds the 64 MiB limit")
-        while chunk := os.read(descriptor, 65_536):
-            digest.update(chunk)
-        return digest.hexdigest()
+        try:
+            observed = read_stable_regular_file_at(
+                parent,
+                absolute.name,
+                label,
+                buffer_limit=0,
+                maximum_bytes=_EVIDENCE_LIMIT,
+                require_single_link=True,
+            )
+        except StableReadError as exc:
+            if exc.reason == "limit-exceeded":
+                raise ValueError(f"{label} exceeds the 64 MiB limit") from exc
+            raise ValueError(f"{label} must be a stable single-link regular file") from exc
     finally:
-        if descriptor is not None:
-            os.close(descriptor)
+        os.close(parent)
+    return observed.content_digest
+
+
+def _repository_evidence(
+    repository: CraRepository,
+    path: Path,
+    *,
+    label: str,
+) -> tuple[str, str]:
+    """Return one repository-relative evidence path and its stable digest."""
+    candidate = path if path.is_absolute() else repository.repository_root / path
+    absolute = Path(os.path.abspath(candidate))
+    try:
+        relative = absolute.relative_to(repository.repository_root).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"{label} must be inside the repository") from exc
+    reference = require_relative_path(relative, f"{label} path")
+    return reference, _evidence_digest(
+        repository.repository_root / reference,
+        label=label,
+    )
 
 
 def _registration(args: argparse.Namespace) -> ProductRegistration:
@@ -272,6 +302,87 @@ def _notice(args: argparse.Namespace) -> int:
     return 0
 
 
+def _advisory_draft(args: argparse.Namespace) -> int:
+    """Record an operator-prepared fixed-vulnerability advisory draft."""
+    repository = CraRepository.open(args.root)
+    event = repository.current_event(args.event_key)
+    if event.track != "vulnerability":
+        raise ValueError("fixed-vulnerability advisory requires vulnerability track")
+    advisory_path = require_relative_path(args.advisory_path, "advisory_path")
+    advisory = FixedVulnerabilityAdvisory.build(
+        product_key=event.product_key,
+        event_key=event.event_key,
+        revision_digest=event.revision_digest,
+        state="draft",
+        security_update_ref=args.security_update_ref,
+        advisory_path=advisory_path,
+        advisory_sha256=_evidence_digest(
+            repository.repository_root / advisory_path,
+            label="advisory content",
+        ),
+        drafted_at=_timestamp(args.drafted_at),
+    )
+    path = repository.append_advisory(advisory)
+    print(f"stored prepare-only advisory draft {advisory.advisory_digest} at {path}")
+    return 0
+
+
+def _advisory_successor(
+    args: argparse.Namespace,
+    *,
+    state: Literal["published", "justified-delay"],
+) -> int:
+    """Append operator-declared publication or justified-delay evidence."""
+    repository = CraRepository.open(args.root)
+    event = repository.current_event(args.event_key)
+    previous = repository.advisory(args.event_key)
+    if previous is None:
+        raise ValueError("advisory successor requires an existing draft")
+    evidence_path, evidence_digest = _repository_evidence(
+        repository,
+        args.evidence,
+        label=(
+            "advisory publication evidence" if state == "published" else "advisory delay evidence"
+        ),
+    )
+    advisory = FixedVulnerabilityAdvisory.build(
+        product_key=event.product_key,
+        event_key=event.event_key,
+        revision_digest=event.revision_digest,
+        state=state,
+        security_update_ref=previous.security_update_ref,
+        advisory_path=previous.advisory_path,
+        advisory_sha256=previous.advisory_sha256,
+        drafted_at=previous.drafted_at,
+        published_at=_timestamp(args.published_at) if state == "published" else None,
+        publication_evidence_path=evidence_path if state == "published" else None,
+        publication_evidence_sha256=(evidence_digest if state == "published" else None),
+        delay_reason=args.reason if state == "justified-delay" else None,
+        delay_review_at=args.review_at if state == "justified-delay" else None,
+        delay_evidence_path=evidence_path if state == "justified-delay" else None,
+        delay_evidence_sha256=(evidence_digest if state == "justified-delay" else None),
+        previous_advisory_digest=previous.advisory_digest,
+    )
+    path = repository.append_advisory(advisory)
+    boundary = (
+        "operator-declared publication evidence; RIGOR-FOUNDRY did not publish"
+        if state == "published"
+        else "operator-declared justified-delay evidence; no legal sufficiency is claimed"
+    )
+    print(f"stored {boundary}: {advisory.advisory_digest} at {path}")
+    return 0
+
+
+def _advisory_publish(args: argparse.Namespace) -> int:
+    """Record operator-declared publication evidence without publishing."""
+    return _advisory_successor(args, state="published")
+
+
+def _advisory_delay(args: argparse.Namespace) -> int:
+    """Record operator-declared justified-delay evidence without adjudicating it."""
+    return _advisory_successor(args, state="justified-delay")
+
+
 def _status(args: argparse.Namespace) -> int:
     """Print all requested current timelines and return their aggregate alert state."""
     repository = CraRepository.open(args.root)
@@ -426,6 +537,38 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     notice.add_argument("--generated-at")
     notice.set_defaults(handler=_notice)
 
+    advisory_draft = subparsers.add_parser(
+        "advisory-draft",
+        help="Record a prepare-only fixed-vulnerability advisory draft.",
+    )
+    advisory_draft.add_argument("event_key")
+    _root(advisory_draft)
+    advisory_draft.add_argument("--security-update-ref", required=True)
+    advisory_draft.add_argument("--advisory-path", required=True)
+    advisory_draft.add_argument("--drafted-at")
+    advisory_draft.set_defaults(handler=_advisory_draft)
+
+    advisory_publish = subparsers.add_parser(
+        "advisory-publish",
+        help="Bind operator-declared advisory publication evidence without publishing.",
+    )
+    advisory_publish.add_argument("event_key")
+    _root(advisory_publish)
+    advisory_publish.add_argument("--published-at")
+    advisory_publish.add_argument("--evidence", type=Path, required=True)
+    advisory_publish.set_defaults(handler=_advisory_publish)
+
+    advisory_delay = subparsers.add_parser(
+        "advisory-delay",
+        help="Bind operator-declared justified-delay evidence without a legal verdict.",
+    )
+    advisory_delay.add_argument("event_key")
+    _root(advisory_delay)
+    advisory_delay.add_argument("--reason", required=True)
+    advisory_delay.add_argument("--review-at", required=True)
+    advisory_delay.add_argument("--evidence", type=Path, required=True)
+    advisory_delay.set_defaults(handler=_advisory_delay)
+
     status = subparsers.add_parser("cra-status", help="Print aggregate offline CRA status.")
     _root(status)
     status.add_argument("--event-key")
@@ -433,3 +576,4 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     status.add_argument("--json", action="store_true")
     status.set_defaults(handler=_status)
     add_cra_p1_commands(subparsers)
+    add_cra_pack_command(subparsers)

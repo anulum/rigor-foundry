@@ -61,9 +61,16 @@ duplicate owner/field pair is ambiguous.
 
 `policy_digest` and `review_digest` are first-class properties over the entire
 canonical serialisation. They remove caller-specific hashing conventions.
-Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.16.0` bind the
+Rule-pack schema 1.0 and rule-pack version `rigor-foundry/1.17.0` bind the
 registry version, ordered rule definitions, and every definition field into
 one envelope. Existing rules retain their original introduction version.
+
+Policy schema 1.4 optionally embeds the complete `CraPolicy` record and its
+`cra_policy_digest`; schema 1.3 omits both and retains its previous digest
+bytes. Effective-profile lock schema 1.1 exists only when it binds that exact
+CRA policy digest. Locks without CRA remain schema 1.0 and retain their prior
+identity. This conditional binding is not represented as an unconditional
+graph edge.
 
 The root `rigor-public-api.json` declaration manifest is ordinary tracked
 inventory input rather than a new protocol identity node. A semantic manifest

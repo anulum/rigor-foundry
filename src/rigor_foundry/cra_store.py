@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, TypeVar
 
+from .cra_advisories import FixedVulnerabilityAdvisory, validate_advisory_successor
 from .cra_events import SecurityEventRevision, validate_revision_successor
 from .cra_payloads import PreparedPayload, validate_prepared_payload
 from .cra_protocol import Stage, require_cra_timestamp, require_stage
@@ -30,6 +31,11 @@ from .cra_submissions import (
     validate_receipt_binding,
     validate_skip_binding,
 )
+from .git_inventory import (
+    StableReadError,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
+)
 from .internal_storage import (
     exclusive_lock,
     fsync_directory,
@@ -41,6 +47,7 @@ from .version import __version__
 
 _ROOT = Path(".rigor/cra")
 _MAX_RECORD_BYTES = 1_048_576
+_MAX_EVIDENCE_BYTES = 64 * 1024 * 1024
 
 
 class _JsonRecord(Protocol):
@@ -91,22 +98,55 @@ def _mkdirs(root: Path, relative: Path) -> Path:
 
 def _read_text(path: Path) -> str:
     """Read one bounded, regular, single-link file without following symlinks."""
-    descriptor: int | None = None
+    absolute = Path(os.path.abspath(path))
+    parent: int | None = None
     try:
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
-            raise ValueError(f"CRA record must be a single-link regular file: {path}")
-        if metadata.st_size > _MAX_RECORD_BYTES:
-            raise ValueError(f"CRA record exceeds the byte limit: {path}")
-        encoded = os.read(descriptor, metadata.st_size + 1)
-        try:
-            return encoded.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise ValueError(f"CRA record is not valid UTF-8: {path}") from exc
+        parent = open_directory_no_follow(absolute.parent)
+        observed = read_stable_regular_file_at(
+            parent,
+            absolute.name,
+            str(path),
+            buffer_limit=_MAX_RECORD_BYTES,
+            maximum_bytes=_MAX_RECORD_BYTES,
+            require_single_link=True,
+        )
+    except StableReadError as exc:
+        if exc.reason == "limit-exceeded":
+            raise ValueError(f"CRA record exceeds the byte limit: {path}") from exc
+        raise ValueError(f"CRA record must be a stable single-link regular file: {path}") from exc
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(f"CRA record path is inaccessible or unsafe: {path}") from exc
     finally:
-        if descriptor is not None:
-            os.close(descriptor)
+        if parent is not None:
+            os.close(parent)
+    if observed.payload is None:
+        raise ValueError(f"CRA record exceeds the byte limit: {path}")
+    try:
+        return observed.payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"CRA record is not valid UTF-8: {path}") from exc
+
+
+def _evidence_digest(path: Path, *, label: str) -> str:
+    """Rehash one bounded single-link evidence file through a stable descriptor."""
+    absolute = Path(os.path.abspath(path))
+    parent: int | None = None
+    try:
+        parent = open_directory_no_follow(absolute.parent)
+        observed = read_stable_regular_file_at(
+            parent,
+            absolute.name,
+            label,
+            buffer_limit=0,
+            maximum_bytes=_MAX_EVIDENCE_BYTES,
+            require_single_link=True,
+        )
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(f"{label} is unavailable or unsafe: {path}") from exc
+    finally:
+        if parent is not None:
+            os.close(parent)
+    return observed.content_digest
 
 
 def _parse_records(
@@ -172,6 +212,67 @@ class CraEventState:
     revision_digests: frozenset[str]
 
 
+def _select_advisory_tip(
+    revisions: tuple[FixedVulnerabilityAdvisory, ...],
+) -> FixedVulnerabilityAdvisory:
+    """Select one complete, unforked advisory revision-chain tip."""
+    by_digest = {item.advisory_digest: item for item in revisions}
+    if len(by_digest) != len(revisions):
+        raise ValueError("advisory revision chain contains duplicate digests")
+    roots = tuple(item for item in revisions if item.previous_advisory_digest is None)
+    if len(roots) != 1:
+        raise ValueError("advisory revision chain has multiple roots")
+    current = roots[0]
+    visited = {current.advisory_digest}
+    while True:
+        children = tuple(
+            item for item in revisions if item.previous_advisory_digest == current.advisory_digest
+        )
+        if len(children) > 1:
+            raise ValueError("advisory revision chain is forked")
+        if not children:
+            break
+        validate_advisory_successor(current, children[0])
+        current = children[0]
+        visited.add(current.advisory_digest)
+    if len(visited) != len(revisions):
+        raise ValueError("advisory revision chain is disconnected")
+    return current
+
+
+def _verify_advisory_evidence(
+    repository_root: Path,
+    revision: FixedVulnerabilityAdvisory,
+) -> None:
+    """Replay every external byte identity bound by one advisory revision."""
+    if (
+        _evidence_digest(
+            repository_root / revision.advisory_path,
+            label="stored advisory content",
+        )
+        != revision.advisory_sha256
+    ):
+        raise ValueError("stored advisory digest does not match its current bytes")
+    if revision.publication_evidence_path is not None and (
+        _evidence_digest(
+            repository_root / revision.publication_evidence_path,
+            label="stored advisory publication evidence",
+        )
+        != revision.publication_evidence_sha256
+    ):
+        raise ValueError(
+            "stored advisory publication evidence digest does not match its current bytes"
+        )
+    if revision.delay_evidence_path is not None and (
+        _evidence_digest(
+            repository_root / revision.delay_evidence_path,
+            label="stored advisory delay evidence",
+        )
+        != revision.delay_evidence_sha256
+    ):
+        raise ValueError("stored advisory delay evidence digest does not match its current bytes")
+
+
 class CraRepository:
     """Manage one repository's ignored append-only CRA evidence tree."""
 
@@ -180,6 +281,11 @@ class CraRepository:
         self.repository_root = repository_root
         self.storage_root = storage_root
         self._lock_path = storage_root / ".lock"
+
+    @property
+    def lock_path(self) -> Path:
+        """Expose the internal lock identity for one atomic read snapshot."""
+        return self._lock_path
 
     @classmethod
     def bootstrap(
@@ -526,6 +632,59 @@ class CraRepository:
             )
             path = directory / f"{notice.notice_digest}.json"
             _write_once_or_verify(path, notice.to_json())
+            return path
+
+    def advisory(self, event_key: str) -> FixedVulnerabilityAdvisory | None:
+        """Return the verified advisory-chain tip for an event, when present."""
+        event_key = require_identifier(event_key, "event_key")
+        records = _parse_records(
+            self.storage_root / "events" / event_key / "advisories",
+            FixedVulnerabilityAdvisory.from_dict,
+            "advisory_digest",
+        )
+        if not records:
+            return None
+        event_revisions = self._event_revisions(event_key)
+        if not event_revisions:
+            raise ValueError("advisory event has no verified revisions")
+        event = self.select_event_tip(event_revisions)
+        revision_digests = {item.revision_digest for item in event_revisions}
+        for revision in records:
+            if (revision.product_key, revision.event_key) != (
+                event.product_key,
+                event.event_key,
+            ):
+                raise ValueError("advisory belongs to another event")
+            if revision.revision_digest not in revision_digests:
+                raise ValueError("advisory names an unknown event revision")
+        advisory = _select_advisory_tip(records)
+        for revision in records:
+            _verify_advisory_evidence(self.repository_root, revision)
+        return advisory
+
+    def append_advisory(self, advisory: FixedVulnerabilityAdvisory) -> Path:
+        """Append one advisory revision after binding it to current event state."""
+        with exclusive_lock(self._lock_path):
+            advisory = FixedVulnerabilityAdvisory.from_dict(advisory.to_dict())
+            event = self.current_event(advisory.event_key)
+            if (event.product_key, event.revision_digest) != (
+                advisory.product_key,
+                advisory.revision_digest,
+            ):
+                raise ValueError("advisory does not bind the current event revision")
+            previous = self.advisory(advisory.event_key)
+            if previous is None:
+                if advisory.state != "draft" or advisory.previous_advisory_digest is not None:
+                    raise ValueError("initial advisory revision must be a root draft")
+            else:
+                validate_advisory_successor(previous, advisory)
+            _verify_advisory_evidence(self.repository_root, advisory)
+            directory = _mkdirs(
+                self.storage_root,
+                Path("events") / advisory.event_key / "advisories",
+            )
+            path = directory / f"{advisory.advisory_digest}.json"
+            write_new_text(path, advisory.to_json())
             return path
 
     def _event_revisions(self, event_key: str) -> tuple[SecurityEventRevision, ...]:

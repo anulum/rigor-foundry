@@ -139,10 +139,11 @@ class GitRepository:
         ignored_inventory: list[dict[str, str]] | None = None,
         enforcement_mode: str = "observe",
         maturity_policy_digest: str | None = None,
+        cra: dict[str, object] | None = None,
     ) -> Path:
         """Write a complete internal repository policy for this worktree."""
         policy: dict[str, object] = {
-            "schema_version": "1.3",
+            "schema_version": "1.4" if cra is not None else "1.3",
             "source_line_threshold": source_threshold,
             "test_line_threshold": test_threshold,
             "source_roots": ["src", "tools"],
@@ -166,6 +167,8 @@ class GitRepository:
             ],
             "native_audits": native_audits or [],
         }
+        if cra is not None:
+            policy["cra"] = cra
         return self.write_text(
             "rigor-foundry-policy.json",
             json.dumps(policy, indent=2, sort_keys=True) + "\n",

@@ -147,6 +147,8 @@ explicit policy/evidence paths and no remediation authority.
 | `rigor cra-skip` | Record an explicit later-stage already-provided decision bound to an earlier receipt. |
 | `rigor user-notice` | Prepare an offline Article 14(8) user-notice payload pair. |
 | `rigor cra-status` | Replay all CRA records and return operational alert status. |
+| `rigor advisory-draft` / `advisory-publish` / `advisory-delay` | Bind prepare-only fixed-vulnerability advisory evidence; never publish. |
+| `rigor cra-pack` | Emit the CRA StandardPack signed by a caller-supplied Ed25519 key. |
 
 `rigor --version` reports the canonical installed package version. The exact
 stable/provisional top-level import inventory and deprecation policy are

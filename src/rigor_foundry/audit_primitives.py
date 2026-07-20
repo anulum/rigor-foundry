@@ -16,7 +16,8 @@ from typing import Literal, cast
 REPORT_SCHEMA_VERSION = "1.3"
 REVIEW_SCHEMA_VERSION = "1.0"
 SCHEMA_VERSION = REPORT_SCHEMA_VERSION
-POLICY_SCHEMA_VERSION = "1.3"
+POLICY_SCHEMA_VERSION = "1.4"
+LEGACY_POLICY_SCHEMA_VERSION = "1.3"
 SCANNER_VERSION = "0.3.0"
 POLICY_FIELDS = frozenset(
     {
@@ -34,8 +35,10 @@ POLICY_FIELDS = frozenset(
         "audit_domains",
         "native_audits",
         "ignored_inventory",
+        "cra",
     }
 )
+LEGACY_POLICY_FIELDS = POLICY_FIELDS.difference({"cra"})
 
 Category = Literal[
     "test-authenticity",
@@ -52,6 +55,7 @@ Category = Literal[
     "operations",
     "performance",
     "api-compatibility",
+    "regulatory-readiness",
 ]
 Confidence = Literal["low", "medium", "high"]
 Decision = Literal["valid", "invalid", "accepted-boundary", "needs-evidence"]

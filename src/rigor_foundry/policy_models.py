@@ -18,6 +18,8 @@ from .adapter_profiles import ProfileName, profile_by_name
 from .adapter_workspace import validate_profile_paths
 from .audit_primitives import (
     AUDIT_DOMAINS,
+    LEGACY_POLICY_FIELDS,
+    LEGACY_POLICY_SCHEMA_VERSION,
     POLICY_FIELDS,
     POLICY_SCHEMA_VERSION,
     AdapterScope,
@@ -29,6 +31,7 @@ from .audit_primitives import (
     _string_tuple,
     canonical_digest,
 )
+from .cra_policy import CraPolicy
 from .ignored_inventory import IgnoredInventoryDeclaration, parse_ignored_inventory
 
 
@@ -226,11 +229,14 @@ class AuditPolicy:
     audit_domains: tuple[AuditDomainSpec, ...] = ()
     native_audits: tuple[AdapterSpec, ...] = ()
     ignored_inventory: tuple[IgnoredInventoryDeclaration, ...] = ()
+    cra: CraPolicy | None = None
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the policy deterministically."""
-        return {
-            "schema_version": POLICY_SCHEMA_VERSION,
+        result: dict[str, object] = {
+            "schema_version": (
+                LEGACY_POLICY_SCHEMA_VERSION if self.cra is None else POLICY_SCHEMA_VERSION
+            ),
             "source_line_threshold": self.source_line_threshold,
             "test_line_threshold": self.test_line_threshold,
             "source_roots": list(self.source_roots),
@@ -245,6 +251,9 @@ class AuditPolicy:
             "native_audits": [adapter.to_dict() for adapter in self.native_audits],
             "ignored_inventory": [item.to_dict() for item in self.ignored_inventory],
         }
+        if self.cra is not None:
+            result["cra"] = self.cra.to_dict()
+        return result
 
     @property
     def policy_digest(self) -> str:
@@ -255,10 +264,21 @@ class AuditPolicy:
     def from_dict(cls, value: object) -> AuditPolicy:
         """Parse and validate a policy mapping."""
         data = _mapping(value, "policy")
-        if frozenset(data) != POLICY_FIELDS:
+        schema_version = data.get("schema_version")
+        expected_fields = (
+            LEGACY_POLICY_FIELDS
+            if schema_version == LEGACY_POLICY_SCHEMA_VERSION
+            else POLICY_FIELDS
+        )
+        if frozenset(data) != expected_fields:
             raise ValueError("repository audit-policy fields do not match schema")
-        if data.get("schema_version") != POLICY_SCHEMA_VERSION:
+        if schema_version not in {LEGACY_POLICY_SCHEMA_VERSION, POLICY_SCHEMA_VERSION}:
             raise ValueError("unsupported repository audit-policy schema version")
+        cra = (
+            None
+            if schema_version == LEGACY_POLICY_SCHEMA_VERSION
+            else CraPolicy.from_dict(data.get("cra"))
+        )
         mode = _string(data.get("enforcement_mode", "observe"), "enforcement_mode")
         if mode not in {"observe", "ratchet", "zero"}:
             raise ValueError("enforcement_mode is unsupported")
@@ -302,6 +322,20 @@ class AuditPolicy:
             path = Path(path_text)
             if path.is_absolute() or ".." in path.parts:
                 raise ValueError(f"{field} must be repository-relative")
+        ignored_inventory = parse_ignored_inventory(data.get("ignored_inventory", []))
+        if cra is not None and cra.applicability == "required":
+            matches = tuple(
+                item for item in ignored_inventory if item.evidence_id == cra.state_evidence_id
+            )
+            if (
+                len(matches) != 1
+                or matches[0].path != ".rigor/cra"
+                or matches[0].capture != "directory-sha256"
+            ):
+                raise ValueError(
+                    "required CRA policy must bind state_evidence_id to .rigor/cra "
+                    "directory-sha256"
+                )
         return cls(
             source_line_threshold=_integer(
                 data.get("source_line_threshold", 1000),
@@ -337,7 +371,8 @@ class AuditPolicy:
             native_audits=tuple(
                 AdapterSpec.from_dict(item, index) for index, item in enumerate(raw_adapters)
             ),
-            ignored_inventory=parse_ignored_inventory(data.get("ignored_inventory", [])),
+            ignored_inventory=ignored_inventory,
+            cra=cra,
         )
 
     @classmethod

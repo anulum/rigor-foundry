@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from rigor_foundry.cra_advisories import FixedVulnerabilityAdvisory
 from rigor_foundry.cra_events import SecurityEventRevision
 from rigor_foundry.cra_payloads import PreparedPayload, prepare_stage_payload, prepare_user_notice
 from rigor_foundry.cra_registration import ProductRegistration
@@ -732,3 +733,138 @@ def test_missing_event_state_is_explicit(tmp_path: Path) -> None:
     store = repository(tmp_path)
     with pytest.raises(ValueError, match="no verified revisions"):
         store.event_state("MISSING")
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"event_key": "OTHER"}, "another event"),
+        ({"product_key": "other"}, "another event"),
+        ({"revision_digest": "f" * 64}, "unknown event revision"),
+    ],
+)
+def test_advisory_replay_binds_event_identity_and_revision_history(
+    tmp_path: Path,
+    changes: dict[str, object],
+    message: str,
+) -> None:
+    """A digest-valid advisory under the wrong event path cannot suppress a signal."""
+    store = repository(tmp_path)
+    selected = event()
+    store.append_event(selected)
+    content = store.repository_root / "SECURITY/ADV-1.md"
+    content.parent.mkdir()
+    content.write_text("# Advisory\n", encoding="utf-8")
+    values: dict[str, object] = {
+        "product_key": "widget",
+        "event_key": "EVENT-1",
+        "revision_digest": selected.revision_digest,
+        "state": "draft",
+        "security_update_ref": "release/v1.2.3",
+        "advisory_path": "SECURITY/ADV-1.md",
+        "advisory_sha256": hashlib.sha256(content.read_bytes()).hexdigest(),
+        "drafted_at": NOW,
+    }
+    values.update(changes)
+    record = FixedVulnerabilityAdvisory.build(**values)  # type: ignore[arg-type]
+    directory = store.storage_root / "events/EVENT-1/advisories"
+    directory.mkdir(parents=True)
+    (directory / f"{record.advisory_digest}.json").write_text(
+        record.to_json(),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=message):
+        store.advisory("EVENT-1")
+
+
+@pytest.mark.parametrize("shape", ["fork", "multiple-roots"])
+def test_advisory_replay_rejects_ambiguous_revision_graphs(
+    tmp_path: Path,
+    shape: str,
+) -> None:
+    """Only one complete linear advisory history may produce a current state."""
+    store = repository(tmp_path)
+    selected = event()
+    store.append_event(selected)
+    content = store.repository_root / "SECURITY/ADV-1.md"
+    content.parent.mkdir()
+    content.write_text("# Advisory\n", encoding="utf-8")
+    digest = hashlib.sha256(content.read_bytes()).hexdigest()
+    draft = FixedVulnerabilityAdvisory.build(
+        product_key="widget",
+        event_key="EVENT-1",
+        revision_digest=selected.revision_digest,
+        state="draft",
+        security_update_ref="release/v1.2.3",
+        advisory_path="SECURITY/ADV-1.md",
+        advisory_sha256=digest,
+        drafted_at=NOW,
+    )
+    directory = store.storage_root / "events/EVENT-1/advisories"
+    directory.mkdir(parents=True)
+    records = [draft]
+    if shape == "fork":
+        records.extend(
+            FixedVulnerabilityAdvisory.build(
+                product_key="widget",
+                event_key="EVENT-1",
+                revision_digest=selected.revision_digest,
+                state="justified-delay",
+                security_update_ref="release/v1.2.3",
+                advisory_path="SECURITY/ADV-1.md",
+                advisory_sha256=digest,
+                drafted_at=NOW,
+                delay_reason=reason,
+                delay_review_at="2026-07-21T00:00:00Z",
+                delay_evidence_path=f"evidence/{suffix}.txt",
+                delay_evidence_sha256=hashlib.sha256(suffix.encode()).hexdigest(),
+                previous_advisory_digest=draft.advisory_digest,
+            )
+            for reason, suffix in (("first review", "first"), ("second review", "second"))
+        )
+        message = "forked"
+    else:
+        records.append(
+            FixedVulnerabilityAdvisory.build(
+                product_key="widget",
+                event_key="EVENT-1",
+                revision_digest=selected.revision_digest,
+                state="draft",
+                security_update_ref="release/v2.0.0",
+                advisory_path="SECURITY/ADV-1.md",
+                advisory_sha256=digest,
+                drafted_at=NOW,
+            )
+        )
+        message = "multiple roots"
+    for record in records:
+        (directory / f"{record.advisory_digest}.json").write_text(
+            record.to_json(),
+            encoding="utf-8",
+        )
+    with pytest.raises(ValueError, match=message):
+        store.advisory("EVENT-1")
+
+
+def test_advisory_append_replays_external_bytes_before_persistence(tmp_path: Path) -> None:
+    """A caller cannot append an advisory whose declared files already differ."""
+    store = repository(tmp_path)
+    selected = event()
+    store.append_event(selected)
+    content = store.repository_root / "SECURITY/ADV-1.md"
+    content.parent.mkdir()
+    content.write_text("# Advisory\n", encoding="utf-8")
+    invalid = FixedVulnerabilityAdvisory.build(
+        product_key="widget",
+        event_key="EVENT-1",
+        revision_digest=selected.revision_digest,
+        state="draft",
+        security_update_ref="release/v1.2.3",
+        advisory_path="SECURITY/ADV-1.md",
+        advisory_sha256="0" * 64,
+        drafted_at=NOW,
+    )
+    with pytest.raises(ValueError, match="advisory digest"):
+        store.append_advisory(invalid)
+    directory = store.storage_root / "events/EVENT-1/advisories"
+    assert not directory.exists()

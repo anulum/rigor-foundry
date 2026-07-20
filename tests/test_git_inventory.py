@@ -76,10 +76,25 @@ def test_stable_reader_validates_buffer_limit_and_keeps_tracked_hardlink_compati
     try:
         with pytest.raises(ValueError, match="buffer_limit"):
             read_stable_regular_file_at(descriptor, target.name, target.name, buffer_limit=-1)
+        with pytest.raises(ValueError, match="maximum_bytes"):
+            read_stable_regular_file_at(
+                descriptor,
+                target.name,
+                target.name,
+                maximum_bytes=-1,
+            )
+        with pytest.raises(RuntimeError, match="exceeds the read limit"):
+            read_stable_regular_file_at(
+                descriptor,
+                target.name,
+                target.name,
+                maximum_bytes=6,
+            )
         result = read_stable_regular_file_at(
             descriptor,
             target.name,
             target.name,
+            maximum_bytes=7,
             require_single_link=False,
         )
         assert result.payload == b"content"
@@ -92,6 +107,46 @@ def test_stable_reader_validates_buffer_limit_and_keeps_tracked_hardlink_compati
             )
     finally:
         os.close(descriptor)
+
+
+def test_stable_reader_stops_when_file_grows_past_maximum(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Growth after descriptor validation cannot force an unbounded content pass."""
+    root = tmp_path / "root"
+    root.mkdir()
+    target = root / "target.bin"
+    target.write_bytes(b"content")
+    descriptor = open_directory_no_follow(root)
+    real_fdopen = os.fdopen
+    grown = False
+
+    def grow_before_read(
+        file_descriptor: int,
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        nonlocal grown
+        if not grown:
+            with target.open("ab") as handle:
+                handle.write(b"X")
+            grown = True
+        return real_fdopen(file_descriptor, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(os, "fdopen", grow_before_read)
+    try:
+        with pytest.raises(RuntimeError, match="exceeds the read limit"):
+            read_stable_regular_file_at(
+                descriptor,
+                target.name,
+                target.name,
+                maximum_bytes=7,
+            )
+    finally:
+        os.close(descriptor)
+    assert grown
+    assert target.read_bytes() == b"contentX"
 
 
 def test_directory_open_rejects_relative_paths_before_traversal(tmp_path: Path) -> None:

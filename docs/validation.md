@@ -1,5 +1,17 @@
 # Validation
 
+CRA P2 focused validation covers the strict optional policy transition,
+append-only advisory revision chains, CR001–CR006 over real Git and ignored
+storage, campaign replay, externally keyed Ed25519 pack emission, the complete
+CRA compliance-map template, EffectiveProfileLock binding, and
+ControlAssessment `needs-evidence` behavior. The ignored-state owner also
+tests deterministic directory manifests, non-UTF-8-safe path encoding,
+symlink/special-file rejection, finite resource limits, exact content drift,
+and mutation between the first snapshot and locked CRA replay. New CRA modules
+require direct 100% statement and branch coverage. Hosted CI remains the
+authority for the full supported Python, packaging, documentation, security,
+fuzz, and container matrix.
+
 Local development is deliberately resource-bounded. Run the static checks and
 the focused test file that owns the changed production surface:
 

@@ -670,8 +670,142 @@ _SOC2_TEMPLATE = ComplianceMapTemplate.build(
 )
 
 
+_CRA_STANDARD = ComplianceStandard.build(
+    standard_id="eu-cra-2024-2847",
+    title="Regulation EU 2024/2847 on horizontal cybersecurity requirements",
+    version="Official Journal text 2024-11-20",
+    publisher="European Parliament and Council of the European Union",
+    licence="Official EU legal text; identifiers and original mapping rationale only",
+    source_url="https://eur-lex.europa.eu/eli/reg/2024/2847/oj",
+)
+
+_CRA_TEMPLATE = ComplianceMapTemplate.build(
+    template_id="eu-cra-2024-2847",
+    template_version="1.0.0",
+    standard=_CRA_STANDARD,
+    mappings=(
+        _mapping(
+            "test-authenticity",
+            (
+                "annex-I-part-II-3",
+                "supporting",
+                "Authentic test and review evidence supports the required regular security testing process, but does not establish product compliance.",
+            ),
+        ),
+        _mapping(
+            "architecture-and-wiring",
+            (
+                "annex-I-part-I-2-a",
+                "partial",
+                "Architecture evidence is one input to reviewing known exploitable vulnerabilities at release boundaries.",
+            ),
+        ),
+        _gap(
+            "godfile-responsibility",
+            "The CRA provisions mapped by this template do not define a module-size or single-responsibility control.",
+        ),
+        _mapping(
+            "application-security",
+            (
+                "annex-I-part-I-2-a",
+                "supporting",
+                "Application-security evidence supports review for known exploitable vulnerabilities without proving their absence.",
+            ),
+            (
+                "annex-I-part-II-2",
+                "partial",
+                "Static findings are one input to vulnerability remediation and security-update handling.",
+            ),
+        ),
+        _mapping(
+            "supply-chain",
+            (
+                "annex-I-part-II-1",
+                "supporting",
+                "Imported component-inventory evidence supports top-level dependency identification without claiming SBOM completeness.",
+            ),
+        ),
+        _gap(
+            "api-abi-schema-compatibility",
+            "The mapped CRA vulnerability-handling provisions do not create a general API or ABI compatibility control.",
+        ),
+        _gap(
+            "scientific-numerical-correctness",
+            "The mapped CRA vulnerability-handling provisions do not define scientific or numerical-correctness controls.",
+        ),
+        _mapping(
+            "reliability-and-concurrency",
+            (
+                "annex-I-part-II-2",
+                "partial",
+                "Reliability evidence can support safe remediation and update handling but cannot demonstrate update delivery.",
+            ),
+            (
+                "annex-I-part-II-7-8",
+                "partial",
+                "Local update evidence is only partial support; secure, timely, free distribution remains operator evidence.",
+            ),
+        ),
+        _mapping(
+            "performance-and-reproducibility",
+            (
+                "annex-I-part-II-3",
+                "partial",
+                "Reproducible audit evidence supports regular review but not product-security effectiveness by itself.",
+            ),
+        ),
+        _mapping(
+            "data-and-privacy",
+            (
+                "article-14",
+                "partial",
+                "Classified local evidence handling supports reporting preparation while external submission and legal sufficiency remain out of scope.",
+            ),
+        ),
+        _mapping(
+            "operations-and-observability",
+            (
+                "article-14",
+                "supporting",
+                "Digest-bound clocks, drafts, and operator receipts support reporting operations without claiming submission or authority acceptance.",
+            ),
+        ),
+        _mapping(
+            "packaging-deployment-iac",
+            (
+                "annex-I-part-II-7-8",
+                "partial",
+                "Packaging evidence can support update preparation; distribution security, timeliness, cost, and delivery remain external operator evidence.",
+            ),
+        ),
+        _mapping(
+            "documentation-claims-ip",
+            (
+                "annex-I-part-II-4",
+                "supporting",
+                "Advisory publication or justified-delay records support fixed-vulnerability disclosure review.",
+            ),
+            (
+                "annex-I-part-II-5-6",
+                "supporting",
+                "Tracked CVD policy and public-contact signals support disclosure-process review without proving operation.",
+            ),
+        ),
+        _mapping(
+            "ownership-and-maintenance",
+            (
+                "annex-I-part-II-5-6",
+                "supporting",
+                "Declared ownership and maintenance evidence supports CVD policy and vulnerability-information-sharing processes.",
+            ),
+        ),
+    ),
+)
+
+
 _BUILTIN_TEMPLATES: dict[str, ComplianceMapTemplate] = {
-    template.template_id: template for template in (_ISO_27001_TEMPLATE, _SOC2_TEMPLATE)
+    template.template_id: template
+    for template in (_CRA_TEMPLATE, _ISO_27001_TEMPLATE, _SOC2_TEMPLATE)
 }
 
 

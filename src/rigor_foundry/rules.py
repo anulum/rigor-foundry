@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.16.0"
+RULE_PACK_VERSION = "rigor-foundry/1.17.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -33,9 +33,10 @@ SCIENTIFIC_RULE_PACK_VERSION = "rigor-foundry/1.13.0"
 OPERATIONS_RULE_PACK_VERSION = "rigor-foundry/1.14.0"
 PERFORMANCE_RULE_PACK_VERSION = "rigor-foundry/1.15.0"
 API_COMPATIBILITY_RULE_PACK_VERSION = "rigor-foundry/1.16.0"
+CRA_RULE_PACK_VERSION = "rigor-foundry/1.17.0"
 
 _RULE_ID = re.compile(
-    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
+    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA|CR)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
 )
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
@@ -52,6 +53,7 @@ _CATEGORY_PREFIXES = {
     "operations": "OP",
     "performance": "PR",
     "api-compatibility": "AA",
+    "regulatory-readiness": "CR",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -388,6 +390,42 @@ RULES: tuple[RuleDefinition, ...] = (
         "api-compatibility",
         "Declared Python public surface differs from its tracked pinned manifest.",
         API_COMPATIBILITY_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR001-missing-disclosure-policy",
+        "regulatory-readiness",
+        "Explicit CRA scope lacks a tracked coordinated-vulnerability-disclosure policy.",
+        CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR002-missing-security-contact",
+        "regulatory-readiness",
+        "Tracked coordinated-vulnerability-disclosure policy lacks a public contact signal.",
+        CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR003-stale-component-inventory",
+        "regulatory-readiness",
+        "Imported component inventory is not bound to the current repository state.",
+        CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR004-untracked-reporting-timeline",
+        "regulatory-readiness",
+        "CRA event has a started reporting stage without a bound draft, receipt, or skip.",
+        CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR005-support-period-too-short",
+        "regulatory-readiness",
+        "Declared support period below 60 months lacks a supported shorter-use relation.",
+        CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "CR006-fixed-vuln-without-advisory",
+        "regulatory-readiness",
+        "Fixed-vulnerability state lacks publication or justified-delay evidence.",
+        CRA_RULE_PACK_VERSION,
     ),
 )
 

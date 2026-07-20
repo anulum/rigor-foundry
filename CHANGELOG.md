@@ -7,6 +7,15 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Optional policy schema 1.4 explicitly activates CR001–CR006 CRA readiness
+  candidates over tracked CVD policy and a locked append-only CRA evidence
+  snapshot. A bounded no-follow directory manifest and post-replay digest
+  prevent mixed-state reports; schema 1.3 and absent/not-applicable scope
+  remain inert. Fixed-vulnerability advisory revisions are prepare-only, the
+  externally keyed `cra-pack` command emits a real signed StandardPack, and the
+  built-in CRA crosswalk preserves supporting, partial, and unsupported
+  relations without a compliance claim. All CR rules enter maturity probation.
+
 - Imported-only CRA component inventories validate bounded CycloneDX 1.5/1.6
   and SPDX 2.3 JSON profiles, retain exact source bytes and operator-declared
   coverage, bind Git tree and tracked-content identity, and append explicit

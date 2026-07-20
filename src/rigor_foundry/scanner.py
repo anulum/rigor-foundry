@@ -21,6 +21,7 @@ from .candidate_anchor import (
     candidate_anchor_errors,
 )
 from .container import scan_container
+from .cra_rules import scan_cra
 from .data_privacy import scan_data_privacy
 from .documentation import scan_documentation
 from .domains import domain_governance_candidates
@@ -179,6 +180,17 @@ def scan_repository(
         policy.ignored_inventory,
         git_runner=runner,
     )
+    cra_candidates = scan_cra(inventory, policy, policy_anchor, ignored_evidence)
+    if policy.cra is not None and policy.cra.applicability == "required":
+        final_ignored_evidence = collect_ignored_inventory(
+            inventory,
+            policy.ignored_inventory,
+            git_runner=runner,
+        )
+        if final_ignored_evidence != ignored_evidence:
+            raise RuntimeError("CRA state changed during repository scan")
+        if load_git_inventory(inventory.root, git_runner=runner) != inventory:
+            raise RuntimeError("tracked repository state changed during CRA scan")
     candidates = (
         *governance,
         *domain_governance_candidates(policy, policy_anchor),
@@ -198,6 +210,7 @@ def scan_repository(
         *scan_operations(inventory, policy),
         *scan_performance(inventory, policy),
         *scan_api_compatibility(inventory, policy),
+        *cra_candidates,
     )
     anchor_errors = candidate_anchor_errors(inventory, candidates)
     if anchor_errors:

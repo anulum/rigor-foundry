@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from .cra_policy import CraPolicy
 from .effective_profile import (
     AdapterLock,
     EffectiveControl,
@@ -91,6 +92,7 @@ def resolve_effective_profile(
     allowed_licences: tuple[str, ...],
     toolchain_digest: str,
     resolved_at: str,
+    cra_policy: CraPolicy | None = None,
 ) -> ProfileResolution:
     """Resolve a project profile or return explicit blocking contradictions."""
     now_text = require_utc_timestamp(resolved_at, "resolved_at")
@@ -397,6 +399,7 @@ def resolve_effective_profile(
         trust_store=trust_store,
         toolchain_digest=toolchain_digest,
         resolved_at=now_text,
+        cra_policy=cra_policy,
     )
     return ProfileResolution.build(
         profile_digest=profile.profile_digest,

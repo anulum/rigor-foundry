@@ -201,8 +201,12 @@ def test_template_from_dict_rejects_tampering() -> None:
 
 
 def test_builtin_templates_are_complete_and_honest() -> None:
-    """Both built-in templates cover every domain and name their source editions."""
-    assert builtin_template_ids() == ("aicpa-tsc-2017", "iso-iec-27001-2022")
+    """Every built-in template covers each domain and names its source edition."""
+    assert builtin_template_ids() == (
+        "aicpa-tsc-2017",
+        "eu-cra-2024-2847",
+        "iso-iec-27001-2022",
+    )
     by_id = {template.template_id: template for template in builtin_templates()}
     for identifier, template_object in by_id.items():
         covered = {mapping.rigor_domain for mapping in template_object.mappings}

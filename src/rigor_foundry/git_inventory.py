@@ -24,6 +24,7 @@ ContentKind = Literal["text", "binary", "non-utf8", "symlink", "missing", "gitli
 StableReadFailure = Literal[
     "changed-while-read",
     "inaccessible",
+    "limit-exceeded",
     "multiple-links",
     "not-regular-file",
     "platform-unavailable",
@@ -108,6 +109,7 @@ class StableReadError(RuntimeError):
         messages = {
             "changed-while-read": "regular path changed while being read",
             "inaccessible": "cannot access regular path",
+            "limit-exceeded": "regular path exceeds the read limit",
             "multiple-links": "regular path has multiple hard links",
             "not-regular-file": "path is not one regular file",
             "platform-unavailable": "platform lacks stable no-follow file reads",
@@ -248,6 +250,7 @@ def read_stable_regular_file_at(
     *,
     object_format: str | None = None,
     buffer_limit: int = MAX_TEXT_BYTES,
+    maximum_bytes: int | None = None,
     require_single_link: bool = False,
 ) -> StableRegularRead:
     """Read one no-follow regular file once through a trusted parent descriptor.
@@ -272,6 +275,10 @@ def read_stable_regular_file_at(
         raise ValueError("unsupported Git object format")
     if isinstance(buffer_limit, bool) or not isinstance(buffer_limit, int) or buffer_limit < 0:
         raise ValueError("buffer_limit must be an integer >= 0")
+    if maximum_bytes is not None and (
+        isinstance(maximum_bytes, bool) or not isinstance(maximum_bytes, int) or maximum_bytes < 0
+    ):
+        raise ValueError("maximum_bytes must be an integer >= 0 or None")
     if (
         not hasattr(os, "O_NOFOLLOW")
         or os.open not in os.supports_dir_fd
@@ -294,6 +301,8 @@ def read_stable_regular_file_at(
             raise StableReadError("not-regular-file", relative)
         if require_single_link and before.st_nlink != 1:
             raise StableReadError("multiple-links", relative)
+        if maximum_bytes is not None and before.st_size > maximum_bytes:
+            raise StableReadError("limit-exceeded", relative)
         content_digest = hashlib.sha256()
         blob_digest = hashlib.new(object_format) if object_format is not None else None
         if blob_digest is not None:
@@ -301,8 +310,16 @@ def read_stable_regular_file_at(
         buffered = bytearray() if before.st_size <= buffer_limit else None
         byte_count = 0
         with os.fdopen(descriptor, "rb", closefd=False) as handle:
-            while chunk := handle.read(1024 * 1024):
+            while True:
+                read_size = 1024 * 1024
+                if maximum_bytes is not None:
+                    read_size = min(read_size, maximum_bytes - byte_count + 1)
+                chunk = handle.read(read_size)
+                if not chunk:
+                    break
                 byte_count += len(chunk)
+                if maximum_bytes is not None and byte_count > maximum_bytes:
+                    raise StableReadError("limit-exceeded", relative)
                 content_digest.update(chunk)
                 if blob_digest is not None:
                     blob_digest.update(chunk)

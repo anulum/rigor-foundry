@@ -40,6 +40,7 @@ nav:
   - Offline evidence verification: offline-verification.md
   - Source provenance: source-provenance.md
   - Offline CRA reporting preparation: cra-reporting.md
+  - CRA readiness rules and StandardPack: cra-rules.md
   - CLI: cli.md
   - Built-in adapter profiles: adapter-profiles.md
   - Application-security rules: application-security-rules.md

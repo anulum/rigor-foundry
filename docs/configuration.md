@@ -62,19 +62,22 @@ prefixes, and only `test_`/`_test.py` names apply outside them.
 
 ## Declared ignored inventory
 
-Policy schema 1.3 accepts an `ignored_inventory` array sorted by
+Policy schema 1.3 and later accept an `ignored_inventory` array sorted by
 `evidence_id`, `path`, and `capture`. Every declaration contains a unique
 portable `evidence_id`, a unique exact normalised repository-relative path,
-and either `presence` or `file-sha256`. Globs, absolute paths, parent traversal,
-tracked paths, and paths outside Git ignore rules are rejected.
+and `presence`, `file-sha256`, or `directory-sha256`. Globs, absolute paths,
+parent traversal, tracked paths, and paths outside Git ignore rules are
+rejected.
 
-Collection never recursively inventories a directory and never records file
-content, symlink targets, environment values, or undeclared paths. Evidence is
-limited to `observed`, `missing`, or `unavailable`, the observed entry kind, a
-regular-file byte size, an optional SHA-256 for `file-sha256`, and a bounded
-reason. No-follow descriptor walks prevent parent or final symlink traversal.
-Concurrent mutation or replacement becomes unavailable evidence. Missing and
-unavailable observations are evidence gaps, not automatic control failures.
+Collection never records file content, symlink targets, environment values, or
+undeclared roots. `directory-sha256` recursively hashes only the declared tree
+through descriptor-relative no-follow reads, stores byte paths as hexadecimal
+inside a versioned canonical manifest, and caps depth, entry count, and total
+regular-file bytes. Evidence is limited to `observed`, `missing`, or
+`unavailable`, the observed entry kind, bounded byte size, an optional SHA-256,
+and a finite reason. Symlinks, special files, hard links, resource-limit
+breaches, and concurrent mutation fail closed. Missing and unavailable
+observations are evidence gaps, not automatic control failures.
 
 ## Rule-maturity policy and cases
 

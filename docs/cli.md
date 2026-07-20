@@ -65,8 +65,18 @@ active-exploitation evidence. The commands retain append-only evidence below
 `.rigor/cra/` and contain no network client. A receipt binds operator-supplied
 evidence after an external manufacturer action; it does not prove submission
 or authority acceptance.
+`advisory-draft`, `advisory-publish`, and `advisory-delay` add P2 append-only
+fixed-vulnerability advisory evidence without publishing. Publication and
+delay evidence remains under the repository root because replay binds its
+relative path and current bytes. `cra-pack` emits the fixed CRA StandardPack
+using a caller-supplied Ed25519 signing key; the key is never retained. Policy
+schema 1.4 explicitly activates CR001–CR006, while schema 1.3 and
+absent/not-applicable CRA blocks remain inert.
 See [Offline CRA Article 14 preparation](cra-reporting.md) for exact commands,
 deadline semantics, payload partitions, exit codes, and legal-claims boundary.
+See [CRA readiness rules and StandardPack](cra-rules.md) for policy activation,
+rule verification, pack signing, campaign integration, and the enforcement
+prohibition.
 
 ## Read-only inspection
 

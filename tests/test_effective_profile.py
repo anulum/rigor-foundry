@@ -15,6 +15,7 @@ from typing import cast
 import pytest
 from signing_fixtures import pack_signature, trust_store
 
+from rigor_foundry.cra_policy import CraPolicy
 from rigor_foundry.effective_profile import (
     AdapterLock,
     EffectiveControl,
@@ -180,7 +181,7 @@ def components() -> tuple[
     return project, pack, verification, adapter, variable, control
 
 
-def lock() -> EffectiveProfileLock:
+def lock(cra_policy: CraPolicy | None = None) -> EffectiveProfileLock:
     """Return one contradiction-free immutable effective profile lock."""
     project, pack, verification, adapter, variable, control = components()
     warning = PolicyContradiction.build(
@@ -201,7 +202,31 @@ def lock() -> EffectiveProfileLock:
         trust_store=trust_store("trusted-key"),
         toolchain_digest="9" * 64,
         resolved_at="2026-07-15T12:00:00Z",
+        cra_policy=cra_policy,
     )
+
+
+def test_effective_lock_preserves_legacy_bytes_and_optionally_binds_cra_policy() -> None:
+    """Absent CRA stays schema 1.0; activated CRA changes and rebinds schema 1.1."""
+    legacy = lock()
+    assert legacy.to_dict()["schema_version"] == "1.0"
+    assert "cra_policy_digest" not in legacy.to_dict()
+    cra_policy = CraPolicy.build(
+        applicability="required",
+        rationale="explicit CRA scope",
+        product_key="widget",
+        disclosure_policy_path="SECURITY.md",
+        state_evidence_id="cra-state",
+    )
+    activated = lock(cra_policy)
+    assert activated.to_dict()["schema_version"] == "1.1"
+    assert activated.to_dict()["cra_policy_digest"] == cra_policy.cra_policy_digest
+    assert activated.lock_digest != legacy.lock_digest
+    assert EffectiveProfileLock.from_dict(activated.to_dict()) == activated
+    malformed = activated.to_dict()
+    malformed.pop("cra_policy_digest")
+    with pytest.raises(ValueError, match="requires CRA"):
+        EffectiveProfileLock.from_dict(malformed)
 
 
 def test_effective_lock_binds_every_exact_input() -> None:

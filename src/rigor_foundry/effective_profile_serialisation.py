@@ -270,14 +270,20 @@ def effective_control_from_dict(value: object) -> EffectiveControl:
 def effective_profile_lock_from_dict(value: object) -> EffectiveProfileLock:
     """Parse one serialised lock and rederive its content digest."""
     from .effective_profile import (
+        LEGACY_LOCK_SCHEMA_VERSION,
         LOCK_SCHEMA_VERSION,
         RESOLVER_VERSION,
         EffectiveProfileLock,
     )
 
     data = require_mapping(value, "lock")
-    if data.get("schema_version") != LOCK_SCHEMA_VERSION:
+    schema_version = data.get("schema_version")
+    if schema_version not in {LEGACY_LOCK_SCHEMA_VERSION, LOCK_SCHEMA_VERSION}:
         raise ValueError("unsupported effective-profile lock schema version")
+    if schema_version == LEGACY_LOCK_SCHEMA_VERSION and "cra_policy_digest" in data:
+        raise ValueError("legacy effective-profile lock must not carry CRA policy")
+    if schema_version == LOCK_SCHEMA_VERSION and "cra_policy_digest" not in data:
+        raise ValueError("effective-profile lock schema 1.1 requires CRA policy digest")
     if data.get("resolver_version") != RESOLVER_VERSION:
         raise ValueError("unsupported effective-profile resolver version")
     pack_digests = tuple(
@@ -324,7 +330,7 @@ def effective_profile_lock_from_dict(value: object) -> EffectiveProfileLock:
     ordered_variables = tuple(sorted(variables, key=lambda item: item.variable_id))
     ordered_controls = tuple(sorted(controls, key=lambda item: item.control.versioned_id))
     fields: dict[str, object] = {
-        "schema_version": LOCK_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "resolver_version": RESOLVER_VERSION,
         "profile_digest": require_digest(data.get("profile_digest"), "lock.profile_digest"),
         "intent_digest": require_digest(data.get("intent_digest"), "lock.intent_digest"),
@@ -340,6 +346,11 @@ def effective_profile_lock_from_dict(value: object) -> EffectiveProfileLock:
         ),
         "resolved_at": require_utc_timestamp(data.get("resolved_at"), "lock.resolved_at"),
     }
+    if schema_version == LOCK_SCHEMA_VERSION:
+        fields["cra_policy_digest"] = require_digest(
+            data.get("cra_policy_digest"),
+            "lock.cra_policy_digest",
+        )
     lock = EffectiveProfileLock(
         profile_digest=cast(str, fields["profile_digest"]),
         intent_digest=cast(str, fields["intent_digest"]),
@@ -351,6 +362,7 @@ def effective_profile_lock_from_dict(value: object) -> EffectiveProfileLock:
         warnings=warnings,
         toolchain_digest=cast(str, fields["toolchain_digest"]),
         resolved_at=cast(str, fields["resolved_at"]),
+        cra_policy_digest=cast(str | None, fields.get("cra_policy_digest")),
         lock_digest=canonical_digest(fields),
     )
     if data.get("lock_digest") != lock.lock_digest:
