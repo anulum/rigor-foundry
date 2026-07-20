@@ -67,10 +67,87 @@ invalid root, object-format contradiction, tag object supplied instead of its
 commit, Git operational failure, or concurrent checkout change aborts the
 capture. Those conditions do not become availability results.
 
-This surface performs real object capture only. Static scanning of the captured
-historical trees, cancellation of a multi-repository run, and persistence of
-execution evidence remain separate execution controls; a captured campaign is
-still an input, not an audit verdict.
+Capture remains an input, not an audit verdict. Historical static scanning is a
+separate execution control described below; persistence and external campaign
+adjudication remain outside both surfaces.
+
+## Executing captured historical trees
+
+`CrossRepositoryExecutionPlan.build()` binds the exact capture digest, campaign
+digest, ordered request digests, one repository-relative policy path per
+repository, and a deterministic dependency-first execution order. The plan is
+content-addressed. Execution reconstructs it from the supplied capture,
+requests, and policy paths before any temporary repository is created; an
+altered order, target, policy path, request, campaign, or plan digest is rejected
+as stale or substituted.
+
+`execute_cross_repository_campaign()` then processes one repository at a time:
+
+1. verify that the captured commit still exists in the explicitly named source
+   object database;
+2. initialise a fresh temporary repository using the captured SHA-1 or SHA-256
+   object format;
+3. fetch only the exact captured commit through the attested Git executable;
+4. check it out detached and run the production static scanner against the
+   historical policy path; and
+5. remove the complete temporary campaign workspace before returning evidence.
+
+The source checkout's HEAD, tree, full tracked/non-ignored status, and root
+identity must be byte-for-byte equal before and after the campaign. A temporary
+parent, when supplied, must be an absolute canonical real directory that neither
+contains nor sits inside any source repository. A policy symlink that escapes
+the detached tree remains a scan failure; external bytes are not imported.
+
+The runtime and every successful report are checked against the frozen
+toolchain, Git provenance, commit, tree, policy, rule-pack, and complete native-
+adapter declaration digest. Successful reports must come from a clean detached
+`HEAD`. This execution surface calls only the static scanner: it does not run
+native adapters, repository-defined commands, remediation, persistence,
+publication, or fleet activation.
+
+### Cancellation and failure semantics
+
+`CampaignCancellation` is cooperative at repository boundaries, including the
+boundary after historical materialisation and before scanning. Every planned
+repository receives an outcome even when cancellation was already requested;
+temporary rollback and source-state equality are still mandatory.
+
+Per-repository status is one of:
+
+- `succeeded` — a complete, integrity-checked historical static report exists;
+- `unavailable` — capture was unavailable, the historical object was pruned, or
+  a required dependency did not produce evidence;
+- `failed` — materialisation, scanning, or frozen-input validation failed; or
+- `cancelled` — cancellation was observed before that repository's scan.
+
+The aggregate resolution is `succeeded` only when every repository succeeded.
+Mixed success and non-success is `partial`; all-unavailable is `unavailable`;
+no-success failures are `failed`; and any cancellation makes the campaign
+`cancelled`. None of these states is a correctness verdict, and missing or
+divergent evidence is never converted into a pass.
+
+```python
+from pathlib import Path
+
+from rigor_foundry.cross_repository_execution import CrossRepositoryExecutionPlan
+from rigor_foundry.cross_repository_runtime import execute_cross_repository_campaign
+
+plan = CrossRepositoryExecutionPlan.build(
+    capture=capture,
+    requests=requests,
+    policy_paths=tuple("rigor-foundry-policy.json" for _request in requests),
+)
+execution = execute_cross_repository_campaign(
+    plan=plan,
+    capture=capture,
+    requests=requests,
+    temporary_parent=Path("/absolute/disjoint/temporary-parent"),
+)
+execution.resolution  # succeeded, partial, unavailable, failed, or cancelled
+```
+
+The example assumes `capture` and `requests` were produced by the explicit real
+Git-object capture flow above. The executor does not discover either value.
 
 ## Resolution
 
