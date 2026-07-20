@@ -29,6 +29,7 @@ from rigor_foundry.cross_repository_execution import (
     HistoricalExecutionTarget,
     HistoricalRepositoryExecution,
     RepositoryExecutionStatus,
+    _dependency_order,
     adapter_lock_digest,
     validate_historical_report,
 )
@@ -167,6 +168,29 @@ def test_plan_binds_exact_requests_and_orders_dependencies_first(tmp_path: Path)
             policy_paths=(POLICY_PATH.as_posix(), POLICY_PATH.as_posix()),
         )
 
+
+def test_plan_rejects_forged_request_and_capture_envelopes(tmp_path: Path) -> None:
+    """A stored digest cannot mask a changed root or capture record."""
+    capture, requests, _plan = _capture(tmp_path)
+    forged_request = replace(
+        requests[0],
+        repository_root=requests[1].repository_root,
+    )
+    with pytest.raises(ValueError, match="request digest does not match"):
+        CrossRepositoryExecutionPlan.build(
+            capture=capture,
+            requests=(forged_request, requests[1]),
+            policy_paths=(POLICY_PATH.as_posix(), POLICY_PATH.as_posix()),
+        )
+
+    forged_capture = replace(capture, capture_digest="0" * 64)
+    with pytest.raises(ValueError, match="capture digest does not match"):
+        CrossRepositoryExecutionPlan.build(
+            capture=forged_capture,
+            requests=requests,
+            policy_paths=(POLICY_PATH.as_posix(), POLICY_PATH.as_posix()),
+        )
+
     reordered_capture = CrossRepositoryCapture.build(
         campaign=capture.campaign,
         request_digests=tuple(reversed(capture.request_digests)),
@@ -190,6 +214,8 @@ def test_plan_binds_exact_requests_and_orders_dependencies_first(tmp_path: Path)
         edges=(*capture.campaign.edges, reverse_edge),
     )
     cyclic_capture = replace(capture, campaign=cyclic_campaign)
+    with pytest.raises(ValueError, match="contains a cycle"):
+        _dependency_order(cyclic_campaign)
     with pytest.raises(ValueError, match="contains a cycle"):
         CrossRepositoryExecutionPlan.build(
             capture=cyclic_capture,
@@ -226,6 +252,7 @@ def test_plan_validation_rejects_every_substituted_identity(tmp_path: Path) -> N
         replace(plan, targets=(forged_target, *plan.targets[1:])),
         replace(plan, targets=(plan.targets[0], plan.targets[0])),
         replace(plan, targets=(plan.targets[0], duplicate_request)),
+        _redigest_plan(plan, targets=(), execution_order=()),
         replace(plan, execution_order=("library", "library")),
         replace(plan, execution_order=("library", "absent")),
         replace(plan, plan_digest="0" * 64),
@@ -273,6 +300,12 @@ def test_repository_outcome_validates_real_detached_report(tmp_path: Path) -> No
             status="failed",
             reason="scan-failed",
             report=report,
+        )
+    with pytest.raises(ValueError, match="stable reason"):
+        HistoricalRepositoryExecution.build(
+            snapshot=app_snapshot,
+            status="unavailable",
+            reason="scan-failed",
         )
 
 

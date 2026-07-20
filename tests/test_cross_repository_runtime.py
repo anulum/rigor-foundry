@@ -439,6 +439,17 @@ def test_stale_or_substituted_plan_is_rejected_before_materialisation(
                 requests=requests,
             )
 
+    forged_request = replace(
+        requests[0],
+        repository_root=requests[1].repository_root,
+    )
+    with pytest.raises(ValueError, match="stale or substituted"):
+        execute_cross_repository_campaign(
+            plan=plan,
+            capture=capture,
+            requests=(forged_request, requests[1]),
+        )
+
 
 def test_temporary_parent_must_be_canonical_and_disjoint_from_sources(
     tmp_path: Path,

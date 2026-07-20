@@ -43,17 +43,52 @@ FailureReason = Literal[
 ]
 
 _STATUSES: Final = frozenset({"succeeded", "unavailable", "failed", "cancelled"})
-_REASONS: Final = frozenset(
-    {
-        "capture-unavailable",
-        "dependency-unavailable",
-        "historical-object-unavailable",
-        "materialisation-failed",
-        "scan-failed",
-        "frozen-input-divergence",
-        "cancelled",
-    }
-)
+_STATUS_REASONS: Final = {
+    "unavailable": frozenset(
+        {
+            "capture-unavailable",
+            "dependency-unavailable",
+            "historical-object-unavailable",
+        }
+    ),
+    "failed": frozenset(
+        {
+            "materialisation-failed",
+            "scan-failed",
+            "frozen-input-divergence",
+        }
+    ),
+    "cancelled": frozenset({"cancelled"}),
+}
+
+
+def _validate_request(request: RepositoryCaptureRequest) -> None:
+    """Reject a capture request whose stored digest masks substituted fields."""
+    rebuilt = RepositoryCaptureRequest.build(
+        repository_id=request.repository_id,
+        repository_root=request.repository_root,
+        requested_commit=request.requested_commit,
+        policy_digest=request.policy_digest,
+        rule_pack_version=request.rule_pack_version,
+        rule_pack_digest=request.rule_pack_digest,
+        adapter_lock_digest=request.adapter_lock_digest,
+        toolchain_digest=request.toolchain_digest,
+    )
+    if request != rebuilt:
+        raise ValueError("historical capture request digest does not match its content")
+
+
+def _validate_capture(capture: CrossRepositoryCapture) -> None:
+    """Reject a forged campaign, Git provenance, or capture envelope."""
+    campaign = CrossRepositoryCampaign.from_dict(capture.campaign.to_dict())
+    git_provenance = GitExecutableProvenance.from_dict(capture.git_provenance.to_dict())
+    rebuilt = CrossRepositoryCapture.build(
+        campaign=campaign,
+        request_digests=capture.request_digests,
+        git_provenance=git_provenance,
+    )
+    if capture != rebuilt:
+        raise ValueError("historical capture digest does not match its content")
 
 
 def adapter_lock_digest(policy: AuditPolicy) -> str:
@@ -168,6 +203,9 @@ class CrossRepositoryExecutionPlan:
         policy_paths: tuple[str, ...],
     ) -> CrossRepositoryExecutionPlan:
         """Build a plan only when capture, requests, and policies bind exactly."""
+        _validate_capture(capture)
+        for request in requests:
+            _validate_request(request)
         if len(requests) != len(policy_paths):
             raise ValueError("historical requests and policy paths must have equal length")
         if tuple(item.request_digest for item in requests) != capture.request_digests:
@@ -219,6 +257,8 @@ class CrossRepositoryExecutionPlan:
             _validate_target(target)
         target_ids = tuple(item.repository_id for item in self.targets)
         request_digests = tuple(item.request_digest for item in self.targets)
+        if not target_ids:
+            raise ValueError("historical execution targets must not be empty")
         for index, repository_id in enumerate(self.execution_order):
             require_identifier(repository_id, f"plan.execution_order[{index}]")
         if len(target_ids) != len(set(target_ids)):
@@ -301,7 +341,7 @@ class HistoricalRepositoryExecution:
             if reason or report is None:
                 raise ValueError("successful historical execution requires only a report")
             validate_historical_report(snapshot, report)
-        elif report is not None or reason not in _REASONS:
+        elif report is not None or reason not in _STATUS_REASONS[status]:
             raise ValueError("non-success historical execution requires one stable reason")
         body: dict[str, object] = {
             "schema_version": HISTORICAL_EXECUTION_SCHEMA_VERSION,
@@ -387,9 +427,9 @@ class CrossRepositoryExecution:
         temporary_workspaces_removed: bool,
     ) -> CrossRepositoryExecution:
         """Build and validate one complete campaign execution record."""
+        _validate_capture(capture)
         plan.validate()
         ToolchainIdentity.from_dict(toolchain.to_dict())
-        GitExecutableProvenance.from_dict(capture.git_provenance.to_dict())
         if plan.capture_digest != capture.capture_digest:
             raise ValueError("historical execution plan does not match the capture")
         if plan.campaign_digest != capture.campaign.campaign_digest:
