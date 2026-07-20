@@ -1055,6 +1055,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#executing-captured-historical-trees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executing captured historical trees
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executing captured historical trees">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cancellation-and-failure-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation and failure semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resolution" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1360,6 +1388,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#executing-captured-historical-trees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executing captured historical trees
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executing captured historical trees">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cancellation-and-failure-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation and failure semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resolution" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1448,10 +1504,77 @@ the operator checkout are neither read as historical content nor changed.</p>
 invalid root, object-format contradiction, tag object supplied instead of its
 commit, Git operational failure, or concurrent checkout change aborts the
 capture. Those conditions do not become availability results.</p>
-<p>This surface performs real object capture only. Static scanning of the captured
-historical trees, cancellation of a multi-repository run, and persistence of
-execution evidence remain separate execution controls; a captured campaign is
-still an input, not an audit verdict.</p>
+<p>Capture remains an input, not an audit verdict. Historical static scanning is a
+separate execution control described below; persistence and external campaign
+adjudication remain outside both surfaces.</p>
+<h2 id="executing-captured-historical-trees">Executing captured historical trees<a class="headerlink" href="#executing-captured-historical-trees" title="Permanent link">&para;</a></h2>
+<p><code>CrossRepositoryExecutionPlan.build()</code> binds the exact capture digest, campaign
+digest, ordered request digests, one repository-relative policy path per
+repository, and a deterministic dependency-first execution order. The plan is
+content-addressed. Execution reconstructs it from the supplied capture,
+requests, and policy paths before any temporary repository is created; an
+altered order, target, policy path, request, campaign, or plan digest is rejected
+as stale or substituted.</p>
+<p><code>execute_cross_repository_campaign()</code> then processes one repository at a time:</p>
+<ol>
+<li>verify that the captured commit still exists in the explicitly named source
+   object database;</li>
+<li>initialise a fresh temporary repository using the captured SHA-1 or SHA-256
+   object format;</li>
+<li>fetch only the exact captured commit through the attested Git executable;</li>
+<li>check it out detached and run the production static scanner against the
+   historical policy path; and</li>
+<li>remove the complete temporary campaign workspace before returning evidence.</li>
+</ol>
+<p>The source checkout's HEAD, tree, full tracked/non-ignored status, and root
+identity must be byte-for-byte equal before and after the campaign. A temporary
+parent, when supplied, must be an absolute canonical real directory that neither
+contains nor sits inside any source repository. A policy symlink that escapes
+the detached tree remains a scan failure; external bytes are not imported.</p>
+<p>The runtime and every successful report are checked against the frozen
+toolchain, Git provenance, commit, tree, policy, rule-pack, and complete native-
+adapter declaration digest. Successful reports must come from a clean detached
+<code>HEAD</code>. This execution surface calls only the static scanner: it does not run
+native adapters, repository-defined commands, remediation, persistence,
+publication, or fleet activation.</p>
+<h3 id="cancellation-and-failure-semantics">Cancellation and failure semantics<a class="headerlink" href="#cancellation-and-failure-semantics" title="Permanent link">&para;</a></h3>
+<p><code>CampaignCancellation</code> is cooperative at repository boundaries, including the
+boundary after historical materialisation and before scanning. Every planned
+repository receives an outcome even when cancellation was already requested;
+temporary rollback and source-state equality are still mandatory.</p>
+<p>Per-repository status is one of:</p>
+<ul>
+<li><code>succeeded</code> — a complete, integrity-checked historical static report exists;</li>
+<li><code>unavailable</code> — capture was unavailable, the historical object was pruned, or
+  a required dependency did not produce evidence;</li>
+<li><code>failed</code> — materialisation, scanning, or frozen-input validation failed; or</li>
+<li><code>cancelled</code> — cancellation was observed before that repository's scan.</li>
+</ul>
+<p>The aggregate resolution is <code>succeeded</code> only when every repository succeeded.
+Mixed success and non-success is <code>partial</code>; all-unavailable is <code>unavailable</code>;
+no-success failures are <code>failed</code>; and any cancellation makes the campaign
+<code>cancelled</code>. None of these states is a correctness verdict, and missing or
+divergent evidence is never converted into a pass.</p>
+<pre><code class="language-python">from pathlib import Path
+
+from rigor_foundry.cross_repository_execution import CrossRepositoryExecutionPlan
+from rigor_foundry.cross_repository_runtime import execute_cross_repository_campaign
+
+plan = CrossRepositoryExecutionPlan.build(
+    capture=capture,
+    requests=requests,
+    policy_paths=tuple(&quot;rigor-foundry-policy.json&quot; for _request in requests),
+)
+execution = execute_cross_repository_campaign(
+    plan=plan,
+    capture=capture,
+    requests=requests,
+    temporary_parent=Path(&quot;/absolute/disjoint/temporary-parent&quot;),
+)
+execution.resolution  # succeeded, partial, unavailable, failed, or cancelled
+</code></pre>
+<p>The example assumes <code>capture</code> and <code>requests</code> were produced by the explicit real
+Git-object capture flow above. The executor does not discover either value.</p>
 <h2 id="resolution">Resolution<a class="headerlink" href="#resolution" title="Permanent link">&para;</a></h2>
 <p>A campaign distinguishes an unavailable dependency from a passing result:</p>
 <pre><code class="language-python">from rigor_foundry.cross_repository_campaign import (
