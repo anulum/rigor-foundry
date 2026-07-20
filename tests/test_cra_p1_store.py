@@ -86,6 +86,78 @@ def test_inventory_replay_is_idempotent_and_advances_monotonically(tmp_path: Pat
     assert store.current_inventory("PRODUCT-1") == second
 
 
+def test_large_valid_imports_replay_above_the_p0_record_limit(tmp_path: Path) -> None:
+    """P1's documented 16 MiB source bound is replayable beyond P0's 1 MiB records."""
+    repo = repository(tmp_path)
+    store = CraP1Store.open(repo.root)
+    large_document = {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.5",
+        "version": 1,
+        "components": [
+            {"type": "library", "name": f"package-{index:05d}", "version": "1.0.0"}
+            for index in range(20_000)
+        ],
+    }
+    payload = json.dumps(large_document, sort_keys=True, separators=(",", ":")).encode()
+    assert len(payload) > 1_048_576
+    inventory = inventory_for(store, payload)
+    store.append_inventory(inventory, payload.decode())
+    assert store.current_inventory("PRODUCT-1") == inventory
+
+    output_document = json.loads(osv_output())
+    output_document["padding"] = "x" * 1_100_000
+    output_payload = json.dumps(output_document, sort_keys=True).encode()
+    imported = imported_osv(tmp_path / "large-osv")
+    result_path, output_path = write_inputs(tmp_path / "large-osv-exact", output_payload)
+    large_imported = import_osv_awareness(
+        adapter_result_path=result_path,
+        output_path=output_path,
+        external_id="OSV-TEST-1",
+        package_name="urllib3",
+        imported_at=NOW,
+    )
+    assert imported.evidence.external_id == large_imported.evidence.external_id
+    store.append_osv_awareness(large_imported)
+    assert store.awareness(large_imported.evidence.awareness_digest) == large_imported.evidence
+
+
+def test_p1_record_directory_rejects_names_encoding_json_and_noncanonical_bytes(
+    tmp_path: Path,
+) -> None:
+    """Large-record replay preserves the P0 filename and canonical-byte invariants."""
+    repo = repository(tmp_path)
+    store = CraP1Store.open(repo.root)
+    payload = cyclonedx()
+    inventory = inventory_for(store, payload)
+    store.append_inventory(inventory, payload.decode())
+    directory = store.base.storage_root / "inventories" / "PRODUCT-1"
+    record = directory / f"{inventory.inventory_digest}.json"
+    canonical = record.read_bytes()
+
+    unexpected = directory / "unexpected.txt"
+    unexpected.write_text("x", encoding="utf-8")
+    with pytest.raises(ValueError, match="unexpected CRA P1 storage entry"):
+        store.inventories("PRODUCT-1")
+    unexpected.unlink()
+
+    for invalid in (b"\xff", b"{"):
+        record.write_bytes(invalid)
+        with pytest.raises(ValueError, match="not valid JSON"):
+            store.inventories("PRODUCT-1")
+    record.write_bytes(canonical)
+
+    wrong_name = record.with_name(f"{'0' * 64}.json")
+    record.rename(wrong_name)
+    with pytest.raises(ValueError, match="filename does not match"):
+        store.inventories("PRODUCT-1")
+    wrong_name.rename(record)
+
+    record.write_bytes(canonical + b" ")
+    with pytest.raises(ValueError, match="not canonical"):
+        store.inventories("PRODUCT-1")
+
+
 def test_inventory_append_rejects_wrong_bytes_components_and_unknown_drift(tmp_path: Path) -> None:
     """A record cannot detach from its SBOM bytes, components, or product history."""
     repo = repository(tmp_path)

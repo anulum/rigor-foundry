@@ -54,9 +54,9 @@ Git results or fabricated filesystem metadata are not accepted as evidence.
 
 ## Local integration evidence
 
-On 2026-07-20, the CRA P1 owner surface passed 45 focused real-file, real-Git,
-and CLI tests. The five new production modules covered 604 statements and 164
-branches at 100%. The affected P0/P1 regression selection passed 75 tests with
+On 2026-07-20, the CRA P1 owner surface passed 47 focused real-file, real-Git,
+and CLI tests. The five new production modules covered 631 statements and 174
+branches at 100%. The affected P0/P1 regression selection passed 81 tests with
 three deliberately excluded real external-tool cases. Strict Ruff and MyPy,
 Bandit, REUSE 3.3 (417 files), typos, Actionlint, strict MkDocs, repository
 audit, and fast preflight passed. The static CRA import guard found no network

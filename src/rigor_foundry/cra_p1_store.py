@@ -11,23 +11,73 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol, TypeVar
 
 from .adapters import AdapterResult
 from .audit_primitives import canonical_digest
 from .cra_inventory import ComponentInventory, InventoryDriftEvidence
-from .cra_osv import ImportedOsvAwareness, OsvAwarenessEvidence
+from .cra_osv import (
+    MAX_ADAPTER_RESULT_BYTES,
+    MAX_OSV_OUTPUT_BYTES,
+    ImportedOsvAwareness,
+    OsvAwarenessEvidence,
+)
 from .cra_protocol import json_text
-from .cra_sbom import parse_sbom
+from .cra_sbom import MAX_SBOM_BYTES, parse_sbom, read_import_file
 from .cra_store import (
     CraRepository,
     _mkdirs,
-    _parse_records,
-    _read_text,
+    _safe_directory,
     _write_once_or_verify,
 )
 from .internal_storage import exclusive_lock
+
+MAX_P1_RECORD_BYTES = 32 * 1024 * 1024
+
+
+class _P1Record(Protocol):
+    """Describe one canonical content-addressed P1 JSON record."""
+
+    def to_json(self) -> str:
+        """Return canonical JSON text."""
+
+
+_Record = TypeVar("_Record", bound=_P1Record)
+
+
+def _p1_records(
+    directory: Path,
+    parser: Callable[[object], _Record],
+    digest_name: str,
+) -> tuple[_Record, ...]:
+    """Replay larger P1 records through the same stable-file boundary as imports."""
+    if not directory.exists():
+        return ()
+    _safe_directory(directory, label="CRA P1 record directory")
+    records: list[_Record] = []
+    for path in sorted(directory.iterdir(), key=lambda item: item.name):
+        if path.suffix != ".json":
+            raise ValueError(f"unexpected CRA P1 storage entry: {path}")
+        payload, _ = read_import_file(
+            path,
+            maximum_bytes=MAX_P1_RECORD_BYTES,
+            label="CRA P1 record",
+        )
+        try:
+            text = payload.decode("utf-8")
+            value = json.loads(text)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"CRA P1 record is not valid JSON: {path}") from exc
+        record = parser(value)
+        if path.stem != getattr(record, digest_name, None):
+            raise ValueError(f"CRA P1 filename does not match embedded digest: {path}")
+        if text != record.to_json():
+            raise ValueError(f"CRA P1 record bytes are not canonical: {path}")
+        records.append(record)
+    return tuple(records)
 
 
 @dataclass(frozen=True)
@@ -79,7 +129,7 @@ class CraP1Store:
     def inventories(self, product_key: str) -> tuple[ComponentInventory, ...]:
         """Return verified inventories in strict capture order."""
         self.base.current_registration(product_key)
-        records = _parse_records(
+        records = _p1_records(
             self.base.storage_root / "inventories" / product_key,
             ComponentInventory.from_dict,
             "inventory_digest",
@@ -89,9 +139,12 @@ class CraP1Store:
         if len(timestamps) != len(set(timestamps)):
             raise ValueError("component inventories contain duplicate capture timestamps")
         for record in ordered:
-            source = _read_text(self.base.storage_root / "sboms" / f"{record.sbom_sha256}.json")
-            encoded = source.encode("utf-8")
-            if hashlib.sha256(encoded).hexdigest() != record.sbom_sha256:
+            encoded, observed_digest = read_import_file(
+                self.base.storage_root / "sboms" / f"{record.sbom_sha256}.json",
+                maximum_bytes=MAX_SBOM_BYTES,
+                label="stored SBOM",
+            )
+            if observed_digest != record.sbom_sha256:
                 raise ValueError("stored SBOM digest does not match its bytes")
             if (
                 tuple(sorted(parse_sbom(encoded, record.sbom_format)))
@@ -152,7 +205,7 @@ class CraP1Store:
 
     def awareness(self, digest: str) -> OsvAwarenessEvidence:
         """Load one verified awareness record and both retained exact sources."""
-        records = _parse_records(
+        records = _p1_records(
             self.base.storage_root / "osv-awareness",
             OsvAwarenessEvidence.from_dict,
             "awareness_digest",
@@ -161,20 +214,22 @@ class CraP1Store:
         if len(matches) != 1:
             raise ValueError("OSV awareness digest does not select one record")
         evidence = matches[0]
-        adapter_text = _read_text(
-            self.base.storage_root / "adapter-results" / f"{evidence.adapter_result_digest}.json"
+        adapter_payload, _ = read_import_file(
+            self.base.storage_root / "adapter-results" / f"{evidence.adapter_result_digest}.json",
+            maximum_bytes=MAX_ADAPTER_RESULT_BYTES,
+            label="stored OSV adapter result",
         )
+        adapter_text = adapter_payload.decode("utf-8")
         adapter = AdapterResult.from_dict(json.loads(adapter_text))
         if adapter_text != json_text(adapter.to_dict()):
             raise ValueError("stored adapter result bytes are not canonical")
         if canonical_digest(adapter.to_dict()) != evidence.adapter_result_digest:
             raise ValueError("stored adapter result does not match awareness evidence")
-        output_text = _read_text(
-            self.base.storage_root / "osv-outputs" / f"{evidence.adapter_output_sha256}.json"
+        _output_payload, output_digest = read_import_file(
+            self.base.storage_root / "osv-outputs" / f"{evidence.adapter_output_sha256}.json",
+            maximum_bytes=MAX_OSV_OUTPUT_BYTES,
+            label="stored OSV output",
         )
-        if (
-            hashlib.sha256(output_text.encode("utf-8")).hexdigest()
-            != evidence.adapter_output_sha256
-        ):
+        if output_digest != evidence.adapter_output_sha256:
             raise ValueError("stored OSV output does not match awareness evidence")
         return evidence
