@@ -26,6 +26,8 @@ becomes an implicit pass.
 - [Security](security.md) defines the adversarial repository boundary.
 - [Public API stability](api-stability.md) inventories stable, provisional, and
   deprecated top-level imports.
+- [1.0 stable compatibility contract](stable-contract-1.0.md) freezes the
+  supported Python, CLI, and serialized-schema surfaces with one digest.
 - [API and schema compatibility rules](api-compatibility-rules.md) define the
   tracked declared-surface manifest and its candidate-only review boundary.
 

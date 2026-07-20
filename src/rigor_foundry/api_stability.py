@@ -20,6 +20,7 @@ from .model_primitives import require_semantic_version
 from .models import AuditPolicy, AuditReport, ReviewRecord
 from .review import review_templates, validate_reviews
 from .scanner import scan_repository
+from .stable_contract import stable_contract_manifest
 from .version import __version__
 
 API_STABILITY_SCHEMA_VERSION = "1.1"
@@ -36,6 +37,7 @@ STABLE_PUBLIC_API: frozenset[str] = frozenset(
         "report_markdown",
         "review_templates",
         "scan_repository",
+        "stable_contract_manifest",
         "validate_reviews",
     }
 )
@@ -207,6 +209,9 @@ STABLE_PUBLIC_API_BINDINGS: Mapping[str, StableApiBinding] = MappingProxyType(
         "scan_repository": StableApiBinding(
             "function", "rigor_foundry.scanner", "scan_repository"
         ),
+        "stable_contract_manifest": StableApiBinding(
+            "function", "rigor_foundry.stable_contract", "stable_contract_manifest"
+        ),
         "validate_reviews": StableApiBinding(
             "function", "rigor_foundry.review", "validate_reviews"
         ),
@@ -224,6 +229,7 @@ _STABLE_PUBLIC_API_TARGETS: Mapping[str, object] = MappingProxyType(
         "report_markdown": report_markdown,
         "review_templates": review_templates,
         "scan_repository": scan_repository,
+        "stable_contract_manifest": stable_contract_manifest,
         "validate_reviews": validate_reviews,
     }
 )

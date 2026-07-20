@@ -1,5 +1,18 @@
 # Command-line interface
 
+## Compatibility manifest
+
+```console
+rigor contract
+```
+
+Print the deterministic, digest-bound proposed-1.0 Python, CLI, and
+serialized-schema compatibility contract. The command reads no repository,
+performs no network access, and writes no files. See the
+[1.0 stable compatibility contract](stable-contract-1.0.md) for the stability,
+deprecation, and migration rules. The package remains pre-1.0 until the release
+gates and protected tag complete.
+
 Install from a verified source checkout during the migration:
 
 ```bash

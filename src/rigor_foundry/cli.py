@@ -60,6 +60,7 @@ from .safe_output import write_new_output
 from .sarif import report_sarif
 from .scanner import scan_repository
 from .source_provenance_cli import add_source_provenance_commands
+from .stable_contract import stable_contract_manifest
 from .version import __version__
 
 
@@ -470,6 +471,13 @@ def _bootstrap_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _contract_command(args: argparse.Namespace) -> int:
+    """Print the digest-bound 1.0 compatibility contract."""
+    del args
+    print(json.dumps(stable_contract_manifest(), allow_nan=False, indent=2, sort_keys=True))
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     """Build the command-line parser."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -644,6 +652,11 @@ def _parser() -> argparse.ArgumentParser:
         default=DEFAULT_COVERAGE_RESIDUAL_MANIFEST,
     )
     residuals.set_defaults(handler=_residuals_check_command)
+    contract = subparsers.add_parser(
+        "contract",
+        help="Print the digest-bound 1.0 Python, CLI, and schema compatibility contract.",
+    )
+    contract.set_defaults(handler=_contract_command)
     add_source_provenance_commands(subparsers)
     add_oscal_commands(subparsers)
     add_report_diff_command(subparsers)

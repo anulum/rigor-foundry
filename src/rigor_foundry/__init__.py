@@ -142,6 +142,7 @@ from .source_provenance import (
     source_provenance_to_json,
     verify_external_source,
 )
+from .stable_contract import stable_contract_manifest
 from .standard_pack import (
     ControlDefinition,
     EvidenceContract,
@@ -296,6 +297,7 @@ __all__ = [
     "review_templates",
     "scan_repository",
     "source_provenance_to_json",
+    "stable_contract_manifest",
     "transitive_dependents",
     "validate_campaign_input",
     "validate_digest_dependency_graph",

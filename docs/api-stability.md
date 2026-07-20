@@ -10,6 +10,12 @@ from rigor_foundry.api_stability import public_api_manifest
 manifest = public_api_manifest()
 ```
 
+The broader proposed-1.0 Python, CLI, and serialized-schema boundary is exposed
+by `rigor contract` and documented in the
+[1.0 stable compatibility contract](stable-contract-1.0.md). The package is
+still pre-1.0; this is a frozen candidate contract, not a claim that `1.0.0`
+has already been released.
+
 The result has sorted `stable` and `provisional` name arrays, exact stable
 runtime-binding records, and structured `deprecated` records. Compatibility
 tests require every top-level export to have exactly one classification. Every
@@ -30,6 +36,7 @@ The current stable top-level import names are:
 - `report_markdown`
 - `review_templates`
 - `scan_repository`
+- `stable_contract_manifest`
 - `validate_reviews`
 
 `AuditPolicy` is implemented by the cohesive `policy_models` owner, while the
@@ -72,7 +79,7 @@ and its schema-1.0 bundle/trust-policy/result contracts form the stable M3 CLI
 boundary. See [Offline evidence verification](offline-verification.md).
 
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
-version `0.1.1`. Provisional does not mean untested: these APIs remain typed,
+the pre-1.0 package. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a
 minor release may refine or remove the import after an explicit changelog entry
 while the project remains pre-1.0.
@@ -94,4 +101,5 @@ name:
 Compatibility tests reject duplicate or overlapping classifications,
 unclassified exports, classifications for absent names, non-final semantic
 versions, self-replacements, missing replacements, and a too-short same-major
-deprecation window. There are no deprecated top-level imports in `0.1.1`.
+deprecation window. There are no deprecated stable top-level imports in the
+frozen 1.0 candidate contract.

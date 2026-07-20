@@ -131,6 +131,7 @@
         "review_templates",
         "scan_repository",
         "source_provenance_to_json",
+        "stable_contract_manifest",
         "transitive_dependents",
         "validate_campaign_input",
         "validate_digest_dependency_graph",

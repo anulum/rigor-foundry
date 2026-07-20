@@ -34,6 +34,7 @@ _EXPECTED_STABLE_API = frozenset(
         "report_markdown",
         "review_templates",
         "scan_repository",
+        "stable_contract_manifest",
         "validate_reviews",
     }
 )

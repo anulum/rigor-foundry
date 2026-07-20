@@ -63,6 +63,7 @@ nav:
   - Remediation execution: remediation-executor.md
   - Polyglot capability matrix: polyglot-capability-matrix.md
   - Public API stability: api-stability.md
+  - 1.0 stable compatibility contract: stable-contract-1.0.md
   - Configuration: configuration.md
   - Validation: validation.md
   - Security: security.md
