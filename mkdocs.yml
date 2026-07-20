@@ -35,6 +35,7 @@ nav:
   - Consumer integrations: integrations.md
   - VS Code integration: vscode-integration.md
   - Architecture: architecture.md
+  - Calibration evidence: calibration-evidence-1.0.md
   - Digest dependencies: digest-dependencies.md
   - Report differences: report-diff.md
   - Offline evidence verification: offline-verification.md
