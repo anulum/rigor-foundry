@@ -36,11 +36,11 @@
       "responsibility": "ControlAssessment aggregate protocol owner for assessment states, nested evidence acceptance, independent reviewer acceptance, risk waivers, strict parsing, identity binding, and round trips."
     },
     {
-      "dependency_boundary": "Public CRA repository, product-registration, security-event, prepared-payload, submission-receipt, stage-skip, and user-notice records; real temporary Git repositories exercise the ignored local store and append-only replay boundary. No CLI parsing, network transport, remote submission, or conformity adjudication is exercised.",
+      "dependency_boundary": "Public CRA repository, product-registration, security-event, prepared-payload, submission-receipt, stage-skip, user-notice, and fixed-vulnerability advisory records; real temporary Git repositories exercise the ignored local store and append-only replay boundary. No CLI parsing, network transport, remote publication or submission, or conformity adjudication is exercised.",
       "lines": 870,
       "path": "tests/test_cra_store.py",
-      "reassess_when": "The file exceeds 850 lines, repository replay and submission-record validation become independently versioned protocols, another persistence backend is introduced, or its Git/store fixtures become shared by another test module.",
-      "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
+      "reassess_when": "The file exceeds 1000 lines, advisory and Article 14 record replay require independent fixture lifecycles, another persistence backend is introduced, or its Git/store fixtures become shared by another test module.",
+      "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, fixed-vulnerability advisories, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
     },
     {
       "dependency_boundary": "Public content-addressed protocol constructors for inventory, Git provenance, policy, maturity, external sources, reports and report differences, reviews, campaigns, attestations, comparisons, adapters, StandardPacks, effective profiles, tasks, events, and closures. Normative graph schema/topology validation is owned separately by test_digest_dependency_graph.py; source-provenance, adapter-profile, and offline-verification mutation construction remain in their dedicated owners. This test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
