@@ -606,6 +606,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#compatibility-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility manifest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#external-source-provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1309,6 +1320,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../stable-contract-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1.0 stable compatibility contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../configuration/" class="md-nav__link">
         
   
@@ -1435,6 +1473,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility manifest
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#external-source-provenance" class="md-nav__link">
@@ -1606,6 +1655,15 @@
 
 
 <h1 id="command-line-interface">Command-line interface<a class="headerlink" href="#command-line-interface" title="Permanent link">&para;</a></h1>
+<h2 id="compatibility-manifest">Compatibility manifest<a class="headerlink" href="#compatibility-manifest" title="Permanent link">&para;</a></h2>
+<pre><code class="language-console">rigor contract
+</code></pre>
+<p>Print the deterministic, digest-bound proposed-1.0 Python, CLI, and
+serialized-schema compatibility contract. The command reads no repository,
+performs no network access, and writes no files. See the
+<a href="../stable-contract-1.0/">1.0 stable compatibility contract</a> for the stability,
+deprecation, and migration rules. The package remains pre-1.0 until the release
+gates and protected tag complete.</p>
 <p>Install from a verified source checkout during the migration:</p>
 <pre><code class="language-bash">python3 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/ci.txt

@@ -16,7 +16,7 @@
         <link rel="prev" href="../polyglot-capability-matrix/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../stable-contract-1.0/">
       
       
         
@@ -1193,6 +1193,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../stable-contract-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1.0 stable compatibility contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../configuration/" class="md-nav__link">
         
   
@@ -1381,6 +1408,11 @@ is returned by:</p>
 
 manifest = public_api_manifest()
 </code></pre>
+<p>The broader proposed-1.0 Python, CLI, and serialized-schema boundary is exposed
+by <code>rigor contract</code> and documented in the
+<a href="../stable-contract-1.0/">1.0 stable compatibility contract</a>. The package is
+still pre-1.0; this is a frozen candidate contract, not a claim that <code>1.0.0</code>
+has already been released.</p>
 <p>The result has sorted <code>stable</code> and <code>provisional</code> name arrays, exact stable
 runtime-binding records, and structured <code>deprecated</code> records. Compatibility
 tests require every top-level export to have exactly one classification. Every
@@ -1399,6 +1431,7 @@ spelling while rebinding it fails.</p>
 <li><code>report_markdown</code></li>
 <li><code>review_templates</code></li>
 <li><code>scan_repository</code></li>
+<li><code>stable_contract_manifest</code></li>
 <li><code>validate_reviews</code></li>
 </ul>
 <p><code>AuditPolicy</code> is implemented by the cohesive <code>policy_models</code> owner, while the
@@ -1434,7 +1467,7 @@ constants are provisional Python imports. The installed <code>rigor verify</code
 and its schema-1.0 bundle/trust-policy/result contracts form the stable M3 CLI
 boundary. See <a href="../offline-verification/">Offline evidence verification</a>.</p>
 <p>Every other current <code>rigor_foundry.__all__</code> name is explicitly provisional in
-version <code>0.1.1</code>. Provisional does not mean untested: these APIs remain typed,
+the pre-1.0 package. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a
 minor release may refine or remove the import after an explicit changelog entry
 while the project remains pre-1.0.</p>
@@ -1453,7 +1486,8 @@ name:</p>
 <p>Compatibility tests reject duplicate or overlapping classifications,
 unclassified exports, classifications for absent names, non-final semantic
 versions, self-replacements, missing replacements, and a too-short same-major
-deprecation window. There are no deprecated top-level imports in <code>0.1.1</code>.</p>
+deprecation window. There are no deprecated stable top-level imports in the
+frozen 1.0 candidate contract.</p>
 
 
 
