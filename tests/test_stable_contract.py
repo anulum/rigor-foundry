@@ -10,9 +10,11 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import importlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -35,13 +37,16 @@ _SCHEMA_SYMBOLS = {
     "api-stability-manifest": "api_stability.API_STABILITY_SCHEMA_VERSION",
     "assisted-review": "assisted_review.ASSISTED_REVIEW_SCHEMA_VERSION",
     "audit-policy": "audit_primitives.POLICY_SCHEMA_VERSION",
+    "audit-policy-legacy": "audit_primitives.LEGACY_POLICY_SCHEMA_VERSION",
     "audit-report": "audit_primitives.REPORT_SCHEMA_VERSION",
+    "bubblewrap-provenance": ("sandbox_provenance.BUBBLEWRAP_PROVENANCE_SCHEMA_VERSION"),
     "campaign": "campaign_models.CAMPAIGN_SCHEMA_VERSION",
     "candidate-anchor": "candidate_anchor.ANCHOR_SCHEMA_VERSION",
     "claim-isolation": "claim_isolation.CLAIM_ISOLATION_SCHEMA_VERSION",
     "compliance-map": "compliance_maps.COMPLIANCE_MAP_SCHEMA_VERSION",
     "condition-language": "condition_language.CONDITION_SCHEMA_VERSION",
     "control-assessment": "control_assessment.ASSESSMENT_SCHEMA_VERSION",
+    "coverage-residual": "coverage_residuals.COVERAGE_RESIDUAL_SCHEMA_VERSION",
     "cra-policy": "cra_policy.CRA_POLICY_SCHEMA_VERSION",
     "cra-record": "cra_protocol.CRA_SCHEMA_VERSION",
     "cross-repository-campaign": (
@@ -52,8 +57,11 @@ _SCHEMA_SYMBOLS = {
     ),
     "digest-dependency": "digest_dependencies.DIGEST_DEPENDENCY_SCHEMA_VERSION",
     "effective-profile-lock": "effective_profile.LOCK_SCHEMA_VERSION",
+    "effective-profile-lock-legacy": "effective_profile.LEGACY_LOCK_SCHEMA_VERSION",
     "enforcement-result": "enforcement.ENFORCEMENT_SCHEMA_VERSION",
     "fleet-view": "fleet_view.FLEET_VIEW_SCHEMA_VERSION",
+    "git-provenance": "git_provenance.GIT_PROVENANCE_SCHEMA_VERSION",
+    "historical-execution": ("cross_repository_execution.HISTORICAL_EXECUTION_SCHEMA_VERSION"),
     "ignored-inventory": "ignored_inventory.IGNORED_INVENTORY_SCHEMA_VERSION",
     "inference-identity": "campaign_identity.INFERENCE_IDENTITY_SCHEMA_VERSION",
     "maturity-case-manifest": ("rule_maturity_manifest.MATURITY_CASE_MANIFEST_SCHEMA_VERSION"),
@@ -79,11 +87,24 @@ _SCHEMA_SYMBOLS = {
     "rule-pack": "rules.RULE_PACK_SCHEMA_VERSION",
     "sarif": "sarif.SARIF_VERSION",
     "source-provenance": "source_capture.SOURCE_PROVENANCE_SCHEMA_VERSION",
+    "stable-contract": "stable_contract.STABLE_CONTRACT_SCHEMA_VERSION",
     "standard-pack": "standard_pack.PACK_SCHEMA_VERSION",
     "trust-store": "trust.TRUST_STORE_SCHEMA_VERSION",
     "verification-key-policy": ("verification_policy.VERIFICATION_KEY_POLICY_SCHEMA_VERSION"),
     "work-closure": "work_closure.WORK_CLOSURE_SCHEMA_VERSION",
     "work-record": "work_models.WORK_SCHEMA_VERSION",
+}
+
+_SCHEMA_DISCOVERY_EXCLUSIONS = {
+    "audit_primitives.SCHEMA_VERSION": "alias of audit_primitives.REPORT_SCHEMA_VERSION",
+    "ignored_inventory._DIRECTORY_MANIFEST_SCHEMA_VERSION": (
+        "private nested helper, not a public or standalone interchange identifier"
+    ),
+}
+
+_EXTERNAL_PROTOCOL_VERSION_SYMBOLS = {
+    "oscal_export.OSCAL_VERSION": "external OSCAL interchange version",
+    "sarif.SARIF_VERSION": "external SARIF interchange version",
 }
 
 
@@ -116,12 +137,40 @@ def _observed_schemas() -> dict[str, str]:
     return observed
 
 
+def _declared_schema_symbols() -> set[str]:
+    """Find every top-level schema-version declaration in production source."""
+    package_root = __file__.replace("tests/test_stable_contract.py", "src/rigor_foundry")
+    discovered: set[str] = set()
+    for path in Path(package_root).glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            targets: list[ast.expr] = []
+            if isinstance(node, ast.Assign):
+                targets.extend(node.targets)
+            elif isinstance(node, ast.AnnAssign):
+                targets.append(node.target)
+            for target in targets:
+                if isinstance(target, ast.Name) and (
+                    target.id == "SCHEMA_VERSION" or target.id.endswith("_SCHEMA_VERSION")
+                ):
+                    discovered.add(f"{path.stem}.{target.id}")
+    return discovered
+
+
 def test_live_surfaces_match_the_frozen_1_0_contract() -> None:
     """Every supported command, flag, positional, schema, and stable API is exact."""
     assert set(_SCHEMA_SYMBOLS) == set(STABLE_SCHEMA_VERSIONS)
     assert (
         stable_contract_errors(_observed_commands(), _observed_schemas(), STABLE_PUBLIC_API) == ()
     )
+
+
+def test_every_production_schema_version_is_frozen_or_explicitly_private() -> None:
+    """A new non-private schema declaration cannot silently evade the 1.0 inventory."""
+    observed_symbols = set(_SCHEMA_SYMBOLS.values()) - set(_EXTERNAL_PROTOCOL_VERSION_SYMBOLS)
+    discovered = _declared_schema_symbols()
+    assert set(_SCHEMA_DISCOVERY_EXCLUSIONS) <= discovered
+    assert discovered - set(_SCHEMA_DISCOVERY_EXCLUSIONS) == observed_symbols
 
 
 def test_manifest_is_deterministic_digest_bound_json() -> None:

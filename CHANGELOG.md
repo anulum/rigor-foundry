@@ -9,10 +9,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - A digest-bound proposed-1.0 compatibility contract classifies and ratchets
   the stable package-level Python imports, every installed CLI command with its
-  option and positional spellings, and 52 persisted or interchange schema
-  versions. `rigor contract` emits the exact manifest without repository or
-  network access; incompatible wire changes require a new schema identifier
-  and explicit migration rather than reinterpretation.
+  option and positional spellings, and 59 explicitly inventoried schema
+  versions. An AST completeness guard rejects any unclassified non-private
+  production schema declaration. `rigor contract` emits the exact manifest
+  without repository or network access; incompatible wire changes require a
+  new schema identifier and explicit migration rather than reinterpretation.
 
 - Optional policy schema 1.4 explicitly activates CR001–CR006 CRA readiness
   candidates over tracked CVD policy and a locked append-only CRA evidence

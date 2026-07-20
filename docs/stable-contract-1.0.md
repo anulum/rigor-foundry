@@ -31,14 +31,15 @@ success as universal compatibility:
    remain explicitly provisional even when their serialized records are stable.
 2. **CLI spellings.** Every currently installed command, option spelling, and
    positional name is in the stable CLI set. CI rejects a removed, renamed,
-   added-but-unclassified, or silently changed parser surface. The installed
-   command keeps the global exit boundary: `0` completed, `1` a candidate or
-   policy gate did not pass, and `2` invalid input or unsafe/unavailable state.
-3. **Serialized protocols.** Every persisted, signed, or interchange schema
-   supported by the 1.0 candidate has an exact schema name and version. The
-   list includes reports, reviews, policies, anchors, campaigns, packs,
-   maturity, enforcement, offline verification, CRA evidence, SARIF, OSCAL,
-   remediation, provenance, work records, and adapter evidence.
+   added-but-unclassified, or silently changed parser surface.
+3. **Serialized protocols.** The manifest names 59 exact schema identifiers
+   and versions, including reports, reviews, policies, anchors, campaigns,
+   packs, maturity, enforcement, offline verification, CRA evidence, SARIF,
+   OSCAL, remediation, provenance, work records, and adapter evidence. An AST
+   guard fails when any new non-private production `*_SCHEMA_VERSION`
+   declaration is absent from the inventory. The only exclusions are the
+   `SCHEMA_VERSION` alias of the report schema and one private nested-directory
+   helper; both are named with reasons in the test contract.
 
 The manifest is authoritative for the exact command and schema inventory. The
 human documentation for each command or schema continues to define semantic
