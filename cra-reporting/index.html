@@ -555,6 +555,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Register or revise an event">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bind-an-exact-offline-osv-finding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bind an exact offline OSV finding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-component-inventory-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import component inventory evidence
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1352,6 +1380,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Register or revise an event">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bind-an-exact-offline-osv-finding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bind an exact offline OSV finding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-component-inventory-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import component inventory evidence
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1510,6 +1566,75 @@ declarations but never turns a support period below 60 months into a violation.<
 current verified tip. The product, track, awareness trigger, and trigger
 evidence cannot change. Status transitions are monotonic. Use explicit
 <code>--recorded-at</code> values for reproducible automation.</p>
+<h3 id="bind-an-exact-offline-osv-finding">Bind an exact offline OSV finding<a class="headerlink" href="#bind-an-exact-offline-osv-finding" title="Permanent link">&para;</a></h3>
+<p><code>vuln-register</code> can replace <code>--aware-evidence</code> with one complete G1 OSV
+evidence bundle:</p>
+<pre><code class="language-bash">rigor vuln-register VULN-2026-001 \
+  --root . \
+  --product-key widget \
+  --track vulnerability \
+  --aware-at 2026-09-11T09:00:00Z \
+  --osv-adapter-result evidence/osv-adapter-result.json \
+  --osv-output evidence/osv-output.json \
+  --osv-id OSV-2026-0001 \
+  --osv-package widget-core \
+  --exploitation-evidence evidence/active-exploitation.json \
+  --recorded-at 2026-09-11T09:05:00Z
+</code></pre>
+<p>The adapter result must use <code>osv-lockfile-offline-json-v1</code>, contain complete
+findings evidence, and match the exact output SHA-256 and result counts. The
+ID and package must select exactly one finding. RIGOR-FOUNDRY stores that
+finding as awareness evidence and carries its external ID and component into
+the explicitly requested event revision. An OSV match is not active-
+exploitation evidence: <code>--exploitation-evidence</code> remains mandatory and must
+name separate operator-supplied evidence. Importing files alone never creates
+an event.</p>
+<h2 id="import-component-inventory-evidence">Import component inventory evidence<a class="headerlink" href="#import-component-inventory-evidence" title="Permanent link">&para;</a></h2>
+<p>RIGOR-FOUNDRY imports existing JSON SBOMs; it never generates or enriches one.
+Supported bounded profiles are CycloneDX 1.5, CycloneDX 1.6, and SPDX 2.3.
+Validation covers the exact document envelope and component/package fields
+consumed by the inventory. It does not certify conformance of unconsumed
+optional fields or infer that the SBOM is complete.
+For SPDX, top-level packages must be identified by <code>documentDescribes</code> or an
+equivalent document-level <code>DESCRIBES</code>/<code>DESCRIBED_BY</code> relationship. A flat
+<code>packages</code> array is never treated as top-level by inference.</p>
+<p>Format anchors are the upstream <a href="https://raw.githubusercontent.com/CycloneDX/specification/1.5/schema/bom-1.5.schema.json">CycloneDX 1.5
+schema</a>,
+<a href="https://raw.githubusercontent.com/CycloneDX/specification/1.6/schema/bom-1.6.schema.json">CycloneDX 1.6
+schema</a>,
+and <a href="https://spdx.github.io/spdx-spec/v2.3/package-information/">SPDX 2.3 package-information
+specification</a>.</p>
+<pre><code class="language-bash">rigor sbom-import \
+  --root . \
+  --product-key widget \
+  --file evidence/widget.cdx.json \
+  --format cyclonedx-1.6 \
+  --source-tool cyclonedx-py@7.3.0 \
+  --source-evidence build-log:release-42 \
+  --coverage top-level-only \
+  --captured-at 2026-09-11T08:30:00Z
+</code></pre>
+<p>The source must be a stable, single-link regular UTF-8 JSON file no larger
+than 16 MiB. Duplicate keys, non-finite values, truncation, format/version
+mismatch, missing component versions, duplicate component identities, and
+more than 100,000 components fail closed. Components are sorted
+deterministically. The record binds the exact SBOM SHA-256, operator-declared
+source tool and evidence reference, explicit <code>top-level-only</code> or
+<code>declared-complete</code> coverage, plus the repository HEAD, tree object, Git object
+format, and tracked-worktree content SHA-256 at capture time.</p>
+<p><code>declared-complete</code> is only an operator declaration. RIGOR-FOUNDRY does not
+verify dependency-graph completeness.</p>
+<p>Record exact repository drift from the latest inventory:</p>
+<pre><code class="language-bash">rigor sbom-status \
+  --root . \
+  --product-key widget \
+  --observed-at 2026-09-11T12:00:00Z
+</code></pre>
+<p>The command appends a content-addressed drift observation and prints the
+inventory plus exact HEAD, tree, and tracked-content change flags. Exit <code>0</code>
+means those identities still match; exit <code>1</code> means at least one changed; exit
+<code>2</code> means the state is invalid or unavailable. Neither result is a compliance,
+vulnerability, or SBOM-completeness verdict.</p>
 <h2 id="inspect-clocks-and-prepare-drafts">Inspect clocks and prepare drafts<a class="headerlink" href="#inspect-clocks-and-prepare-drafts" title="Permanent link">&para;</a></h2>
 <pre><code class="language-bash">rigor vuln-timeline VULN-2026-001 --root . --now 2026-09-11T10:00:00Z
 
@@ -1580,9 +1705,9 @@ claim that the notice is timely.</p>
 <li>exit <code>2</code>: invalid arguments, malformed or unsafe state, digest mismatch,
   ambiguous chain, or I/O failure.</li>
 </ul>
-<p>Fixed-vulnerability advisories, SBOM import, OSV integration, CRA rule packs,
-policy extensions, editor UI, fleet aggregation, network submission, and user
-delivery are outside this P0 boundary.</p>
+<p>Fixed-vulnerability advisories, CRA rule packs, policy extensions, editor UI,
+fleet aggregation, network submission, and user delivery remain outside the
+P0/P1 boundary.</p>
 
 
 
