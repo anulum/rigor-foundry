@@ -15,6 +15,13 @@
       "responsibility": "ControlAssessment aggregate protocol owner for assessment states, nested evidence acceptance, independent reviewer acceptance, risk waivers, strict parsing, identity binding, and round trips."
     },
     {
+      "dependency_boundary": "Public CRA repository, product-registration, security-event, prepared-payload, submission-receipt, stage-skip, and user-notice records; real temporary Git repositories exercise the ignored local store and append-only replay boundary. No CLI parsing, network transport, remote submission, or conformity adjudication is exercised.",
+      "lines": 734,
+      "path": "tests/test_cra_store.py",
+      "reassess_when": "The file exceeds 850 lines, repository replay and submission-record validation become independently versioned protocols, another persistence backend is introduced, or its Git/store fixtures become shared by another test module.",
+      "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
+    },
+    {
       "dependency_boundary": "Public digest graph APIs and every versioned record family named by that graph: inventory, Git provenance, policy, rule-maturity policy and assessment, external source claim/policy/capture/verification, report, review, campaign, run attestation, comparison, adapter, standard pack, effective profile, task, event, and closure. Source-provenance and adapter-profile evidence mutation construction remain in their separate dedicated test owners. This registry test directly uses repository_audit_git_repository, signing_fixtures, test_effective_profile, and test_work_models fixtures.",
       "lines": 888,
       "path": "tests/test_digest_dependencies.py",
