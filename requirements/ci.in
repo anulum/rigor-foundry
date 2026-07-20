@@ -22,5 +22,5 @@ pre-commit==4.6.0
 pytest==9.1.1
 pytest-cov==7.1.0
 reuse==6.2.0
-ruff==0.15.21
+ruff==0.15.22
 twine==6.2.0
