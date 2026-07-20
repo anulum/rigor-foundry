@@ -390,6 +390,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#offline-cra-preparation-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline CRA preparation boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#candidate-evidence-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -483,6 +494,33 @@
     
   
     Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline CRA reporting preparation
   
 
     
@@ -1197,6 +1235,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#offline-cra-preparation-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline CRA preparation boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#candidate-evidence-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1346,6 +1395,13 @@ guard, owner, public regressions, revisit triggers, and a maximum 90-day review
 window. Preregistered negative searches prevent those residuals from becoming
 an excuse to restore private-helper tests or monkeypatched production
 internals. Repository audit and CI enforce the contract.</p>
+<h2 id="offline-cra-preparation-boundary">Offline CRA preparation boundary<a class="headerlink" href="#offline-cra-preparation-boundary" title="Permanent link">&para;</a></h2>
+<p>Offline CRA preparation is a separate append-only evidence boundary.
+Registration, event revisions, drafts, receipts, skips, and user notices are
+content-addressed below ignored <code>.rigor/cra/</code> state. Replay verifies the whole
+linear event chain plus record and payload bytes before the pure timeline
+engine computes clocks. The CLI contains no authority or user transport; see
+<a href="../cra-reporting/">Offline CRA Article 14 preparation</a>.</p>
 <h2 id="candidate-evidence-boundary">Candidate evidence boundary<a class="headerlink" href="#candidate-evidence-boundary" title="Permanent link">&para;</a></h2>
 <p>Tracked-blob anchors contain the repository-relative path, inclusive line span,
 exact Git blob identity of the bytes inspected, and their SHA-256. For dirty

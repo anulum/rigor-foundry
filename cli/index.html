@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://anulum.github.io/rigor-foundry/cli/">
       
       
-        <link rel="prev" href="../source-provenance/">
+        <link rel="prev" href="../cra-reporting/">
       
       
         <link rel="next" href="../adapter-profiles/">
@@ -408,6 +408,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline CRA reporting preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -486,6 +513,17 @@
     <span class="md-ellipsis">
       
         Explicit adopter bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#offline-cra-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline CRA preparation
       
     </span>
   </a>
@@ -1291,6 +1329,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#offline-cra-preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Offline CRA preparation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-only-inspection" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1435,6 +1484,14 @@ be ignored or tracked. Repeat root options for multi-root repositories.</p>
 or native coverage therefore remains visible until the adopter records an
 evidence-backed applicability decision. See <a href="../getting-started/">First repository</a>
 for the complete workflow and failure boundary.</p>
+<h2 id="offline-cra-preparation">Offline CRA preparation<a class="headerlink" href="#offline-cra-preparation" title="Permanent link">&para;</a></h2>
+<p><code>cra-bootstrap</code>, <code>vuln-register</code>, <code>vuln-timeline</code>, <code>cra-draft</code>, <code>cra-receipt</code>,
+<code>cra-skip</code>, <code>user-notice</code>, and <code>cra-status</code> implement the prepare-only CRA P0
+workflow. They retain append-only evidence below <code>.rigor/cra/</code> and contain no
+network client. A receipt binds operator-supplied evidence after an external
+manufacturer action; it does not prove submission or authority acceptance.
+See <a href="../cra-reporting/">Offline CRA Article 14 preparation</a> for exact commands,
+deadline semantics, payload partitions, exit codes, and legal-claims boundary.</p>
 <h2 id="read-only-inspection">Read-only inspection<a class="headerlink" href="#read-only-inspection" title="Permanent link">&para;</a></h2>
 <p><code>rigor scan --root PATH</code> inventories one Git repository and emits candidate
 evidence. It does not modify the inspected repository.</p>
