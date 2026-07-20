@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/sarif/">
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/calibration-evidence-1.0/">
       
       
-        <link rel="prev" href="../api-compatibility-rules/">
+        <link rel="prev" href="../architecture/">
       
       
-        <link rel="next" href="../compliance-maps/">
+        <link rel="next" href="../digest-dependencies/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>SARIF export - RigorFoundry</title>
+        <title>Calibration evidence - RigorFoundry</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sarif-export" class="md-skip">
+        <a href="#calibration-evidence-for-the-10-stable-contract" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SARIF export
+              Calibration evidence
             
           </span>
         </div>
@@ -354,10 +354,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../calibration-evidence-1.0/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calibration evidence
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -373,6 +400,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#frozen-corpus-and-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frozen corpus and method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measured-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measured outcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-anchors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility anchors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statistical-and-product-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statistical and product limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -867,37 +958,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SARIF export
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
         
   
   
@@ -913,48 +977,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#state-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        State mapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#identity-and-anchors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Identity and anchors
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1310,10 +1332,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#state-mapping" class="md-nav__link">
+  <a href="#frozen-corpus-and-method" class="md-nav__link">
     <span class="md-ellipsis">
       
-        State mapping
+        Frozen corpus and method
       
     </span>
   </a>
@@ -1321,10 +1343,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#identity-and-anchors" class="md-nav__link">
+  <a href="#measured-outcome" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Identity and anchors
+        Measured outcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-anchors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility anchors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statistical-and-product-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statistical and product limits
       
     </span>
   </a>
@@ -1351,82 +1395,171 @@
   
 
 
-<h1 id="sarif-export">SARIF export<a class="headerlink" href="#sarif-export" title="Permanent link">&para;</a></h1>
-<p>RigorFoundry emits deterministic
-<a href="https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/sarif-v2.1.0-errata01-os-complete.html">SARIF 2.1.0 Errata 01</a>
-without converting static audit candidates into defect verdicts.</p>
-<pre><code class="language-bash">rigor sarif --report report.json --output results.sarif
-rigor sarif --report report.json --review reviews.json --output results.sarif
-</code></pre>
-<p>The command verifies report integrity and validates every supplied review.
-Duplicate, incomplete, foreign, or stale review records fail closed. Omitting
-<code>--output</code> writes the same deterministic JSON to stdout.</p>
-<h2 id="state-mapping">State mapping<a class="headerlink" href="#state-mapping" title="Permanent link">&para;</a></h2>
+<!--
+SPDX-License-Identifier: Apache-2.0
+Apache License 2.0; see LICENSE.
+© Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+© Code 2020–2026 Miroslav Šotek. All rights reserved.
+ORCID: 0009-0009-3560-0851
+Contact: www.anulum.li | protoscience@anulum.li
+-->
+
+<h1 id="calibration-evidence-for-the-10-stable-contract">Calibration evidence for the 1.0 stable contract<a class="headerlink" href="#calibration-evidence-for-the-10-stable-contract" title="Permanent link">&para;</a></h1>
+<p>RigorFoundry keeps a rule in <code>probation</code> unless adjudicated field evidence
+satisfies an explicit maturity policy. This page publishes the bounded evidence
+used for the first rule admitted to the 1.0 stable enforcement set. It is a
+measurement report, not a certification or a claim that every surfaced
+candidate is a vulnerability.</p>
+<h2 id="frozen-corpus-and-method">Frozen corpus and method<a class="headerlink" href="#frozen-corpus-and-method" title="Permanent link">&para;</a></h2>
+<p>The corpus contains ten exact, detached Git trees from distinct GOTM product
+repositories. RigorFoundry scanned those trees read-only with scanner <code>0.3.0</code>
+and rule pack <code>rigor-foundry/1.17.0</code>. The complete reports contain 23,119
+anchored candidates across all 63 rules.</p>
+<p>Only <code>AS001-dynamic-code-execution</code> was preregistered for possible stable
+activation. Its twelve cases span three repositories and retain the exact
+candidate IDs and anchors selected before the earlier calibration attempt.
+Every case was reviewed again against the current report digest; no old label
+or elapsed time was rebound.</p>
+<p>Two independent reviewers received alternating cases. Each review interval
+started before exact Git-blob retrieval and ended after the decision. Intervals
+were positive, sequential, and non-overlapping. Each record was validated
+against its current content-addressed report using the shipped ReviewRecord
+schema and review validator.</p>
+<p>The frozen adopter policy requires at least six reviews, two repositories, two
+reviewers, and five positive decisions. It permits at most 2,000 false-positive
+basis points, a median review effort of 600 seconds, and a nearest-rank p90 of
+1,200 seconds.</p>
+<h2 id="measured-outcome">Measured outcome<a class="headerlink" href="#measured-outcome" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>RigorFoundry state</th>
-<th>SARIF <code>kind</code></th>
-<th>SARIF <code>level</code></th>
+<th>Measure</th>
+<th style="text-align: right;">Result</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>unreviewed candidate</td>
-<td><code>review</code></td>
-<td><code>note</code></td>
+<td>Adjudicated cases</td>
+<td style="text-align: right;">12</td>
 </tr>
 <tr>
-<td><code>needs-evidence</code></td>
-<td><code>review</code></td>
-<td><code>note</code></td>
+<td>Distinct repositories</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P0/P1</td>
-<td><code>fail</code></td>
-<td><code>error</code></td>
+<td>Distinct reviewers</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P2</td>
-<td><code>fail</code></td>
-<td><code>warning</code></td>
+<td>Valid findings</td>
+<td style="text-align: right;">2</td>
 </tr>
 <tr>
-<td>reviewed <code>valid</code>, P3/P4</td>
-<td><code>fail</code></td>
-<td><code>note</code></td>
+<td>Accepted protocol boundaries</td>
+<td style="text-align: right;">9</td>
 </tr>
 <tr>
-<td>reviewed <code>invalid</code></td>
-<td><code>notApplicable</code></td>
-<td><code>none</code></td>
+<td>Invalid candidates</td>
+<td style="text-align: right;">1</td>
 </tr>
 <tr>
-<td>reviewed <code>accepted-boundary</code></td>
-<td><code>informational</code></td>
-<td><code>note</code></td>
+<td>Policy-positive decisions</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr>
+<td>Observed policy-positive precision</td>
+<td style="text-align: right;">91.7% (11/12)</td>
+</tr>
+<tr>
+<td>False-positive rate</td>
+<td style="text-align: right;">8.3% (834 basis points)</td>
+</tr>
+<tr>
+<td>Median active review effort</td>
+<td style="text-align: right;">17 seconds</td>
+</tr>
+<tr>
+<td>Nearest-rank p90 active effort</td>
+<td style="text-align: right;">62 seconds</td>
 </tr>
 </tbody>
 </table>
-<p>Every report candidate remains a result. The property bag records separate
-<code>rigorFoundry/candidateState</code> and <code>rigorFoundry/verdictState</code> values, so a SARIF
-consumer can distinguish scanner evidence from a human evidence decision.
-Severity provenance is <code>review-record</code> only when a validated review provides a
-severity.</p>
-<h2 id="identity-and-anchors">Identity and anchors<a class="headerlink" href="#identity-and-anchors" title="Permanent link">&para;</a></h2>
-<p>Rule IDs and indices come from the complete versioned RigorFoundry rule pack.
-The content-addressed candidate ID is exported as the exact <code>rigorFoundry/v1</code>
-fingerprint. RigorFoundry does not claim a GitHub <code>primaryLocationLineHash</code>
-without the scanned line bytes required to compute that separate identity.
-Locations use percent-encoded repository-relative paths and inclusive spans.</p>
-<p>The <code>rigorFoundry/anchor</code> property preserves the strict anchor schema. A
-tracked-blob result includes the exact scanned Git blob OID and content
-SHA-256. A repository-tree result includes the exact HEAD tree OID and complete
-tracked-content SHA-256. Run properties also bind the report, policy, ignored
-inventory, tracked content, rule-pack, HEAD, tree, and Git object format.</p>
-<p>The schema URI is exported as <code>SARIF_SCHEMA_URI</code>; its current value identifies
-the OASIS SARIF 2.1.0 Errata 01 JSON schema. <code>report_sarif</code> and the schema/version
-constants are provisional package-level APIs during the pre-1.0 series.</p>
+<p><code>AS001-dynamic-code-execution</code> therefore has status <code>active</code> with no probation
+reason under the frozen policy. The other 62 rules remain <code>probation</code>; candidate
+volume, confidence, old reviews, or a clean scan cannot activate them.</p>
+<p>The positive definition is deliberately explicit: both a valid finding and an
+accepted, bounded protocol use count as positive. An accepted boundary does not
+mean that arbitrary dynamic execution is safe; it means the exact occurrence
+was justified by a specific test, generated-code, or validated-DSL boundary
+with reopen triggers.</p>
+<h2 id="reproducibility-anchors">Reproducibility anchors<a class="headerlink" href="#reproducibility-anchors" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Artefact</th>
+<th>SHA-256 or protocol digest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Current-pack corpus index</td>
+<td><code>24570943147d441d267719c3deda72c613cf84888e590bd038966e31f815a5cb</code></td>
+</tr>
+<tr>
+<td>Frozen AS001 selection</td>
+<td><code>ff3b93f942fa1689db0d1d6dd7a020787cc75518ebd787b79460c7442030318e</code></td>
+</tr>
+<tr>
+<td>Reviewer A six-case result</td>
+<td><code>5946815fadc8074ca68de4dc4be313b0550add9885deb6dcfc74f6a924f53201</code></td>
+</tr>
+<tr>
+<td>Reviewer B six-case result</td>
+<td><code>258c4cbfa981827b222e0f7a86675434f8de3248385bcbe53921c303bb4f51ab</code></td>
+</tr>
+<tr>
+<td>Maturity input manifest</td>
+<td><code>606dc3ec5273d53316dcd4737e4293da668e01a14ff86eae710f52d9e15e2f19</code></td>
+</tr>
+<tr>
+<td>Maturity report file</td>
+<td><code>3e7060250fea907949ac127e5b9d3ef107bb07fc978cfec30928d2a6bbfdc64e</code></td>
+</tr>
+<tr>
+<td>Maturity report identity</td>
+<td><code>32d07e3ef973065098c952dfbaacb55188ae65951a05fdde936353517b66264a</code></td>
+</tr>
+<tr>
+<td>Maturity policy identity</td>
+<td><code>afff5163c2c5c77425227e0de728717a10298e7ef0145edba33fc97f81403b81</code></td>
+</tr>
+<tr>
+<td>Rule-pack identity</td>
+<td><code>ff5ecbeb3b0df2034902eb8936bf66c746a4693090f8f520eb2e074549f4b835</code></td>
+</tr>
+</tbody>
+</table>
+<p>Raw reports and reviews are retained as internal evidence because they contain
+repository paths and case-level operational context. The aggregate numbers and
+digests above expose the method and allow custody checks without publishing
+adopter-sensitive details.</p>
+<h2 id="statistical-and-product-limits">Statistical and product limits<a class="headerlink" href="#statistical-and-product-limits" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The corpus is a deterministic convenience sample of ten GOTM trees, not a
+  random sample of all adopters. The 91.7% value must not be generalised to
+  fleet-wide prevalence or unrelated codebases.</li>
+<li>Recall is <strong>unmeasured</strong> because the corpus has no independently constructed
+  ground-truth inventory of every missed dynamic-execution occurrence.</li>
+<li>Twelve cases are too few for a broad universal-quality claim. The result is a
+  bounded admission decision for one rule under one published policy.</li>
+<li>Candidate confidence is not probability. Deterministic replay establishes
+  repeatability, not correctness.</li>
+<li>New rule-pack semantics, changed anchors, changed report digests, expired
+  reviews, or a failed threshold require fresh evidence. No maturity credit is
+  inherited merely because a rule identifier remains the same.</li>
+<li>This evidence grants no remediation, repository-write, fleet-activation,
+  legal-conformity, or release authority.</li>
+</ul>
 
 
 
