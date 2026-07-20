@@ -38,6 +38,40 @@ never a working-tree path — so replaying it never changes a checkout. The froz
 instant is recorded in `frozen_at`, and the whole set is content-addressed with a
 `campaign_digest`.
 
+## Capturing real Git objects
+
+`capture_cross_repository_campaign()` resolves the commit and tree fields from
+real local Git object databases. Every `RepositoryCaptureRequest` must name:
+
+- one absolute, canonical Git worktree root that contains no symlink component;
+- one full SHA-1 or SHA-256 commit object identifier; and
+- the policy, rule-pack, adapter-lock, and toolchain identities selected for
+  later replay.
+
+The operation is bounded to 128 explicitly listed roots. It never discovers
+another repository from an edge, creates a worktree, checks out a revision,
+runs an adapter, writes a campaign record, or grants remediation authority. A
+single content-verified Git executable reads every root with repository hooks,
+filesystem monitors, credential prompting, replacement objects, and optional
+locks disabled by `GitRunner`.
+
+Capture records the source checkout's HEAD, tree, tracked and non-ignored
+untracked status, and root identity before resolving an object, then requires
+the same state after the read. The requested object may be older than the
+checkout's current HEAD. Only its detached commit and tree identities enter
+`RepositorySnapshot`; dirty tracked files and non-ignored untracked files in
+the operator checkout are neither read as historical content nor changed.
+
+A missing commit becomes an `unavailable` snapshot with no frozen digests. An
+invalid root, object-format contradiction, tag object supplied instead of its
+commit, Git operational failure, or concurrent checkout change aborts the
+capture. Those conditions do not become availability results.
+
+This surface performs real object capture only. Static scanning of the captured
+historical trees, cancellation of a multi-repository run, and persistence of
+execution evidence remain separate execution controls; a captured campaign is
+still an input, not an audit verdict.
+
 ## Resolution
 
 A campaign distinguishes an unavailable dependency from a passing result:
