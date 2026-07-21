@@ -6,9 +6,9 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Review ownership
 
-* @anulum
-/.github/ @anulum
-/src/rigor_foundry/ @anulum
-/tools/ @anulum
-/pyproject.toml @anulum
-/requirements/ @anulum
+* @anulum @gradaom
+/.github/ @anulum @gradaom
+/src/rigor_foundry/ @anulum @gradaom
+/tools/ @anulum @gradaom
+/pyproject.toml @anulum @gradaom
+/requirements/ @anulum @gradaom
