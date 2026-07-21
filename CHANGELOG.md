@@ -5,6 +5,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-21
+
 ### Added
 
 - An internal release-quorum certificate binds one exact release candidate to

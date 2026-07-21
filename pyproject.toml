@@ -18,7 +18,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rigor-foundry"
-version = "0.1.1"
+version = "1.0.0"
 description = "Evidence-bound codebase transformation"
 readme = "README.md"
 license = "Apache-2.0"

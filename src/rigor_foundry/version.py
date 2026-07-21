@@ -7,4 +7,4 @@
 # RigorFoundry — package version identity
 """Own the single import-safe package version used by APIs and the CLI."""
 
-__version__ = "0.1.1"
+__version__ = "1.0.0"

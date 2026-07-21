@@ -37,8 +37,8 @@ def test_release_metadata_rejects_drift_in_the_version_owner(tmp_path: Path) -> 
         shutil.copy2(source, destination)
     version = repository / "src/rigor_foundry/version.py"
     version.write_text(
-        version.read_text(encoding="utf-8").replace('"0.1.1"', '"0.1.2"'),
+        version.read_text(encoding="utf-8").replace('"1.0.0"', '"1.0.1"'),
         encoding="utf-8",
     )
 
-    assert metadata_errors(repository) == ["package version '0.1.2' does not match '0.1.1'"]
+    assert metadata_errors(repository) == ["package version '1.0.1' does not match '1.0.0'"]
