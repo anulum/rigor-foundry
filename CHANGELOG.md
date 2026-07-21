@@ -15,7 +15,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   content-addressed record refuses construction whenever any gate is unmet and
   never counts unsigned, untrusted, expired, or duplicate reviewer material.
   Its schema stays internal to release governance rather than entering the
-  frozen public compatibility contract.
+  frozen public compatibility contract. A `tools/seal_release_quorum.py` driver
+  seals a certificate from a release-evidence manifest — running the
+  representative campaign live and loading the campaign, reviewer, and
+  trust-store evidence — or verifies a sealed certificate, without adding any
+  frozen `rigor` command.
 - A digest-bound proposed-1.0 compatibility contract classifies and ratchets
   the stable package-level Python imports, every installed CLI command with its
   option and positional spellings, and 61 explicitly inventoried schema
