@@ -102,6 +102,11 @@ _SCHEMA_DISCOVERY_EXCLUSIONS = {
     "ignored_inventory._DIRECTORY_MANIFEST_SCHEMA_VERSION": (
         "private nested helper, not a public or standalone interchange identifier"
     ),
+    "release_quorum.RELEASE_QUORUM_SCHEMA_VERSION": (
+        "internal release-governance certificate sealed as internal evidence; not a "
+        "consumer-facing 1.0 public interchange identifier, so it is excluded from the "
+        "frozen public contract rather than ratcheted into it"
+    ),
 }
 
 _EXTERNAL_PROTOCOL_VERSION_SYMBOLS = {

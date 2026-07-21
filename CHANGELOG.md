@@ -7,6 +7,15 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- An internal release-quorum certificate binds one exact release candidate to
+  its historical-tree replay resolution and temporary-rollback proof, its
+  attestation-campaign run and model-witness quorum, an independent reviewer
+  quorum of unique trusted signatures, the published wheel, source, and SBOM
+  digests, and the signing, provenance, and documentation references. The
+  content-addressed record refuses construction whenever any gate is unmet and
+  never counts unsigned, untrusted, expired, or duplicate reviewer material.
+  Its schema stays internal to release governance rather than entering the
+  frozen public compatibility contract.
 - A digest-bound proposed-1.0 compatibility contract classifies and ratchets
   the stable package-level Python imports, every installed CLI command with its
   option and positional spellings, and 61 explicitly inventoried schema
