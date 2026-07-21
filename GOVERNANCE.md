@@ -27,6 +27,6 @@ behaviour, not internal workflow narration.
 
 ## Promotion
 
-RigorFoundry becomes the GOTM fleet audit authority only after its own promotion
+RigorFoundry becomes a fleet-wide audit authority only after its own promotion
 contract passes and the owner activates it. Until then it is an audit candidate
 system and cannot supersede repository-specific gates by implication.

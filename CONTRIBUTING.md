@@ -3,8 +3,8 @@
 ## Before editing
 
 1. Read `ARCHITECTURE.md`, `VALIDATION.md`, and the public roadmap.
-2. Use a fork or isolated worktree and submit a focused pull request. GOTM
-   operators additionally claim exact paths before editing a shared worktree.
+2. Use a fork or isolated worktree and submit a focused pull request. Maintainers
+   additionally claim exact paths before editing a shared worktree.
 3. Keep public product code, internal audit evidence, and adopter-specific
    findings in their defined boundaries.
 4. Keep each branch and pull request limited to one coherent responsibility.
@@ -38,14 +38,14 @@ Run focused tests locally:
 make preflight-fast
 ```
 
-GOTM authoring sessions reserve the exhaustive matrix for CI under fleet
+Authoring sessions reserve the exhaustive matrix for CI under fleet
 resource policy. External contributors may run it locally with
 `ALLOW_LOCAL_FULL_TESTS=1 make test`; the same matrix remains a required remote
 gate.
 
 ## Commits and review
 
-Commits are atomic and use Conventional Commits. Agent-assisted GOTM commits
+Commits are atomic and use Conventional Commits. Agent-assisted commits
 contain exactly one vendor-neutral `Seat:` trailer and exactly one authorship
 line; human and external contributor commits do not add these internal fleet
 trailers:
@@ -56,7 +56,7 @@ Seat: <seat-id>
 Authored by Anulum Fortis & Arcane Sapience (protoscience@anulum.li)
 ```
 
-In the GOTM shared worktree, the author does not push their own commit. A peer
+In the shared worktree, the author does not push their own commit. A peer
 audits the exact SHA in isolation and records the gate outcome before any push.
 External contributions follow the ordinary fork and pull-request review flow.
 
@@ -67,7 +67,7 @@ licence agreement is currently required.
 
 ## Internal material
 
-For GOTM operators, coordination logs and handovers live only in the monorepo
+For maintainers, coordination logs and handovers live only in the monorepo
 `.coordination/{sessions,handovers}/RIGOR-FOUNDRY/`. Repository-local
 `docs/internal/` is ignored and may hold non-public product audit evidence;
 external contributors should not create it.

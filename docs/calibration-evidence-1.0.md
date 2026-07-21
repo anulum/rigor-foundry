@@ -17,7 +17,7 @@ candidate is a vulnerability.
 
 ## Frozen corpus and method
 
-The corpus contains ten exact, detached Git trees from distinct GOTM product
+The corpus contains ten exact, detached Git trees from distinct product
 repositories. RigorFoundry scanned those trees read-only with scanner `0.3.0`
 and rule pack `rigor-foundry/1.17.0`. The complete reports contain 23,119
 anchored candidates across all 63 rules.
@@ -86,7 +86,7 @@ adopter-sensitive details.
 
 ## Statistical and product limits
 
-- The corpus is a deterministic convenience sample of ten GOTM trees, not a
+- The corpus is a deterministic convenience sample of ten product trees, not a
   random sample of all adopters. The 91.7% value must not be generalised to
   fleet-wide prevalence or unrelated codebases.
 - Recall is **unmeasured** because the corpus has no independently constructed

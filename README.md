@@ -34,8 +34,8 @@ remediation inputs without treating static heuristics as defect verdicts.
 > are published through the repository, beginning with `v0.1.0`. PyPI
 > availability is established from the
 > [public registry](https://pypi.org/project/rigor-foundry/), not inferred from
-> a tag or workflow result. RigorFoundry has not been promoted as the GOTM
-> fleet audit authority. A clean static scan is not a clean-repository claim.
+> a tag or workflow result. RigorFoundry has not been promoted as a
+> fleet-wide audit authority. A clean static scan is not a clean-repository claim.
 
 ## Operating contract
 
@@ -226,8 +226,8 @@ inventory is a production dependency of the CLI.
 - Python support is declared only for 3.11, 3.12, and 3.13 and is represented
   in the CI matrix.
 - CI dependencies are resolved into a hash-locked requirements file.
-- Local work uses the repository-owned `.venv` on the GOTM working disk.
-- GOTM authoring policy uses focused single-file tests locally; CI owns the
+- Local work uses the repository-owned `.venv` on the local working disk.
+- The authoring policy uses focused single-file tests locally; CI owns the
   exhaustive test and coverage gate. External contributors may opt into the
   same local matrix explicitly.
 - Releases, when authorised after public-repository promotion, build wheel and
@@ -250,7 +250,7 @@ make audit
 make preflight-fast
 ```
 
-Run focused test files with `pytest tests/test_name.py`. GOTM operators do not
+Run focused test files with `pytest tests/test_name.py`. Maintainers do not
 run the local full suite unless the owner explicitly authorises it for the
 current session; external contributors may opt in as documented in
 `CONTRIBUTING.md`.

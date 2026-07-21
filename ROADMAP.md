@@ -51,7 +51,7 @@ Roadmap items are acceptance-gated; dates and versions are not release promises.
 ## 1.0 — Promotion candidate
 
 - Run independently reviewed audit campaigns against representative external
-  and GOTM repositories.
+  and related repositories.
 - Publish measured precision/recall and reviewer-effort evidence with corpus and
   methodology limits.
 - Introduce a per-rule maturity lifecycle. New rules remain in probation until
