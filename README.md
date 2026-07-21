@@ -28,14 +28,21 @@ RigorFoundry inventories Git-tracked repository content, emits reproducible
 audit candidates, binds review decisions to exact evidence, and prepares
 remediation inputs without treating static heuristics as defect verdicts.
 
-> **Current status:** standalone pre-alpha. Versioned
-> [GitHub Releases](https://github.com/anulum/rigor-foundry/releases) and
+> **Current status:** stable public interface, detection rules in maturity probation.
+> RigorFoundry 1.0.0 freezes a digest-bound compatibility contract over the installed
+> CLI commands and their option and positional spellings, the package-level Python
+> API, and the inventoried schema versions: a wire-incompatible change requires a new
+> schema identifier and an explicit migration, never a silent reinterpretation. That
+> contract is the whole of the stability commitment — it does not extend to the audit
+> findings. Every detection rule stays an anchored review candidate in explicit
+> maturity probation until an adopter policy is met by source-bound completed reviews,
+> so a rule match is input for human evidence review, not an automatic defect verdict.
+> Versioned [GitHub Releases](https://github.com/anulum/rigor-foundry/releases) and
 > [GHCR images](https://github.com/anulum/rigor-foundry/pkgs/container/rigor-foundry)
-> are published through the repository, beginning with `v0.1.0`. PyPI
-> availability is established from the
-> [public registry](https://pypi.org/project/rigor-foundry/), not inferred from
-> a tag or workflow result. RigorFoundry has not been promoted as a
-> fleet-wide audit authority. A clean static scan is not a clean-repository claim.
+> are published through the repository; PyPI availability is established from the
+> [public registry](https://pypi.org/project/rigor-foundry/), not inferred from a tag
+> or workflow result. RigorFoundry has not been promoted as a fleet-wide audit
+> authority, and a clean static scan is not a clean-repository claim.
 
 ## Operating contract
 
@@ -102,7 +109,7 @@ After the exact version appears in the
 it with:
 
 ```bash
-python -m pip install "rigor-foundry==0.1.1"
+python -m pip install "rigor-foundry==1.0.0"
 ```
 
 ## Quick start from source
