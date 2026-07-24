@@ -35,3 +35,5 @@ docs/internal/
 .env
 .env.*
 !.env.example
+
+docs/internal/**
