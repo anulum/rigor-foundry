@@ -45,6 +45,6 @@ jobs:
           languages: python
           build-mode: none
           tools: ${{ runner.temp }}/codeql-bundle-linux64.tar.zst
-      - uses: github/codeql-action/analyze@7188fc363630916deb702c7fdcf4e481b751f97a
+      - uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81
         with:
           category: /language:python
