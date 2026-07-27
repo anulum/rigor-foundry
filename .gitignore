@@ -32,6 +32,6 @@ editors/vscode/*.vsix
 .rigor/
 docs/internal/
 
-.env
-.env.*
 !.env.example
+config.bat
+node_modules
