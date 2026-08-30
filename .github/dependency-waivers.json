@@ -19,7 +19,7 @@
         "CI invokes one fixed Semgrep scan command with a repository-local ruleset.",
         "The waiver expires automatically and blocks repository audit if not renewed or removed."
       ],
-      "reviewed_on": "2026-08-31",
+      "reviewed_on": "2026-08-30",
       "expires_on": "2026-09-29",
       "advisory_url": "https://github.com/tsigouris007/security-advisories/security/advisories/GHSA-47fr-3ffg-hgmw"
     },
@@ -34,13 +34,13 @@
       "introduced_by": "semgrep==1.170.0",
       "affected_api": "authenticated stateful MCP HTTP server transports",
       "allowed_command": "semgrep scan --error --config .semgrep.yml src tools",
-      "rationale": "At the 2026-08-31 review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.27.2. RigorFoundry invokes only semgrep scan and never starts an authenticated stateful MCP HTTP server.",
+      "rationale": "At the 2026-08-30 UTC review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.27.2. RigorFoundry invokes only semgrep scan and never starts an authenticated stateful MCP HTTP server.",
       "mitigations": [
         "MCP exists only in the ephemeral security-tool environment and is absent from runtime and published package dependencies.",
         "CI invokes one fixed Semgrep scan command and never invokes semgrep mcp or an MCP server transport.",
         "The waiver expires automatically within 30 days and blocks repository audit if not renewed or removed."
       ],
-      "reviewed_on": "2026-08-31",
+      "reviewed_on": "2026-08-30",
       "expires_on": "2026-09-29",
       "advisory_url": "https://github.com/advisories/GHSA-jpw9-pfvf-9f58"
     },
@@ -55,13 +55,13 @@
       "introduced_by": "semgrep==1.170.0",
       "affected_api": "experimental MCP server task handlers",
       "allowed_command": "semgrep scan --error --config .semgrep.yml src tools",
-      "rationale": "At the 2026-08-31 review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.27.2. RigorFoundry invokes only semgrep scan and never enables experimental MCP server tasks.",
+      "rationale": "At the 2026-08-30 UTC review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.27.2. RigorFoundry invokes only semgrep scan and never enables experimental MCP server tasks.",
       "mitigations": [
         "MCP exists only in the ephemeral security-tool environment and is absent from runtime and published package dependencies.",
         "CI invokes one fixed Semgrep scan command and never invokes semgrep mcp or enables MCP server task handlers.",
         "The waiver expires automatically within 30 days and blocks repository audit if not renewed or removed."
       ],
-      "reviewed_on": "2026-08-31",
+      "reviewed_on": "2026-08-30",
       "expires_on": "2026-09-29",
       "advisory_url": "https://github.com/advisories/GHSA-hvrp-rf83-w775"
     },
@@ -76,13 +76,13 @@
       "introduced_by": "semgrep==1.170.0",
       "affected_api": "deprecated MCP WebSocket server transport",
       "allowed_command": "semgrep scan --error --config .semgrep.yml src tools",
-      "rationale": "At the 2026-08-31 review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.28.1. RigorFoundry invokes only semgrep scan and never wires the deprecated MCP WebSocket server transport into an application.",
+      "rationale": "At the 2026-08-30 UTC review, the locked Semgrep 1.170.0 security environment required mcp==1.23.3, while this advisory was fixed only in MCP 1.28.1. RigorFoundry invokes only semgrep scan and never wires the deprecated MCP WebSocket server transport into an application.",
       "mitigations": [
         "MCP exists only in the ephemeral security-tool environment and is absent from runtime and published package dependencies.",
         "CI invokes one fixed Semgrep scan command and never invokes semgrep mcp or the deprecated MCP WebSocket server transport.",
         "The waiver expires automatically within 30 days and blocks repository audit if not renewed or removed."
       ],
-      "reviewed_on": "2026-08-31",
+      "reviewed_on": "2026-08-30",
       "expires_on": "2026-09-29",
       "advisory_url": "https://github.com/advisories/GHSA-vj7q-gjh5-988w"
     }
