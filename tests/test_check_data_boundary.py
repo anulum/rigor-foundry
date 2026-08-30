@@ -32,7 +32,7 @@ def test_data_boundary_accepts_approved_local_runtime_dependency(tmp_path: Path)
     """The pinned cryptographic verifier does not permit network-capable drift."""
     root = _repository(
         tmp_path / "repository",
-        dependencies='["cryptography>=49,<50"]',
+        dependencies='["cryptography>=50,<51"]',
         source="from pathlib import Path\n\ndef read(path: Path) -> str:\n    return path.read_text()\n",
     )
     assert data_boundary_errors(root) == []

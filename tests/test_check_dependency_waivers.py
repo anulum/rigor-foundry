@@ -53,14 +53,14 @@ def _write_waiver_document(root: Path, document: dict[str, object]) -> None:
 
 def test_repository_dependency_waiver_is_current_and_exact() -> None:
     """The checked-in exception matches its lock and CI enforcement."""
-    assert dependency_waiver_errors(today=date(2026, 7, 16)) == []
+    assert dependency_waiver_errors(today=date(2026, 8, 30)) == []
     assert main() == 0
 
 
 def test_dependency_waiver_expires_fail_closed(tmp_path: Path) -> None:
     """The expiry date itself is no longer an authorised day."""
     root = _waiver_root(tmp_path)
-    errors = dependency_waiver_errors(root, today=date(2026, 8, 14))
+    errors = dependency_waiver_errors(root, today=date(2026, 9, 29))
     assert "dependency waiver PYSEC-2026-2132 is expired" in errors
 
 
@@ -84,7 +84,7 @@ def test_dependency_waiver_must_match_locked_version(
         lock.read_text(encoding="utf-8").replace(locked, replacement),
         encoding="utf-8",
     )
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert f"dependency waiver {advisory_id} version does not match the security lock" in errors
 
 
@@ -105,7 +105,7 @@ def test_dependency_waiver_requires_explicit_ci_binding(tmp_path: Path, advisory
         workflow.read_text(encoding="utf-8").replace(f"--ignore-vuln {advisory_id}", ""),
         encoding="utf-8",
     )
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any(f"--ignore-vuln {advisory_id}" in error for error in errors)
 
 
@@ -121,7 +121,7 @@ def test_dependency_waiver_requires_canonical_advisory_url(tmp_path: Path) -> No
         ),
         encoding="utf-8",
     )
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any(
         "dependency waiver PYSEC-2026-2132 advisory_url must be" in error for error in errors
     )
@@ -136,7 +136,7 @@ def test_dependency_waiver_ids_must_be_unique(tmp_path: Path) -> None:
     waivers.append(waivers[-1])
     _write_waiver_document(root, document)
 
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert "dependency-waiver advisory IDs must be unique strings" in errors
 
 
@@ -149,14 +149,14 @@ def test_dependency_waiver_set_must_be_exact(tmp_path: Path) -> None:
     waivers.pop()
     _write_waiver_document(root, document)
 
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any("dependency-waiver set must contain exactly:" in error for error in errors)
 
 
 def test_mcp_waivers_expire_after_thirty_days(tmp_path: Path) -> None:
     """The temporary upstream incompatibility cannot become an open-ended exception."""
     root = _waiver_root(tmp_path)
-    errors = dependency_waiver_errors(root, today=date(2026, 8, 15))
+    errors = dependency_waiver_errors(root, today=date(2026, 9, 29))
     for advisory_id in ("CVE-2026-52869", "CVE-2026-52870", "CVE-2026-59950"):
         assert f"dependency waiver {advisory_id} is expired" in errors
 
@@ -185,7 +185,7 @@ def test_dependency_waiver_document_shape_fails_closed(
     root = _waiver_root(tmp_path)
     (root / ".github/dependency-waivers.json").write_text(content, encoding="utf-8")
     assert any(
-        expected in error for error in dependency_waiver_errors(root, today=date(2026, 7, 16))
+        expected in error for error in dependency_waiver_errors(root, today=date(2026, 8, 30))
     )
 
 
@@ -193,7 +193,7 @@ def test_missing_dependency_waiver_document_fails_closed(tmp_path: Path) -> None
     """An unreadable waiver document cannot disable the guard."""
     root = _waiver_root(tmp_path)
     (root / ".github/dependency-waivers.json").unlink()
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any("cannot read dependency waivers:" in error for error in errors)
 
 
@@ -204,8 +204,8 @@ def test_missing_dependency_waiver_document_fails_closed(tmp_path: Path) -> None
         ("introduced_by", "semgrep==0", "introduced_by does not match"),
         ("reviewed_on", None, "reviewed_on must be an ISO date"),
         ("expires_on", "not-a-date", "expires_on must be an ISO date"),
-        ("reviewed_on", "2026-07-17", "review date is in the future"),
-        ("expires_on", "2026-08-16", "lifetime must be between 1 and 30 days"),
+        ("reviewed_on", "2026-08-31", "review date is in the future"),
+        ("expires_on", "2026-09-30", "lifetime must be between 1 and 30 days"),
         ("rationale", "", "rationale must be non-empty"),
         ("mitigations", ["one"], "must contain at least three non-empty mitigations"),
     ),
@@ -221,7 +221,7 @@ def test_dependency_waiver_fields_fail_closed(
     document = _waiver_document(root)
     _first_mcp_waiver(document)[field] = value
     _write_waiver_document(root, document)
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any(expected in error for error in errors)
 
 
@@ -234,13 +234,13 @@ def test_dependency_waiver_fields_are_exact(tmp_path: Path) -> None:
     waiver["unexpected"] = True
     _write_waiver_document(root, document)
 
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any("is missing fields: scope" in error for error in errors)
     assert any("has unexpected fields: unexpected" in error for error in errors)
 
     waiver["advisory_id"] = None
     _write_waiver_document(root, document)
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert "dependency-waiver advisory IDs must be unique strings" in errors
     assert any("dependency-waiver set must contain exactly:" in error for error in errors)
 
@@ -260,5 +260,5 @@ def test_dependency_waiver_requires_guarded_command(
         workflow.read_text(encoding="utf-8").replace(fragment, ""),
         encoding="utf-8",
     )
-    errors = dependency_waiver_errors(root, today=date(2026, 7, 16))
+    errors = dependency_waiver_errors(root, today=date(2026, 8, 30))
     assert any(fragment in error for error in errors)
