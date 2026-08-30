@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from cli_test_support import POLICY, cli_repository
@@ -24,6 +25,7 @@ from rigor_foundry.rule_maturity_manifest import MATURITY_CASE_MANIFEST_SCHEMA_V
 
 def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path) -> None:
     """Real scan/review files activate one rule without laundering probation candidates."""
+    expires_at = (datetime.now(UTC) + timedelta(days=30)).isoformat().replace("+00:00", "Z")
     repository = cli_repository(tmp_path / "repository")
     policy = RuleMaturityPolicy.build(
         minimum_adjudicated_reviews=1,
@@ -79,7 +81,7 @@ def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path
             "rationale": "the explicit optional import is bounded to the dependency",
             "evidence": ["exact report anchor and public package import inspected"],
             "boundary_justification": "dependency boundary is explicit and narrowly scoped",
-            "expires_at": "2026-08-17T08:00:00Z",
+            "expires_at": expires_at,
             "reopen_triggers": ["optional import body changes"],
         }
     )

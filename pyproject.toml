@@ -45,7 +45,7 @@ keywords = [
     "remediation",
     "repository",
 ]
-dependencies = ["cryptography>=49,<50"]
+dependencies = ["cryptography>=50,<51"]
 
 [project.scripts]
 rigor = "rigor_foundry.cli:main"
