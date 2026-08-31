@@ -1594,8 +1594,8 @@
 
 
 <h1 id="offline-cra-article-14-preparation">Offline CRA Article 14 preparation<a class="headerlink" href="#offline-cra-article-14-preparation" title="Permanent link">&para;</a></h1>
-<p>This page covers the P0/P1 reporting and imported-inventory workflow. The
-optional P2 policy, CR001–CR006 candidates, fixed-vulnerability advisory
+<p>This page covers the reporting and imported-inventory workflow. The optional
+advisory policy, CR001–CR006 candidates, fixed-vulnerability advisory
 evidence, and signed StandardPack are documented in <a href="../cra-rules/">CRA readiness rules and
 StandardPack</a>.</p>
 <p>RIGOR-FOUNDRY can prepare evidence-bound drafts and operational timelines for
@@ -1655,7 +1655,7 @@ alert is a RIGOR-FOUNDRY workflow signal, not a statutory CRA deadline.</p>
 <code>none-eu</code>. The establishment basis is an operator declaration: <code>decisions</code>,
 <code>employees</code>, <code>auth-rep</code>, <code>importer</code>, <code>distributor</code>, or <code>users</code>.</p>
 <p>For an operator-declared expected use below 60 months, provide both
-<code>--expected-use-months</code> and <code>--expected-use-evidence-ref</code>. P0 stores those
+<code>--expected-use-months</code> and <code>--expected-use-evidence-ref</code>. The reporting store retains those
 declarations but never turns a support period below 60 months into a violation.</p>
 <h2 id="register-or-revise-an-event">Register or revise an event<a class="headerlink" href="#register-or-revise-an-event" title="Permanent link">&para;</a></h2>
 <p>Create a vulnerability event:</p>
@@ -1679,8 +1679,8 @@ current verified tip. The product, track, awareness trigger, and trigger
 evidence cannot change. Status transitions are monotonic. Use explicit
 <code>--recorded-at</code> values for reproducible automation.</p>
 <h3 id="bind-an-exact-offline-osv-finding">Bind an exact offline OSV finding<a class="headerlink" href="#bind-an-exact-offline-osv-finding" title="Permanent link">&para;</a></h3>
-<p><code>vuln-register</code> can replace <code>--aware-evidence</code> with one complete G1 OSV
-evidence bundle:</p>
+<p><code>vuln-register</code> can replace <code>--aware-evidence</code> with one complete verified
+offline OSV evidence bundle:</p>
 <pre><code class="language-bash">rigor vuln-register VULN-2026-001 \
   --root . \
   --product-key widget \
@@ -1818,8 +1818,9 @@ claim that the notice is timely.</p>
   ambiguous chain, or I/O failure.</li>
 </ul>
 <p>Fixed-vulnerability advisories, the CRA rule family, policy extension, and
-signed StandardPack are implemented as the separately activated P2 lane and
-remain outside the P0/P1 boundary. Editor UI, fleet aggregation, network
+signed StandardPack are implemented as the separately activated advisory-policy
+surface and remain outside the reporting/component-evidence boundary. Editor UI,
+fleet aggregation, network
 submission, and user delivery are not implemented by these commands.</p>
 
 
