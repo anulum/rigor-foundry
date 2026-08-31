@@ -330,7 +330,7 @@ def test_cr004_cr006_and_advisory_lifecycle_share_campaign_candidates(tmp_path: 
     )
     assert "CR006-fixed-vuln-without-advisory" not in rule_ids(repository)
     report = scan_repository(repository.root)
-    assert report.rule_pack_version == "rigor-foundry/1.17.0"
+    assert report.rule_pack_version == "rigor-foundry/1.18.0"
     assert all(item.candidate_id for item in report.candidates if item.rule_id.startswith("CR"))
 
     campaign_path, campaign = create_campaign(

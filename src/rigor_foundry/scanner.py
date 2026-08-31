@@ -32,6 +32,7 @@ from .ignored_inventory import collect_ignored_inventory
 from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
+from .notebook_analysis import NOTEBOOK_SUFFIXES, scan_notebooks
 from .operations import scan_operations
 from .performance import scan_performance
 from .polyglot_architecture import scan_polyglot_architecture
@@ -45,7 +46,7 @@ _DEFAULT_POLICY_PATHS = (
     Path("config/rigor-foundry/policy.json"),
 )
 
-_SCANNABLE_EXTENSIONS = suffixes_with("scope")
+_SCANNABLE_EXTENSIONS = suffixes_with("scope") | NOTEBOOK_SUFFIXES
 
 
 def _governance_candidate(
@@ -195,6 +196,7 @@ def scan_repository(
         *governance,
         *domain_governance_candidates(policy, policy_anchor),
         *_scope_candidates(inventory),
+        *scan_notebooks(inventory, policy),
         *scan_test_authenticity(inventory, policy),
         *scan_architecture(inventory, policy),
         *scan_polyglot_architecture(inventory, policy),

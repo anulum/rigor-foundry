@@ -34,6 +34,7 @@ nav:
   - First repository: getting-started.md
   - Consumer integrations: integrations.md
   - VS Code integration: vscode-integration.md
+  - Jupyter notebook analysis: jupyter-notebook-analysis.md
   - Architecture: architecture.md
   - Calibration evidence: calibration-evidence-1.0.md
   - Digest dependencies: digest-dependencies.md
