@@ -6,4 +6,4 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Runtime dependency lock inputs
 
-cryptography==50.0.0
+cryptography==50.0.1

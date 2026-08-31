@@ -15,12 +15,12 @@ hypothesis==6.157.0
 jsonschema==4.26.0
 mkdocs==1.6.1
 mkdocs-material==9.7.7
-mypy==2.3.0
+mypy==2.3.1
 pip-audit==2.10.1
 pip-tools==7.6.0
 pre-commit==4.6.0
 pytest==9.1.1
 pytest-cov==7.1.0
 reuse==6.2.0
-ruff==0.15.22
+ruff==0.16.5
 twine==6.2.0

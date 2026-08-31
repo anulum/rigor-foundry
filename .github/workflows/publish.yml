@@ -99,7 +99,7 @@ jobs:
           /tmp/rigor-foundry-package-smoke/bin/python -m pip check
           /tmp/rigor-foundry-package-smoke/bin/rigor --help >/dev/null
           python -m pip hash dist/*.whl dist/*.tar.gz
-      - uses: sigstore/gh-action-sigstore-python@5b79a39c381910c090341a2c9b0bf022c8b387e1
+      - uses: sigstore/gh-action-sigstore-python@790bc6befb9d733738f18d8f895854b453640ec9
         with:
           inputs: >-
             ./dist/*.tar.gz

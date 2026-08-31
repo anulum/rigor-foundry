@@ -43,7 +43,7 @@ jobs:
           path: results.sarif
           if-no-files-found: error
           retention-days: 14
-      - uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a
+      - uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938
         if: github.event.repository.private == false
         with:
           sarif_file: results.sarif
