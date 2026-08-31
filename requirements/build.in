@@ -7,4 +7,4 @@
 # RigorFoundry — Build lock inputs
 
 build==1.5.0
-hatchling==1.31.0
+hatchling==1.32.0
