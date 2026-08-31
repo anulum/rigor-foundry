@@ -4,7 +4,7 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — CRA P1 append-only evidence storage
+# RigorFoundry — CRA component-evidence storage
 """Persist imported SBOM inventories, drift records, and exact OSV evidence."""
 
 from __future__ import annotations
@@ -35,59 +35,61 @@ from .cra_store import (
 )
 from .internal_storage import exclusive_lock
 
-MAX_P1_RECORD_BYTES = 32 * 1024 * 1024
+MAX_COMPONENT_EVIDENCE_RECORD_BYTES = 32 * 1024 * 1024
 
 
-class _P1Record(Protocol):
-    """Describe one canonical content-addressed P1 JSON record."""
+class _ComponentEvidenceRecord(Protocol):
+    """Describe one canonical content-addressed component-evidence record."""
 
     def to_json(self) -> str:
         """Return canonical JSON text."""
 
 
-_Record = TypeVar("_Record", bound=_P1Record)
+_Record = TypeVar("_Record", bound=_ComponentEvidenceRecord)
 
 
-def _p1_records(
+def _component_evidence_records(
     directory: Path,
     parser: Callable[[object], _Record],
     digest_name: str,
 ) -> tuple[_Record, ...]:
-    """Replay larger P1 records through the same stable-file boundary as imports."""
+    """Replay component evidence through the stable import-file boundary."""
     if not directory.exists():
         return ()
-    _safe_directory(directory, label="CRA P1 record directory")
+    _safe_directory(directory, label="CRA component-evidence record directory")
     records: list[_Record] = []
     for path in sorted(directory.iterdir(), key=lambda item: item.name):
         if path.suffix != ".json":
-            raise ValueError(f"unexpected CRA P1 storage entry: {path}")
+            raise ValueError(f"unexpected CRA component-evidence storage entry: {path}")
         payload, _ = read_import_file(
             path,
-            maximum_bytes=MAX_P1_RECORD_BYTES,
-            label="CRA P1 record",
+            maximum_bytes=MAX_COMPONENT_EVIDENCE_RECORD_BYTES,
+            label="CRA component-evidence record",
         )
         try:
             text = payload.decode("utf-8")
             value = json.loads(text)
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError(f"CRA P1 record is not valid JSON: {path}") from exc
+            raise ValueError(f"CRA component-evidence record is not valid JSON: {path}") from exc
         record = parser(value)
         if path.stem != getattr(record, digest_name, None):
-            raise ValueError(f"CRA P1 filename does not match embedded digest: {path}")
+            raise ValueError(
+                f"CRA component-evidence filename does not match embedded digest: {path}"
+            )
         if text != record.to_json():
-            raise ValueError(f"CRA P1 record bytes are not canonical: {path}")
+            raise ValueError(f"CRA component-evidence bytes are not canonical: {path}")
         records.append(record)
     return tuple(records)
 
 
 @dataclass(frozen=True)
-class CraP1Store:
-    """Extend one validated P0 store with isolated P1 evidence namespaces."""
+class CraComponentEvidenceStore:
+    """Extend one validated CRA repository with component-evidence namespaces."""
 
     base: CraRepository
 
     @classmethod
-    def open(cls, repository_root: Path) -> CraP1Store:
+    def open(cls, repository_root: Path) -> CraComponentEvidenceStore:
         """Open an existing bootstrapped CRA store."""
         return cls(CraRepository.open(repository_root))
 
@@ -129,7 +131,7 @@ class CraP1Store:
     def inventories(self, product_key: str) -> tuple[ComponentInventory, ...]:
         """Return verified inventories in strict capture order."""
         self.base.current_registration(product_key)
-        records = _p1_records(
+        records = _component_evidence_records(
             self.base.storage_root / "inventories" / product_key,
             ComponentInventory.from_dict,
             "inventory_digest",
@@ -205,7 +207,7 @@ class CraP1Store:
 
     def awareness(self, digest: str) -> OsvAwarenessEvidence:
         """Load one verified awareness record and both retained exact sources."""
-        records = _p1_records(
+        records = _component_evidence_records(
             self.base.storage_root / "osv-awareness",
             OsvAwarenessEvidence.from_dict,
             "awareness_digest",

@@ -30,6 +30,7 @@ def preflight_commands(*, fast: bool) -> tuple[PreflightStep, ...]:
     """Return the explicit, shell-free preflight command contract."""
     python = sys.executable
     commands = [
+        PreflightStep((python, "-m", "tools.check_descriptive_production_naming"), 60),
         PreflightStep((python, "-m", "tools.audit"), 180),
         PreflightStep((python, "-m", "ruff", "check", "src", "tests", "tools"), 180),
         PreflightStep(

@@ -21,6 +21,11 @@ repos:
         entry: .venv/bin/python -m tools.check_action_pins
         language: system
         pass_filenames: false
+      - id: descriptive-production-naming
+        name: descriptive production naming
+        entry: .venv/bin/python -m tools.check_descriptive_production_naming
+        language: system
+        pass_filenames: false
       - id: metadata
         name: release metadata consistency
         entry: .venv/bin/python -m tools.check_metadata

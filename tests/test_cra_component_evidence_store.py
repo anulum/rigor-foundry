@@ -4,8 +4,8 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — CRA P1 storage integrity tests
-"""Exercise P1 append-only replay, monotonicity, and retained-source tamper checks."""
+# RigorFoundry — CRA component-evidence storage integrity tests
+"""Exercise append-only replay, monotonicity, and retained-source tamper checks."""
 
 from __future__ import annotations
 
@@ -15,11 +15,12 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from test_cra_component_evidence_cli import NOW, osv_output, repository
 from test_cra_inventory import cyclonedx
 from test_cra_osv import write_inputs
-from test_cra_p1_cli import NOW, osv_output, repository
 
 from rigor_foundry.audit_primitives import canonical_digest
+from rigor_foundry.cra_component_evidence_store import CraComponentEvidenceStore
 from rigor_foundry.cra_inventory import (
     ComponentInventory,
     InventoryComponent,
@@ -28,14 +29,13 @@ from rigor_foundry.cra_inventory import (
     SourceToolEvidence,
 )
 from rigor_foundry.cra_osv import ImportedOsvAwareness, OsvAwarenessEvidence, import_osv_awareness
-from rigor_foundry.cra_p1_store import CraP1Store
 from rigor_foundry.cra_protocol import json_text
 from rigor_foundry.cra_sbom import parse_sbom
 from rigor_foundry.git_inventory import load_git_inventory
 
 
 def inventory_for(
-    store: CraP1Store,
+    store: CraComponentEvidenceStore,
     payload: bytes,
     *,
     captured_at: str = NOW,
@@ -73,7 +73,7 @@ def imported_osv(tmp_path: Path) -> ImportedOsvAwareness:
 def test_inventory_replay_is_idempotent_and_advances_monotonically(tmp_path: Path) -> None:
     """Exact crash replay is accepted and a later capture becomes the current record."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     first_payload = cyclonedx()
     first = inventory_for(store, first_payload)
     path = store.append_inventory(first, first_payload.decode())
@@ -86,10 +86,10 @@ def test_inventory_replay_is_idempotent_and_advances_monotonically(tmp_path: Pat
     assert store.current_inventory("PRODUCT-1") == second
 
 
-def test_large_valid_imports_replay_above_the_p0_record_limit(tmp_path: Path) -> None:
-    """P1's documented 16 MiB source bound is replayable beyond P0's 1 MiB records."""
+def test_large_valid_imports_replay_above_the_base_record_limit(tmp_path: Path) -> None:
+    """The documented 16 MiB source bound exceeds the base record limit."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     large_document = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
@@ -122,12 +122,12 @@ def test_large_valid_imports_replay_above_the_p0_record_limit(tmp_path: Path) ->
     assert store.awareness(large_imported.evidence.awareness_digest) == large_imported.evidence
 
 
-def test_p1_record_directory_rejects_names_encoding_json_and_noncanonical_bytes(
+def test_component_evidence_records_reject_names_encoding_and_noncanonical_bytes(
     tmp_path: Path,
 ) -> None:
-    """Large-record replay preserves the P0 filename and canonical-byte invariants."""
+    """Large-record replay preserves filename and canonical-byte invariants."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     payload = cyclonedx()
     inventory = inventory_for(store, payload)
     store.append_inventory(inventory, payload.decode())
@@ -137,7 +137,7 @@ def test_p1_record_directory_rejects_names_encoding_json_and_noncanonical_bytes(
 
     unexpected = directory / "unexpected.txt"
     unexpected.write_text("x", encoding="utf-8")
-    with pytest.raises(ValueError, match="unexpected CRA P1 storage entry"):
+    with pytest.raises(ValueError, match="unexpected CRA component-evidence storage entry"):
         store.inventories("PRODUCT-1")
     unexpected.unlink()
 
@@ -161,7 +161,7 @@ def test_p1_record_directory_rejects_names_encoding_json_and_noncanonical_bytes(
 def test_inventory_append_rejects_wrong_bytes_components_and_unknown_drift(tmp_path: Path) -> None:
     """A record cannot detach from its SBOM bytes, components, or product history."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     payload = cyclonedx()
     inventory = inventory_for(store, payload)
     with pytest.raises(ValueError, match="bytes do not match"):
@@ -190,7 +190,7 @@ def test_inventory_replay_detects_duplicate_times_and_component_record_tamper(
 ) -> None:
     """Conflicting append-only inventory history fails before current state is selected."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     payload = cyclonedx()
     first = inventory_for(store, payload)
     store.append_inventory(first, payload.decode())
@@ -209,7 +209,7 @@ def test_inventory_replay_detects_duplicate_times_and_component_record_tamper(
 def test_osv_store_rejects_noncanonical_and_detached_sources(tmp_path: Path) -> None:
     """Adapter and output bytes must remain exact before awareness is appended."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     imported = imported_osv(tmp_path / "osv")
     with pytest.raises(ValueError, match="not canonical"):
         store.append_osv_awareness(
@@ -231,7 +231,7 @@ def test_osv_store_rejects_noncanonical_and_detached_sources(tmp_path: Path) -> 
 def test_osv_replay_detects_unknown_digest_and_both_source_tampers(tmp_path: Path) -> None:
     """Every awareness read replays canonical adapter bytes and exact output digest."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     imported = imported_osv(tmp_path / "osv")
     store.append_osv_awareness(imported)
     digest = imported.evidence.awareness_digest
@@ -260,7 +260,7 @@ def test_osv_replay_detects_unknown_digest_and_both_source_tampers(tmp_path: Pat
 def test_osv_replay_rejects_canonical_but_wrong_adapter_record(tmp_path: Path) -> None:
     """A canonical alternate adapter record cannot occupy an existing content address."""
     repo = repository(tmp_path)
-    store = CraP1Store.open(repo.root)
+    store = CraComponentEvidenceStore.open(repo.root)
     imported = imported_osv(tmp_path / "osv")
     store.append_osv_awareness(imported)
     adapter_path = (

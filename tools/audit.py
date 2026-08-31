@@ -19,6 +19,7 @@ from tools._repository import ROOT, read_text, redacted_guard_exit_code, run, vi
 from tools.check_action_pins import action_pin_errors
 from tools.check_data_boundary import data_boundary_errors
 from tools.check_dependency_waivers import dependency_waiver_errors
+from tools.check_descriptive_production_naming import descriptive_naming_errors
 from tools.check_headers import header_errors
 from tools.check_metadata import metadata_errors
 from tools.check_secrets import secret_errors
@@ -67,6 +68,7 @@ REQUIRED_PATHS = (
     "requirements/security.txt",
     "requirements/test.txt",
     "tools/check_dependency_waivers.py",
+    "tools/check_descriptive_production_naming.py",
     "tools/check_distribution_metadata.py",
 )
 FORBIDDEN_PUBLIC_PARTS = {".coordination", ".rigor"}
@@ -151,6 +153,7 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
 
     errors.extend(header_errors(root))
     errors.extend(action_pin_errors(root))
+    errors.extend(descriptive_naming_errors(root))
     errors.extend(metadata_errors(root))
     errors.extend(secret_errors(root))
     errors.extend(data_boundary_errors(root))

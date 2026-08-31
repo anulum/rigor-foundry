@@ -4,7 +4,7 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — CRA P1 command-line workflow
+# RigorFoundry — CRA component-evidence command workflow
 """Wire imported SBOM inventories and exact OSV awareness into the offline CLI."""
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import argparse
 from pathlib import Path
 from typing import cast
 
+from .cra_component_evidence_store import CraComponentEvidenceStore
 from .cra_inventory import (
     ComponentInventory,
     InventoryDriftEvidence,
@@ -21,7 +22,6 @@ from .cra_inventory import (
     SourceToolEvidence,
 )
 from .cra_osv import import_osv_awareness
-from .cra_p1_store import CraP1Store
 from .cra_protocol import json_text
 from .cra_sbom import MAX_SBOM_BYTES, parse_sbom, read_import_file
 from .git_inventory import load_git_inventory
@@ -37,7 +37,7 @@ def _source_tool(value: str, evidence_ref: str) -> SourceToolEvidence:
 
 def _sbom_import(args: argparse.Namespace) -> int:
     """Import exact SBOM bytes into one append-only component inventory."""
-    store = CraP1Store.open(args.root)
+    store = CraComponentEvidenceStore.open(args.root)
     store.base.current_registration(args.product_key)
     payload, digest = read_import_file(
         args.file,
@@ -63,7 +63,7 @@ def _sbom_import(args: argparse.Namespace) -> int:
 
 def _sbom_status(args: argparse.Namespace) -> int:
     """Persist and print one exact current repository drift observation."""
-    store = CraP1Store.open(args.root)
+    store = CraComponentEvidenceStore.open(args.root)
     inventory = store.current_inventory(args.product_key)
     drift = InventoryDriftEvidence.build(
         inventory,
@@ -113,17 +113,17 @@ def bind_osv_awareness(
         package_name=cast(str, args.osv_package),
         imported_at=args.osv_imported_at or recorded_at,
     )
-    CraP1Store.open(args.root).append_osv_awareness(imported)
+    CraComponentEvidenceStore.open(args.root).append_osv_awareness(imported)
     evidence = imported.evidence
     external_ids = tuple(dict.fromkeys((*args.external_id, evidence.external_id)))
     components = tuple(dict.fromkeys((*args.component, evidence.component_ref)))
     return f"osv-awareness:{evidence.awareness_digest}", external_ids, components
 
 
-def add_cra_p1_commands(
+def add_component_evidence_commands(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
-    """Register the independently landable CRA P1 command surface."""
+    """Register the CRA component-inventory command surface."""
     sbom_import = subparsers.add_parser(
         "sbom-import",
         help="Import a bounded SBOM into offline content-addressed CRA evidence.",

@@ -31,6 +31,7 @@ from tools.audit import EXPECTED_ORIGIN, audit_errors
 from tools.check_action_pins import action_pin_errors
 from tools.check_data_boundary import data_boundary_errors
 from tools.check_dependency_waivers import dependency_waiver_errors
+from tools.check_descriptive_production_naming import descriptive_naming_errors
 from tools.check_headers import header_errors
 from tools.check_metadata import metadata_errors
 
@@ -124,6 +125,8 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
         ".github/workflows/adversarial.yml",
         f"steps:\n  - uses: supplier/{value}\n",
     )
+    coded_leaf = "internal_" + "g" + "4_owner.py"
+    repository.write_text(f"src/rigor_foundry/{coded_leaf}", "VALUE = 1\n")
 
     project = repository.root / "pyproject.toml"
     project.write_text(
@@ -145,6 +148,7 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
     assert adversarial_leaf in "\n".join(header_errors(repository.root))
     assert value in "\n".join(action_pin_errors(repository.root))
     assert value in "\n".join(metadata_errors(repository.root))
+    assert coded_leaf in "\n".join(descriptive_naming_errors(repository.root))
     assert adversarial_leaf in "\n".join(data_boundary_errors(repository.root))
     assert "rationale must be non-empty" in "\n".join(dependency_waiver_errors(repository.root))
     assert adversarial_leaf in "\n".join(audit_errors(repository.root))
@@ -153,6 +157,7 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
     guards = (
         ("tools.check_headers", "Header guard"),
         ("tools.check_action_pins", "Action pin guard"),
+        ("tools.check_descriptive_production_naming", "Descriptive naming guard"),
         ("tools.check_metadata", "Metadata guard"),
         ("tools.check_secrets", "Secret guard"),
         ("tools.check_data_boundary", "Data-boundary guard"),

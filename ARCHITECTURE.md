@@ -397,7 +397,7 @@ it is not itself a process supervisor or permission grant.
 
 ## Offline CRA preparation
 
-The CRA P0 boundary is an offline evidence workflow rather than an authority
+The offline CRA reporting boundary is an evidence workflow rather than an authority
 integration. `cra_protocol.py` owns exact schema, timestamp, and closed-
 vocabulary primitives. `cra_registration.py`, `cra_events.py`, and
 `cra_submissions.py` own content-addressed product, revision, draft, receipt,
@@ -411,7 +411,7 @@ records below `.rigor/cra/`. It verifies the complete linear revision chain,
 every record filename and embedded digest, exact payload path and bytes,
 single-link/no-follow file identity, and cross-record binding before returning
 state. Crash replay may reuse only byte-identical content-addressed payloads;
-authoritative records are never replaced. `cra_cli.py` exposes the eight P0
+authoritative records are never replaced. `cra_cli.py` exposes the eight reporting
 commands without importing a network client. It records operator declarations
 and retained receipt evidence but never submits, sends, assesses legal
 sufficiency, or claims authority acceptance.

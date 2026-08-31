@@ -16,8 +16,12 @@ from pathlib import Path
 from typing import Literal, cast
 
 from .cra_advisories import FixedVulnerabilityAdvisory
+from .cra_component_evidence_cli import (
+    add_component_evidence_commands,
+    add_osv_register_arguments,
+    bind_osv_awareness,
+)
 from .cra_events import SecurityEventRevision
-from .cra_p1_cli import add_cra_p1_commands, add_osv_register_arguments, bind_osv_awareness
 from .cra_pack_cli import add_cra_pack_command
 from .cra_payloads import prepare_stage_payload, prepare_user_notice
 from .cra_protocol import (
@@ -406,7 +410,7 @@ def _root(parser: argparse.ArgumentParser) -> None:
 
 
 def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Register the complete offline CRA P0 command surface.
+    """Register the complete offline CRA reporting command surface.
 
     Parameters
     ----------
@@ -575,5 +579,5 @@ def add_cra_commands(subparsers: argparse._SubParsersAction[argparse.ArgumentPar
     status.add_argument("--now")
     status.add_argument("--json", action="store_true")
     status.set_defaults(handler=_status)
-    add_cra_p1_commands(subparsers)
+    add_component_evidence_commands(subparsers)
     add_cra_pack_command(subparsers)

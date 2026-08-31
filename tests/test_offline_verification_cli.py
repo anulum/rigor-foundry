@@ -79,7 +79,7 @@ def test_real_cli_verifies_to_stdout_without_network_configuration(tmp_path: Pat
 
 
 def test_verification_owners_have_no_network_import_surface() -> None:
-    """The complete M3 production lane contains no network client dependency."""
+    """The complete offline-verification lane has no network client dependency."""
     source_root = Path("src/rigor_foundry")
     imported: set[str] = set()
     for owner in VERIFICATION_OWNERS:

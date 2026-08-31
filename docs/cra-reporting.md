@@ -1,7 +1,7 @@
 # Offline CRA Article 14 preparation
 
-This page covers the P0/P1 reporting and imported-inventory workflow. The
-optional P2 policy, CR001–CR006 candidates, fixed-vulnerability advisory
+This page covers the reporting and imported-inventory workflow. The optional
+advisory policy, CR001–CR006 candidates, fixed-vulnerability advisory
 evidence, and signed StandardPack are documented in [CRA readiness rules and
 StandardPack](cra-rules.md).
 
@@ -73,7 +73,7 @@ rigor cra-bootstrap \
 `employees`, `auth-rep`, `importer`, `distributor`, or `users`.
 
 For an operator-declared expected use below 60 months, provide both
-`--expected-use-months` and `--expected-use-evidence-ref`. P0 stores those
+`--expected-use-months` and `--expected-use-evidence-ref`. The reporting store retains those
 declarations but never turns a support period below 60 months into a violation.
 
 ## Register or revise an event
@@ -105,8 +105,8 @@ evidence cannot change. Status transitions are monotonic. Use explicit
 
 ### Bind an exact offline OSV finding
 
-`vuln-register` can replace `--aware-evidence` with one complete G1 OSV
-evidence bundle:
+`vuln-register` can replace `--aware-evidence` with one complete verified
+offline OSV evidence bundle:
 
 ```bash
 rigor vuln-register VULN-2026-001 \
@@ -281,6 +281,7 @@ Use `--event-key` to inspect one event. All timeline and status commands accept
   ambiguous chain, or I/O failure.
 
 Fixed-vulnerability advisories, the CRA rule family, policy extension, and
-signed StandardPack are implemented as the separately activated P2 lane and
-remain outside the P0/P1 boundary. Editor UI, fleet aggregation, network
+signed StandardPack are implemented as the separately activated advisory-policy
+surface and remain outside the reporting/component-evidence boundary. Editor UI,
+fleet aggregation, network
 submission, and user delivery are not implemented by these commands.

@@ -13,8 +13,8 @@ import re
 from typing import cast
 
 from .candidate_anchor import CandidateAnchor, TrackedBlobAnchor
+from .cra_component_evidence_store import CraComponentEvidenceStore
 from .cra_inventory import RepositoryBinding
-from .cra_p1_store import CraP1Store
 from .cra_policy import CraPolicy
 from .cra_store import CraEventState, CraRepository
 from .git_inventory import GitInventory
@@ -222,7 +222,9 @@ def _state_candidates(
                 )
             )
         try:
-            component_inventory = CraP1Store(repository).current_inventory(product_key)
+            component_inventory = CraComponentEvidenceStore(repository).current_inventory(
+                product_key
+            )
         except ValueError as exc:
             if str(exc) != "product has no verified component inventory":
                 raise

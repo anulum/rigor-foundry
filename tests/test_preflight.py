@@ -29,6 +29,7 @@ def test_fast_preflight_omits_distribution_and_documentation_builds() -> None:
     rendered = "\n".join(" ".join(step.argv) for step in preflight_commands(fast=True))
     assert "mkdocs" not in rendered
     assert " build " not in rendered
+    assert "tools.check_descriptive_production_naming" in rendered
     assert "tools.audit" in rendered
 
 

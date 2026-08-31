@@ -14,7 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from test_cra_p1_cli import NOW, osv_output, osv_result
+from test_cra_component_evidence_cli import NOW, osv_output, osv_result
 
 import rigor_foundry.cra_osv as osv_module
 from rigor_foundry.adapter_profiles import AdapterProfileEvidence, profile_by_name

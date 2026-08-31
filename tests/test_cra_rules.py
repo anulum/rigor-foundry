@@ -563,7 +563,7 @@ def test_corrupt_component_inventory_never_degrades_to_absence(
         raise ValueError("corrupt component inventory")
 
     monkeypatch.setattr(
-        "rigor_foundry.cra_rules.CraP1Store.current_inventory",
+        "rigor_foundry.cra_rules.CraComponentEvidenceStore.current_inventory",
         corrupt_inventory,
     )
     with pytest.raises(ValueError, match="corrupt component inventory"):

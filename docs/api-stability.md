@@ -75,7 +75,7 @@ capture, and successful offline verification through separate digests.
 `VerificationKeyPolicy`, `EvidenceVerificationResult`,
 `OfflineVerificationReport`, `verify_evidence_bundle`, and their schema/domain
 constants are provisional Python imports. The installed `rigor verify` command
-and its schema-1.0 bundle/trust-policy/result contracts form the stable M3 CLI
+and its schema-1.0 bundle/trust-policy/result contracts form the stable offline-verification CLI
 boundary. See [Offline evidence verification](offline-verification.md).
 
 Every other current `rigor_foundry.__all__` name is explicitly provisional in

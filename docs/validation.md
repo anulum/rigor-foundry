@@ -1,6 +1,6 @@
 # Validation
 
-CRA P2 focused validation covers the strict optional policy transition,
+Fixed-vulnerability advisory validation covers the strict optional policy transition,
 append-only advisory revision chains, CR001–CR006 over real Git and ignored
 storage, campaign replay, externally keyed Ed25519 pack emission, the complete
 CRA compliance-map template, EffectiveProfileLock binding, and
@@ -29,7 +29,7 @@ local closeout may additionally run the hash-locked dependency audit, Semgrep,
 package installation smoke, hardened container smoke, and strict documentation
 build; those local results do not replace the corresponding remote evidence.
 
-CRA P0 has dedicated model, timeline, payload, storage, and CLI owners. The
+Offline CRA reporting has dedicated model, timeline, payload, storage, and CLI owners. The
 focused set covers all vulnerability/incident stage partitions, exact UTC and
 deadline boundaries, end-of-month clamping, revision-chain persistence,
 receipt and skip binding, stale unverified drafts, deterministic payload bytes,
@@ -46,7 +46,7 @@ historical key validity, report and review expiry, contradictory review
 binding, transitive model-alias collapse, explicit unavailable evidence,
 aggregate status precedence, unsafe links, concurrent file-identity drift,
 oversized input, installed-style stdout/output behavior, and deterministic
-replay. Every M3 production owner retains direct 100% statement and branch
+replay. Every offline-verification production owner retains direct 100% statement and branch
 coverage.
 
 Property assurance uses the hash-locked Hypothesis dependency through public

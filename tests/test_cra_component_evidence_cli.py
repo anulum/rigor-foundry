@@ -4,7 +4,7 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — CRA P1 CLI integration tests
+# RigorFoundry — CRA component-evidence CLI integration tests
 """Exercise real Git, CLI, append-only SBOM storage, drift, and OSV registration."""
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from rigor_foundry.adapter_profiles import AdapterProfileEvidence, profile_by_na
 from rigor_foundry.adapters import AdapterResult
 from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.cli import main
-from rigor_foundry.cra_p1_store import CraP1Store
+from rigor_foundry.cra_component_evidence_store import CraComponentEvidenceStore
 from rigor_foundry.cra_protocol import json_text
 from rigor_foundry.sandbox_provenance import (
     BubblewrapCompatibilityPolicy,
@@ -32,7 +32,7 @@ NOW = "2026-07-20T10:00:00Z"
 
 
 def bootstrap(repository: GitRepository) -> None:
-    """Create real P0 state through the public CLI."""
+    """Create real CRA reporting state through the public CLI."""
     assert (
         main(
             [
@@ -97,7 +97,7 @@ def osv_output() -> bytes:
 
 
 def osv_result(payload: bytes) -> AdapterResult:
-    """Build one complete G1 OSV adapter result bound to ``payload``."""
+    """Build complete verified offline OSV adapter evidence for ``payload``."""
     output_digest = hashlib.sha256(payload).hexdigest()
     policy = BubblewrapCompatibilityPolicy()
     provenance = BubblewrapProvenance.build(
@@ -184,7 +184,7 @@ def test_sbom_import_and_status_cross_real_cli_and_git_boundaries(
         )
         == 0
     )
-    inventory = CraP1Store.open(repo.root).current_inventory("PRODUCT-1")
+    inventory = CraComponentEvidenceStore.open(repo.root).current_inventory("PRODUCT-1")
     assert inventory.sbom_sha256 == hashlib.sha256(payload).hexdigest()
     assert inventory.covers_top_level_only
     capsys.readouterr()
@@ -260,16 +260,16 @@ def test_osv_bundle_requires_explicit_registration_and_exploitation_evidence(
 
     assert main(common) == 2
     with pytest.raises(ValueError, match="no verified revisions"):
-        CraP1Store.open(repo.root).base.current_event("EVENT-1")
+        CraComponentEvidenceStore.open(repo.root).base.current_event("EVENT-1")
 
     assert main([*common, "--exploitation-evidence", "operator-evidence:incident-7"]) == 0
-    event = CraP1Store.open(repo.root).base.current_event("EVENT-1")
+    event = CraComponentEvidenceStore.open(repo.root).base.current_event("EVENT-1")
     assert event.aware_evidence_ref.startswith("osv-awareness:")
     assert event.external_ids == ("OSV-TEST-1",)
     assert event.affected_components == ("PyPI:urllib3@1.26.0",)
     assert event.exploitation_evidence == ("operator-evidence:incident-7",)
     digest = event.aware_evidence_ref.removeprefix("osv-awareness:")
-    evidence = CraP1Store.open(repo.root).awareness(digest)
+    evidence = CraComponentEvidenceStore.open(repo.root).awareness(digest)
     assert evidence.external_id == "OSV-TEST-1"
     assert evidence.adapter_result_digest == canonical_digest(result.to_dict())
 
@@ -378,11 +378,11 @@ def test_sbom_storage_rejects_source_tamper_and_non_monotonic_capture(tmp_path: 
     ]
     assert main(arguments) == 0
     assert main([*arguments[:-1], "2026-07-20T09:00:00Z"]) == 2
-    inventory = CraP1Store.open(repo.root).current_inventory("PRODUCT-1")
+    inventory = CraComponentEvidenceStore.open(repo.root).current_inventory("PRODUCT-1")
     stored = repo.root / ".rigor" / "cra" / "sboms" / f"{inventory.sbom_sha256}.json"
     stored.write_text("{}", encoding="utf-8")
     with pytest.raises(ValueError, match="digest does not match"):
-        CraP1Store.open(repo.root).current_inventory("PRODUCT-1")
+        CraComponentEvidenceStore.open(repo.root).current_inventory("PRODUCT-1")
 
 
 def test_cli_rejects_invalid_source_tool_and_missing_awareness(tmp_path: Path) -> None:
@@ -438,7 +438,7 @@ def test_cli_rejects_invalid_source_tool_and_missing_awareness(tmp_path: Path) -
 
 
 def test_cli_preserves_plain_awareness_and_rejects_osv_conflicts(tmp_path: Path) -> None:
-    """The P0 awareness path remains intact and OSV options stay mutually exclusive."""
+    """The existing awareness path remains intact and OSV options stay mutually exclusive."""
     repo = repository(tmp_path)
     assert (
         main(
@@ -467,7 +467,7 @@ def test_cli_preserves_plain_awareness_and_rejects_osv_conflicts(tmp_path: Path)
         )
         == 0
     )
-    event = CraP1Store.open(repo.root).base.current_event("EVENT-PLAIN")
+    event = CraComponentEvidenceStore.open(repo.root).base.current_event("EVENT-PLAIN")
     assert event.aware_evidence_ref == "operator:awareness"
     assert event.external_ids == ("CVE-TEST-1",)
 

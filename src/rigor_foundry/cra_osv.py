@@ -286,7 +286,7 @@ def import_osv_awareness(
     package_name: str,
     imported_at: str,
 ) -> ImportedOsvAwareness:
-    """Import one explicit OSV finding bound to complete G1 adapter evidence."""
+    """Import one OSV finding bound to complete verified offline adapter evidence."""
     adapter_payload, _ = read_import_file(
         adapter_result_path,
         maximum_bytes=MAX_ADAPTER_RESULT_BYTES,
