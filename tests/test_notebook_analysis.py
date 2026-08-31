@@ -155,6 +155,42 @@ def test_string_and_fragmented_sources_map_to_physical_json_lines(tmp_path: Path
     )
 
 
+@pytest.mark.parametrize(
+    ("first_line", "newline"),
+    [
+        ("value = 'left\u2028right'", "\n"),
+        ("value = 'left\f right'", "\n"),
+        ("value = 1", "\r\n"),
+        ("value = 1", "\r"),
+    ],
+    ids=("unicode-separator", "form-feed", "crlf", "cr"),
+)
+def test_line_mapping_uses_python_newlines_only(
+    tmp_path: Path,
+    first_line: str,
+    newline: str,
+) -> None:
+    """Non-newline Unicode controls cannot shift a later Python AST anchor."""
+    repository = _repository(tmp_path)
+    notebook = _notebook([[first_line + newline, "eval('mapped')" + newline]])
+    repository.write_text("notebooks/newlines.ipynb", notebook)
+    repository.commit()
+
+    candidate = next(
+        item
+        for item in scan_repository(repository.root).candidates
+        if item.path == "notebooks/newlines.ipynb"
+        and item.rule_id == "AS001-dynamic-code-execution"
+    )
+    expected = next(
+        index
+        for index, line in enumerate(notebook.splitlines(), start=1)
+        if "eval('mapped')" in line
+    )
+    assert candidate.anchor.line_start == expected
+    assert "source_line_start=2" in candidate.evidence
+
+
 def test_test_root_cells_receive_test_only_python_ast_rules(tmp_path: Path) -> None:
     """Scientific, performance, and authenticity rules preserve path applicability."""
     repository = _repository(tmp_path)

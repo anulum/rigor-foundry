@@ -280,9 +280,7 @@ def _logical_line_spans(chunks: tuple[_SourceChunk, ...]) -> tuple[tuple[int, in
         intervals.append((offset, end, chunk.token))
         offset = end
     spans: list[tuple[int, int]] = []
-    offset = 0
-    for line in source.splitlines(keepends=True):
-        end = offset + len(line)
+    for offset, end in _python_line_ranges(source):
         tokens = [token for start, stop, token in intervals if stop > offset and start < end]
         spans.append(
             (
@@ -290,8 +288,28 @@ def _logical_line_spans(chunks: tuple[_SourceChunk, ...]) -> tuple[tuple[int, in
                 max(token.line_end for token in tokens),
             )
         )
-        offset = end
     return tuple(spans)
+
+
+def _python_line_ranges(source: str) -> tuple[tuple[int, int], ...]:
+    """Return source ranges using only newline forms recognised by Python."""
+    ranges: list[tuple[int, int]] = []
+    start = 0
+    index = 0
+    while index < len(source):
+        character = source[index]
+        if character not in "\r\n":
+            index += 1
+            continue
+        end = index + 1
+        if character == "\r" and end < len(source) and source[end] == "\n":
+            end += 1
+        ranges.append((start, end))
+        start = end
+        index = end
+    if start < len(source):
+        ranges.append((start, len(source)))
+    return tuple(ranges)
 
 
 def _code_cells(

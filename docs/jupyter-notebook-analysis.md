@@ -24,6 +24,9 @@ following existing rule families are applicable:
 
 Architecture, package API, import-graph, and module-ownership rules are not
 applied to synthetic notebook cells because a cell is not a Python module.
+The older repository-wide textual test-authenticity layer remains separate and
+may still identify suppression syntax in any tracked UTF-8 text, including raw
+notebook JSON; those text candidates are not produced by the cell-AST bridge.
 
 ## Exact anchors and evidence
 
