@@ -21,6 +21,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import tomllib
 from collections.abc import Callable, Mapping
 from datetime import date
@@ -32,12 +33,24 @@ PYPISTATS_HOST = "pypistats.org"
 PYPISTATS_PATH = "/api/packages/{package}/overall"
 CATEGORIES = ("without_mirrors", "with_mirrors")
 CSV_HEADER = ("date", *CATEGORIES)
+OVERALL_FIELDS = frozenset(("data", "package", "type"))
+OVERALL_TYPE = "overall_downloads"
+ROW_FIELDS = frozenset(("category", "date", "downloads"))
 Fetch = Callable[[str], bytes]
+Sleep = Callable[[float], None]
 DownloadRows = dict[str, dict[str, int]]
+PROJECT_PACKAGE = "rigor-foundry"
+PROJECT_CSV = Path("downloads/rigor-foundry.csv")
+RETRYABLE_STATUSES = (429, 502, 503, 504)
+RETRY_DELAYS = (15.0, 30.0, 60.0)
 
 
 class DownloadSnapshotError(RuntimeError):
     """Report a bounded remote snapshot failure."""
+
+
+class RetryableSnapshotError(DownloadSnapshotError):
+    """Report a transient remote failure eligible for a bounded retry."""
 
 
 def detect_package(pyproject_path: Path) -> str:
@@ -52,6 +65,14 @@ def detect_package(pyproject_path: Path) -> str:
     return raw_name.strip()
 
 
+def require_project_csv_target(package: str, csv_path: Path) -> None:
+    """Accept only RigorFoundry's exact relative metrics path and package name."""
+    if package != PROJECT_PACKAGE:
+        raise ValueError(f"project metrics package must be {PROJECT_PACKAGE!r}")
+    if csv_path.is_absolute() or csv_path.as_posix() != PROJECT_CSV.as_posix():
+        raise ValueError(f"project metrics CSV must be {PROJECT_CSV.as_posix()!r}")
+
+
 def package_endpoint_path(package: str) -> str:
     """Return the fixed-host pypistats path for ``package``."""
     if not package.strip():
@@ -60,6 +81,7 @@ def package_endpoint_path(package: str) -> str:
 
 
 def _http_get(package: str) -> bytes:
+    """Fetch one pypistats payload over a fixed HTTPS endpoint."""
     connection = http.client.HTTPSConnection(PYPISTATS_HOST, timeout=30)
     try:
         connection.request(
@@ -69,26 +91,45 @@ def _http_get(package: str) -> bytes:
         )
         response = connection.getresponse()
         body = response.read()
+        if response.status in RETRYABLE_STATUSES:
+            raise RetryableSnapshotError(
+                f"pypistats returned transient HTTP {response.status} {response.reason}"
+            )
         if response.status != 200:
             raise DownloadSnapshotError(
                 f"pypistats returned HTTP {response.status} {response.reason}"
             )
         return body
     except OSError as exc:
-        raise DownloadSnapshotError(f"pypistats request failed: {exc}") from exc
+        raise RetryableSnapshotError(f"pypistats request failed: {exc}") from exc
     finally:
         connection.close()
 
 
-def fetch_overall(package: str, fetch: Fetch = _http_get) -> Mapping[str, Any]:
-    """Fetch and decode one pypistats overall-series payload."""
+def fetch_overall(package: str, fetch: Fetch = _http_get) -> DownloadRows:
+    """Fetch and validate one pypistats overall-series payload."""
     try:
         decoded: object = json.loads(fetch(package))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise DownloadSnapshotError(f"pypistats returned invalid JSON: {exc}") from exc
     if not isinstance(decoded, dict):
         raise DownloadSnapshotError("pypistats response must be a JSON object")
-    return decoded
+    return daily_counts(package, decoded)
+
+
+def fetch_overall_with_retry(
+    package: str,
+    fetch: Fetch = _http_get,
+    sleep: Sleep = time.sleep,
+) -> DownloadRows | None:
+    """Retry transient failures within a five-minute worst-case request budget."""
+    for delay in (*RETRY_DELAYS, None):
+        try:
+            return fetch_overall(package, fetch)
+        except RetryableSnapshotError:
+            if delay is not None:
+                sleep(delay)
+    return None
 
 
 def _valid_date(raw_date: object) -> str | None:
@@ -96,10 +137,10 @@ def _valid_date(raw_date: object) -> str | None:
         return None
     candidate = raw_date.strip()
     try:
-        date.fromisoformat(candidate)
+        parsed = date.fromisoformat(candidate)
     except ValueError:
         return None
-    return candidate
+    return candidate if parsed.isoformat() == candidate else None
 
 
 def _valid_count(raw_count: object) -> int | None:
@@ -117,23 +158,49 @@ def _valid_count(raw_count: object) -> int | None:
     return count if count >= 0 else None
 
 
-def daily_counts(overall: Mapping[str, Any]) -> DownloadRows:
-    """Reduce a payload to validated date/category counts."""
-    raw_rows = overall.get("data")
+def daily_counts(package: str, overall: Mapping[str, Any]) -> DownloadRows:
+    """Validate an exact pypistats payload and return complete daily counts."""
+    if set(overall) != OVERALL_FIELDS:
+        raise DownloadSnapshotError("pypistats response fields do not match the overall schema")
+    if overall["package"] != package:
+        raise DownloadSnapshotError("pypistats response package does not match the request")
+    if overall["type"] != OVERALL_TYPE:
+        raise DownloadSnapshotError("pypistats response type is not overall_downloads")
+    raw_rows = overall["data"]
     if not isinstance(raw_rows, list):
-        return {}
+        raise DownloadSnapshotError("pypistats data must be a JSON array")
+    if not raw_rows:
+        raise DownloadSnapshotError("pypistats data must not be empty")
     counts: DownloadRows = {}
-    for raw_row in raw_rows:
+    for index, raw_row in enumerate(raw_rows):
         if not isinstance(raw_row, dict):
-            continue
-        category = raw_row.get("category")
+            raise DownloadSnapshotError(f"pypistats row {index} must be a JSON object")
+        if set(raw_row) != ROW_FIELDS:
+            raise DownloadSnapshotError(
+                f"pypistats row {index} fields do not match the overall row schema"
+            )
+        category = raw_row["category"]
         if category not in CATEGORIES:
-            continue
-        row_date = _valid_date(raw_row.get("date"))
-        downloads = _valid_count(raw_row.get("downloads"))
-        if row_date is None or downloads is None:
-            continue
-        counts.setdefault(row_date, {})[str(category)] = downloads
+            raise DownloadSnapshotError(f"pypistats row {index} has an invalid category")
+        row_date = _valid_date(raw_row["date"])
+        if row_date is None or row_date != raw_row["date"]:
+            raise DownloadSnapshotError(f"pypistats row {index} has an invalid date")
+        downloads = raw_row["downloads"]
+        if isinstance(downloads, bool) or not isinstance(downloads, int) or downloads < 0:
+            raise DownloadSnapshotError(f"pypistats row {index} has an invalid download count")
+        day = counts.setdefault(row_date, {})
+        if category in day:
+            raise DownloadSnapshotError(
+                f"pypistats row {index} duplicates {category} for {row_date}"
+            )
+        day[category] = downloads
+    incomplete_dates = [
+        row_date for row_date, values in counts.items() if set(values) != set(CATEGORIES)
+    ]
+    if incomplete_dates:
+        raise DownloadSnapshotError(
+            f"pypistats response has incomplete categories for {incomplete_dates[0]}"
+        )
     return counts
 
 
@@ -205,12 +272,17 @@ def summary(package: str, rows: DownloadRows) -> str:
     )
 
 
-def main(argv: list[str] | None = None, fetch: Fetch = _http_get) -> int:
+def main(
+    argv: list[str] | None = None,
+    fetch: Fetch = _http_get,
+    sleep: Sleep = time.sleep,
+) -> int:
     """Resolve, fetch, validate, merge, and persist one snapshot."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pyproject", default="pyproject.toml")
     parser.add_argument("--package")
     parser.add_argument("--csv")
+    parser.add_argument("--project-csv-only", action="store_true")
     parser.add_argument("--print-package", action="store_true")
     arguments = parser.parse_args(argv)
 
@@ -222,7 +294,17 @@ def main(argv: list[str] | None = None, fetch: Fetch = _http_get) -> int:
         if not arguments.csv:
             parser.error("--csv is required unless --print-package is used")
         csv_path = Path(arguments.csv)
-        rows = merge_rows(read_csv(csv_path), daily_counts(fetch_overall(package, fetch)))
+        if arguments.project_csv_only:
+            require_project_csv_target(package, csv_path)
+        fresh_rows = fetch_overall_with_retry(package, fetch, sleep)
+        if fresh_rows is None:
+            print(
+                "snapshot skipped: pypistats remained unavailable after bounded retries; "
+                "the next successful rolling-window fetch will backfill it",
+                file=sys.stderr,
+            )
+            return 0
+        rows = merge_rows(read_csv(csv_path), fresh_rows)
         write_csv(csv_path, rows)
     except (DownloadSnapshotError, OSError, ValueError) as exc:
         print(f"snapshot failed: {exc}", file=sys.stderr)

@@ -13,8 +13,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
   <a href="https://www.anulum.li/"><img src="https://img.shields.io/badge/commercial%20licence-available-0a7d3c" alt="Commercial licence available"></a>
   <a href="pyproject.toml"><img src="https://img.shields.io/badge/python-3.11--3.13-blue.svg" alt="Python 3.11–3.13"></a>
-  <a href="https://reuse.software/"><img src="https://api.reuse.software/badge/github.com/anulum/rigor-foundry" alt="REUSE status"></a>
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/anulum/rigor-foundry"><img src="https://api.securityscorecards.dev/projects/github.com/anulum/rigor-foundry/badge" alt="OpenSSF Scorecard"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/anulum/rigor-foundry"><img src="https://api.scorecard.dev/projects/github.com/anulum/rigor-foundry/badge" alt="OpenSSF Scorecard"></a>
   <a href="https://www.bestpractices.dev/projects/13680"><img src="https://www.bestpractices.dev/projects/13680/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/sponsors/anulum"><img src="https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors" alt="Sponsor on GitHub"></a>

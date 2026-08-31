@@ -9,12 +9,10 @@
 name: OpenSSF Scorecard
 
 on:
-  branch_protection_rule:
   schedule:
     - cron: "31 4 * * 2"
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions: read-all
 
@@ -34,15 +32,11 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
-      - uses: ./.github/actions/scorecard
+      - uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
         with:
           results_file: results.sarif
           results_format: sarif
-          # The scorecard action is vendored as a digest-pinned local Docker action,
-          # so the OpenSSF web-app cannot verify a direct `ossf/scorecard-action`
-          # job reference and rejects publication. Keep the SARIF upload to GitHub
-          # code scanning and disable the incompatible public-registry publish.
-          publish_results: false
+          publish_results: true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: scorecard-results
