@@ -159,7 +159,7 @@ def _valid_count(raw_count: object) -> int | None:
 
 
 def daily_counts(package: str, overall: Mapping[str, Any]) -> DownloadRows:
-    """Validate an exact pypistats payload and return complete daily counts."""
+    """Validate an exact pypistats payload and normalize sparse daily counts."""
     if set(overall) != OVERALL_FIELDS:
         raise DownloadSnapshotError("pypistats response fields do not match the overall schema")
     if overall["package"] != package:
@@ -194,13 +194,9 @@ def daily_counts(package: str, overall: Mapping[str, Any]) -> DownloadRows:
                 f"pypistats row {index} duplicates {category} for {row_date}"
             )
         day[category] = downloads
-    incomplete_dates = [
-        row_date for row_date, values in counts.items() if set(values) != set(CATEGORIES)
-    ]
-    if incomplete_dates:
-        raise DownloadSnapshotError(
-            f"pypistats response has incomplete categories for {incomplete_dates[0]}"
-        )
+    for values in counts.values():
+        for category in CATEGORIES:
+            values.setdefault(category, 0)
     return counts
 
 

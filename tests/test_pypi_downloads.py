@@ -160,10 +160,6 @@ def test_fetch_overall_rejects_invalid_contract(payload: bytes) -> None:
                 {"category": "without_mirrors", "date": "2026-07-17", "downloads": 12},
             ],
         },
-        {
-            **_SAMPLE,
-            "data": [{"category": "without_mirrors", "date": "2026-07-17", "downloads": 11}],
-        },
     ],
 )
 def test_fetch_overall_rejects_remote_schema_drift(payload: dict[str, Any]) -> None:
@@ -287,13 +283,13 @@ def test_main_failure_keeps_existing_series(
     assert "snapshot failed: offline" in capsys.readouterr().err
 
 
-def test_main_rejects_partial_remote_series_before_replacement(
+def test_main_normalizes_omitted_zero_category_before_replacement(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     csv_path = tmp_path / "series.csv"
     original = "date,without_mirrors,with_mirrors\n2026-07-16,7,9\n"
     csv_path.write_text(original, encoding="utf-8")
-    partial = {
+    sparse = {
         **_SAMPLE,
         "data": [{"category": "without_mirrors", "date": "2026-07-17", "downloads": 11}],
     }
@@ -301,12 +297,15 @@ def test_main_rejects_partial_remote_series_before_replacement(
     assert (
         downloads.main(
             ["--package", "rigor-foundry", "--csv", str(csv_path)],
-            lambda package: json.dumps(partial).encode(),
+            lambda package: json.dumps(sparse).encode(),
         )
-        == 1
+        == 0
     )
-    assert csv_path.read_text(encoding="utf-8") == original
-    assert "incomplete categories" in capsys.readouterr().err
+    assert downloads.read_csv(csv_path) == {
+        "2026-07-16": {"without_mirrors": 7, "with_mirrors": 9},
+        "2026-07-17": {"without_mirrors": 11, "with_mirrors": 0},
+    }
+    assert "with_mirrors=0" in capsys.readouterr().out
 
 
 def test_transient_failures_retry_then_soft_skip(
