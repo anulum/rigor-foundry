@@ -277,6 +277,163 @@
       "review_by": "2026-10-14"
     },
     {
+      "residual_id": "CR-PROJECT-REGISTRY-CANDIDATE-CONSUMER-POSTCHECK-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_verify_candidate_state",
+      "guard": "committed consumer does not match candidate",
+      "source_digest": "7fa59a0b75ecb0d35a04f7f0006ff7722b02f317fd485a281831e2d027f1576a",
+      "owner": "registry-security",
+      "rationale": "the guard detects a consumer replacement after the exact candidate graph was selected at the live registry commit point; deterministic activation requires scheduler control inside recovery while patched reads would simulate rather than prove the filesystem race",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_serial_process_death_resolves_at_registry_commit_point",
+        "tests/test_project_registry_recovery.py::test_successor_recovery_preserves_exact_prior_or_candidate_generation"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "consumer verification moves into a kernel-atomic transaction"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-CANDIDATE-REGISTRY-POSTCHECK-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_verify_candidate_state",
+      "guard": "committed registry does not match candidate",
+      "source_digest": "7fa59a0b75ecb0d35a04f7f0006ff7722b02f317fd485a281831e2d027f1576a",
+      "owner": "registry-security",
+      "rationale": "the guard detects registry replacement between commit-point selection and final candidate verification; deterministic activation requires scheduler control inside recovery while patched reads would simulate rather than prove the filesystem race",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_serial_process_death_resolves_at_registry_commit_point",
+        "tests/test_project_registry_recovery.py::test_successor_recovery_preserves_exact_prior_or_candidate_generation"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "registry verification moves into a kernel-atomic transaction"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-PRIOR-CONSUMER-POSTCHECK-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_verify_prior_state",
+      "guard": "recovered consumer does not match prior state",
+      "source_digest": "3e5e0a1a8ade21cc721a6c121ddf32106ceaf45ea9adf7a1575c7fa1eefac1bd",
+      "owner": "registry-security",
+      "rationale": "the guard detects consumer replacement after byte-exact restoration and before final prior-graph acceptance; deterministic activation requires scheduler control inside recovery while patched reads would simulate rather than prove the filesystem race",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_serial_process_death_resolves_at_registry_commit_point",
+        "tests/test_project_registry_recovery.py::test_successor_recovery_preserves_exact_prior_or_candidate_generation"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "consumer restoration moves into a kernel-atomic transaction"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-PRIOR-REGISTRY-POSTCHECK-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_verify_prior_state",
+      "guard": "recovered registry does not match prior state",
+      "source_digest": "3e5e0a1a8ade21cc721a6c121ddf32106ceaf45ea9adf7a1575c7fa1eefac1bd",
+      "owner": "registry-security",
+      "rationale": "the guard detects registry replacement after byte-exact restoration and before final prior-graph acceptance; deterministic activation requires scheduler control inside recovery while patched reads would simulate rather than prove the filesystem race",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_serial_process_death_resolves_at_registry_commit_point",
+        "tests/test_project_registry_recovery.py::test_successor_recovery_preserves_exact_prior_or_candidate_generation"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "registry restoration moves into a kernel-atomic transaction"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-READ-GROWTH-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_cutover.py",
+      "symbol": "_read_optional",
+      "guard": "exceeds its byte bound",
+      "source_digest": "ad3ff7ff0609abd0328850fe84caf161892aa366cd98429e7d43102f7fbcc1c3",
+      "owner": "registry-security",
+      "rationale": "the guard detects a regular file growing after its bounded fstat and during the retained-descriptor read; deterministic activation requires kernel-scheduled mutation in that exact interval while patched reads would not prove the operating-system boundary",
+      "public_verification": [
+        "tests/test_project_registry_cutover_safety.py::test_cutover_rejects_unsafe_roots_parents_and_files"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "registry evidence moves to an immutable descriptor-backed store"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-READ-SUBSTITUTION-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_cutover.py",
+      "symbol": "_read_optional",
+      "guard": "changed while being read",
+      "source_digest": "ad3ff7ff0609abd0328850fe84caf161892aa366cd98429e7d43102f7fbcc1c3",
+      "owner": "registry-security",
+      "rationale": "the guard compares retained-descriptor and final path identity plus size and timestamp after reading; deterministic activation requires a replacement inside that exact interval while patched stat results would simulate rather than prove the filesystem race",
+      "public_verification": [
+        "tests/test_project_registry_cutover_safety.py::test_cutover_rejects_final_symlinks_inside_and_outside_root",
+        "tests/test_project_registry_cutover_safety.py::test_cutover_rejects_unsafe_roots_parents_and_files"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "registry evidence moves to an immutable descriptor-backed store"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-SNAPSHOT-APPEARANCE-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_load_bundle",
+      "guard": "unexpected prior consumer snapshot is present",
+      "source_digest": "0c593150fbcfcd07e58842c56227845930d89d6021318086326c81f9451e333d",
+      "owner": "registry-security",
+      "rationale": "the guard detects a prior snapshot appearing after the exact directory-name set was accepted and before its no-follow read; deterministic activation requires scheduler control inside that interval while pre-existing extras are already rejected through public recovery",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_recovery_rejects_identity_snapshot_and_external_state_substitution"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "snapshot directories become immutable after journal closure"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
+      "residual_id": "CR-PROJECT-REGISTRY-SNAPSHOT-DISAPPEARANCE-RACE",
+      "classification": "race-window",
+      "source_path": "src/rigor_foundry/project_registry_recovery.py",
+      "symbol": "_load_bundle",
+      "guard": "required prior consumer snapshot is absent",
+      "source_digest": "0c593150fbcfcd07e58842c56227845930d89d6021318086326c81f9451e333d",
+      "owner": "registry-security",
+      "rationale": "the guard detects a required prior snapshot disappearing after the exact directory-name set was accepted and before its no-follow read; deterministic activation requires scheduler control inside that interval while pre-existing omissions are already rejected through public recovery",
+      "public_verification": [
+        "tests/test_project_registry_recovery.py::test_recovery_rejects_identity_snapshot_and_external_state_substitution"
+      ],
+      "revisit_triggers": [
+        "a deterministic filesystem-race harness is introduced",
+        "snapshot directories become immutable after journal closure"
+      ],
+      "reviewed_on": "2026-09-04",
+      "review_by": "2026-12-03"
+    },
+    {
       "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
       "classification": "platform-primitive",
       "source_path": "src/rigor_foundry/trusted_executable.py",

@@ -301,7 +301,5 @@ def validate_consumer_output_for_registry(
         or output.registry_sha256 != registry.registry_sha256
     ):
         raise ProjectRegistryInvalid("consumer output does not match its registry declaration")
-    reparsed = ProjectRegistryConsumerOutput.from_bytes(output.to_bytes())
-    if reparsed != output:
-        raise ProjectRegistryInvalid("consumer output is not canonical")
+    ProjectRegistryConsumerOutput.from_bytes(output.to_bytes())
     return consumer

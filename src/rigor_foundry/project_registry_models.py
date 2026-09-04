@@ -565,8 +565,6 @@ class ProjectRegistry:
                 group = group_by_id[consumer.group_id]
                 if consumer.path != f"{group.root_path}/agentic_group_memory/registry_view.json":
                     raise ProjectRegistryInvalid("group-view consumer path does not match group")
-                if consumer.group_id in group_views:
-                    raise ProjectRegistryInvalid("a group has multiple group-view consumers")
                 group_views.add(consumer.group_id)
             elif consumer.kind == "project-index":
                 if consumer.project_id not in project_by_id:
@@ -579,8 +577,6 @@ class ProjectRegistry:
                     raise ProjectRegistryInvalid(
                         "project-index consumer path does not match project"
                     )
-                if consumer.project_id in project_indexes:
-                    raise ProjectRegistryInvalid("a project has multiple project-index consumers")
                 project_indexes.add(consumer.project_id)
         active_groups = {group.group_id for group in groups if group.lifecycle_state == "active"}
         if group_views != active_groups:

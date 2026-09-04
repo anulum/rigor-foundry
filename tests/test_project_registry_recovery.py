@@ -21,6 +21,7 @@ from test_project_registry_cutover import REGISTRY_PATH, filesystem, plan
 from test_project_registry_models import authority, registry
 
 import rigor_foundry.project_registry_cutover as cutover_module
+import rigor_foundry.project_registry_recovery as recovery_module
 from rigor_foundry.project_registry_cutover import (
     ProjectRegistryCutoverInvalid,
     ProjectRegistryCutoverPlan,
@@ -561,6 +562,76 @@ def test_recovery_rejects_wrong_identity_and_unprepared_transaction(tmp_path: Pa
     with pytest.raises(
         ProjectRegistryCutoverInvalid, match="transaction directory is unavailable"
     ):
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            candidate.generation_id,
+            candidate.registry_sha256,
+        )
+
+
+def test_successor_recovery_rejects_prior_consumer_digest_substitution(tmp_path: Path) -> None:
+    """A re-closed journal cannot rename exact predecessor consumer bytes."""
+    first = registry()
+    root, transactions = filesystem(tmp_path, first)
+    first_plan = plan(first)
+    apply_project_registry_cutover(root, REGISTRY_PATH, transactions, first_plan)
+    second = successor(first)
+    second_plan = plan(
+        second,
+        previous_outputs=tuple(update.output for update in first_plan.updates),
+    )
+    run_crash_worker(root, transactions, second_plan, 1)
+    journal_path = transaction_directory(transactions, second_plan) / "journal.json"
+    rewrite_closed_evidence(
+        journal_path,
+        "journal_sha256",
+        mutate_first_consumer("expected_sha256", "a" * 64),
+    )
+
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="prior consumer digest"):
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            second.generation_id,
+            second.registry_sha256,
+        )
+
+
+def test_recovery_rejects_oversized_transaction_and_lock_storage_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recovery enforces its aggregate bound and reports an unusable lock path."""
+    candidate = registry()
+
+    bound_scenario = tmp_path / "bound"
+    bound_scenario.mkdir()
+    root, transactions = filesystem(bound_scenario, candidate)
+    cutover = plan(candidate)
+    run_crash_worker(root, transactions, cutover, 1)
+    monkeypatch.setattr(recovery_module, "PROJECT_REGISTRY_MAX_TRANSACTION_BYTES", 1)
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="exceeds its byte bound"):
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            candidate.generation_id,
+            candidate.registry_sha256,
+        )
+
+    monkeypatch.undo()
+    lock_scenario = tmp_path / "lock"
+    lock_scenario.mkdir()
+    root, transactions = filesystem(lock_scenario, candidate)
+    cutover = plan(candidate)
+    run_crash_worker(root, transactions, cutover, 1)
+    lock_path = transactions / ".cutover.lock"
+    lock_path.unlink()
+    lock_path.mkdir()
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="lock or storage failed"):
         recover_project_registry_cutover(
             root,
             REGISTRY_PATH,

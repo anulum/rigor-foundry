@@ -16,6 +16,7 @@ import pytest
 from test_project_registry_models import authority, consumers, group, project
 
 from rigor_foundry.project_registry_models import (
+    PROJECT_REGISTRY_UNASSIGNED_GROUP,
     ProjectRegistration,
     ProjectRegistry,
     ProjectRegistryConsumer,
@@ -78,6 +79,8 @@ def test_group_view_separates_owned_and_affiliated_projects() -> None:
     assert [item["project_id"] for item in output.payload["affiliated_projects"]] == ["PROJECT-B"]
     assert ProjectRegistryConsumerOutput.from_bytes(output.to_bytes()) == output
     assert validate_consumer_output_for_registry(registry, output) == consumer
+    assert "output_sha256" not in output.to_dict(include_digest=False)
+    assert project_registry_canonical_json({"safe_integer": 1}) == b'{"safe_integer":1}'
 
 
 def test_project_index_binds_only_registered_navigation_state() -> None:
@@ -152,6 +155,30 @@ def test_explicit_group_drift_does_not_scan_unconsolidated_directories() -> None
     assert by_group["GROUP-A"].missing_paths == ("03_CODE/GROUP-A/repositories/PROJECT-A",)
     assert by_group["GROUP-B"].unexpected_paths == ("03_CODE/GROUP-B/repositories/UNREGISTERED",)
     assert not by_group["GROUP-A"].is_clean
+
+
+def test_drift_ignores_explicit_unassigned_non_git_projects() -> None:
+    """Explicit non-group projects never become inferred group repository members."""
+    group_record = group()
+    unassigned_value = project(memory_state="absent").to_dict()
+    unassigned_value.update(
+        canonical_path="03_CODE/UNCONSOLIDATED/PROJECT-A",
+        owning_group_id=PROJECT_REGISTRY_UNASSIGNED_GROUP,
+        target_kind="non-git-project",
+    )
+    unassigned = ProjectRegistration.from_dict(unassigned_value, "project")
+    registry = ProjectRegistry.build(
+        generated_at="2026-09-04T12:00:00.000000Z",
+        previous_registry_sha256=None,
+        authority=authority(),
+        groups=(group_record,),
+        projects=(unassigned,),
+        consumers=consumers((unassigned,), (group_record,)),
+    )
+
+    drift = compare_registered_group_paths(registry, {"GROUP-A": ()})
+
+    assert drift[0].is_clean
 
 
 @pytest.mark.parametrize(

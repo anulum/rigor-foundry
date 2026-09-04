@@ -14,6 +14,7 @@ from collections.abc import Callable
 
 import pytest
 
+import rigor_foundry.project_registry_models as registry_models
 from rigor_foundry.project_registry_models import (
     PROJECT_REGISTRY_SCHEMA_VERSION,
     ProjectRegistration,
@@ -159,6 +160,15 @@ def test_registry_round_trip_is_canonical_and_content_addressed() -> None:
     assert parsed.projects[0].visibility == "private"
     assert parsed.projects[0].memory_state == "scaffold-only"
     assert project_registry_generation_id(parsed.generated_at) == parsed.generation_id
+    assert "registry_sha256" not in parsed.to_dict(include_digest=False)
+
+
+def test_registry_enforces_final_canonical_byte_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The aggregate registry bound applies after every bounded record is parsed."""
+    candidate = registry()
+    monkeypatch.setattr(registry_models, "PROJECT_REGISTRY_MAX_BYTES", 1)
+    with pytest.raises(ProjectRegistryInvalid, match="exceeds its byte bound"):
+        ProjectRegistry.from_dict(candidate.to_dict())
 
 
 @pytest.mark.parametrize(

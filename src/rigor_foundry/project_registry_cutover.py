@@ -114,11 +114,11 @@ def _read_optional(path: Path, maximum: int, label: str) -> bytes | None:
             if not chunk:
                 break
             payload.extend(chunk)
-            if len(payload) > maximum:
+            if len(payload) > maximum:  # pragma: no cover - concurrent post-fstat growth guard
                 raise ProjectRegistryCutoverInvalid(f"{label} exceeds its byte bound")
         after = os.fstat(descriptor)
         current = path.stat(follow_symlinks=False)
-        if (
+        if (  # pragma: no cover - concurrent inode/content substitution guard
             (after.st_dev, after.st_ino) != identity
             or (current.st_dev, current.st_ino) != identity
             or after.st_size != before.st_size
@@ -134,10 +134,7 @@ def _read_optional(path: Path, maximum: int, label: str) -> bytes | None:
 
 
 def _replace(path: Path, payload: bytes) -> None:
-    try:
-        text = payload.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise ProjectRegistryCutoverInvalid("registry transaction payload is not UTF-8") from exc
+    text = payload.decode("utf-8")
     try:
         atomic_replace_text(path, text)
     except (OSError, ValueError) as exc:

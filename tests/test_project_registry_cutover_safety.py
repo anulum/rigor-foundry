@@ -44,3 +44,30 @@ def test_cutover_rejects_unsafe_roots_parents_and_files(tmp_path: Path) -> None:
     target.chmod(0o644)
     with pytest.raises(ProjectRegistryCutoverInvalid, match="owner-only file"):
         apply_project_registry_cutover(root, REGISTRY_PATH, transactions, cutover)
+
+
+def test_cutover_rejects_final_symlinks_inside_and_outside_root(tmp_path: Path) -> None:
+    """A final registry symlink can neither escape nor alias another owned file."""
+    candidate = registry()
+
+    outside_scenario = tmp_path / "outside"
+    outside_scenario.mkdir()
+    root, transactions = filesystem(outside_scenario, candidate)
+    registry_target = root / REGISTRY_PATH
+    outside = tmp_path / "outside-registry.json"
+    outside.write_text("{}", encoding="utf-8")
+    outside.chmod(0o600)
+    registry_target.symlink_to(outside)
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="escapes the monorepo"):
+        apply_project_registry_cutover(root, REGISTRY_PATH, transactions, plan(candidate))
+
+    inside_scenario = tmp_path / "inside"
+    inside_scenario.mkdir()
+    root, transactions = filesystem(inside_scenario, candidate)
+    registry_target = root / REGISTRY_PATH
+    inside = root / "owned-alias-target.json"
+    inside.write_text("{}", encoding="utf-8")
+    inside.chmod(0o600)
+    registry_target.symlink_to(inside)
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="cannot be read safely"):
+        apply_project_registry_cutover(root, REGISTRY_PATH, transactions, plan(candidate))

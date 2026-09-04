@@ -278,13 +278,17 @@ def _load_bundle(
             "prior consumer snapshot",
         )
         if record.was_present:
-            if prior_consumer is None or previous is None:
+            if (  # pragma: no cover - snapshot disappearance after closed-set listing
+                prior_consumer is None or previous is None
+            ):
                 raise ProjectRegistryCutoverInvalid("required prior consumer snapshot is absent")
             prior_output = ProjectRegistryConsumerOutput.from_bytes(prior_consumer)
             validate_consumer_output_for_registry(previous, prior_output)
             if prior_output.output_sha256 != record.expected_sha256:
                 raise ProjectRegistryCutoverInvalid("prior consumer digest does not match journal")
-        elif prior_consumer is not None:
+        elif (  # pragma: no cover - snapshot appearance after closed-set listing
+            prior_consumer is not None
+        ):
             raise ProjectRegistryCutoverInvalid("unexpected prior consumer snapshot is present")
         target = _resolve_path(root, record.target_path, "recovery consumer path")
         priors.append(_PriorTarget(target, prior_consumer, candidate_consumer))
@@ -302,13 +306,13 @@ def _read_required(path: Path, maximum: int, label: str) -> bytes:
 
 
 def _verify_prior_state(registry_target: Path, bundle: _RecoveryBundle) -> None:
-    if (
+    if (  # pragma: no cover - concurrent registry change after commit-point read
         _read_optional(registry_target, PROJECT_REGISTRY_MAX_BYTES, "recovered registry")
         != bundle.registry_prior
     ):
         raise ProjectRegistryCutoverInvalid("recovered registry does not match prior state")
     for prior in bundle.priors:
-        if (
+        if (  # pragma: no cover - concurrent consumer change after commit-point read
             _read_optional(
                 prior.path,
                 PROJECT_REGISTRY_MAX_CONSUMER_BYTES,
@@ -320,13 +324,13 @@ def _verify_prior_state(registry_target: Path, bundle: _RecoveryBundle) -> None:
 
 
 def _verify_candidate_state(registry_target: Path, bundle: _RecoveryBundle) -> None:
-    if (
+    if (  # pragma: no cover - concurrent registry change after commit-point read
         _read_optional(registry_target, PROJECT_REGISTRY_MAX_BYTES, "recovered registry")
         != bundle.candidate.to_bytes()
     ):
         raise ProjectRegistryCutoverInvalid("committed registry does not match candidate")
     for prior in bundle.priors:
-        if (
+        if (  # pragma: no cover - concurrent consumer change after commit-point read
             _read_optional(
                 prior.path,
                 PROJECT_REGISTRY_MAX_CONSUMER_BYTES,

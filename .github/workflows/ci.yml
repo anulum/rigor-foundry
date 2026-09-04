@@ -197,7 +197,7 @@ jobs:
           python -m pytest tests -q
           --cov=rigor_foundry --cov-branch
           --cov-report=term-missing --cov-report=xml
-          --cov-fail-under=95
+          --cov-fail-under=98
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: matrix.python-version == '3.12.13'
         with:

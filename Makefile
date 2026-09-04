@@ -50,7 +50,7 @@ residuals:
 
 test:
 	@test "$(ALLOW_LOCAL_FULL_TESTS)" = "1" || { echo "Local full suite blocked; run a focused test-file or use CI."; exit 2; }
-	$(PYTHON) -m pytest tests -q --cov=rigor_foundry --cov-branch --cov-report=term-missing --cov-fail-under=95
+	$(PYTHON) -m pytest tests -q --cov=rigor_foundry --cov-branch --cov-report=term-missing --cov-fail-under=98
 
 test-file:
 	@test -n "$(TEST)" || { echo "Usage: make test-file TEST=tests/test_name.py"; exit 2; }
