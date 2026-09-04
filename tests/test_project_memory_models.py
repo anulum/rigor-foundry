@@ -64,7 +64,7 @@ def record(
         freshness=freshness or ProjectMemoryFreshness("immutable", None),
         assertion_class="observation",
         sources=(ProjectMemorySource("source-1", "coordination/session.md", "a" * 64),),
-        actor=ProjectMemoryActor("RIGOR-FOUNDRY/codex-7184", "project-memory-write"),
+        actor=ProjectMemoryActor("RIGOR-FOUNDRY/validator-1", "project-memory-write"),
         supersedes=supersedes,
         content=content,
     )
@@ -279,7 +279,7 @@ def test_manifest_byte_and_index_bounds_are_independently_enforced() -> None:
             freshness=ProjectMemoryFreshness("immutable", None),
             assertion_class="observation",
             sources=many_sources,
-            actor=ProjectMemoryActor("RIGOR-FOUNDRY/codex-7184", "memory-write"),
+            actor=ProjectMemoryActor("RIGOR-FOUNDRY/validator-1", "memory-write"),
             supersedes=(),
             content=b"# Record\n",
         )

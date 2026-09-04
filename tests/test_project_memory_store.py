@@ -89,7 +89,7 @@ def record(
         freshness=freshness or ProjectMemoryFreshness("immutable", None),
         assertion_class="observation",
         sources=(ProjectMemorySource("source", "coordination/session.md", "a" * 64),),
-        actor=ProjectMemoryActor("RIGOR-FOUNDRY/codex-7184", "memory-write"),
+        actor=ProjectMemoryActor("RIGOR-FOUNDRY/validator-1", "memory-write"),
         supersedes=supersedes,
         content=content,
     )

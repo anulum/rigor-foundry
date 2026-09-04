@@ -92,7 +92,7 @@ def test_provenance_primitives_round_trip_exact_fields() -> None:
         "source",
     )
     actor = ProjectMemoryActor.from_dict(
-        {"identity": "RIGOR-FOUNDRY/codex-7184", "claim_id": "memory-write-1"},
+        {"identity": "RIGOR-FOUNDRY/validator-1", "claim_id": "memory-write-1"},
         "actor",
     )
     freshness = ProjectMemoryFreshness.from_dict(
@@ -105,7 +105,7 @@ def test_provenance_primitives_round_trip_exact_fields() -> None:
     )
 
     assert source.to_dict()["sha256"] == "a" * 64
-    assert actor.to_dict()["identity"] == "RIGOR-FOUNDRY/codex-7184"
+    assert actor.to_dict()["identity"] == "RIGOR-FOUNDRY/validator-1"
     assert freshness.to_dict()["valid_until"] == "2026-09-04T13:00:00.000000Z"
     assert parent.to_dict() == {"kind": "ecosystem-boot", "locator": "../../../AGENTS.md"}
 

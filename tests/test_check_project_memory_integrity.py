@@ -46,7 +46,7 @@ def repository(tmp_path: Path) -> Path:
         freshness=ProjectMemoryFreshness("immutable", None),
         assertion_class="observation",
         sources=(ProjectMemorySource("source", "coordination/session.md", "a" * 64),),
-        actor=ProjectMemoryActor("RIGOR-FOUNDRY/codex-7184", "memory-write"),
+        actor=ProjectMemoryActor("RIGOR-FOUNDRY/validator-1", "memory-write"),
         supersedes=(),
         content=content,
     )

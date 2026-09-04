@@ -38,7 +38,7 @@ def authority() -> ProjectRegistryAuthority:
             "approved_at": "2026-09-04T11:30:00.000000Z",
             "approval_reference": "coordination/owner-decision.md",
             "approval_sha256": "a" * 64,
-            "validator_identity": "RIGOR-FOUNDRY/codex-7184",
+            "validator_identity": "RIGOR-FOUNDRY/validator-1",
             "validation_claim_id": "registry-contract",
         }
     )

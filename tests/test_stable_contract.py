@@ -102,6 +102,23 @@ _SCHEMA_DISCOVERY_EXCLUSIONS = {
     "ignored_inventory._DIRECTORY_MANIFEST_SCHEMA_VERSION": (
         "private nested helper, not a public or standalone interchange identifier"
     ),
+    "project_memory_primitives.PROJECT_MEMORY_SCHEMA_VERSION": (
+        "private per-repository memory-store format, permanently excluded from public "
+        "Git, package, documentation and artifact surfaces"
+    ),
+    "project_registry_models.PROJECT_REGISTRY_SCHEMA_VERSION": (
+        "private monorepo coordination format, not a consumer-facing 1.0 interchange identifier"
+    ),
+    "project_registry_views.PROJECT_GROUP_VIEW_SCHEMA_VERSION": (
+        "private generated group-memory view, not a consumer-facing 1.0 interchange identifier"
+    ),
+    "project_registry_views.PROJECT_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION": (
+        "private generated project-memory binding, not a consumer-facing 1.0 "
+        "interchange identifier"
+    ),
+    "project_registry_views.PROJECT_REGISTRY_CONSUMER_SCHEMA_VERSION": (
+        "private monorepo consumer envelope, not a consumer-facing 1.0 interchange identifier"
+    ),
     "release_quorum.RELEASE_QUORUM_SCHEMA_VERSION": (
         "internal release-governance certificate sealed as internal evidence; not a "
         "consumer-facing 1.0 public interchange identifier, so it is excluded from the "
