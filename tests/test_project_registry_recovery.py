@@ -30,14 +30,9 @@ from rigor_foundry.project_registry_cutover import (
 from rigor_foundry.project_registry_models import (
     ProjectRegistration,
     ProjectRegistry,
-    ProjectRegistryInvalid,
 )
 from rigor_foundry.project_registry_primitives import project_registry_canonical_json
-from rigor_foundry.project_registry_recovery import (
-    _parse_journal,
-    _parse_receipt,
-    recover_project_registry_cutover,
-)
+from rigor_foundry.project_registry_recovery import recover_project_registry_cutover
 
 _CRASH_EXIT = 79
 
@@ -321,21 +316,28 @@ def test_successor_recovery_preserves_exact_prior_or_candidate_generation(
         (mutate_first_consumer("expected_sha256", "a" * 64), "presence disagrees"),
     ],
 )
-def test_journal_parser_rejects_closed_structural_substitution(
+def test_recovery_rejects_closed_journal_structural_substitution(
     tmp_path: Path,
     mutation: Callable[[dict[str, object]], None],
     match: str,
 ) -> None:
-    """A newly re-digested journal still cannot substitute schema semantics."""
+    """Public recovery rejects re-digested journal schema substitutions."""
     candidate = registry()
     root, transactions = filesystem(tmp_path, candidate)
     cutover = plan(candidate)
     run_crash_worker(root, transactions, cutover, 1)
     journal_path = transaction_directory(transactions, cutover) / "journal.json"
-    payload = journal_path.read_bytes()
+    rewrite_closed_evidence(journal_path, "journal_sha256", mutation)
 
-    with pytest.raises(ProjectRegistryInvalid, match=match):
-        _parse_journal(closed_mutation(payload, "journal_sha256", mutation))
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="evidence is invalid") as caught:
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            candidate.generation_id,
+            candidate.registry_sha256,
+        )
+    assert match in str(caught.value.__cause__)
 
 
 @pytest.mark.parametrize(
@@ -347,32 +349,52 @@ def test_journal_parser_rejects_closed_structural_substitution(
         (lambda value: value.update(outcome="unknown"), "outcome"),
     ],
 )
-def test_receipt_parser_rejects_closed_structural_substitution(
+def test_recovery_rejects_closed_receipt_structural_substitution(
     tmp_path: Path,
     mutation: Callable[[dict[str, object]], None],
     match: str,
 ) -> None:
-    """Receipt digest recomputation cannot legalise a different receipt schema."""
-    candidate = registry()
-    root, transactions = filesystem(tmp_path, candidate)
-    receipt = apply_project_registry_cutover(root, REGISTRY_PATH, transactions, plan(candidate))
-
-    with pytest.raises(ProjectRegistryInvalid, match=match):
-        _parse_receipt(closed_mutation(receipt.to_bytes(), "receipt_sha256", mutation))
-
-
-def test_journal_and_receipt_parsers_require_exact_canonical_bytes(tmp_path: Path) -> None:
-    """Whitespace variants are rejected even when their JSON meaning is unchanged."""
+    """Public recovery rejects re-digested receipt schema substitutions."""
     candidate = registry()
     root, transactions = filesystem(tmp_path, candidate)
     cutover = plan(candidate)
-    receipt = apply_project_registry_cutover(root, REGISTRY_PATH, transactions, cutover)
-    journal = (transaction_directory(transactions, cutover) / "journal.json").read_bytes()
+    apply_project_registry_cutover(root, REGISTRY_PATH, transactions, cutover)
+    receipt_path = transaction_directory(transactions, cutover) / "receipt.json"
+    rewrite_closed_evidence(receipt_path, "receipt_sha256", mutation)
 
-    with pytest.raises(ProjectRegistryInvalid, match="journal is not canonical"):
-        _parse_journal(journal + b"\n")
-    with pytest.raises(ProjectRegistryInvalid, match="receipt is not canonical"):
-        _parse_receipt(receipt.to_bytes() + b"\n")
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="evidence is invalid") as caught:
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            candidate.generation_id,
+            candidate.registry_sha256,
+        )
+    assert match in str(caught.value.__cause__)
+
+
+@pytest.mark.parametrize("evidence_name", ["journal.json", "receipt.json"])
+def test_recovery_requires_exact_canonical_evidence_bytes(
+    tmp_path: Path,
+    evidence_name: str,
+) -> None:
+    """Public recovery rejects whitespace variants of closed JSON evidence."""
+    candidate = registry()
+    root, transactions = filesystem(tmp_path, candidate)
+    cutover = plan(candidate)
+    apply_project_registry_cutover(root, REGISTRY_PATH, transactions, cutover)
+    evidence_path = transaction_directory(transactions, cutover) / evidence_name
+    evidence_path.write_bytes(evidence_path.read_bytes() + b"\n")
+    evidence_path.chmod(0o600)
+
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="evidence is invalid"):
+        recover_project_registry_cutover(
+            root,
+            REGISTRY_PATH,
+            transactions,
+            candidate.generation_id,
+            candidate.registry_sha256,
+        )
 
 
 @pytest.mark.parametrize(
