@@ -36,6 +36,7 @@ from .project_registry_views import (
 
 PROJECT_REGISTRY_MAX_TRANSACTION_BYTES = 32 * 1024 * 1024
 PROJECT_REGISTRY_CUTOVER_RECEIPT_SCHEMA = "gotm-project-registry-cutover-receipt.v1"
+PROJECT_REGISTRY_CUTOVER_JOURNAL_SCHEMA = "gotm-project-registry-cutover-journal.v1"
 _ABSENT = "ABSENT"
 
 
@@ -365,13 +366,16 @@ def _write_transaction_snapshot(
                 }
             )
         journal: dict[str, object] = {
-            "schema_version": "gotm-project-registry-cutover-journal.v1",
+            "schema_version": PROJECT_REGISTRY_CUTOVER_JOURNAL_SCHEMA,
             "state": "prepared",
             "generation_id": plan.candidate.generation_id,
             "registry_sha256": plan.candidate.registry_sha256,
             "expected_registry_sha256": plan.expected_registry_sha256,
             "consumers": snapshots,
         }
+        journal["journal_sha256"] = hashlib.sha256(
+            project_registry_canonical_json(journal)
+        ).hexdigest()
         write_new_text(
             transaction_directory / "journal.json",
             project_registry_canonical_json(journal).decode("utf-8"),
@@ -388,7 +392,18 @@ def _set_journal_state(transaction_directory: Path, state: str) -> None:
     try:
         value = project_registry_strict_json(payload)
         journal = _mapping_for_cutover(value)
+        raw_digest = journal.pop("journal_sha256", None)
+        digest = _normalise_digest(
+            raw_digest if isinstance(raw_digest, str) else None,
+            "transaction journal digest",
+        )
+        expected = hashlib.sha256(project_registry_canonical_json(journal)).hexdigest()
+        if digest != expected:
+            raise ProjectRegistryCutoverInvalid("transaction journal digest does not close")
         journal["state"] = state
+        journal["journal_sha256"] = hashlib.sha256(
+            project_registry_canonical_json(journal)
+        ).hexdigest()
         atomic_replace_text(journal_path, project_registry_canonical_json(journal).decode("utf-8"))
     except (OSError, UnicodeError, ValueError, ProjectRegistryInvalid) as exc:
         raise ProjectRegistryCutoverInvalid("transaction journal state cannot be updated") from exc
