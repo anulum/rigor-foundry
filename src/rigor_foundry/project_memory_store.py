@@ -27,6 +27,7 @@ from .project_memory_primitives import (
     PROJECT_MEMORY_MAX_INDEX_BYTES,
     PROJECT_MEMORY_MAX_MANIFEST_BYTES,
     ProjectMemoryInvalid,
+    require_timestamp,
 )
 
 PROJECT_MEMORY_ROOT = Path("agentic_project_memory")
@@ -433,6 +434,75 @@ def load_project_memory_generation(repository_root: Path) -> ProjectMemoryManife
     if history != manifest.to_bytes():
         raise ProjectMemoryStoreInvalid("current project-memory manifest is absent from history")
     return manifest
+
+
+def read_project_memory_record(
+    repository_root: Path,
+    *,
+    expected_project_id: str,
+    expected_manifest_sha256: str,
+    record_id: str,
+    checked_at: str,
+) -> bytes:
+    """Read one current-view record from an explicitly pinned private snapshot.
+
+    Parameters
+    ----------
+    repository_root:
+        Exact Git worktree root containing the ignored private store.
+    expected_project_id:
+        Project identity required in the verified manifest.
+    expected_manifest_sha256:
+        Exact current manifest digest; no implicit latest-generation selection.
+    record_id:
+        Current manifest member to read, never a caller-selected filesystem path.
+    checked_at:
+        Explicit canonical UTC timestamp used for generation and expiry checks.
+
+    Returns
+    -------
+    bytes
+        Bounded Markdown bytes verified against the selected record metadata.
+
+    Raises
+    ------
+    ProjectMemoryStoreInvalid
+        If identity, pin, membership, history, expiry or file integrity fails.
+    ProjectMemoryInvalid
+        If the supplied timestamp is not canonical.
+    OSError
+        If a filesystem operation fails.
+
+    Notes
+    -----
+    This same-UID diagnostic read performs no writes and verifies the complete
+    history. It does not prove registry activation, caller authority or upstream
+    source freshness. The caller supplies a trusted clock. Returned bytes belong
+    to the pinned snapshot; concurrent writers may advance the store afterward.
+    Use a separately authorised service for protected active-session context.
+    """
+    require_timestamp(checked_at, "checked_at")
+    manifest = load_project_memory_generation(repository_root)
+    history = verify_project_memory_history(repository_root)
+    if (
+        manifest.project_id != expected_project_id
+        or manifest.manifest_sha256 != expected_manifest_sha256
+        or history[0] != expected_manifest_sha256
+    ):
+        raise ProjectMemoryStoreInvalid("project-memory snapshot does not match the read pin")
+    if checked_at < manifest.generated_at:
+        raise ProjectMemoryStoreInvalid("project-memory generation follows the read time")
+    selected = next((record for record in manifest.records if record.record_id == record_id), None)
+    if selected is None or not selected.is_current_at(checked_at):
+        raise ProjectMemoryStoreInvalid("project-memory record is absent or expired")
+    root = _private_root(repository_root)
+    payload = _read_private_file(
+        root / selected.content_path,
+        label="selected project-memory content",
+        maximum=PROJECT_MEMORY_MAX_CONTENT_BYTES,
+    )
+    _validate_content(selected, payload)
+    return payload
 
 
 def verify_project_memory_history(repository_root: Path) -> tuple[str, ...]:
