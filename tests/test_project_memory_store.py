@@ -661,3 +661,94 @@ def test_fifo_replacement_refuses_without_waiting_for_a_writer(
         before.st_mtime_ns,
     )
     assert {path: path.read_bytes() for path in preserved} == preserved
+
+
+@pytest.mark.parametrize(
+    "change", ["growth", "unlink", "replace", "permissions", "hardlink", "late-permissions"]
+)
+def test_current_read_rejects_file_change_after_descriptor_snapshot(
+    tmp_path: Path, change: str
+) -> None:
+    """Change a real manifest after fstat returns, without faking syscall results.
+
+    A child-local profiling hook schedules a deterministic filesystem mutation
+    at the public OS boundary. The full public loader still runs normally.
+    This proves the observed interleaving, not exclusion of arbitrary writers.
+    """
+    root = repository(tmp_path)
+    payload = b"# Project identity\n"
+    item = record("identity-stable-read", payload)
+    write_project_memory_record(root, item, payload)
+    candidate = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    commit_project_memory_generation(root, candidate)
+    script = """
+import os
+import sys
+from pathlib import Path
+from rigor_foundry.project_memory_store import (
+    ProjectMemoryStoreInvalid, load_project_memory_generation,
+)
+root, change = Path(sys.argv[1]), sys.argv[2]
+target = root / "agentic_project_memory/memory_manifest.json"
+original = target.read_bytes()
+changed = False
+snapshots = 0
+def interfere(frame, event, function):
+    global changed, snapshots
+    if changed or event != "c_return" or function is not os.fstat:
+        return
+    for name in os.listdir("/proc/self/fd"):
+        try:
+            linked = os.readlink("/proc/self/fd/" + name)
+        except FileNotFoundError:
+            continue
+        if linked == str(target):
+            break
+    else:
+        return
+    snapshots += 1
+    if change == "late-permissions" and snapshots < 2:
+        return
+    changed = True
+    if change == "growth":
+        with target.open("ab") as output:
+            output.write(b" " * 65537)
+    elif change == "unlink":
+        target.unlink()
+    elif change == "replace":
+        replacement = target.with_name("replacement.json")
+        replacement.write_bytes(original)
+        replacement.chmod(0o600)
+        replacement.replace(target)
+    elif change in ("permissions", "late-permissions"):
+        target.chmod(0o644)
+    else:
+        os.link(target, target.with_name("retained-link.json"))
+sys.setprofile(interfere)
+try:
+    load_project_memory_generation(root)
+except ProjectMemoryStoreInvalid as error:
+    sys.setprofile(None)
+    assert changed
+    print(str(error))
+    raise SystemExit(1)
+sys.setprofile(None)
+raise SystemExit("unexpected acceptance")
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(root), change],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1 and result.stderr == ""
+    assert {
+        "growth": "exceeds its byte bound",
+        "unlink": "changed while being read",
+        "replace": "changed while being read",
+        "permissions": "changed while being read",
+        "hardlink": "changed while being read",
+        "late-permissions": "changed while being read",
+    }[change] in result.stdout
+    assert (root / "agentic_project_memory" / item.content_path).read_bytes() == payload

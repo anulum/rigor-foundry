@@ -63,6 +63,21 @@ def _ensure_directory(path: Path, label: str) -> None:
     _validate_directory(path, label)
 
 
+def _private_file_version(metadata: os.stat_result) -> tuple[int, ...]:
+    """Bind content and access metadata without including read-updated atime."""
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_uid,
+        metadata.st_gid,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
 def _read_private_file(path: Path, *, label: str, maximum: int) -> bytes:
     """Read a stable private file; reject FIFOs without waiting for a writer."""
     descriptor: int | None = None
@@ -78,7 +93,6 @@ def _read_private_file(path: Path, *, label: str, maximum: int) -> bytes:
         except OSError as exc:
             raise ProjectMemoryStoreInvalid(f"{label} is unavailable") from exc
         before = os.fstat(descriptor)
-        identity = (before.st_dev, before.st_ino)
         if (
             not stat.S_ISREG(before.st_mode)
             or before.st_nlink != 1
@@ -100,12 +114,8 @@ def _read_private_file(path: Path, *, label: str, maximum: int) -> bytes:
             path_metadata = path.stat(follow_symlinks=False)
         except FileNotFoundError as exc:
             raise ProjectMemoryStoreInvalid(f"{label} changed while being read") from exc
-        if (
-            (after.st_dev, after.st_ino) != identity
-            or (path_metadata.st_dev, path_metadata.st_ino) != identity
-            or after.st_size != before.st_size
-            or after.st_mtime_ns != before.st_mtime_ns
-        ):
+        expected = _private_file_version(before)
+        if any(_private_file_version(observed) != expected for observed in (after, path_metadata)):
             raise ProjectMemoryStoreInvalid(f"{label} changed while being read")
         return bytes(payload)
     finally:
@@ -375,6 +385,9 @@ def load_project_memory_generation(repository_root: Path) -> ProjectMemoryManife
     Non-regular files are refused before reading their contents. Opening uses
     non-blocking mode so a substituted FIFO cannot wait for a writer before
     the descriptor's file-type check. This is not a filesystem I/O deadline.
+    Each read compares descriptor and path identity, access metadata, size and
+    modification/change timestamps with its initial snapshot. This does not
+    prevent a different writer from changing the store after verification.
 
     Parameters
     ----------
