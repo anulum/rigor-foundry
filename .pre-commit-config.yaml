@@ -36,6 +36,12 @@ repos:
         entry: .venv/bin/python -m tools.check_secrets
         language: system
         pass_filenames: false
+      - id: project-memory-privacy
+        name: private project memory boundary
+        entry: .venv/bin/python -m tools.check_project_memory_privacy --allow-absent
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: ruff
         name: Ruff lint
         entry: .venv/bin/python -m ruff check

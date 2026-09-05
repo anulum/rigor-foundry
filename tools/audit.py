@@ -22,6 +22,7 @@ from tools.check_dependency_waivers import dependency_waiver_errors
 from tools.check_descriptive_production_naming import descriptive_naming_errors
 from tools.check_headers import header_errors
 from tools.check_metadata import metadata_errors
+from tools.check_project_memory_privacy import project_memory_privacy_errors
 from tools.check_secrets import secret_errors
 
 EXPECTED_ORIGIN = "https://github.com/anulum/rigor-foundry.git"
@@ -159,6 +160,7 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
     errors.extend(data_boundary_errors(root))
     errors.extend(dependency_waiver_errors(root))
     errors.extend(coverage_residual_errors(root))
+    errors.extend(project_memory_privacy_errors(root, allow_absent=True))
     return errors
 
 

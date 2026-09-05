@@ -201,6 +201,40 @@ def test_guard_rejects_repository_root_alias(tmp_path: Path) -> None:
     assert project_memory_privacy_errors(alias) == ["repository-root-not-real-directory"]
 
 
+def test_absent_tree_mode_retains_git_and_publication_protection(tmp_path: Path) -> None:
+    root = _repository(tmp_path)
+    memory = root / "agentic_project_memory"
+    (memory / "memory_index.md").unlink()
+    memory.rmdir()
+    assert project_memory_privacy_errors(root) == ["private-root-unavailable"]
+    assert project_memory_privacy_errors(root, allow_absent=True) == []
+    assert main(["--repository-root", str(root), "--allow-absent"]) == 0
+    assert project_memory_privacy_errors(
+        root, required_surfaces=frozenset({"wheel"}), allow_absent=True
+    ) == ["publication-surface-set-mismatch"]
+    (root / ".gitignore").write_text("/another-root/\n")
+    _git(root, "add", ".gitignore")
+    assert project_memory_privacy_errors(root, allow_absent=True) == [
+        "portable-ignore-rule-missing"
+    ]
+
+
+def test_absent_tree_mode_never_skips_existing_or_dangling_tree(tmp_path: Path) -> None:
+    root = _repository(tmp_path)
+    memory = root / "agentic_project_memory"
+    memory.chmod(0o755)
+    assert "private-root-mode-invalid" in project_memory_privacy_errors(root, allow_absent=True)
+    memory.chmod(0o700)
+    _git(root, "add", "--force", "agentic_project_memory/memory_index.md")
+    (memory / "memory_index.md").unlink()
+    memory.rmdir()
+    assert "private-root-content-cached" in project_memory_privacy_errors(root, allow_absent=True)
+    memory.symlink_to(tmp_path / "missing", target_is_directory=True)
+    assert "private-root-not-real-directory" in project_memory_privacy_errors(
+        root, allow_absent=True
+    )
+
+
 def test_standalone_process_has_no_repository_package_dependency(tmp_path: Path) -> None:
     """The guard runs from outside the checkout as a self-contained script."""
     root = _repository(tmp_path)

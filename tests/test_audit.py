@@ -56,6 +56,20 @@ def test_repository_passes_portable_conformance_audit() -> None:
     assert audit_errors() == []
 
 
+def test_repository_audit_rejects_force_added_memory_in_clean_clone(tmp_path: Path) -> None:
+    """The normal audit accepts no local memory, but rejects forced publication."""
+    repository = _snapshot_visible_repository(tmp_path / "repository")
+    repository.commit()
+    assert audit_errors(repository.root) == []
+    memory = repository.root / "agentic_project_memory"
+    memory.mkdir(mode=0o700)
+    record = memory / "memory_index.md"
+    record.write_text("# Private project record\n")
+    record.chmod(0o600)
+    repository.git_command("add", "--force", "agentic_project_memory/memory_index.md")
+    assert "private-root-content-cached" in audit_errors(repository.root)
+
+
 def test_visible_inventory_omits_tracked_paths_deleted_during_authoring(tmp_path: Path) -> None:
     """A planned rename does not make validators dereference the removed source path."""
     repository = GitRepository.create(tmp_path / "repository")

@@ -38,3 +38,4 @@ docs/internal/
 !.env.example
 
 docs/internal/**
+/agentic_project_memory/

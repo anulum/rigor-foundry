@@ -10,10 +10,89 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import sys
+import tarfile
 import tomllib
+import zipfile
+from pathlib import Path
+
+import pytest
 
 from rigor_foundry.version import __version__
 from tools._repository import ROOT
+
+
+def test_private_memory_has_portable_repository_exclusions() -> None:
+    """Clones and local Docker contexts retain the private-memory boundary."""
+    assert "/agentic_project_memory/" in (ROOT / ".gitignore").read_text().splitlines()
+    assert "agentic_project_memory" in (ROOT / ".dockerignore").read_text().splitlines()
+
+
+@pytest.mark.parametrize("distribution", ["wheel", "sdist"])
+def test_distribution_build_excludes_real_private_memory(
+    tmp_path: Path, distribution: str
+) -> None:
+    """Actual Hatch archives omit a private canary but retain the public CLI."""
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    inventory = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "-z"],
+        capture_output=True,
+        check=True,
+        timeout=10,
+    )
+    configuration = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    included = configuration["tool"]["hatch"]["build"]["targets"]["sdist"]["include"]
+    roots = {entry.lstrip("/") for entry in included}
+    for raw in inventory.stdout.split(b"\0")[:-1]:
+        relative = Path(raw.decode())
+        if relative.parts[0] in roots:
+            target = repository / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, target)
+    shutil.copyfile(ROOT / ".gitignore", repository / ".gitignore")
+    private = repository / "agentic_project_memory"
+    private.mkdir(mode=0o700)
+    marker = b"private-memory-distribution-regression-canary\n"
+    record = private / "memory_index.md"
+    record.write_bytes(marker)
+    record.chmod(0o600)
+    output = tmp_path / "distributions"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            f"--{distribution}",
+            "--no-isolation",
+            "--outdir",
+            str(output),
+            str(repository),
+        ],
+        capture_output=True,
+        check=True,
+        timeout=60,
+    )
+    archives = list(output.iterdir())
+    assert len(archives) == 1
+    if distribution == "wheel":
+        with zipfile.ZipFile(archives[0]) as wheel:
+            contents = {name: wheel.read(name) for name in wheel.namelist()}
+    else:
+        with tarfile.open(archives[0], "r:gz") as sdist:
+            contents = {}
+            for member in sdist.getmembers():
+                if member.isfile():
+                    stream = sdist.extractfile(member)
+                    assert stream is not None
+                    with stream:
+                        contents[member.name] = stream.read()
+    assert any(name.endswith("rigor_foundry/cli.py") for name in contents)
+    assert all("agentic_project_memory" not in Path(name).parts for name in contents)
+    assert all(marker not in payload for payload in contents.values())
+    assert record.read_bytes() == marker
 
 
 def test_build_backend_and_base_image_are_immutable() -> None:

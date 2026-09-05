@@ -141,11 +141,13 @@ def _cached_content_errors(root: Path) -> list[str]:
     return []
 
 
-def _private_tree_errors(root: Path) -> list[str]:
+def _private_tree_errors(root: Path, *, allow_absent: bool) -> list[str]:
     """Reject aliases and permissions that expose the private local tree."""
     private_root = root / PRIVATE_ROOT
     try:
         root_status = private_root.lstat()
+    except FileNotFoundError:
+        return [] if allow_absent else ["private-root-unavailable"]
     except OSError:
         return ["private-root-unavailable"]
     if stat.S_ISLNK(root_status.st_mode) or not stat.S_ISDIR(root_status.st_mode):
@@ -252,8 +254,29 @@ def project_memory_privacy_errors(
     repository_root: Path,
     inventories: tuple[PublicationInventory, ...] = (),
     required_surfaces: frozenset[str] = frozenset(),
+    *,
+    allow_absent: bool = False,
 ) -> list[str]:
-    """Return project-memory privacy violations without reading private content."""
+    """Return privacy violations without reading private content.
+
+    Parameters
+    ----------
+    repository_root:
+        Exact Git worktree containing the portable ignore rule.
+    inventories:
+        Explicit publication inventories to validate.
+    required_surfaces:
+        Exact set of surface names required by the caller.
+    allow_absent:
+        Permit a missing local memory tree in clean clones and commit hooks.
+        Git protection and inventory checks still run. An existing tree is
+        always validated; activation callers must retain the default False.
+
+    Returns
+    -------
+    list[str]
+        Stable finding codes; an empty list means all requested checks passed.
+    """
     root, errors = _repository_errors(repository_root)
     if root is None:
         return errors
@@ -265,7 +288,7 @@ def project_memory_privacy_errors(
         errors.append("publication-surface-set-mismatch")
     errors.extend(_portable_ignore_errors(root))
     errors.extend(_cached_content_errors(root))
-    errors.extend(_private_tree_errors(root))
+    errors.extend(_private_tree_errors(root, allow_absent=allow_absent))
     for inventory in inventories:
         errors.extend(_inventory_errors(inventory))
     return sorted(set(errors))
@@ -283,6 +306,11 @@ def main(argv: list[str] | None = None) -> int:
     """Run the project-memory privacy guard with redacted process output."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
+    parser.add_argument(
+        "--allow-absent",
+        action="store_true",
+        help="permit no local memory tree; retain Git and publication checks",
+    )
     parser.add_argument(
         "--publication-inventory",
         action="append",
@@ -304,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             arguments.repository_root,
             inventories,
             required,
+            allow_absent=arguments.allow_absent,
         ),
     )
 
