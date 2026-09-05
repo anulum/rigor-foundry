@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import cast
 
 import pytest
-from test_project_registry_models import authority, consumers, group, project
+from test_project_registry_models import authority, consumers, group, profiled_registry, project
 
 from rigor_foundry.project_registry_models import (
     PROJECT_REGISTRY_UNASSIGNED_GROUP,
@@ -21,8 +22,8 @@ from rigor_foundry.project_registry_models import (
     ProjectRegistry,
     ProjectRegistryConsumer,
     ProjectRegistryInvalid,
-    project_registry_canonical_json,
 )
+from rigor_foundry.project_registry_primitives import project_registry_canonical_json
 from rigor_foundry.project_registry_views import (
     PROJECT_GROUP_VIEW_SCHEMA_VERSION,
     PROJECT_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION,
@@ -66,6 +67,37 @@ def registry_with_affiliation(*, include_global: bool = False) -> ProjectRegistr
     )
 
 
+@pytest.mark.parametrize("case", ["valid", "wrong-profile", "legacy-envelope", "legacy-payload"])
+def test_profiled_outputs_bind_profile_and_derived_payload(case: str) -> None:
+    registry = profiled_registry(registry_with_affiliation(include_global=True))
+    outputs = build_registry_consumer_outputs(registry, {"boot-resolver": {"mode": "explicit"}})
+    for output in outputs:
+        data = output.to_dict()
+        assert data["schema_version"] == "project-registry-consumer.v2"
+        if case == "wrong-profile":
+            data["profile_sha256"] = "f" * 64
+        elif case == "legacy-envelope":
+            data.pop("profile_sha256")
+            data["schema_version"] = "gotm-project-registry-consumer.v1"
+        elif case == "legacy-payload":
+            if output.consumer_kind not in {"group-view", "project-index"}:
+                continue
+            data["payload"] = {"schema_version": "stale.v1"}
+        unsigned = {key: value for key, value in data.items() if key != "output_sha256"}
+        data["output_sha256"] = hashlib.sha256(
+            project_registry_canonical_json(unsigned)
+        ).hexdigest()
+        parsed = ProjectRegistryConsumerOutput.from_bytes(project_registry_canonical_json(data))
+        if case == "valid":
+            assert (
+                validate_consumer_output_for_registry(registry, parsed).consumer_id
+                == output.consumer_id
+            )
+        else:
+            with pytest.raises(ProjectRegistryInvalid):
+                validate_consumer_output_for_registry(registry, parsed)
+
+
 def test_group_view_separates_owned_and_affiliated_projects() -> None:
     """A group view distinguishes ownership from contract affiliation."""
     registry = registry_with_affiliation()
@@ -75,8 +107,10 @@ def test_group_view_separates_owned_and_affiliated_projects() -> None:
     output = build_group_view_output(registry, consumer)
 
     assert output.payload["schema_version"] == PROJECT_GROUP_VIEW_SCHEMA_VERSION
-    assert [item["project_id"] for item in output.payload["owned_projects"]] == ["PROJECT-A"]
-    assert [item["project_id"] for item in output.payload["affiliated_projects"]] == ["PROJECT-B"]
+    owned = cast(list[dict[str, object]], output.payload["owned_projects"])
+    affiliated = cast(list[dict[str, object]], output.payload["affiliated_projects"])
+    assert [item["project_id"] for item in owned] == ["PROJECT-A"]
+    assert [item["project_id"] for item in affiliated] == ["PROJECT-B"]
     assert ProjectRegistryConsumerOutput.from_bytes(output.to_bytes()) == output
     assert validate_consumer_output_for_registry(registry, output) == consumer
     assert "output_sha256" not in output.to_dict(include_digest=False)

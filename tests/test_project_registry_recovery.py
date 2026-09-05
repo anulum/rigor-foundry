@@ -15,6 +15,7 @@ import multiprocessing
 import os
 from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 import pytest
 from test_project_registry_cutover import REGISTRY_PATH, filesystem, plan
@@ -443,7 +444,7 @@ def test_recovery_rejects_identity_snapshot_and_external_state_substitution(
         rewrite_closed_evidence(
             journal_path,
             "journal_sha256",
-            lambda value: value.update(consumers=value["consumers"][:-1]),
+            lambda value: value.update(consumers=cast(list[object], value["consumers"])[:-1]),
         )
     elif scenario == "candidate-extra":
         extra = transaction / "candidate/undeclared.json"

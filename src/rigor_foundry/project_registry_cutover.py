@@ -229,6 +229,8 @@ def validate_project_registry_transition(
         return
     if candidate.previous_registry_sha256 != previous.registry_sha256:
         raise ProjectRegistryCutoverInvalid("candidate does not name the current registry")
+    if previous.profile is not None and candidate.profile is None:
+        raise ProjectRegistryCutoverInvalid("a profiled registry cannot downgrade to v1")
     if candidate.generated_at <= previous.generated_at:
         raise ProjectRegistryCutoverInvalid("registry generation time must increase")
     previous_groups = {group.group_id: group for group in previous.groups}

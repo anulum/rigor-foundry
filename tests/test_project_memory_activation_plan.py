@@ -15,7 +15,7 @@ from dataclasses import dataclass, replace
 
 import pytest
 from test_project_memory_store import record
-from test_project_registry_models import consumers, group, project, registry
+from test_project_registry_models import consumers, group, profiled_registry, project, registry
 
 from rigor_foundry.project_memory_activation_plan import validate_project_memory_activation_plan
 from rigor_foundry.project_memory_models import ProjectMemoryManifest, ProjectMemoryRecord
@@ -49,6 +49,33 @@ class Proposal:
             bootstrap_manifest=self.bootstrap,
             bootstrap_index=self.index,
         )
+
+
+@pytest.mark.parametrize("side", ["previous", "candidate"])
+def test_v1_activation_refuses_profiled_registry(side: str) -> None:
+    p = proposal()
+    if side == "previous":
+        p.previous = profiled_registry(p.previous)
+    else:
+        candidate = profiled_registry(p.cutover.candidate)
+        outputs = build_registry_consumer_outputs(
+            candidate, {"global-boot": {"selector": "explicit"}}
+        )
+        prior = {output.consumer_id: output.output_sha256 for output in p.prior_outputs}
+        p.cutover = ProjectRegistryCutoverPlan.build(
+            candidate,
+            expected_registry_sha256=candidate.previous_registry_sha256,
+            updates=tuple(
+                ProjectRegistryConsumerUpdate.build(
+                    output, expected_sha256=prior[output.consumer_id]
+                )
+                for output in outputs
+            ),
+        )
+    with pytest.raises(
+        ValueError, match="v1 memory activation cannot consume a profiled registry"
+    ):
+        p.check()
 
 
 def proposal() -> Proposal:

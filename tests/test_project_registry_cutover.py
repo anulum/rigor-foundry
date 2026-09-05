@@ -12,11 +12,20 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from test_project_registry_models import authority, consumers, group, project, registry
+from test_project_registry_models import (
+    authority,
+    consumers,
+    group,
+    profiled_registry,
+    project,
+    registry,
+)
 
 import rigor_foundry.project_registry_cutover as cutover_module
 from rigor_foundry.project_registry_cutover import (
@@ -32,8 +41,8 @@ from rigor_foundry.project_registry_models import (
     ProjectRegistry,
     ProjectRegistryAlias,
     ProjectRegistryConsumer,
-    project_registry_canonical_json,
 )
+from rigor_foundry.project_registry_primitives import project_registry_canonical_json
 from rigor_foundry.project_registry_views import (
     ProjectRegistryConsumerOutput,
     build_registry_consumer_outputs,
@@ -52,9 +61,9 @@ def filesystem(tmp_path: Path, candidate: ProjectRegistry) -> tuple[Path, Path]:
     for item in candidate.groups:
         (root / item.root_path / "agentic_group_memory").mkdir(parents=True)
         (root / item.repositories_path).mkdir(exist_ok=True)
-    for item in candidate.projects:
-        if item.memory_state != "absent":
-            (root / item.canonical_path / "agentic_project_memory").mkdir(parents=True)
+    for registered in candidate.projects:
+        if registered.memory_state != "absent":
+            (root / registered.canonical_path / "agentic_project_memory").mkdir(parents=True)
     return root, transaction_root
 
 
@@ -82,6 +91,92 @@ def plan(
         expected_registry_sha256=candidate.previous_registry_sha256,
         updates=updates,
     )
+
+
+@pytest.mark.parametrize("upgrade", [False, True])
+def test_profiled_cutover_real_files_and_cli(tmp_path: Path, upgrade: bool) -> None:
+    first = registry() if upgrade else profiled_registry()
+    root, transactions = filesystem(tmp_path, first)
+    initial = plan(first)
+    apply_project_registry_cutover(root, REGISTRY_PATH, transactions, initial)
+    before = (root / REGISTRY_PATH).read_bytes()
+    second = profiled_registry(
+        registry(generated_at="2026-09-04T12:01:00.000000Z", previous=first.registry_sha256)
+    )
+    successor = plan(second, previous_outputs=tuple(u.output for u in initial.updates))
+    receipt = apply_project_registry_cutover(root, REGISTRY_PATH, transactions, successor)
+    assert receipt.outcome == "committed"
+    assert load_project_registry_state(root, REGISTRY_PATH) == second
+    assert any(path.read_bytes() == before for path in transactions.rglob("*") if path.is_file())
+    result = subprocess.run(
+        [sys.executable, "-m", "tools.check_project_registry_integrity", str(root), REGISTRY_PATH],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "project-registry-integrity: PASS"
+    downgrade = registry(
+        generated_at="2026-09-04T12:02:00.000000Z", previous=second.registry_sha256
+    )
+    with pytest.raises(ProjectRegistryCutoverInvalid, match="downgrade"):
+        validate_project_registry_transition(second, downgrade)
+    assert load_project_registry_state(root, REGISTRY_PATH) == second
+
+
+@pytest.mark.parametrize("ordinal", [1, 3])
+def test_profiled_upgrade_crash_recovery_preserves_exact_state(
+    tmp_path: Path, ordinal: int
+) -> None:
+    from test_project_registry_recovery import run_crash_worker
+
+    from rigor_foundry.project_registry_recovery import recover_project_registry_cutover
+
+    first = registry()
+    root, transactions = filesystem(tmp_path, first)
+    initial = plan(first)
+    apply_project_registry_cutover(root, REGISTRY_PATH, transactions, initial)
+    sentinel = root / "untracked-owner-file"
+    sentinel.write_bytes(b"preserve-this")
+    candidate = profiled_registry(
+        registry(generated_at="2026-09-04T12:01:00.000000Z", previous=first.registry_sha256)
+    )
+    pending = plan(candidate, previous_outputs=tuple(u.output for u in initial.updates))
+    run_crash_worker(root, transactions, pending, ordinal)
+    receipt = recover_project_registry_cutover(
+        root, REGISTRY_PATH, transactions, candidate.generation_id, candidate.registry_sha256
+    )
+    assert receipt.outcome == ("rolled-back" if ordinal == 1 else "committed")
+    assert load_project_registry_state(root, REGISTRY_PATH) == (
+        first if ordinal == 1 else candidate
+    )
+    assert sentinel.read_bytes() == b"preserve-this"
+    assert (
+        recover_project_registry_cutover(
+            root, REGISTRY_PATH, transactions, candidate.generation_id, candidate.registry_sha256
+        )
+        == receipt
+    )
+
+
+def test_external_group_custom_memory_path_closes_on_disk(tmp_path: Path) -> None:
+    from test_deployment_profile import encode_profile
+    from test_project_registry_models import resign
+
+    encoded = profiled_registry().to_bytes().decode().replace("03_CODE/GROUP-A", "06_WEBMASTER")
+    encoded = encoded.replace("/agentic_group_memory/", "/navigation/")
+    data = json.loads(encoded)
+    data["deployment_profile"] = json.loads(encode_profile(data["deployment_profile"]))
+    candidate = ProjectRegistry.from_dict(resign(data))
+    root, transactions = filesystem(tmp_path, candidate)
+    for consumer in candidate.consumers:
+        (root / consumer.path).parent.mkdir(parents=True, exist_ok=True)
+    receipt = apply_project_registry_cutover(root, REGISTRY_PATH, transactions, plan(candidate))
+    assert receipt.outcome == "committed"
+    assert load_project_registry_state(root, REGISTRY_PATH) == candidate
+    assert (root / "06_WEBMASTER/navigation/registry_view.json").is_file()
+    assert not (root / "03_CODE").exists()
 
 
 def test_initial_cutover_commits_registry_and_every_consumer(tmp_path: Path) -> None:

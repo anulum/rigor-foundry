@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from typing import cast
 
 import pytest
+from test_deployment_profile import encode_profile, profile_document
 
 import rigor_foundry.project_registry_models as registry_models
+from rigor_foundry.deployment_profile import DeploymentProfile
 from rigor_foundry.project_registry_models import (
     PROJECT_REGISTRY_SCHEMA_VERSION,
     ProjectRegistration,
@@ -24,6 +27,8 @@ from rigor_foundry.project_registry_models import (
     ProjectRegistryConsumer,
     ProjectRegistryGroup,
     ProjectRegistryInvalid,
+)
+from rigor_foundry.project_registry_primitives import (
     project_registry_canonical_json,
     project_registry_generation_id,
     project_registry_strict_json,
@@ -101,16 +106,16 @@ def consumers(
                 "consumer",
             )
         )
-    for item in projects:
-        if item.memory_state != "absent":
+    for registered in projects:
+        if registered.memory_state != "absent":
             values.append(
                 ProjectRegistryConsumer.from_dict(
                     {
-                        "consumer_id": f"project-index-{item.project_id}",
+                        "consumer_id": f"project-index-{registered.project_id}",
                         "kind": "project-index",
-                        "path": f"{item.canonical_path}/agentic_project_memory/registry_binding.json",
+                        "path": f"{registered.canonical_path}/agentic_project_memory/registry_binding.json",
                         "group_id": None,
-                        "project_id": item.project_id,
+                        "project_id": registered.project_id,
                     },
                     "consumer",
                 )
@@ -147,6 +152,70 @@ def resign(value: dict[str, object]) -> dict[str, object]:
         project_registry_canonical_json(unsigned)
     ).hexdigest()
     return value
+
+
+def profiled_registry(base: ProjectRegistry | None = None) -> ProjectRegistry:
+    """Bind an existing registry layout to a complete deployment snapshot."""
+    base = registry() if base is None else base
+    document = profile_document()
+    document["groups"] = [
+        {key: value for key, value in item.to_dict().items() if key != "lifecycle_state"}
+        for item in base.groups
+    ]
+    return ProjectRegistry.build(
+        generated_at=base.generated_at,
+        previous_registry_sha256=base.previous_registry_sha256,
+        authority=base.authority,
+        groups=base.groups,
+        projects=base.projects,
+        consumers=base.consumers,
+        profile=DeploymentProfile.from_bytes(encode_profile(document)),
+    )
+
+
+def test_profiled_registry_round_trip_and_embedded_identity() -> None:
+    legacy = registry()
+    current = profiled_registry(legacy)
+    assert current.registry_sha256 != legacy.registry_sha256
+    assert ProjectRegistry.from_bytes(current.to_bytes()) == current
+    assert current.to_dict()["schema_version"] == "project-registry.v2"
+    assert "deployment_profile" not in legacy.to_dict()
+    assert legacy.profile is None
+
+
+@pytest.mark.parametrize("case", ["profile-digest", "missing", "legacy", "layout", "group-set"])
+def test_profiled_registry_rejects_inconsistent_snapshot(case: str) -> None:
+    data = json.loads(profiled_registry().to_bytes())
+    if case == "profile-digest":
+        data["deployment_profile"]["profile_id"] = "tampered"
+    elif case == "missing":
+        del data["deployment_profile"]
+    elif case == "legacy":
+        data["schema_version"] = PROJECT_REGISTRY_SCHEMA_VERSION
+    elif case == "layout":
+        data["groups"][0]["repositories_path"] += "/elsewhere"
+    else:
+        extra = dict(data["deployment_profile"]["groups"][0])
+        extra.update(
+            group_id="GROUP-Z",
+            root_path="other",
+            repositories_path="other/repos",
+            memory_index_path="other/memory/index.md",
+        )
+        data["deployment_profile"]["groups"].append(extra)
+        data["deployment_profile"] = json.loads(encode_profile(data["deployment_profile"]))
+    with pytest.raises(ProjectRegistryInvalid):
+        ProjectRegistry.from_dict(resign(data))
+
+
+def test_profiled_registry_accepts_group_outside_code_tree() -> None:
+    data = json.loads(profiled_registry().to_bytes())
+    encoded = json.dumps(data).replace("03_CODE/GROUP-A", "06_WEBMASTER")
+    data = json.loads(encoded)
+    data["deployment_profile"] = json.loads(encode_profile(data["deployment_profile"]))
+    current = ProjectRegistry.from_dict(resign(data))
+    assert current.groups[0].root_path == "06_WEBMASTER"
+    assert ProjectRegistry.from_bytes(current.to_bytes()) == current
 
 
 def test_registry_round_trip_is_canonical_and_content_addressed() -> None:
@@ -229,7 +298,7 @@ def test_registered_git_path_must_match_owning_group() -> None:
 def test_active_group_and_scaffold_project_require_exact_consumers() -> None:
     """A registry without its group or project view cannot close its digest graph."""
     value = registry().to_dict()
-    value["consumers"] = value["consumers"][:1]
+    value["consumers"] = cast(list[object], value["consumers"])[:1]
     unsigned = {key: item for key, item in value.items() if key != "registry_sha256"}
     import hashlib
 
@@ -353,7 +422,7 @@ def test_project_affiliations_aliases_and_retirement_are_consistent() -> None:
         ProjectRegistration.from_dict(value, "project")
 
     value = project().to_dict()
-    alias["path"] = value["canonical_path"]
+    alias["path"] = project().canonical_path
     value["aliases"] = [alias]
     with pytest.raises(ProjectRegistryInvalid, match="cannot also be an alias"):
         ProjectRegistration.from_dict(value, "project")
@@ -424,13 +493,13 @@ def test_registry_rejects_invalid_generation_and_empty_graphs(
 def test_registry_rejects_unknown_relationships_and_path_collisions() -> None:
     """Only explicit groups and globally unique paths can form membership."""
     value = registry().to_dict()
-    value["projects"][0]["owning_group_id"] = "GROUP-X"
+    cast(list[dict[str, object]], value["projects"])[0]["owning_group_id"] = "GROUP-X"
     resign(value)
     with pytest.raises(ProjectRegistryInvalid, match="owning group"):
         ProjectRegistry.from_dict(value)
 
     value = registry().to_dict()
-    value["projects"][0]["affiliations"] = ["GROUP-X"]
+    cast(list[dict[str, object]], value["projects"])[0]["affiliations"] = ["GROUP-X"]
     resign(value)
     with pytest.raises(ProjectRegistryInvalid, match="unknown group"):
         ProjectRegistry.from_dict(value)
@@ -461,25 +530,31 @@ def test_registry_rejects_consumer_collisions_and_wrong_targets() -> None:
     base = registry().to_dict()
     cases: list[tuple[Callable[[dict[str, object]], None], str]] = [
         (
-            lambda value: value["consumers"][1].update(path=value["consumers"][0]["path"]),
+            lambda value: cast(list[dict[str, object]], value["consumers"])[1].update(
+                path=cast(list[dict[str, object]], value["consumers"])[0]["path"]
+            ),
             "paths must be unique",
         ),
         (
-            lambda value: value["consumers"][0].update(group_id="GROUP-X"),
+            lambda value: cast(list[dict[str, object]], value["consumers"])[0].update(
+                group_id="GROUP-X"
+            ),
             "unknown group",
         ),
         (
-            lambda value: value["consumers"][0].update(
+            lambda value: cast(list[dict[str, object]], value["consumers"])[0].update(
                 path="03_CODE/GROUP-A/agentic_group_memory/wrong.json"
             ),
             "does not match group",
         ),
         (
-            lambda value: value["consumers"][1].update(project_id="PROJECT-X"),
+            lambda value: cast(list[dict[str, object]], value["consumers"])[1].update(
+                project_id="PROJECT-X"
+            ),
             "unknown project",
         ),
         (
-            lambda value: value["consumers"][1].update(
+            lambda value: cast(list[dict[str, object]], value["consumers"])[1].update(
                 path="03_CODE/GROUP-A/repositories/PROJECT-A/wrong.json"
             ),
             "does not match project",
@@ -522,7 +597,7 @@ def test_registry_requires_object_and_every_active_group_view() -> None:
         ProjectRegistry.from_dict([])
 
     value = registry().to_dict()
-    value["consumers"] = value["consumers"][1:]
+    value["consumers"] = cast(list[object], value["consumers"])[1:]
     resign(value)
     with pytest.raises(ProjectRegistryInvalid, match="active group"):
         ProjectRegistry.from_dict(value)

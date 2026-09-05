@@ -84,6 +84,10 @@ def validate_project_memory_activation_plan(
     A caller-supplied actor or digest is not proof of those conditions.
     """
     previous = ProjectRegistry.from_bytes(previous.to_bytes())
+    if previous.profile is not None or cutover.candidate.profile is not None:
+        raise ProjectMemoryActivationPlanInvalid(
+            "v1 memory activation cannot consume a profiled registry"
+        )
     memory = ProjectMemoryManifest.from_bytes(memory.to_bytes())
     cutover = ProjectRegistryCutoverPlan.build(
         cutover.candidate,

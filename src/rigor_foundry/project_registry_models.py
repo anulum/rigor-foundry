@@ -12,8 +12,10 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import TypeVar, cast
 
+from .deployment_profile import DeploymentProfile
 from .project_registry_primitives import (
     _GENERATION_ID,
     _digest,
@@ -171,7 +173,13 @@ class ProjectRegistryGroup:
     lifecycle_state: str
 
     @classmethod
-    def from_dict(cls, value: object, field: str) -> ProjectRegistryGroup:
+    def from_dict(
+        cls,
+        value: object,
+        field: str,
+        *,
+        profile: DeploymentProfile | None = None,
+    ) -> ProjectRegistryGroup:
         """Parse and validate one group record."""
         data = _mapping(value, field)
         _exact_fields(
@@ -195,11 +203,18 @@ class ProjectRegistryGroup:
         memory_index_path = _relative_path(
             data.get("memory_index_path"), f"{field}.memory_index_path"
         )
-        if root_path != f"03_CODE/{group_id}":
+        if profile is not None:
+            expected = (group_id, root_path, repositories_path, memory_index_path)
+            if expected not in profile.groups:
+                raise ProjectRegistryInvalid(f"{field} does not match its deployment profile")
+        elif root_path != f"03_CODE/{group_id}":
             raise ProjectRegistryInvalid(f"{field}.root_path does not match group identity")
-        if repositories_path != f"{root_path}/repositories":
+        if profile is None and repositories_path != f"{root_path}/repositories":
             raise ProjectRegistryInvalid(f"{field}.repositories_path does not match group root")
-        if memory_index_path != f"{root_path}/agentic_group_memory/memory_index.md":
+        if (
+            profile is None
+            and memory_index_path != f"{root_path}/agentic_group_memory/memory_index.md"
+        ):
             raise ProjectRegistryInvalid(f"{field}.memory_index_path does not match group root")
         lifecycle = _string(data.get("lifecycle_state"), f"{field}.lifecycle_state", 32)
         if lifecycle not in PROJECT_REGISTRY_GROUP_LIFECYCLES:
@@ -403,6 +418,7 @@ class ProjectRegistry:
     projects: tuple[ProjectRegistration, ...]
     consumers: tuple[ProjectRegistryConsumer, ...]
     registry_sha256: str
+    profile: DeploymentProfile | None = None
 
     @classmethod
     def build(
@@ -414,6 +430,7 @@ class ProjectRegistry:
         groups: tuple[ProjectRegistryGroup, ...],
         projects: tuple[ProjectRegistration, ...],
         consumers: tuple[ProjectRegistryConsumer, ...],
+        profile: DeploymentProfile | None = None,
     ) -> ProjectRegistry:
         """Build and close one registry generation from validated values."""
         value: dict[str, object] = {
@@ -427,6 +444,9 @@ class ProjectRegistry:
             "projects": [project.to_dict() for project in projects],
             "consumers": [consumer.to_dict() for consumer in consumers],
         }
+        if profile is not None:
+            value["schema_version"] = "project-registry.v2"
+            value["deployment_profile"] = project_registry_strict_json(profile.to_bytes())
         value["registry_sha256"] = hashlib.sha256(
             project_registry_canonical_json(value)
         ).hexdigest()
@@ -436,9 +456,25 @@ class ProjectRegistry:
     def from_dict(cls, value: object) -> ProjectRegistry:
         """Parse and cross-check one exact registry generation."""
         data = _mapping(value, "registry")
-        _exact_fields(data, _REGISTRY_FIELDS, "registry")
-        if data.get("schema_version") != PROJECT_REGISTRY_SCHEMA_VERSION:
+        profiled = data.get("schema_version") == "project-registry.v2"
+        _exact_fields(
+            data, _REGISTRY_FIELDS | ({"deployment_profile"} if profiled else set()), "registry"
+        )
+        if data.get("schema_version") not in {
+            PROJECT_REGISTRY_SCHEMA_VERSION,
+            "project-registry.v2",
+        }:
             raise ProjectRegistryInvalid("registry schema version is unsupported")
+        try:
+            profile = (
+                DeploymentProfile.from_bytes(
+                    project_registry_canonical_json(data["deployment_profile"])
+                )
+                if profiled
+                else None
+            )
+        except ValueError as exc:
+            raise ProjectRegistryInvalid("registry deployment profile is invalid") from exc
         if data.get("canonical_serializer") != PROJECT_REGISTRY_SERIALIZER:
             raise ProjectRegistryInvalid("registry canonical serializer is unsupported")
         generated_at, generated = _timestamp(data.get("generated_at"), "registry.generated_at")
@@ -458,10 +494,14 @@ class ProjectRegistry:
         groups = cls._parse_array(
             data.get("groups"),
             PROJECT_REGISTRY_MAX_GROUPS,
-            ProjectRegistryGroup.from_dict,
+            lambda item, field: ProjectRegistryGroup.from_dict(item, field, profile=profile),
             lambda item: item.group_id,
             "groups",
         )
+        if profile is not None and tuple(group.group_id for group in groups) != tuple(
+            group[0] for group in profile.groups
+        ):
+            raise ProjectRegistryInvalid("registry group set differs from deployment profile")
         projects = cls._parse_array(
             data.get("projects"),
             PROJECT_REGISTRY_MAX_PROJECTS,
@@ -483,7 +523,7 @@ class ProjectRegistry:
                     raise ProjectRegistryInvalid(
                         "project alias cannot retire after the registry generation"
                     )
-        cls._validate_relations(groups, projects, consumers)
+        cls._validate_relations(groups, projects, consumers, profile=profile)
         registry_sha256 = _digest(data.get("registry_sha256"), "registry.registry_sha256")
         unsigned = {key: item for key, item in data.items() if key != "registry_sha256"}
         expected = hashlib.sha256(project_registry_canonical_json(unsigned)).hexdigest()
@@ -498,6 +538,7 @@ class ProjectRegistry:
             projects,
             consumers,
             registry_sha256,
+            profile,
         )
         if len(registry.to_bytes()) > PROJECT_REGISTRY_MAX_BYTES:
             raise ProjectRegistryInvalid("registry exceeds its byte bound")
@@ -527,6 +568,8 @@ class ProjectRegistry:
         groups: tuple[ProjectRegistryGroup, ...],
         projects: tuple[ProjectRegistration, ...],
         consumers: tuple[ProjectRegistryConsumer, ...],
+        *,
+        profile: DeploymentProfile | None = None,
     ) -> None:
         group_by_id = {group.group_id: group for group in groups}
         project_by_id = {project.project_id: project for project in projects}
@@ -563,7 +606,12 @@ class ProjectRegistry:
                 if consumer.group_id not in group_by_id:
                     raise ProjectRegistryInvalid("group-view consumer names an unknown group")
                 group = group_by_id[consumer.group_id]
-                if consumer.path != f"{group.root_path}/agentic_group_memory/registry_view.json":
+                expected_view = (
+                    str(PurePosixPath(group.memory_index_path).parent / "registry_view.json")
+                    if profile is not None
+                    else f"{group.root_path}/agentic_group_memory/registry_view.json"
+                )
+                if consumer.path != expected_view:
                     raise ProjectRegistryInvalid("group-view consumer path does not match group")
                 group_views.add(consumer.group_id)
             elif consumer.kind == "project-index":
@@ -615,6 +663,9 @@ class ProjectRegistry:
             "projects": [project.to_dict() for project in self.projects],
             "consumers": [consumer.to_dict() for consumer in self.consumers],
         }
+        if self.profile is not None:
+            value["schema_version"] = "project-registry.v2"
+            value["deployment_profile"] = project_registry_strict_json(self.profile.to_bytes())
         if include_digest:
             value["registry_sha256"] = self.registry_sha256
         return value
