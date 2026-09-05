@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import subprocess
 import sys
 from dataclasses import replace
@@ -597,3 +598,66 @@ def test_history_verifier_replays_generation_rules(
     assert result.stdout == b"project-memory-integrity: FAIL\n"
     assert result.stderr == b""
     assert {path: path.read_bytes() for path in before} == before
+
+
+@pytest.mark.parametrize("surface", ["manifest", "index", "content", "history"])
+@pytest.mark.parametrize("entrypoint", ["api", "cli"])
+def test_fifo_replacement_refuses_without_waiting_for_a_writer(
+    tmp_path: Path, surface: str, entrypoint: str
+) -> None:
+    """A substituted FIFO must not stall the public reader or integrity command."""
+    root = repository(tmp_path)
+    payload = b"# Project identity\n"
+    item = record("identity-fifo-check", payload)
+    content = write_project_memory_record(root, item, payload)
+    candidate = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    history = commit_project_memory_generation(root, candidate)
+    memory = root / "agentic_project_memory"
+    target = {
+        "manifest": memory / "memory_manifest.json",
+        "index": memory / "memory_index.md",
+        "content": content,
+        "history": history,
+    }[surface]
+    preserved = {
+        path: path.read_bytes() for path in memory.rglob("*") if path.is_file() and path != target
+    }
+    target.unlink()
+    os.mkfifo(target, mode=0o600)
+    before = target.lstat()
+    if entrypoint == "api":
+        arguments = [
+            "-c",
+            "from pathlib import Path; import sys\n"
+            "from rigor_foundry.project_memory_store import "
+            "ProjectMemoryStoreInvalid, load_project_memory_generation\n"
+            "try:\n"
+            "    load_project_memory_generation(Path(sys.argv[1]))\n"
+            "except ProjectMemoryStoreInvalid:\n"
+            "    print('refused'); sys.exit(1)\n"
+            "raise SystemExit('unexpected acceptance')\n",
+            str(root),
+        ]
+        expected = b"refused\n"
+    else:
+        arguments = ["-m", "tools.check_project_memory_integrity", str(root), "--history"]
+        expected = b"project-memory-integrity: FAIL\n"
+    result = subprocess.run(
+        [sys.executable, *arguments],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        timeout=5,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert result.stdout == expected
+    assert result.stderr == b""
+    after = target.lstat()
+    assert stat.S_ISFIFO(after.st_mode)
+    assert (after.st_dev, after.st_ino, after.st_mode, after.st_mtime_ns) == (
+        before.st_dev,
+        before.st_ino,
+        before.st_mode,
+        before.st_mtime_ns,
+    )
+    assert {path: path.read_bytes() for path in preserved} == preserved

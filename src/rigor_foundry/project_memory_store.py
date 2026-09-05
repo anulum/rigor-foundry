@@ -64,10 +64,15 @@ def _ensure_directory(path: Path, label: str) -> None:
 
 
 def _read_private_file(path: Path, *, label: str, maximum: int) -> bytes:
-    """Read one stable owner-only regular file without following a link."""
+    """Read a stable private file; reject FIFOs without waiting for a writer."""
     descriptor: int | None = None
     try:
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+        flags = (
+            os.O_RDONLY
+            | os.O_NONBLOCK
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+        )
         try:
             descriptor = os.open(path, flags)
         except OSError as exc:
@@ -366,6 +371,10 @@ def commit_project_memory_generation(
 
 def load_project_memory_generation(repository_root: Path) -> ProjectMemoryManifest:
     """Load a current generation only when manifest, index, content and history close.
+
+    Non-regular files are refused before reading their contents. Opening uses
+    non-blocking mode so a substituted FIFO cannot wait for a writer before
+    the descriptor's file-type check. This is not a filesystem I/O deadline.
 
     Parameters
     ----------
