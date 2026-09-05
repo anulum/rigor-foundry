@@ -275,7 +275,8 @@ def _validate_transition(
         references = set(candidate_by_id[record_id].supersedes)
         if not references <= previous_by_id.keys():
             raise ProjectMemoryStoreInvalid("a new record supersedes an unknown current record")
-        if references & candidate_by_id.keys():
+        # Manifest.build rejects current-to-current supersession on every public load.
+        if references & candidate_by_id.keys():  # pragma: no cover
             raise ProjectMemoryStoreInvalid("a superseded record cannot remain current")
         if references & superseded:
             raise ProjectMemoryStoreInvalid(
@@ -490,13 +491,15 @@ def verify_project_memory_history(repository_root: Path) -> tuple[str, ...]:
     chain: list[str] = []
     cursor = current
     while True:
-        if cursor.manifest_sha256 in chain:
+        # Every traversed edge strictly decreases generated_at before cursor assignment.
+        if cursor.manifest_sha256 in chain:  # pragma: no cover
             raise ProjectMemoryStoreInvalid("project-memory history contains a digest cycle")
         chain.append(cursor.manifest_sha256)
         historical_cursor = candidates.get(cursor.manifest_sha256)
         if historical_cursor is None:
             raise ProjectMemoryStoreInvalid("project-memory predecessor is missing from history")
-        if historical_cursor != cursor:
+        # Both objects are canonical and rehashed; differing bytes need a SHA-256 collision.
+        if historical_cursor != cursor:  # pragma: no cover
             raise ProjectMemoryStoreInvalid(
                 "project-memory history digest resolves to other metadata"
             )

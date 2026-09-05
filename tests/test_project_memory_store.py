@@ -9,11 +9,13 @@
 
 from __future__ import annotations
 
+import json
 import os
 import stat
 import subprocess
 import sys
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -27,6 +29,7 @@ from rigor_foundry.project_memory_primitives import (
     ProjectMemorySource,
 )
 from rigor_foundry.project_memory_store import (
+    PROJECT_MEMORY_MAX_HISTORY_ENTRIES,
     ProjectMemoryStoreInvalid,
     commit_project_memory_generation,
     load_project_memory_generation,
@@ -752,3 +755,408 @@ raise SystemExit("unexpected acceptance")
         "late-permissions": "changed while being read",
     }[change] in result.stdout
     assert (root / "agentic_project_memory" / item.content_path).read_bytes() == payload
+
+
+def test_missing_private_root_and_unsafe_record_destination_refuse(tmp_path: Path) -> None:
+    """Neither absent roots nor redirected immutable destinations are admitted."""
+    root = repository(tmp_path)
+    private = root / "agentic_project_memory"
+    private.rmdir()
+    (root / ".gitignore").write_text("/agentic_project_memory\n", encoding="utf-8")
+    with pytest.raises(ProjectMemoryStoreInvalid, match="root is missing"):
+        load_project_memory_generation(root)
+    private.mkdir(mode=0o700)
+    payload = b"# Identity\n"
+    item = record("identity-path", payload)
+    destination = private / item.content_path
+    destination.parent.mkdir(parents=True, mode=0o700)
+    destination.parent.parent.chmod(0o700)
+    retained = tmp_path / "retained.md"
+    retained.write_bytes(payload)
+    destination.symlink_to(retained)
+    with pytest.raises(ProjectMemoryStoreInvalid, match="content path is unsafe"):
+        write_project_memory_record(root, item, payload)
+    assert retained.read_bytes() == payload
+
+
+def test_initial_predecessor_refusal_preserves_uncommitted_content(tmp_path: Path) -> None:
+    """An initial write cannot invent an absent predecessor generation."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-first", payload)
+    path = write_project_memory_record(root, item, payload)
+    candidate = manifest("2026-09-04T12:01:00.000000Z", (item,), "a" * 64)
+    with pytest.raises(ProjectMemoryStoreInvalid, match="initial generation cannot name"):
+        commit_project_memory_generation(root, candidate)
+    assert path.read_bytes() == payload
+    assert not (root / "agentic_project_memory/memory_manifest.json").exists()
+
+
+@pytest.mark.parametrize("blocked_view", ["memory_index.md", "memory_manifest.json"])
+def test_interrupted_generation_retains_history_and_retries_exactly(
+    tmp_path: Path, blocked_view: str
+) -> None:
+    """An obstructed replacement preserves evidence and permits exact retry."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-retry", payload)
+    write_project_memory_record(root, item, payload)
+    first = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    first_history = commit_project_memory_generation(root, first)
+    candidate = manifest("2026-09-04T12:02:00.000000Z", (item,), first.manifest_sha256)
+    private = root / "agentic_project_memory"
+    candidate_file = tmp_path / "candidate.json"
+    candidate_file.write_bytes(candidate.to_bytes())
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import os, sys
+from pathlib import Path
+from rigor_foundry.project_memory_models import ProjectMemoryManifest
+from rigor_foundry.project_memory_store import (
+    ProjectMemoryStoreInvalid, commit_project_memory_generation,
+)
+root, candidate_file, view = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+candidate = ProjectMemoryManifest.from_bytes(candidate_file.read_bytes())
+target = root / 'agentic_project_memory' / view
+changed = False
+def obstruct(event, arguments):
+    global changed
+    if event == 'os.rename' and str(arguments[1]) == str(target) and not changed:
+        changed = True
+        target.rename(target.with_name(view + '.retained'))
+        target.mkdir(mode=0o700)
+sys.addaudithook(obstruct)
+try:
+    commit_project_memory_generation(root, candidate)
+except ProjectMemoryStoreInvalid as error:
+    assert changed
+    print(error)
+    raise SystemExit(1)
+raise SystemExit('unexpected acceptance')
+""",
+            str(root),
+            str(candidate_file),
+            blocked_view,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1 and result.stderr == ""
+    assert "cannot replace the derived current generation" in result.stdout
+    history = (
+        private
+        / "history/manifests"
+        / (f"{candidate.generation_id}_{candidate.manifest_sha256}.json")
+    )
+    assert history.read_bytes() == candidate.to_bytes()
+    assert first_history.read_bytes() == first.to_bytes()
+    with pytest.raises(ProjectMemoryStoreInvalid):
+        load_project_memory_generation(root)
+    target = private / blocked_view
+    target.rmdir()
+    target.with_name(blocked_view + ".retained").rename(target)
+    assert commit_project_memory_generation(root, candidate) == history
+    assert load_project_memory_generation(root) == candidate
+    assert verify_project_memory_history(root) == (
+        candidate.manifest_sha256,
+        first.manifest_sha256,
+    )
+    assert not list(private.glob(".*.tmp"))
+
+
+@pytest.mark.parametrize("invalid_predecessor", ["identity", "order"])
+def test_history_rejects_rehashed_project_or_time_discontinuity(
+    tmp_path: Path, invalid_predecessor: str
+) -> None:
+    """Valid object hashes do not permit project changes or backwards history."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-history", payload)
+    write_project_memory_record(root, item, payload)
+    predecessor = ProjectMemoryManifest.build(
+        project_id="OTHER" if invalid_predecessor == "identity" else "PROJECT",
+        generated_at="2026-09-04T12:03:00.000000Z",
+        previous_manifest_sha256=None,
+        parents=parents(),
+        records=(item,),
+    )
+    tip = manifest("2026-09-04T12:02:00.000000Z", (item,), predecessor.manifest_sha256)
+    private = root / "agentic_project_memory"
+    history = private / "history/manifests"
+    history.mkdir(parents=True, mode=0o700)
+    history.parent.chmod(0o700)
+    for generation in (predecessor, tip):
+        path = history / f"{generation.generation_id}_{generation.manifest_sha256}.json"
+        path.write_bytes(generation.to_bytes())
+        path.chmod(0o600)
+    for name, data in [
+        ("memory_manifest.json", tip.to_bytes()),
+        ("memory_index.md", tip.index_text().encode()),
+    ]:
+        path = private / name
+        path.write_bytes(data)
+        path.chmod(0o600)
+    assert load_project_memory_generation(root) == tip
+    with pytest.raises(ProjectMemoryStoreInvalid, match="predecessor order or identity"):
+        verify_project_memory_history(root)
+
+
+def test_history_entry_quota_counts_real_retained_generations(tmp_path: Path) -> None:
+    """The public verifier refuses a real history directory beyond its quota."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-quota", payload)
+    write_project_memory_record(root, item, payload)
+    first = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    history = commit_project_memory_generation(root, first).parent
+    start = datetime(2026, 9, 4, 12, 2, tzinfo=UTC)
+    for offset in range(PROJECT_MEMORY_MAX_HISTORY_ENTRIES):
+        timestamp = (start + timedelta(seconds=offset)).strftime("%Y-%m-%dT%H:%M:%S.000000Z")
+        generation = manifest(timestamp, (item,))
+        path = history / f"{generation.generation_id}_{generation.manifest_sha256}.json"
+        path.write_bytes(generation.to_bytes())
+        path.chmod(0o600)
+    with pytest.raises(ProjectMemoryStoreInvalid, match="entry count is out of bounds"):
+        verify_project_memory_history(root)
+    assert load_project_memory_generation(root) == first
+
+
+@pytest.mark.parametrize("change", ["enumeration", "missing-current", "duplicate-digest"])
+def test_history_directory_changes_are_refused(tmp_path: Path, change: str) -> None:
+    """Real directory changes after current-view validation cannot certify history."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-enumeration", payload)
+    write_project_memory_record(root, item, payload)
+    candidate = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    history_file = commit_project_memory_generation(root, candidate)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import sys
+from pathlib import Path
+from rigor_foundry.project_memory_store import ProjectMemoryStoreInvalid, verify_project_memory_history
+root, history_file, change = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
+directory = history_file.parent
+changed = False
+def interfere(event, arguments):
+    global changed
+    if event != 'os.scandir' or str(arguments[0]) != str(directory) or changed:
+        return
+    changed = True
+    if change == 'enumeration':
+        directory.rename(directory.with_name('retained-manifests'))
+    elif change == 'missing-current':
+        history_file.rename(directory.parent / 'retained-current.json')
+    else:
+        duplicate = directory / ('20260904T120200000000Z_' + history_file.name.split('_', 1)[1])
+        duplicate.write_bytes(history_file.read_bytes())
+        duplicate.chmod(0o600)
+sys.addaudithook(interfere)
+try:
+    verify_project_memory_history(root)
+except ProjectMemoryStoreInvalid as error:
+    assert changed
+    print(error)
+    raise SystemExit(1)
+raise SystemExit('unexpected acceptance')
+""",
+            str(root),
+            str(history_file),
+            change,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1 and result.stderr == ""
+    expected = {
+        "enumeration": "history cannot be enumerated",
+        "missing-current": "predecessor is missing from history",
+        "duplicate-digest": "history digest is ambiguous",
+    }
+    if change == "duplicate-digest":
+        # Filesystem enumeration order determines which equivalent refusal comes first.
+        assert any(
+            message in result.stdout
+            for message in (
+                "history digest is ambiguous",
+                "history filename does not match its manifest",
+            )
+        )
+    else:
+        assert expected[change] in result.stdout
+    assert (root / "agentic_project_memory" / item.content_path).read_bytes() == payload
+
+
+def test_repository_alias_change_cannot_redirect_record_write(tmp_path: Path) -> None:
+    """Changing a caller's repository alias cannot move an admitted record write."""
+    root = repository(tmp_path)
+    other = repository(tmp_path / "other")
+    alias = tmp_path / "alias"
+    alias.symlink_to(root, target_is_directory=True)
+    payload = b"# Identity\n"
+    item = record("identity-alias", payload)
+    metadata = tmp_path / "record.json"
+    metadata.write_text(json.dumps(item.to_dict()), encoding="utf-8")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import json, sys
+from pathlib import Path
+from rigor_foundry.project_memory_models import ProjectMemoryRecord
+from rigor_foundry.project_memory_store import ProjectMemoryStoreInvalid, write_project_memory_record
+root, other, alias, metadata = map(Path, sys.argv[1:])
+item = ProjectMemoryRecord.from_dict(json.loads(metadata.read_text()), 'record')
+target = root / 'agentic_project_memory/records/identity'
+changed = False
+def interfere(event, arguments):
+    global changed
+    if event == 'os.mkdir' and str(arguments[0]) == str(target) and not changed:
+        changed = True
+        alias.unlink()
+        alias.symlink_to(other, target_is_directory=True)
+sys.addaudithook(interfere)
+try:
+    write_project_memory_record(alias, item, b'# Identity\\n')
+except ProjectMemoryStoreInvalid as error:
+    assert changed
+    print(error)
+    raise SystemExit(1)
+raise SystemExit('unexpected acceptance')
+""",
+            str(root),
+            str(other),
+            str(alias),
+            str(metadata),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1 and result.stderr == ""
+    assert "content path changed during resolution" in result.stdout
+    assert not (root / "agentic_project_memory" / item.content_path).exists()
+    assert not (other / "agentic_project_memory" / item.content_path).exists()
+
+
+@pytest.mark.parametrize("change", ["history-create", "round-trip"])
+def test_commit_detects_concurrent_history_or_current_writer(tmp_path: Path, change: str) -> None:
+    """An out-of-protocol writer cannot silently replace the committed result."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    item = record("identity-concurrent", payload)
+    write_project_memory_record(root, item, payload)
+    candidate = manifest("2026-09-04T12:01:00.000000Z", (item,))
+    other = manifest("2026-09-04T12:02:00.000000Z", (item,), candidate.manifest_sha256)
+    candidate_file, other_file = tmp_path / "candidate.json", tmp_path / "other.json"
+    candidate_file.write_bytes(candidate.to_bytes())
+    other_file.write_bytes(other.to_bytes())
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import os, sys
+from pathlib import Path
+from rigor_foundry.project_memory_models import ProjectMemoryManifest
+from rigor_foundry.project_memory_store import ProjectMemoryStoreInvalid, commit_project_memory_generation
+root, candidate_file, other_file = map(Path, sys.argv[1:4])
+change = sys.argv[4]
+candidate = ProjectMemoryManifest.from_bytes(candidate_file.read_bytes())
+other = ProjectMemoryManifest.from_bytes(other_file.read_bytes())
+private = root / 'agentic_project_memory'
+history = private / 'history/manifests'
+target = history / (candidate.generation_id + '_' + candidate.manifest_sha256 + '.json')
+changed = False
+replacements = 0
+def interfere(event, arguments):
+    global changed
+    if change != 'history-create' or changed or event != 'open':
+        return
+    if str(arguments[0]) == str(target) and arguments[2] & os.O_EXCL:
+        changed = True
+        target.write_bytes(candidate.to_bytes())
+        target.chmod(0o600)
+def after_replace(frame, event, function):
+    global replacements, changed
+    if change != 'round-trip' or changed or event != 'c_return' or function is not os.replace:
+        return
+    replacements += 1
+    if replacements != 2:
+        return
+    changed = True
+    other_history = history / (other.generation_id + '_' + other.manifest_sha256 + '.json')
+    other_history.write_bytes(other.to_bytes())
+    other_history.chmod(0o600)
+    (private / 'memory_manifest.json').write_bytes(other.to_bytes())
+    (private / 'memory_index.md').write_text(other.index_text())
+sys.addaudithook(interfere)
+sys.setprofile(after_replace)
+try:
+    commit_project_memory_generation(root, candidate)
+except ProjectMemoryStoreInvalid as error:
+    sys.setprofile(None)
+    assert changed
+    print(error)
+    raise SystemExit(1)
+sys.setprofile(None)
+raise SystemExit('unexpected acceptance')
+""",
+            str(root),
+            str(candidate_file),
+            str(other_file),
+            change,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1 and result.stderr == ""
+    assert {
+        "history-create": "cannot retain immutable history manifest",
+        "round-trip": "committed generation did not round-trip exactly",
+    }[change] in result.stdout
+    if change == "history-create":
+        retained = commit_project_memory_generation(root, candidate)
+        assert retained.read_bytes() == candidate.to_bytes()
+    else:
+        assert load_project_memory_generation(root) == other
+        assert verify_project_memory_history(root) == (
+            other.manifest_sha256,
+            candidate.manifest_sha256,
+        )
+
+
+def test_writer_schema_refuses_simultaneously_current_supersession(tmp_path: Path) -> None:
+    """Even a directly constructed candidate must pass the public schema boundary."""
+    root = repository(tmp_path)
+    payload = b"# Identity\n"
+    initial = record("identity-initial", payload)
+    successor = record("identity-successor", payload, supersedes=(initial.record_id,))
+    for item in (initial, successor):
+        write_project_memory_record(root, item, payload)
+    first = manifest("2026-09-04T12:01:00.000000Z", (initial,))
+    commit_project_memory_generation(root, first)
+    valid_successor = manifest(
+        "2026-09-04T12:02:00.000000Z",
+        (successor,),
+        first.manifest_sha256,
+    )
+    invalid = replace(valid_successor, records=(initial, successor))
+    with pytest.raises(ProjectMemoryStoreInvalid, match=r"candidate.*manifest is invalid"):
+        commit_project_memory_generation(root, invalid)
+    assert load_project_memory_generation(root) == first
+    assert verify_project_memory_history(root) == (first.manifest_sha256,)
