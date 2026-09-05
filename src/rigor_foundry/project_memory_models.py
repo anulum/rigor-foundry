@@ -10,11 +10,13 @@
 from __future__ import annotations
 
 import hashlib
+import posixpath
 import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import cast
 
+from .deployment_profile import DeploymentProfile
 from .project_memory_primitives import (
     PROJECT_MEMORY_ASSERTION_CLASSES,
     PROJECT_MEMORY_CATEGORIES,
@@ -266,12 +268,13 @@ def _render_index(
     generation_id: str,
     parents: tuple[ProjectMemoryParent, ...],
     records: tuple[ProjectMemoryRecord, ...],
+    schema_version: str = PROJECT_MEMORY_SCHEMA_VERSION,
 ) -> str:
     """Render the bounded selective index from canonical manifest fields."""
     lines = [
         f"# {project_id} project memory index",
         "",
-        f"**Schema:** `{PROJECT_MEMORY_SCHEMA_VERSION}`  ",
+        f"**Schema:** `{schema_version}`  ",
         f"**Generation:** `{generation_id}`  ",
         "**Authority:** private advisory evidence; revalidate against canonical sources",
         "",
@@ -305,9 +308,61 @@ def _render_index(
     return "\n".join(lines)
 
 
+def _memory_deployment_profile(payload: bytes) -> DeploymentProfile:
+    try:
+        return DeploymentProfile.from_bytes(payload)
+    except ValueError as exc:
+        raise ProjectMemoryInvalid("memory deployment profile is invalid") from exc
+
+
+def project_memory_profile_parents(
+    profile: DeploymentProfile, group_id: str, project_id: str
+) -> tuple[ProjectMemoryParent, ...]:
+    """Resolve exact lexical index links from a validated deployment snapshot.
+
+    Parameters
+    ----------
+    profile:
+        Complete immutable profile, revalidated before path interpretation.
+    group_id:
+        Exact declared group identifier.
+    project_id:
+        Portable project identifier under the group's member root.
+
+    Returns
+    -------
+    tuple of ProjectMemoryParent
+        Ordered links relative to the project's private memory directory.
+        This does not prove registry membership or filesystem custody.
+
+    Raises
+    ------
+    ValueError
+        If the profile, identifiers or declared group are invalid.
+    """
+    profile = _memory_deployment_profile(profile.to_bytes())
+    try:
+        targets = profile.parent_paths(
+            expected_sha256=profile.profile_sha256, group_id=group_id, project_id=project_id
+        )
+    except ValueError as exc:
+        raise ProjectMemoryInvalid("memory profile membership is invalid") from exc
+    group = next(group for group in profile.groups if group[0] == group_id)
+    root = f"{group[2]}/{project_id}/agentic_project_memory"
+    return tuple(
+        ProjectMemoryParent(kind, posixpath.relpath(path, root)) for kind, path in targets
+    )
+
+
 @dataclass(frozen=True)
 class ProjectMemoryManifest:
-    """One content-addressed active view with a predecessor chain."""
+    """One content-addressed advisory view with a predecessor chain.
+
+    V1 has neither profile nor group. V2 embeds a complete profile and group;
+    every parent link is derived from that snapshot. Neither schema establishes
+    registry membership, live activation, source freshness beyond its metadata,
+    filesystem custody or permission to execute instructions in memory content.
+    """
 
     project_id: str
     generation_id: str
@@ -317,6 +372,8 @@ class ProjectMemoryManifest:
     records: tuple[ProjectMemoryRecord, ...]
     index_sha256: str
     manifest_sha256: str
+    profile: DeploymentProfile | None = None
+    group_id: str | None = None
 
     @classmethod
     def build(
@@ -327,8 +384,31 @@ class ProjectMemoryManifest:
         previous_manifest_sha256: str | None,
         parents: tuple[ProjectMemoryParent, ...],
         records: tuple[ProjectMemoryRecord, ...],
+        profile: DeploymentProfile | None = None,
+        group_id: str | None = None,
     ) -> ProjectMemoryManifest:
-        """Build and validate one canonical current-view generation."""
+        """Build a canonical current view without authorising storage or activation.
+
+        Parameters
+        ----------
+        project_id, generated_at, previous_manifest_sha256:
+            Exact project identity, UTC generation time and optional predecessor.
+        parents, records:
+            Ordered selective links and sorted admissible current records.
+        profile, group_id:
+            Both absent for unchanged v1; both supplied for profile-bound v2.
+            V2 parents must equal :func:`project_memory_profile_parents`.
+
+        Returns
+        -------
+        ProjectMemoryManifest
+            Validated content-addressed manifest including the generated index hash.
+
+        Raises
+        ------
+        ValueError
+            If fields, profile, parent links, record freshness or bounds fail.
+        """
         project_id = _identifier(project_id, "project_id")
         generated_at, generation_time = _timestamp(generated_at, "generated_at")
         generation_id = generation_id_for(generated_at)
@@ -336,21 +416,31 @@ class ProjectMemoryManifest:
             previous_manifest_sha256 = _digest(
                 previous_manifest_sha256, "previous_manifest_sha256"
             )
-        parents = tuple(
-            ProjectMemoryParent.from_dict(parent.to_dict(), f"parents[{index}]")
-            for index, parent in enumerate(parents)
-        )
+        if profile is None:
+            if group_id is not None:
+                raise ProjectMemoryInvalid("v1 memory cannot declare a profile group")
+            parents = tuple(
+                ProjectMemoryParent.from_dict(parent.to_dict(), f"parents[{index}]")
+                for index, parent in enumerate(parents)
+            )
+            parent_order = {kind: index for index, kind in enumerate(PROJECT_MEMORY_PARENT_KINDS)}
+            parent_kinds = tuple(parent.kind for parent in parents)
+            if (
+                parent_kinds != tuple(sorted(parent_kinds, key=parent_order.__getitem__))
+                or parent_kinds != PROJECT_MEMORY_PARENT_KINDS
+            ):
+                raise ProjectMemoryInvalid(
+                    "parents must contain every canonical kind exactly once"
+                )
+        else:
+            profile = _memory_deployment_profile(profile.to_bytes())
+            group_id = _identifier(group_id, "group_id")
+            if parents != project_memory_profile_parents(profile, group_id, project_id):
+                raise ProjectMemoryInvalid("memory parents differ from the deployment profile")
         records = tuple(
             ProjectMemoryRecord.from_dict(record.to_dict(), f"records[{index}]")
             for index, record in enumerate(records)
         )
-        parent_order = {kind: index for index, kind in enumerate(PROJECT_MEMORY_PARENT_KINDS)}
-        parent_kinds = tuple(parent.kind for parent in parents)
-        if (
-            parent_kinds != tuple(sorted(parent_kinds, key=parent_order.__getitem__))
-            or parent_kinds != PROJECT_MEMORY_PARENT_KINDS
-        ):
-            raise ProjectMemoryInvalid("parents must contain every canonical kind exactly once")
         if not records or len(records) > PROJECT_MEMORY_MAX_RECORDS:
             raise ProjectMemoryInvalid("current record count is out of bounds")
         record_ids = tuple(record.record_id for record in records)
@@ -369,12 +459,13 @@ class ProjectMemoryManifest:
                 raise ProjectMemoryInvalid(
                     "a current record cannot supersede another current record"
                 )
-        index = _render_index(project_id, generation_id, parents, records).encode("utf-8")
+        schema = PROJECT_MEMORY_SCHEMA_VERSION if profile is None else "project-memory.v2"
+        index = _render_index(project_id, generation_id, parents, records, schema).encode("utf-8")
         if len(index) > PROJECT_MEMORY_MAX_INDEX_BYTES:
             raise ProjectMemoryInvalid("generated project-memory index exceeds its byte bound")
         index_sha256 = hashlib.sha256(index).hexdigest()
         unsigned: dict[str, object] = {
-            "schema_version": PROJECT_MEMORY_SCHEMA_VERSION,
+            "schema_version": schema,
             "project_id": project_id,
             "generation_id": generation_id,
             "generated_at": generated_at,
@@ -384,6 +475,8 @@ class ProjectMemoryManifest:
             "records": [record.to_dict() for record in records],
             "index_sha256": index_sha256,
         }
+        if profile is not None:
+            unsigned.update(deployment_profile=_strict_json(profile.to_bytes()), group_id=group_id)
         manifest_sha256 = hashlib.sha256(canonical_json_bytes(unsigned)).hexdigest()
         manifest = cls(
             project_id=project_id,
@@ -394,6 +487,8 @@ class ProjectMemoryManifest:
             records=records,
             index_sha256=index_sha256,
             manifest_sha256=manifest_sha256,
+            profile=profile,
+            group_id=group_id,
         )
         if len(manifest.to_bytes()) > PROJECT_MEMORY_MAX_MANIFEST_BYTES:
             raise ProjectMemoryInvalid("canonical project-memory manifest exceeds its byte bound")
@@ -401,13 +496,41 @@ class ProjectMemoryManifest:
 
     @classmethod
     def from_bytes(cls, payload: bytes) -> ProjectMemoryManifest:
-        """Parse an exact canonical manifest and verify every derived field."""
+        """Parse an explicit v1 or v2 manifest and verify derived fields.
+
+        Parameters
+        ----------
+        payload:
+            Exact canonical JSON bytes, at most64KiB, with no trailing newline.
+
+        Returns
+        -------
+        ProjectMemoryManifest
+            Validated manifest retaining its original schema and digest identity.
+
+        Raises
+        ------
+        ValueError
+            If schema fields, profile, parent links, index, record or digest
+            closure fail. No missing field is inferred from the environment.
+        """
         if len(payload) > PROJECT_MEMORY_MAX_MANIFEST_BYTES:
             raise ProjectMemoryInvalid("canonical project-memory manifest exceeds its byte bound")
         data = _mapping(_strict_json(payload), "manifest")
-        _exact_fields(data, _MANIFEST_FIELDS, "manifest")
-        if data.get("schema_version") != PROJECT_MEMORY_SCHEMA_VERSION:
+        profiled = data.get("schema_version") == "project-memory.v2"
+        _exact_fields(
+            data,
+            _MANIFEST_FIELDS | ({"deployment_profile", "group_id"} if profiled else set()),
+            "manifest",
+        )
+        if data.get("schema_version") not in {PROJECT_MEMORY_SCHEMA_VERSION, "project-memory.v2"}:
             raise ProjectMemoryInvalid("project-memory manifest schema version is unsupported")
+        profile = (
+            _memory_deployment_profile(canonical_json_bytes(data["deployment_profile"]))
+            if profiled
+            else None
+        )
+        group_id = _identifier(data["group_id"], "group_id") if profiled else None
         if data.get("canonical_serializer") != PROJECT_MEMORY_SERIALIZER:
             raise ProjectMemoryInvalid("project-memory canonical serializer is unsupported")
         generation_id = _string(data.get("generation_id"), "generation_id", maximum=22)
@@ -420,10 +543,19 @@ class ProjectMemoryManifest:
         raw_parents = data.get("parents")
         if not isinstance(raw_parents, list):
             raise ProjectMemoryInvalid("parents must be an array")
-        parents = tuple(
-            ProjectMemoryParent.from_dict(item, f"parents[{index}]")
-            for index, item in enumerate(cast(list[object], raw_parents))
-        )
+        if profile is not None:
+            parents = project_memory_profile_parents(
+                profile,
+                _identifier(group_id, "group_id"),
+                _identifier(data.get("project_id"), "project_id"),
+            )
+            if raw_parents != [parent.to_dict() for parent in parents]:
+                raise ProjectMemoryInvalid("memory parents differ from the deployment profile")
+        else:
+            parents = tuple(
+                ProjectMemoryParent.from_dict(item, f"parents[{index}]")
+                for index, item in enumerate(cast(list[object], raw_parents))
+            )
         raw_records = data.get("records")
         if not isinstance(raw_records, list):
             raise ProjectMemoryInvalid("records must be an array")
@@ -437,6 +569,8 @@ class ProjectMemoryManifest:
             previous_manifest_sha256=previous,
             parents=parents,
             records=records,
+            profile=profile,
+            group_id=group_id,
         )
         if generation_id != manifest.generation_id:
             raise ProjectMemoryInvalid("generation_id does not match generated_at")
@@ -450,12 +584,17 @@ class ProjectMemoryManifest:
 
     def index_text(self) -> str:
         """Return the exact generated selective index."""
-        return _render_index(self.project_id, self.generation_id, self.parents, self.records)
+        schema = PROJECT_MEMORY_SCHEMA_VERSION if self.profile is None else "project-memory.v2"
+        return _render_index(
+            self.project_id, self.generation_id, self.parents, self.records, schema
+        )
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the complete manifest including its integrity digest."""
-        return {
-            "schema_version": PROJECT_MEMORY_SCHEMA_VERSION,
+        value: dict[str, object] = {
+            "schema_version": PROJECT_MEMORY_SCHEMA_VERSION
+            if self.profile is None
+            else "project-memory.v2",
             "project_id": self.project_id,
             "generation_id": self.generation_id,
             "generated_at": self.generated_at,
@@ -466,6 +605,11 @@ class ProjectMemoryManifest:
             "index_sha256": self.index_sha256,
             "manifest_sha256": self.manifest_sha256,
         }
+        if self.profile is not None:
+            value.update(
+                deployment_profile=_strict_json(self.profile.to_bytes()), group_id=self.group_id
+            )
+        return value
 
     def to_bytes(self) -> bytes:
         """Return the canonical current/history manifest bytes."""

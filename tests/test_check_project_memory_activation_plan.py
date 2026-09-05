@@ -9,21 +9,22 @@
 
 from __future__ import annotations
 
+import json
 import runpy
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
-from test_project_memory_activation_plan import proposal
+from test_project_memory_activation_plan import profiled_proposal, proposal
 
 import tools.check_project_memory_activation_plan as command
 from rigor_foundry.project_registry_models import PROJECT_REGISTRY_MAX_CONSUMERS
 from tools.check_project_memory_activation_plan import main
 
 
-def inputs(root: Path) -> list[str]:
-    p = proposal()
+def inputs(root: Path, *, profiled: bool = False) -> list[str]:
+    p = profiled_proposal() if profiled else proposal()
     entries = (
         ("previous.json", p.previous.to_bytes()),
         ("candidate.json", p.cutover.candidate.to_bytes()),
@@ -49,8 +50,13 @@ def inputs(root: Path) -> list[str]:
     return args
 
 
-def test_process_checks_proposal_without_changing_any_input(tmp_path: Path) -> None:
-    args = inputs(tmp_path)
+@pytest.mark.parametrize("profiled", [False, True])
+def test_process_checks_proposal_without_changing_any_input(
+    tmp_path: Path, profiled: bool
+) -> None:
+    args = inputs(tmp_path, profiled=profiled)
+    if profiled:
+        args.extend(("--schema-version", "project-memory-activation-plan-binding.v2"))
     before = {
         p.name: (p.read_bytes(), p.stat().st_mode, p.stat().st_mtime_ns)
         for p in tmp_path.iterdir()
@@ -96,6 +102,31 @@ def test_rejected_private_input_is_redacted(
         args = args[:-2]
     assert main(args) == 1
     assert capsys.readouterr().out == "project-memory-activation-plan: FAIL\n"
+
+
+@pytest.mark.parametrize("case", ["implicit-version", "profile-tamper"])
+def test_profiled_process_refuses_unselected_or_altered_binding(tmp_path: Path, case: str) -> None:
+    args = inputs(tmp_path, profiled=True)
+    if case == "profile-tamper":
+        target = Path(args[2])
+        data = json.loads(target.read_bytes())
+        data["deployment_profile"]["profile_id"] = "private-canary-not-for-output"
+        target.write_text(json.dumps(data, sort_keys=True, separators=(",", ":")))
+        args.extend(("--schema-version", "project-memory-activation-plan-binding.v2"))
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    script = Path(__file__).resolve().parents[1] / "tools/check_project_memory_activation_plan.py"
+    result = subprocess.run(
+        [sys.executable, str(script), *args],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert result.stdout == "project-memory-activation-plan: FAIL\n"
+    assert result.stderr == ""
+    assert before == {p.name: p.read_bytes() for p in tmp_path.iterdir()}
 
 
 def test_cli_refuses_oversized_consumer_set_before_reading_files(

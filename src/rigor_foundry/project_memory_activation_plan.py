@@ -45,6 +45,7 @@ def validate_project_memory_activation_plan(
     *,
     bootstrap_manifest: bytes,
     bootstrap_index: bytes,
+    schema_version: str = "project-memory-activation-plan-binding.v1",
 ) -> str:
     """Bind a single-project initial activation to an all-consumer registry plan.
 
@@ -57,11 +58,15 @@ def validate_project_memory_activation_plan(
     cutover:
         Candidate registry and exact expected/candidate consumer digests.
     memory:
-        Initial v1 manifest, with no predecessor or unseen supersession.
+        Initial manifest, with no predecessor or unseen supersession.
     bootstrap_manifest:
         Original empty bootstrap bytes to preserve, not a reconstructed copy.
     bootstrap_index:
         Original bounded UTF-8 bootstrap index bytes to preserve.
+    schema_version:
+        Explicit project-memory-activation-plan-binding.v1 (legacy default) or
+        project-memory-activation-plan-binding.v2. V2 requires identical profiles
+        in both registries and memory; selecting it does not grant write authority.
 
     Returns
     -------
@@ -72,7 +77,7 @@ def validate_project_memory_activation_plan(
     Raises
     ------
     ValueError
-        If an input fails its existing v1 schema or the cross-object contract.
+        If an input fails its selected schema or the cross-object contract.
     RuntimeError
         If the existing registry cutover validator refuses the transaction.
 
@@ -83,8 +88,18 @@ def validate_project_memory_activation_plan(
     publication outputs and unchanged predecessors while holding write locks.
     A caller-supplied actor or digest is not proof of those conditions.
     """
+    if schema_version not in {
+        "project-memory-activation-plan-binding.v1",
+        "project-memory-activation-plan-binding.v2",
+    }:
+        raise ProjectMemoryActivationPlanInvalid("activation binding schema is unsupported")
+    profiled = schema_version == "project-memory-activation-plan-binding.v2"
     previous = ProjectRegistry.from_bytes(previous.to_bytes())
-    if previous.profile is not None or cutover.candidate.profile is not None:
+    if not profiled and (
+        previous.profile is not None
+        or cutover.candidate.profile is not None
+        or memory.profile is not None
+    ):
         raise ProjectMemoryActivationPlanInvalid(
             "v1 memory activation cannot consume a profiled registry"
         )
@@ -95,6 +110,12 @@ def validate_project_memory_activation_plan(
         updates=cutover.updates,
     )
     candidate = cutover.candidate
+    if profiled and (
+        previous.profile is None
+        or previous.profile != candidate.profile
+        or previous.profile != memory.profile
+    ):
+        raise ProjectMemoryActivationPlanInvalid("activation requires identical nonempty profiles")
     validate_project_registry_transition(previous, candidate)
     if cutover.expected_registry_sha256 != previous.registry_sha256:
         raise ProjectMemoryActivationPlanInvalid("activation predecessor precondition differs")
@@ -142,22 +163,26 @@ def validate_project_memory_activation_plan(
         ):
             raise ProjectMemoryActivationPlanInvalid("activation changes a global payload")
 
-    group = next(g for g in previous.groups if g.group_id == selected.owning_group_id)
-    memory_root = selected.canonical_path + "/agentic_project_memory"
-    targets = {
-        "ecosystem-boot": "AGENTS.md",
-        "ecosystem-rules": "agentic-shared/SHARED_CONTEXT.md",
-        "ecosystem-memory": "agentic-shared/memory/INDEX.md",
-        "group-memory": group.memory_index_path,
-        "project-sessions": f".coordination/sessions/{selected.project_id}",
-        "project-handovers": f".coordination/handovers/{selected.project_id}",
-        "vendor-memory": "agentic-shared/memory/vendors",
-    }
-    for parent in memory.parents:
-        if parent.locator.rstrip("/") != posixpath.relpath(targets[parent.kind], memory_root):
-            raise ProjectMemoryActivationPlanInvalid(
-                "memory parent does not match its project layer"
-            )
+    if profiled:
+        if memory.group_id != selected.owning_group_id:
+            raise ProjectMemoryActivationPlanInvalid("memory group differs from registered owner")
+    else:
+        group = next(g for g in previous.groups if g.group_id == selected.owning_group_id)
+        memory_root = selected.canonical_path + "/agentic_project_memory"
+        targets = {
+            "ecosystem-boot": "AGENTS.md",
+            "ecosystem-rules": "agentic-shared/SHARED_CONTEXT.md",
+            "ecosystem-memory": "agentic-shared/memory/INDEX.md",
+            "group-memory": group.memory_index_path,
+            "project-sessions": f".coordination/sessions/{selected.project_id}",
+            "project-handovers": f".coordination/handovers/{selected.project_id}",
+            "vendor-memory": "agentic-shared/memory/vendors",
+        }
+        for parent in memory.parents:
+            if parent.locator.rstrip("/") != posixpath.relpath(targets[parent.kind], memory_root):
+                raise ProjectMemoryActivationPlanInvalid(
+                    "memory parent does not match its project layer"
+                )
     if not bootstrap_manifest or len(bootstrap_manifest) > PROJECT_MEMORY_MAX_MANIFEST_BYTES:
         raise ProjectMemoryActivationPlanInvalid("bootstrap manifest byte bound failed")
     bootstrap = project_registry_strict_json(bootstrap_manifest)
@@ -187,7 +212,7 @@ def validate_project_memory_activation_plan(
     if "\x00" in index_text or index_text.startswith("\ufeff") or not index_text.endswith("\n"):
         raise ProjectMemoryActivationPlanInvalid("bootstrap index is not bounded Markdown")
     binding: dict[str, object] = {
-        "schema_version": "project-memory-activation-plan-binding.v1",
+        "schema_version": schema_version,
         "previous_registry_sha256": previous.registry_sha256,
         "candidate_registry_sha256": candidate.registry_sha256,
         "memory_manifest_sha256": memory.manifest_sha256,
@@ -197,4 +222,6 @@ def validate_project_memory_activation_plan(
             [u.consumer_id, u.expected_sha256, u.output.output_sha256] for u in cutover.updates
         ],
     }
+    if memory.profile is not None:
+        binding["profile_sha256"] = memory.profile.profile_sha256
     return hashlib.sha256(project_registry_canonical_json(binding)).hexdigest()

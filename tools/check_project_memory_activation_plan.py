@@ -56,6 +56,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("bootstrap_index", type=Path)
     parser.add_argument("--previous-output", type=Path, action="append", default=[])
     parser.add_argument("--candidate-output", type=Path, action="append", default=[])
+    parser.add_argument(
+        "--schema-version",
+        choices=(
+            "project-memory-activation-plan-binding.v1",
+            "project-memory-activation-plan-binding.v2",
+        ),
+        default="project-memory-activation-plan-binding.v1",
+    )
     args = parser.parse_args(argv)
     remaining = PROJECT_REGISTRY_MAX_TRANSACTION_BYTES
 
@@ -130,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
                 label="bootstrap index",
                 maximum=PROJECT_MEMORY_MAX_INDEX_BYTES,
             ),
+            schema_version=args.schema_version,
         )
     except (OSError, RuntimeError, ValueError):
         print("project-memory-activation-plan: FAIL")

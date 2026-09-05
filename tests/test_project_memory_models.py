@@ -11,10 +11,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 
 import pytest
+from test_deployment_profile import encode_profile, profile_document
 
-from rigor_foundry.project_memory_models import ProjectMemoryManifest, ProjectMemoryRecord
+from rigor_foundry.deployment_profile import DeploymentProfile
+from rigor_foundry.project_memory_models import (
+    ProjectMemoryManifest,
+    ProjectMemoryRecord,
+    project_memory_profile_parents,
+)
 from rigor_foundry.project_memory_primitives import (
     PROJECT_MEMORY_PARENT_KINDS,
     ProjectMemoryActor,
@@ -81,6 +88,112 @@ def manifest(*records: ProjectMemoryRecord) -> ProjectMemoryManifest:
     )
 
 
+def profiled_manifest(
+    base: ProjectMemoryManifest | None = None,
+    *,
+    root: str = "portfolios/SCIENCE",
+    profile: DeploymentProfile | None = None,
+) -> ProjectMemoryManifest:
+    """Build a v2 memory using a real explicit alternative deployment layout."""
+    base = manifest() if base is None else base
+    profile = (
+        DeploymentProfile.from_bytes(encode_profile(profile_document(root)))
+        if profile is None
+        else profile
+    )
+    return ProjectMemoryManifest.build(
+        project_id=base.project_id,
+        generated_at=base.generated_at,
+        previous_manifest_sha256=base.previous_manifest_sha256,
+        parents=project_memory_profile_parents(profile, "SCIENCE", base.project_id),
+        records=base.records,
+        profile=profile,
+        group_id="SCIENCE",
+    )
+
+
+@pytest.mark.parametrize("root", ["portfolios/SCIENCE", "06_WEBMASTER"])
+def test_profiled_memory_exact_index_and_roundtrip(root: str) -> None:
+    current = profiled_manifest(root=root)
+    assert ProjectMemoryManifest.from_bytes(current.to_bytes()) == current
+    assert "`project-memory.v2`" in current.index_text()
+    assert current.parents[0] == ProjectMemoryParent(
+        "rules", "../" * (len(root.split("/")) + 3) + "policy/rules.md"
+    )
+    assert "agentic-shared" not in current.index_text()
+    assert current.manifest_sha256 != manifest().manifest_sha256
+    assert "deployment_profile" not in manifest().to_dict()
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "missing-profile",
+        "legacy",
+        "digest",
+        "parents",
+        "group",
+        "missing-group",
+        "parent-extra",
+        "parent-order",
+    ],
+)
+def test_profiled_memory_rejects_mixed_or_changed_bindings(case: str) -> None:
+    data = json.loads(profiled_manifest().to_bytes())
+    if case == "missing-profile":
+        del data["deployment_profile"]
+    elif case == "legacy":
+        data["schema_version"] = "project-memory.v1"
+    elif case == "digest":
+        data["deployment_profile"]["profile_id"] = "changed"
+    elif case == "parents":
+        data["parents"][0]["locator"] = "../elsewhere.md"
+    elif case == "group":
+        data["group_id"] = "UNDECLARED"
+    elif case == "missing-group":
+        del data["group_id"]
+    elif case == "parent-extra":
+        data["parents"][0]["authority"] = True
+    else:
+        data["parents"].reverse()
+    with pytest.raises(ProjectMemoryInvalid):
+        ProjectMemoryManifest.from_bytes(
+            json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+        )
+
+
+@pytest.mark.parametrize("supersedes", [None, [f"record-{i:02d}" for i in range(17)]])
+def test_record_rejects_unbounded_or_nonarray_supersession(supersedes: object) -> None:
+    data = record().to_dict()
+    data["supersedes"] = supersedes
+    with pytest.raises(ProjectMemoryInvalid, match="supersedes count"):
+        ProjectMemoryRecord.from_dict(data, "record")
+
+
+def test_profiled_constructor_rejects_unbound_parents_and_group() -> None:
+    current = profiled_manifest()
+    for profile, group_id, selected_parents in (
+        (None, "SCIENCE", parents()),
+        (current.profile, None, current.parents),
+        (current.profile, "SCIENCE", parents()),
+    ):
+        with pytest.raises(ProjectMemoryInvalid):
+            ProjectMemoryManifest.build(
+                project_id=current.project_id,
+                generated_at=current.generated_at,
+                previous_manifest_sha256=None,
+                parents=selected_parents,
+                records=current.records,
+                profile=profile,
+                group_id=group_id,
+            )
+    assert current.profile is not None
+    with pytest.raises(ProjectMemoryInvalid, match="profile is invalid"):
+        project_memory_profile_parents(
+            replace(current.profile, profile_sha256="a" * 64), "SCIENCE", "PROJECT"
+        )
+
+
 def test_manifest_round_trip_is_canonical_and_content_addressed() -> None:
     """Canonical bytes, generated index and both digests close exactly."""
     candidate = manifest()
@@ -102,7 +215,7 @@ def test_manifest_round_trip_is_canonical_and_content_addressed() -> None:
 @pytest.mark.parametrize(
     "mutate, message",
     [
-        (lambda value: value.update(schema_version="project-memory.v2"), "unsupported"),
+        (lambda value: value.update(schema_version="project-memory.v99"), "unsupported"),
         (lambda value: value.update(canonical_serializer="json"), "unsupported"),
         (lambda value: value.update(index_sha256="0" * 64), "index_sha256"),
         (lambda value: value.update(manifest_sha256="0" * 64), "manifest_sha256"),
@@ -152,7 +265,7 @@ def test_record_temporal_content_and_sensitivity_contracts() -> None:
         ProjectMemoryRecord.from_dict(value, "record")
 
     value = record().to_dict()
-    value["sources"] = [value["sources"][0], value["sources"][0]]
+    value["sources"] = [record().sources[0].to_dict()] * 2
     with pytest.raises(ProjectMemoryInvalid, match="sorted and unique"):
         ProjectMemoryRecord.from_dict(value, "record")
 

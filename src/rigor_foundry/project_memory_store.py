@@ -260,6 +260,10 @@ def _validate_transition(
         return
     if candidate.project_id != previous.project_id:
         raise ProjectMemoryStoreInvalid("project identity cannot change between generations")
+    if candidate.profile != previous.profile or candidate.group_id != previous.group_id:
+        raise ProjectMemoryStoreInvalid(
+            "memory schema, profile and group require explicit migration"
+        )
     if candidate.previous_manifest_sha256 != previous.manifest_sha256:
         raise ProjectMemoryStoreInvalid("candidate does not name the exact current predecessor")
     if candidate.generated_at <= previous.generated_at:
@@ -319,6 +323,11 @@ def commit_project_memory_generation(
     written first and accepted only when its digest matches that manifest. An
     interrupted operation therefore fails closed and can retry the same exact
     history object without overwriting it.
+
+    Both explicit memory schemas are supported. An ordinary generation cannot
+    change schema, deployment profile or owning group; an active-store migration
+    requires a separate contract. This low-level commit is not a live registry
+    activation receipt and does not enrol a protected writer.
 
     Parameters
     ----------

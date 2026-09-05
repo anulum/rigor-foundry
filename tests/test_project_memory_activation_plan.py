@@ -18,7 +18,11 @@ from test_project_memory_store import record
 from test_project_registry_models import consumers, group, profiled_registry, project, registry
 
 from rigor_foundry.project_memory_activation_plan import validate_project_memory_activation_plan
-from rigor_foundry.project_memory_models import ProjectMemoryManifest, ProjectMemoryRecord
+from rigor_foundry.project_memory_models import (
+    ProjectMemoryManifest,
+    ProjectMemoryRecord,
+    project_memory_profile_parents,
+)
 from rigor_foundry.project_memory_primitives import ProjectMemoryActor, ProjectMemoryParent
 from rigor_foundry.project_registry_cutover import (
     ProjectRegistryConsumerUpdate,
@@ -40,7 +44,7 @@ class Proposal:
     bootstrap: bytes
     index: bytes = b"# Original project index\n"
 
-    def check(self) -> str:
+    def check(self, schema_version: str = "project-memory-activation-plan-binding.v1") -> str:
         return validate_project_memory_activation_plan(
             self.previous,
             self.prior_outputs,
@@ -48,6 +52,7 @@ class Proposal:
             self.memory,
             bootstrap_manifest=self.bootstrap,
             bootstrap_index=self.index,
+            schema_version=schema_version,
         )
 
 
@@ -169,6 +174,99 @@ def proposal() -> Proposal:
     return Proposal(previous, old_outputs, plan, memory, bootstrap)
 
 
+def profiled_proposal() -> Proposal:
+    """Build one complete v2 proposal with independent group membership."""
+    p = proposal()
+    groups = (group(), group("GROUP-B"))
+    declared = consumers(p.previous.projects, groups) + tuple(
+        c for c in p.previous.consumers if c.kind not in {"group-view", "project-index"}
+    )
+    p.previous = profiled_registry(
+        ProjectRegistry.build(
+            generated_at=p.previous.generated_at,
+            previous_registry_sha256=None,
+            authority=p.previous.authority,
+            groups=groups,
+            projects=p.previous.projects,
+            consumers=tuple(sorted(declared, key=lambda c: c.consumer_id)),
+        )
+    )
+    p.prior_outputs = build_registry_consumer_outputs(
+        p.previous, {"global-boot": {"selector": "explicit"}}
+    )
+    candidate = replace(
+        p.cutover.candidate,
+        groups=groups,
+        consumers=p.previous.consumers,
+        profile=p.previous.profile,
+        previous_registry_sha256=p.previous.registry_sha256,
+    )
+    rebuild_registry(p, candidate)
+    assert p.previous.profile is not None
+    p.memory = ProjectMemoryManifest.build(
+        project_id=p.memory.project_id,
+        generated_at=p.memory.generated_at,
+        previous_manifest_sha256=None,
+        records=p.memory.records,
+        parents=project_memory_profile_parents(p.previous.profile, "GROUP-A", p.memory.project_id),
+        profile=p.previous.profile,
+        group_id="GROUP-A",
+    )
+    return p
+
+
+def test_profiled_activation_requires_explicit_version_and_exact_objects() -> None:
+    p = profiled_proposal()
+    schema = "project-memory-activation-plan-binding.v2"
+    digest = p.check(schema)
+    assert digest == p.check(schema)
+    assert len(digest) == 64
+    with pytest.raises(ValueError, match="v1 memory activation"):
+        p.check()
+    with pytest.raises(ValueError, match="unsupported"):
+        p.check("project-memory-activation-plan-binding.v99")
+    p.index += b"\n"
+    assert p.check(schema) != digest
+
+
+@pytest.mark.parametrize(
+    "case", ["legacy", "legacy-memory", "changed-candidate-profile", "foreign-group"]
+)
+def test_profiled_activation_refuses_mixed_profile_or_owner(case: str) -> None:
+    from test_deployment_profile import encode_profile
+
+    from rigor_foundry.deployment_profile import DeploymentProfile
+
+    p = proposal() if case == "legacy" else profiled_proposal()
+    if case == "legacy-memory":
+        p.memory = proposal().memory
+    elif case == "changed-candidate-profile":
+        assert p.previous.profile is not None
+        data = json.loads(p.previous.profile.to_bytes())
+        data["profile_id"] = "different-profile"
+        rebuild_registry(
+            p,
+            replace(
+                p.cutover.candidate, profile=DeploymentProfile.from_bytes(encode_profile(data))
+            ),
+        )
+    elif case == "foreign-group":
+        assert p.memory.profile is not None
+        p.memory = ProjectMemoryManifest.build(
+            project_id=p.memory.project_id,
+            generated_at=p.memory.generated_at,
+            previous_manifest_sha256=None,
+            records=p.memory.records,
+            parents=project_memory_profile_parents(
+                p.memory.profile, "GROUP-B", p.memory.project_id
+            ),
+            profile=p.memory.profile,
+            group_id="GROUP-B",
+        )
+    with pytest.raises(ValueError, match=r"profiles|registered owner"):
+        p.check("project-memory-activation-plan-binding.v2")
+
+
 def rebuild_memory(
     p: Proposal,
     *,
@@ -193,6 +291,8 @@ def rebuild_memory(
         previous_manifest_sha256=candidate.previous_manifest_sha256,
         parents=candidate.parents,
         records=candidate.records,
+        profile=candidate.profile,
+        group_id=candidate.group_id,
     )
 
 
@@ -204,6 +304,7 @@ def rebuild_registry(p: Proposal, candidate: ProjectRegistry) -> None:
         groups=candidate.groups,
         projects=candidate.projects,
         consumers=tuple(sorted(candidate.consumers, key=lambda c: c.consumer_id)),
+        profile=candidate.profile,
     )
     outputs = build_registry_consumer_outputs(
         candidate,

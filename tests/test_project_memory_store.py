@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from test_project_memory_models import profiled_manifest
 
 from rigor_foundry.project_memory_models import ProjectMemoryManifest, ProjectMemoryRecord
 from rigor_foundry.project_memory_primitives import (
@@ -116,6 +117,63 @@ def manifest(
     )
 
 
+@pytest.mark.parametrize("transition", ["same-profile", "upgrade", "downgrade", "changed-profile"])
+def test_profiled_history_preserves_identity_and_prior_bytes(
+    tmp_path: Path, transition: str
+) -> None:
+    root = repository(tmp_path)
+    content = b"# Profile-bound project identity\n"
+    identity = record("identity-0001", content)
+    record_path = write_project_memory_record(root, identity, content)
+    legacy = manifest("2026-09-04T12:01:00.000000Z", (identity,))
+    first = legacy if transition == "upgrade" else profiled_manifest(legacy)
+    old_history = commit_project_memory_generation(root, first)
+    sentinel = root / "owner-untracked.md"
+    sentinel.write_bytes(b"keep-owner-work")
+    next_base = manifest("2026-09-04T12:02:00.000000Z", (identity,), first.manifest_sha256)
+    second = (
+        next_base
+        if transition == "downgrade"
+        else profiled_manifest(
+            next_base,
+            root="06_WEBMASTER" if transition == "changed-profile" else "portfolios/SCIENCE",
+        )
+    )
+    if transition == "same-profile":
+        commit_project_memory_generation(root, second)
+        assert load_project_memory_generation(root) == second
+        assert set(verify_project_memory_history(root)) == {
+            first.manifest_sha256,
+            second.manifest_sha256,
+        }
+        result = subprocess.run(
+            [sys.executable, "-m", "tools.check_project_memory_integrity", str(root), "--history"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        assert result.stdout == "project-memory-integrity: PASS\n"
+    else:
+        before = {
+            path: path.read_bytes()
+            for path in (root / "agentic_project_memory").rglob("*")
+            if path.is_file()
+        }
+        with pytest.raises(ProjectMemoryStoreInvalid, match="explicit migration"):
+            commit_project_memory_generation(root, second)
+        assert load_project_memory_generation(root) == first
+        assert before == {
+            path: path.read_bytes()
+            for path in (root / "agentic_project_memory").rglob("*")
+            if path.is_file()
+        }
+    assert old_history.read_bytes() == first.to_bytes()
+    assert record_path.read_bytes() == content
+    assert sentinel.read_bytes() == b"keep-owner-work"
+
+
 def test_initial_generation_closes_content_index_manifest_and_history(tmp_path: Path) -> None:
     """A real initial commit retains one immutable object and exact current views."""
     root = repository(tmp_path)
@@ -147,13 +205,18 @@ def test_initial_generation_closes_content_index_manifest_and_history(tmp_path: 
     assert all(os.stat(path).st_mode & 0o777 == 0o700 for path in private_directories)
 
 
-def test_supersession_preserves_old_content_and_chains_history(tmp_path: Path) -> None:
+@pytest.mark.parametrize("profiled", [False, True])
+def test_supersession_preserves_old_content_and_chains_history(
+    tmp_path: Path, profiled: bool
+) -> None:
     """A successor removes the prior view without mutating content or history."""
     root = repository(tmp_path)
     first_content = b"# Identity one\n"
     first = record("identity-0001", first_content)
     write_project_memory_record(root, first, first_content)
     first_manifest = manifest("2026-09-04T12:01:00.000000Z", (first,))
+    if profiled:
+        first_manifest = profiled_manifest(first_manifest)
     first_history = commit_project_memory_generation(root, first_manifest)
 
     second_content = b"# Identity two\n"
@@ -164,6 +227,8 @@ def test_supersession_preserves_old_content_and_chains_history(tmp_path: Path) -
         (second,),
         first_manifest.manifest_sha256,
     )
+    if profiled:
+        second_manifest = profiled_manifest(second_manifest)
     second_history = commit_project_memory_generation(root, second_manifest)
 
     assert load_project_memory_generation(root) == second_manifest
