@@ -406,6 +406,10 @@ def load_project_memory_generation(repository_root: Path) -> ProjectMemoryManife
 def verify_project_memory_history(repository_root: Path) -> tuple[str, ...]:
     """Verify the complete predecessor chain without making it boot context.
 
+    Every linked generation, including the initial one, must satisfy the same
+    record retention, metadata immutability and supersession rules as a commit.
+    Valid content hashes alone do not establish a valid history transition.
+
     Parameters
     ----------
     repository_root:
@@ -476,6 +480,7 @@ def verify_project_memory_history(repository_root: Path) -> tuple[str, ...]:
             )
         previous_digest = historical_cursor.previous_manifest_sha256
         if previous_digest is None:
+            _validate_transition(None, historical_cursor)
             break
         previous = candidates.get(previous_digest)
         if previous is None:
@@ -487,5 +492,6 @@ def verify_project_memory_history(repository_root: Path) -> tuple[str, ...]:
             raise ProjectMemoryStoreInvalid(
                 "project-memory predecessor order or identity is invalid"
             )
+        _validate_transition(previous, historical_cursor)
         cursor = previous
     return tuple(chain)

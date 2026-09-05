@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -202,6 +204,10 @@ def test_expiry_allows_omission_but_unexpired_disappearance_is_rejected(tmp_path
     )
     commit_project_memory_generation(root, expired)
     assert load_project_memory_generation(root) == expired
+    assert verify_project_memory_history(root) == (
+        expired.manifest_sha256,
+        first.manifest_sha256,
+    )
     assert (root / "agentic_project_memory" / expiring.content_path).is_file()
 
 
@@ -518,3 +524,76 @@ def test_history_verifier_requires_every_predecessor_object(tmp_path: Path) -> N
 
     with pytest.raises(ProjectMemoryStoreInvalid, match="predecessor is missing"):
         verify_project_memory_history(root)
+
+
+@pytest.mark.parametrize(
+    ("corruption", "message"),
+    [
+        ("omission", "cannot disappear"),
+        ("metadata", "metadata cannot change"),
+        ("unknown-supersession", "unknown current record"),
+        ("initial-supersession", "unseen supersession"),
+        ("forked-supersession", "multiple direct successors"),
+    ],
+)
+def test_history_verifier_replays_generation_rules(
+    tmp_path: Path, corruption: str, message: str
+) -> None:
+    """Rehashed history must not legitimise a transition the writer would refuse."""
+    root = repository(tmp_path)
+    payload = b"# Permanent project identity\n"
+    original = record("identity-original", payload)
+    write_project_memory_record(root, original, payload)
+    anchor = record("identity-anchor", payload)
+    write_project_memory_record(root, anchor, payload)
+    first = manifest("2026-09-04T12:01:00.000000Z", (anchor, original))
+    commit_project_memory_generation(root, first)
+    successor = record("identity-successor", payload, supersedes=("never-current",))
+    write_project_memory_record(root, successor, payload)
+    forks = tuple(
+        record(identifier, payload, supersedes=(original.record_id,))
+        for identifier in ("identity-fork-one", "identity-fork-two")
+    )
+    for fork in forks:
+        write_project_memory_record(root, fork, payload)
+    variants = {
+        "omission": (anchor,),
+        "metadata": (replace(original, actor=ProjectMemoryActor("PROJECT/other", "other")),),
+        "unknown-supersession": (successor,),
+        "initial-supersession": (successor,),
+        "forked-supersession": (anchor, *forks),
+    }
+    predecessor = None if corruption == "initial-supersession" else first.manifest_sha256
+    invalid = manifest("2026-09-04T12:02:00.000000Z", variants[corruption], predecessor)
+    with pytest.raises(ProjectMemoryStoreInvalid):
+        commit_project_memory_generation(root, invalid)
+
+    tip = manifest("2026-09-04T12:03:00.000000Z", invalid.records, invalid.manifest_sha256)
+    private = root / "agentic_project_memory"
+    for generation in (invalid, tip):
+        history = (
+            private
+            / "history/manifests"
+            / (f"{generation.generation_id}_{generation.manifest_sha256}.json")
+        )
+        history.write_bytes(generation.to_bytes())
+        history.chmod(0o600)
+    (private / "memory_manifest.json").write_bytes(tip.to_bytes())
+    (private / "memory_index.md").write_text(tip.index_text(), encoding="utf-8")
+    assert load_project_memory_generation(root) == tip
+    before = {path: path.read_bytes() for path in private.rglob("*") if path.is_file()}
+
+    with pytest.raises(ProjectMemoryStoreInvalid, match=message):
+        verify_project_memory_history(root)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "tools.check_project_memory_integrity", str(root), "--history"],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert result.stdout == b"project-memory-integrity: FAIL\n"
+    assert result.stderr == b""
+    assert {path: path.read_bytes() for path in before} == before
