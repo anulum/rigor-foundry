@@ -52,6 +52,18 @@ repos:
         entry: .venv/bin/python -m ruff format --check
         language: system
         types_or: [python, pyi]
+      - id: memory-test-documentation
+        name: memory preparation test documentation
+        entry: >-
+          .venv/bin/python -m ruff check --config 'lint.per-file-ignores={}'
+          tests/test_project_memory_activation_artifact.py
+          tests/test_project_memory_activation_content.py
+          tests/test_project_memory_activation_publication.py
+          tests/test_project_memory_sources.py
+          tests/test_protected_file_publication.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: mypy
         name: strict MyPy
         entry: .venv/bin/python -m mypy --strict src/rigor_foundry tools

@@ -97,6 +97,14 @@ jobs:
         run: |
           python -m ruff check src tests tools
           python -m ruff format --check src tests tools
+      - name: Memory preparation test documentation
+        run: >-
+          python -m ruff check --config 'lint.per-file-ignores={}'
+          tests/test_project_memory_activation_artifact.py
+          tests/test_project_memory_activation_content.py
+          tests/test_project_memory_activation_publication.py
+          tests/test_project_memory_sources.py
+          tests/test_protected_file_publication.py
       - name: Strict typing
         run: python -m mypy --strict src/rigor_foundry tools
       - name: Static security
