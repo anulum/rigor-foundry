@@ -1222,9 +1222,9 @@ pluggy==1.6.0 \
     #   hatchling
     #   pytest
     #   pytest-cov
-pre-commit==4.6.0 \
-    --hash=sha256:718d2208cef53fdc38206e40524a6d4d9576d103eb16f0fec11c875e7716e9d9 \
-    --hash=sha256:e2cf246f7299edcabcf15f9b0571fdce06058527f0a06535068a86d38089f29b
+pre-commit==4.6.2 \
+    --hash=sha256:8f5d7bfb021ecdbcd9d49d89847082dd24172ccde534390081a679ad046e2441 \
+    --hash=sha256:e2dde9a75d3bce11bd3831c26d134df00a2803c1d818be6a0383c3dcda25dc4e
     # via -r requirements/ci.in
 py-serializable==2.1.0 \
     --hash=sha256:9d5db56154a867a9b897c0163b33a793c804c80cee984116d02d49e4578fc103 \
