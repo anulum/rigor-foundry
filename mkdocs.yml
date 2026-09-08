@@ -41,6 +41,7 @@ nav:
   - Report differences: report-diff.md
   - Offline evidence verification: offline-verification.md
   - Source provenance: source-provenance.md
+  - Discovery source validation: reference/discovery-source-validation.md
   - Offline CRA reporting preparation: cra-reporting.md
   - CRA readiness rules and StandardPack: cra-rules.md
   - CLI: cli.md

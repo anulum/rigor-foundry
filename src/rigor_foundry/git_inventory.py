@@ -281,12 +281,14 @@ def read_stable_regular_file_at(
         raise ValueError("maximum_bytes must be an integer >= 0 or None")
     if (
         not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_NONBLOCK")
         or os.open not in os.supports_dir_fd
         or os.stat not in os.supports_dir_fd
         or os.stat not in os.supports_follow_symlinks
     ):
         raise StableReadError("platform-unavailable", relative)
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
+    # A FIFO must not block before the descriptor's regular-file check.
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW | os.O_NONBLOCK
     try:
         descriptor = os.open(name, flags, dir_fd=parent_descriptor)
     except OSError as exc:

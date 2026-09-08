@@ -107,6 +107,18 @@ jobs:
           tests/test_protected_file_publication.py
       - name: Strict typing
         run: python -m mypy --strict src/rigor_foundry tools
+      - name: Discovery source documentation and typing
+        run: |
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py
+          python -m mypy --strict src/rigor_foundry/discovery_source_*.py tests/discovery_source_support.py tests/test_discovery_source_*.py
+      - name: Discovery source closure coverage
+        run: >-
+          python -m pytest tests/test_discovery_source_validation.py
+          tests/test_discovery_source_boundaries.py tests/test_discovery_source_cli.py
+          --cov=rigor_foundry.discovery_source_schema
+          --cov=rigor_foundry.discovery_source_validation
+          --cov=rigor_foundry.discovery_source_cli
+          --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Static security
         run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
       - name: Licence conformance

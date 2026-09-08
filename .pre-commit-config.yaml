@@ -69,6 +69,32 @@ repos:
         entry: .venv/bin/python -m mypy --strict src/rigor_foundry tools
         language: system
         pass_filenames: false
+      - id: discovery-test-documentation
+        # This cohort retains docstrings despite the legacy test exemption.
+        name: discovery source test documentation
+        entry: >-
+          .venv/bin/python -m ruff check --config 'lint.per-file-ignores={}'
+          tests/discovery_source_support.py
+          tests/test_discovery_source_validation.py
+          tests/test_discovery_source_boundaries.py
+          tests/test_discovery_source_cli.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: discovery-strict-typing
+        name: discovery source strict typing
+        entry: >-
+          .venv/bin/python -m mypy --strict
+          src/rigor_foundry/discovery_source_schema.py
+          src/rigor_foundry/discovery_source_validation.py
+          src/rigor_foundry/discovery_source_cli.py
+          tests/discovery_source_support.py
+          tests/test_discovery_source_validation.py
+          tests/test_discovery_source_boundaries.py
+          tests/test_discovery_source_cli.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: preflight-fast
         name: bounded pre-push preflight
         entry: .venv/bin/python -m tools.preflight --fast
