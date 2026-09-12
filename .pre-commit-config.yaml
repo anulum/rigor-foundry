@@ -136,6 +136,8 @@ repos:
           src/rigor_foundry/instruction_scope.py tests/test_instruction_scope.py
           src/rigor_foundry/instruction_resolution.py tests/test_instruction_resolution.py
           src/rigor_foundry/instruction_dispatch.py tests/test_instruction_dispatch.py
+          src/rigor_foundry/signed_instruction_dispatch.py tests/test_signed_instruction_dispatch.py
+          tests/instruction_dispatch_support.py
           tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
         language: system
         pass_filenames: false

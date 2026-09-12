@@ -136,9 +136,9 @@ jobs:
       - name: Instruction dispatch documentation, typing and coverage
         run: |
           python -m tools.check_instruction_documentation
-          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_check_instruction_documentation.py
-          python -m mypy --strict src/rigor_foundry/instruction_scope.py src/rigor_foundry/instruction_resolution.py src/rigor_foundry/instruction_dispatch.py tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
-          python -m pytest tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_check_instruction_documentation.py --cov=rigor_foundry.instruction_scope --cov=rigor_foundry.instruction_resolution --cov=rigor_foundry.instruction_dispatch --cov=tools.check_instruction_documentation --cov-branch --cov-report=term-missing --cov-fail-under=100
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_check_instruction_documentation.py
+          python -m mypy --strict src/rigor_foundry/instruction_scope.py src/rigor_foundry/instruction_resolution.py src/rigor_foundry/instruction_dispatch.py src/rigor_foundry/signed_instruction_dispatch.py tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
+          python -m pytest tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/test_check_instruction_documentation.py --cov=rigor_foundry.instruction_scope --cov=rigor_foundry.instruction_resolution --cov=rigor_foundry.instruction_dispatch --cov=rigor_foundry.signed_instruction_dispatch --cov=tools.check_instruction_documentation --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Static security
         run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
       - name: Licence conformance

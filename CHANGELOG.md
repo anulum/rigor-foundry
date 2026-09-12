@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Dedicated signed dispatch permits bind the exact operation payload and complete
+  instruction policy, with current issuer validity, expiry and revocation checked
+  after host custody revalidation and before the registered handler.
 - Scoped instruction resolution and opt-in host-bound dispatch join exact effects,
   issuer precedence, explicit overrides and current adapter/route evidence before
   invoking a registered operation. Host authentication and custody remain required;

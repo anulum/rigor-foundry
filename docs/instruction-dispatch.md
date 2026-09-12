@@ -51,3 +51,28 @@ hosted provider, remote publication or cross-process enforcement deployment.
 The documentation gate checks every declaration in this maintained cohort,
 including private/nested/test definitions. Presence checks do not prove meaningful
 documentation; review still owns that judgement.
+
+## Signed operation and policy binding
+
+`signed_instruction_dispatch.dispatch_signed_instruction_action` composes the same
+dispatcher with a dedicated `SignedDispatchPermit`. The permit binds
+`dispatch_request_digest(request)` and `instruction_policy_digest(policy)`, issuer
+and explicit issuance/expiry times. Sign its `payload_digest` using the existing
+Ed25519 encoder and `DISPATCH_SIGNATURE_DOMAIN`. Campaign or report signatures
+cannot substitute. Request identity includes actual payload bytes by digest and
+all effect, adapter and route fields. Policy identity includes every source,
+selector, override edge, grantor and the semantically ordered issuer list.
+
+The host supplies a fresh context containing `SignedDispatchState`: its registered
+lease, the permit, dedicated `OfflineTrustPolicy` and current revoked permit
+payloads. The wrapper first performs existing dispatch checks, then calls the
+host's custody revalidation. Immediately afterwards it checks exact bindings,
+the real signature and current issuer/permit validity, before invoking the handler.
+Its clock and state/trust configuration must not come from untrusted request data.
+No default validity interval, cached permission or silent trust fallback exists.
+
+This proves the dedicated issuer approved these exact request and policy bytes.
+It does not independently authenticate every referenced policy document or verify
+the adapter's effect claims. Registered production providers still own truthful
+effects, current resource availability, executable/target custody and isolation.
+The signed API adds no wire parser or automatic production consumer cutover.

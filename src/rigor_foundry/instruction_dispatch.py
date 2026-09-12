@@ -92,7 +92,11 @@ def dispatch_instruction_action(
     independent remediation approval and native sandbox requirements still apply.
     A suppressed failure cannot become a successful empty result.
     """
-    if not request.actions or len(set(request.actions)) != len(request.actions):
+    if (
+        type(request.actions) is not tuple
+        or not request.actions
+        or len(set(request.actions)) != len(request.actions)
+    ):
         raise ValueError("dispatch requires unique explicit effects")
     if type(request.payload) is not bytes:
         raise ValueError("dispatch payload must be immutable bytes")
