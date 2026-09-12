@@ -123,6 +123,23 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: instruction-dispatch-documentation
+        name: instruction dispatch all-definition documentation
+        entry: .venv/bin/python -m tools.check_instruction_documentation
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: instruction-dispatch-typing
+        name: instruction dispatch strict typing
+        entry: >-
+          .venv/bin/python -m mypy --strict
+          src/rigor_foundry/instruction_scope.py tests/test_instruction_scope.py
+          src/rigor_foundry/instruction_resolution.py tests/test_instruction_resolution.py
+          src/rigor_foundry/instruction_dispatch.py tests/test_instruction_dispatch.py
+          tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: preflight-fast
         name: bounded pre-push preflight
         entry: .venv/bin/python -m tools.preflight --fast

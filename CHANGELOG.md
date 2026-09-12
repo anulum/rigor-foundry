@@ -7,6 +7,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Scoped instruction resolution and opt-in host-bound dispatch join exact effects,
+  issuer precedence, explicit overrides and current adapter/route evidence before
+  invoking a registered operation. Host authentication and custody remain required;
+  no existing CLI, remediation authority or quality-profile semantics change.
 - Opt-in campaign creation inside a trusted host admission lease, before storage
   preparation or repository scanning. The existing local API remains unchanged;
   the boundary does not authenticate providers or activate ecosystem policy.

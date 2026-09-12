@@ -62,6 +62,7 @@ nav:
   - Claim isolation and fleet views: claim-isolation.md
   - Cross-repository campaigns: cross-repository-campaigns.md
   - Campaign admission: campaign-admission.md
+  - Instruction dispatch: instruction-dispatch.md
   - Adapter catalogue: adapter-catalogue.md
   - Remediation execution: remediation-executor.md
   - Polyglot capability matrix: polyglot-capability-matrix.md
