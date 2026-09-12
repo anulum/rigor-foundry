@@ -13,6 +13,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Refresh hash-locked development/build tools and immutable maintenance,
+  provenance, release and Scorecard actions.
+
 - Dedicated signed dispatch permits bind the exact operation payload and complete
   instruction policy, with current issuer validity, expiry and revocation checked
   after host custody revalidation and before the registered handler.

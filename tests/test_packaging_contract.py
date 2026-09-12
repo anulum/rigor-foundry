@@ -102,7 +102,7 @@ def test_build_backend_and_base_image_are_immutable() -> None:
         project = tomllib.load(stream)
     assert project["build-system"]["requires"] == [
         "hatchling==1.31.0",
-        "packaging==26.2",
+        "packaging==26.3",
         "pathspec==1.1.1",
         "pluggy==1.6.0",
         "trove-classifiers==2026.6.1.19",
@@ -120,8 +120,8 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     bases = re.findall(r"^FROM\s+([^\s]+)", dockerfile, re.MULTILINE)
     assert len(bases) == 2
     assert all("@sha256:" in base for base in bases)
-    assert "snapshot.debian.org/archive/debian/20260830T000000Z" in dockerfile
-    assert "snapshot.debian.org/archive/debian-security/20260830T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian/20260912T150000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian-security/20260912T150000Z" in dockerfile
     assert "USER rigor" in dockerfile
 
 
