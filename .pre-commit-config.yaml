@@ -105,6 +105,22 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: campaign-admission-documentation
+        name: campaign admission test documentation
+        entry: >-
+          .venv/bin/python -m ruff check --config 'lint.per-file-ignores={}'
+          tests/test_campaign_admission.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: campaign-admission-typing
+        name: campaign admission strict typing
+        entry: >-
+          .venv/bin/python -m mypy --strict
+          src/rigor_foundry/campaign_admission.py tests/test_campaign_admission.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: preflight-fast
         name: bounded pre-push preflight
         entry: .venv/bin/python -m tools.preflight --fast

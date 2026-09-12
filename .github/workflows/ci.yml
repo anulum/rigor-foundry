@@ -128,6 +128,11 @@ jobs:
           --cov=rigor_foundry.discovery_source_validation
           --cov=rigor_foundry.discovery_source_cli
           --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Campaign admission documentation, typing and coverage
+        run: |
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_campaign_admission.py
+          python -m mypy --strict src/rigor_foundry/campaign_admission.py tests/test_campaign_admission.py
+          python -m pytest tests/test_campaign_admission.py --cov=rigor_foundry.campaign_admission --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Static security
         run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
       - name: Licence conformance

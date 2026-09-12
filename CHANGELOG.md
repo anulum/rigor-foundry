@@ -5,6 +5,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in campaign creation inside a trusted host admission lease, before storage
+  preparation or repository scanning. The existing local API remains unchanged;
+  the boundary does not authenticate providers or activate ecosystem policy.
+
 ## [1.0.0] - 2026-07-21
 
 ### Added
