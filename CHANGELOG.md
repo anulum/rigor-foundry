@@ -5,6 +5,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep CI subprocess imports anchored to the checkout and combine identical
+  installed/source coverage paths without lowering the coverage threshold.
+- Validate immutable Scorecard action references without freezing an obsolete
+  dependency version in the public-evidence test.
+
 ### Security
 
 - Refresh the pinned Debian package snapshot to include patched PCRE2, Perl,

@@ -395,7 +395,7 @@ def test_public_evidence_uses_canonical_published_scorecard() -> None:
     """The README badge must be backed by the official publishing workflow."""
     workflow = (_ROOT / ".github" / "workflows" / "scorecard.yml").read_text(encoding="utf-8")
     readme = (_ROOT / "README.md").read_text(encoding="utf-8")
-    assert "ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a" in workflow
+    assert re.search(r"uses: ossf/scorecard-action@[0-9a-f]{40}(?:\s|$)", workflow)
     assert "publish_results: true" in workflow
     assert "id-token: write" in workflow
     assert "branch_protection_rule:" not in workflow

@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      PYTHONPATH: src
+      PYTHONPATH: ${{ github.workspace }}/src
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -159,7 +159,7 @@ jobs:
 
   test:
     env:
-      PYTHONPATH: src
+      PYTHONPATH: ${{ github.workspace }}/src
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:

@@ -183,6 +183,10 @@ branch = true
 source = ["rigor_foundry"]
 patch = ["subprocess"]
 
+[tool.coverage.paths]
+# CI installs this checkout; subprocesses can exercise either identical copy.
+rigor_foundry = ["src/rigor_foundry", "*/site-packages/rigor_foundry"]
+
 [tool.coverage.report]
 fail_under = 98
 show_missing = true

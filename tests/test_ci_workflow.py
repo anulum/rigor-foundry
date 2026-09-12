@@ -7,8 +7,13 @@
 # RigorFoundry — CI workflow contract tests
 """Verify the hosted CI coverage publication boundary."""
 
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
+import coverage
 import yaml
 
 
@@ -18,7 +23,7 @@ def test_coverage_jobs_share_source_imports_without_masking_wheel() -> None:
     assert "PYTHONPATH" not in workflow.get("env", {})
     for name in ("quality", "test"):
         job = workflow["jobs"][name]
-        assert job["env"]["PYTHONPATH"] == "src"
+        assert job["env"]["PYTHONPATH"] == "${{ github.workspace }}/src"
         for step in job["steps"]:
             assert "PYTHONPATH" not in step.get("env", {})
     distribution = workflow["jobs"]["distribution"]
@@ -26,6 +31,67 @@ def test_coverage_jobs_share_source_imports_without_masking_wheel() -> None:
     for step in distribution["steps"]:
         assert "PYTHONPATH" not in step.get("env", {})
         assert "PYTHONPATH" not in step.get("run", "")
+
+
+def test_coverage_combines_real_cli_copies_from_distinct_working_directories(
+    tmp_path: Path,
+) -> None:
+    """Combine actual CLI execution from identical checkout and site-package bytes."""
+    root = Path(__file__).resolve().parents[1]
+    installed = tmp_path / "site-packages"
+    shutil.copytree(
+        root / "src/rigor_foundry",
+        installed / "rigor_foundry",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    data_file = tmp_path / ".coverage"
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("COVERAGE_", "COV_CORE_"))
+    }
+    environment["COVERAGE_FILE"] = str(data_file)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    for source, cwd in ((root / "src", root), (installed, tmp_path)):
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "coverage",
+                "run",
+                "--rcfile",
+                str(root / "pyproject.toml"),
+                "--parallel-mode",
+                "-m",
+                "rigor_foundry",
+                "--version",
+            ],
+            cwd=cwd,
+            env=environment | {"PYTHONPATH": str(source)},
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        assert result.stdout.strip()
+    raw_versions: set[str] = set()
+    for path in tmp_path.glob(".coverage.*"):
+        raw = coverage.CoverageData(basename=str(path))
+        raw.read()
+        raw_versions.update(name for name in raw.measured_files() if name.endswith("/version.py"))
+    assert raw_versions == {
+        str(root / "src/rigor_foundry/version.py"),
+        str(installed / "rigor_foundry/version.py"),
+    }
+    measured = coverage.Coverage(
+        config_file=str(root / "pyproject.toml"), data_file=str(data_file)
+    )
+    measured.combine(strict=True, keep=True)
+    data = measured.get_data()
+    version_files = [name for name in data.measured_files() if name.endswith("/version.py")]
+    assert version_files == [str(root / "src/rigor_foundry/version.py")]
+    assert data.lines(version_files[0])
+    assert not any("/site-packages/rigor_foundry/" in name for name in data.measured_files())
 
 
 def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
