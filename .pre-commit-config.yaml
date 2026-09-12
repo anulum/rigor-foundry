@@ -85,6 +85,7 @@ repos:
           tests/test_discovery_source_validation.py
           tests/test_discovery_source_boundaries.py
           tests/test_discovery_source_cli.py
+          tests/test_discovery_progress.py
         language: system
         pass_filenames: false
         always_run: true
@@ -95,10 +96,12 @@ repos:
           src/rigor_foundry/discovery_source_schema.py
           src/rigor_foundry/discovery_source_validation.py
           src/rigor_foundry/discovery_source_cli.py
+          src/rigor_foundry/discovery_progress.py
           tests/discovery_source_support.py
           tests/test_discovery_source_validation.py
           tests/test_discovery_source_boundaries.py
           tests/test_discovery_source_cli.py
+          tests/test_discovery_progress.py
         language: system
         pass_filenames: false
         always_run: true

@@ -98,6 +98,9 @@ _SCHEMA_SYMBOLS = {
 }
 
 _SCHEMA_DISCOVERY_EXCLUSIONS = {
+    "discovery_progress._PROGRESS_SCHEMA_VERSION": (
+        "private discovery bookkeeping transaction, not ratified policy or frozen 1.0 interchange"
+    ),
     "deployment_profile.DEPLOYMENT_PROFILE_SCHEMA_VERSION": (
         "operator-local deployment topology and memory paths, not a frozen public "
         "1.0 interchange; generic parser availability does not publish profile contents"
