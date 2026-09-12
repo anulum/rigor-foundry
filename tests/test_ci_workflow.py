@@ -9,6 +9,24 @@
 
 from pathlib import Path
 
+import yaml
+
+
+def test_coverage_jobs_share_source_imports_without_masking_wheel() -> None:
+    """Measure checkout imports consistently while keeping wheel smoke isolated."""
+    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    assert "PYTHONPATH" not in workflow.get("env", {})
+    for name in ("quality", "test"):
+        job = workflow["jobs"][name]
+        assert job["env"]["PYTHONPATH"] == "src"
+        for step in job["steps"]:
+            assert "PYTHONPATH" not in step.get("env", {})
+    distribution = workflow["jobs"]["distribution"]
+    assert "PYTHONPATH" not in distribution.get("env", {})
+    for step in distribution["steps"]:
+        assert "PYTHONPATH" not in step.get("env", {})
+        assert "PYTHONPATH" not in step.get("run", "")
+
 
 def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     """Require isolated OIDC upload of the existing Python 3.12 report."""
@@ -27,3 +45,32 @@ def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     assert "disable_search: true" in coverage_job
     assert "fail_ci_if_error: true" in coverage_job
     assert "CODECOV_TOKEN" not in coverage_job
+
+
+def test_memory_documentation_cohort_is_enforced_in_ci_and_commit_hook() -> None:
+    """Keep moved memory test owners inside both non-exempt documentation checks."""
+    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    hosted = next(
+        step["run"]
+        for step in workflow["jobs"]["quality"]["steps"]
+        if step.get("name") == "Memory preparation test documentation"
+    )
+    local = next(
+        hook["entry"]
+        for repository in hooks["repos"]
+        for hook in repository["hooks"]
+        if hook["id"] == "memory-test-documentation"
+    )
+    for command in (hosted, local):
+        assert "--config 'lint.per-file-ignores={}'" in command
+        for path in (
+            "tests/test_project_memory_activation_plan.py",
+            "tests/project_memory_store_support.py",
+            "tests/test_project_memory_store.py",
+            "tests/test_project_memory_reader.py",
+            "tests/test_project_memory_history.py",
+            "tests/test_project_memory_filesystem_safety.py",
+            "tests/test_project_registry_cutover.py",
+        ):
+            assert path in command.split()

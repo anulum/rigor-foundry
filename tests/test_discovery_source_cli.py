@@ -56,6 +56,7 @@ def test_cli_callable_and_module_entry(
         ["--max-sources", "PRIVATE-CANARY"],
         ["--root", "/missing/PRIVATE-CANARY"],
         ["--manifest", "PRIVATE-CANARY.txt"],
+        ["--manifest"],
     ],
 )
 def test_cli_redacted_refusal(

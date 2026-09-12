@@ -26,6 +26,8 @@ jobs:
   quality:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      PYTHONPATH: src
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -101,6 +103,13 @@ jobs:
         run: >-
           python -m ruff check --config 'lint.per-file-ignores={}'
           tests/test_project_memory_activation_artifact.py
+          tests/test_project_memory_activation_plan.py
+          tests/project_memory_store_support.py
+          tests/test_project_memory_store.py
+          tests/test_project_memory_reader.py
+          tests/test_project_memory_history.py
+          tests/test_project_memory_filesystem_safety.py
+          tests/test_project_registry_cutover.py
           tests/test_project_memory_activation_content.py
           tests/test_project_memory_activation_publication.py
           tests/test_project_memory_sources.py
@@ -138,6 +147,8 @@ jobs:
           retention-days: 30
 
   test:
+    env:
+      PYTHONPATH: src
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -198,11 +209,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: |
+            requirements/ci.txt
             requirements/test.txt
             requirements/security.txt
             requirements/native.txt
       - name: Install hash-locked test environment
         run: |
+          python -m venv "$RUNNER_TEMP/rigor-docs-venv"
+          "$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes -r requirements/ci.txt
           python -m pip install --require-hashes -r requirements/test.txt
           python -m pip install --require-hashes -r requirements/security.txt
           python -m pip install --require-hashes -r requirements/native.txt
@@ -213,6 +227,8 @@ jobs:
           python -m tools.install_trivy
           python -m tools.install_osv_scanner
       - name: Run exhaustive CI-owned suite
+        env:
+          RIGOR_DOCUMENTATION_PYTHON: ${{ runner.temp }}/rigor-docs-venv/bin/python
         run: >-
           python -m pytest tests -q
           --cov=rigor_foundry --cov-branch

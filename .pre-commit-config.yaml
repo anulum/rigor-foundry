@@ -57,6 +57,13 @@ repos:
         entry: >-
           .venv/bin/python -m ruff check --config 'lint.per-file-ignores={}'
           tests/test_project_memory_activation_artifact.py
+          tests/test_project_memory_activation_plan.py
+          tests/project_memory_store_support.py
+          tests/test_project_memory_store.py
+          tests/test_project_memory_reader.py
+          tests/test_project_memory_history.py
+          tests/test_project_memory_filesystem_safety.py
+          tests/test_project_registry_cutover.py
           tests/test_project_memory_activation_content.py
           tests/test_project_memory_activation_publication.py
           tests/test_project_memory_sources.py

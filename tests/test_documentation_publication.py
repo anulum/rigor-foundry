@@ -10,11 +10,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import stat
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 from tools._repository import ROOT
 
@@ -49,13 +52,21 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
         record.chmod(0o600)
         before[relative] = (record.read_bytes(), record.stat())
 
-    subprocess.run(
-        [sys.executable, "-m", "mkdocs", "build", "--strict"],
+    build = subprocess.run(
+        [
+            os.environ.get("RIGOR_DOCUMENTATION_PYTHON", sys.executable),
+            "-m",
+            "mkdocs",
+            "build",
+            "--strict",
+        ],
         cwd=repository,
-        check=True,
+        check=False,
         capture_output=True,
+        text=True,
         timeout=60,
     )
+    assert build.returncode == 0, build.stderr[-4000:]
     site = repository / "site"
     assert (site / "index.html").is_file()
     search = json.loads((site / "search/search_index.json").read_text())
@@ -74,6 +85,31 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
         assert stat.S_IMODE(record.stat().st_mode) == 0o600
         assert record.stat().st_mtime_ns == status.st_mtime_ns
         assert record.stat().st_ino == status.st_ino
+
+
+def test_exhaustive_job_installs_documentation_dependencies() -> None:
+    """The job exercising the real privacy build installs its locked renderer."""
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    steps = workflow["jobs"]["test"]["steps"]
+    install = next(
+        step for step in steps if step.get("name") == "Install hash-locked test environment"
+    )
+    commands = install["run"].splitlines()
+    create = 'python -m venv "$RUNNER_TEMP/rigor-docs-venv"'
+    provision = '"$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes -r requirements/ci.txt'
+    assert commands.index(create) < commands.index(provision)
+    suite = next(step for step in steps if step.get("name") == "Run exhaustive CI-owned suite")
+    assert (
+        suite["env"]["RIGOR_DOCUMENTATION_PYTHON"]
+        == "${{ runner.temp }}/rigor-docs-venv/bin/python"
+    )
+    setup = next(
+        step for step in steps if step.get("uses", "").startswith("actions/setup-python@")
+    )
+    assert "requirements/ci.txt" in setup["with"]["cache-dependency-path"].splitlines()
+    lock = (ROOT / "requirements/ci.txt").read_text()
+    assert "\nmkdocs==" in lock
+    assert "\nmkdocs-material==" in lock
 
 
 def test_documentation_upload_is_bounded_to_built_site() -> None:

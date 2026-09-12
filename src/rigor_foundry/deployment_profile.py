@@ -25,6 +25,8 @@ from .project_memory_primitives import (
     strict_json,
 )
 
+DEPLOYMENT_PROFILE_SCHEMA_VERSION = "deployment-profile.v1"
+
 DEPLOYMENT_PROFILE_MAX_BYTES = 65536
 
 
@@ -97,7 +99,7 @@ class DeploymentProfile:
             ),
             "profile",
         )
-        if data["schema_version"] != "deployment-profile.v1":
+        if data["schema_version"] != DEPLOYMENT_PROFILE_SCHEMA_VERSION:
             raise ValueError("unsupported deployment profile")
         identifier = require_identifier(data["profile_id"], "profile_id")
         groups: list[tuple[str, str, str, str]] = []
@@ -186,7 +188,7 @@ class DeploymentProfile:
         """
         return canonical_json_bytes(
             {
-                "schema_version": "deployment-profile.v1",
+                "schema_version": DEPLOYMENT_PROFILE_SCHEMA_VERSION,
                 "profile_id": self.profile_id,
                 "groups": [
                     dict(

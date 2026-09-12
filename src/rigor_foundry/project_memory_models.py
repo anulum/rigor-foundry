@@ -61,6 +61,8 @@ from .project_memory_primitives import (
     strict_json as _strict_json,
 )
 
+PROFILED_PROJECT_MEMORY_SCHEMA_VERSION = "project-memory.v2"
+
 _GENERATION_ID = re.compile(r"[0-9]{8}T[0-9]{12}Z")
 
 _RECORD_FIELDS = frozenset(
@@ -459,7 +461,11 @@ class ProjectMemoryManifest:
                 raise ProjectMemoryInvalid(
                     "a current record cannot supersede another current record"
                 )
-        schema = PROJECT_MEMORY_SCHEMA_VERSION if profile is None else "project-memory.v2"
+        schema = (
+            PROJECT_MEMORY_SCHEMA_VERSION
+            if profile is None
+            else PROFILED_PROJECT_MEMORY_SCHEMA_VERSION
+        )
         index = _render_index(project_id, generation_id, parents, records, schema).encode("utf-8")
         if len(index) > PROJECT_MEMORY_MAX_INDEX_BYTES:
             raise ProjectMemoryInvalid("generated project-memory index exceeds its byte bound")
@@ -517,13 +523,16 @@ class ProjectMemoryManifest:
         if len(payload) > PROJECT_MEMORY_MAX_MANIFEST_BYTES:
             raise ProjectMemoryInvalid("canonical project-memory manifest exceeds its byte bound")
         data = _mapping(_strict_json(payload), "manifest")
-        profiled = data.get("schema_version") == "project-memory.v2"
+        profiled = data.get("schema_version") == PROFILED_PROJECT_MEMORY_SCHEMA_VERSION
         _exact_fields(
             data,
             _MANIFEST_FIELDS | ({"deployment_profile", "group_id"} if profiled else set()),
             "manifest",
         )
-        if data.get("schema_version") not in {PROJECT_MEMORY_SCHEMA_VERSION, "project-memory.v2"}:
+        if data.get("schema_version") not in {
+            PROJECT_MEMORY_SCHEMA_VERSION,
+            PROFILED_PROJECT_MEMORY_SCHEMA_VERSION,
+        }:
             raise ProjectMemoryInvalid("project-memory manifest schema version is unsupported")
         profile = (
             _memory_deployment_profile(canonical_json_bytes(data["deployment_profile"]))
@@ -584,7 +593,11 @@ class ProjectMemoryManifest:
 
     def index_text(self) -> str:
         """Return the exact generated selective index."""
-        schema = PROJECT_MEMORY_SCHEMA_VERSION if self.profile is None else "project-memory.v2"
+        schema = (
+            PROJECT_MEMORY_SCHEMA_VERSION
+            if self.profile is None
+            else PROFILED_PROJECT_MEMORY_SCHEMA_VERSION
+        )
         return _render_index(
             self.project_id, self.generation_id, self.parents, self.records, schema
         )
@@ -594,7 +607,7 @@ class ProjectMemoryManifest:
         value: dict[str, object] = {
             "schema_version": PROJECT_MEMORY_SCHEMA_VERSION
             if self.profile is None
-            else "project-memory.v2",
+            else PROFILED_PROJECT_MEMORY_SCHEMA_VERSION,
             "project_id": self.project_id,
             "generation_id": self.generation_id,
             "generated_at": self.generated_at,

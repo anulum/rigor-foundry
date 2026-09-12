@@ -32,6 +32,10 @@ from .project_registry_primitives import (
     project_registry_strict_json,
 )
 
+PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION = "project-registry-consumer.v2"
+PROFILED_GROUP_VIEW_SCHEMA_VERSION = "project-group-view.v2"
+PROFILED_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION = "project-memory-registry-binding.v2"
+
 PROJECT_REGISTRY_CONSUMER_SCHEMA_VERSION = "gotm-project-registry-consumer.v1"
 PROJECT_GROUP_VIEW_SCHEMA_VERSION = "gotm-project-group-view.v1"
 PROJECT_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION = "gotm-project-memory-registry-binding.v1"
@@ -84,7 +88,7 @@ class ProjectRegistryConsumerOutput:
             "payload": dict(payload),
         }
         if registry.profile is not None:
-            value["schema_version"] = "project-registry-consumer.v2"
+            value["schema_version"] = PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION
             value["profile_sha256"] = registry.profile.profile_sha256
         value["output_sha256"] = hashlib.sha256(project_registry_canonical_json(value)).hexdigest()
         return cls.from_dict(value)
@@ -93,12 +97,12 @@ class ProjectRegistryConsumerOutput:
     def from_dict(cls, value: object) -> ProjectRegistryConsumerOutput:
         """Parse and validate one exact consumer output."""
         data = _mapping(value, "consumer output")
-        profiled = data.get("schema_version") == "project-registry-consumer.v2"
+        profiled = data.get("schema_version") == PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION
         if set(data) != _OUTPUT_FIELDS | ({"profile_sha256"} if profiled else set()):
             raise ProjectRegistryInvalid("consumer output fields do not match its schema")
         if data.get("schema_version") not in {
             PROJECT_REGISTRY_CONSUMER_SCHEMA_VERSION,
-            "project-registry-consumer.v2",
+            PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION,
         }:
             raise ProjectRegistryInvalid("consumer output schema version is unsupported")
         consumer_id = _identifier(data.get("consumer_id"), "consumer_id")
@@ -148,7 +152,7 @@ class ProjectRegistryConsumerOutput:
             "payload": self.payload,
         }
         if self.profile_sha256 is not None:
-            value["schema_version"] = "project-registry-consumer.v2"
+            value["schema_version"] = PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION
             value["profile_sha256"] = self.profile_sha256
         if include_digest:
             value["output_sha256"] = self.output_sha256
@@ -184,7 +188,7 @@ def build_group_view_output(
     )
     payload: dict[str, object] = {
         "schema_version": (
-            "project-group-view.v2"
+            PROFILED_GROUP_VIEW_SCHEMA_VERSION
             if registry.profile is not None
             else PROJECT_GROUP_VIEW_SCHEMA_VERSION
         ),
@@ -210,7 +214,7 @@ def build_project_index_output(
         raise ProjectRegistryInvalid("project-index consumer project is absent")
     payload: dict[str, object] = {
         "schema_version": (
-            "project-memory-registry-binding.v2"
+            PROFILED_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION
             if registry.profile is not None
             else PROJECT_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION
         ),

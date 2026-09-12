@@ -155,6 +155,28 @@ def test_real_git_object_and_cli_pass(tmp_path: Path, capsys: pytest.CaptureFixt
     assert capsys.readouterr().out == "reactor-kernel-library: PASS\n"
 
 
+def test_git_resolution_ignores_untrusted_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Resolve real committed pins without executing a PATH-shadowing Git command."""
+    family_map, kernels, reverse, devices, _ = _workspace(tmp_path)
+    untrusted = tmp_path / "untrusted-bin"
+    untrusted.mkdir()
+    shadow = untrusted / "git"
+    shadow.write_text("#!/bin/sh\nexit 97\n", encoding="utf-8")
+    shadow.chmod(0o700)
+    monkeypatch.setenv("PATH", str(untrusted))
+    assert check_conformance(family_map, kernels, reverse, devices) == []
+    manifest_path = devices[0] / "reactor-domain.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["kernel_library"]["source_commit"] = "f" * 40
+    _write_json(manifest_path, manifest)
+    assert any(
+        "source_commit does not resolve" in finding
+        for finding in check_conformance(family_map, kernels, reverse, devices)
+    )
+
+
 def test_input_and_map_failures_are_reported(tmp_path: Path) -> None:
     """Unreadable inputs and every shared-library topology defect fail closed."""
     family_map, kernels, reverse, devices, _ = _workspace(tmp_path)

@@ -34,6 +34,8 @@ from .project_registry_primitives import (
     ProjectRegistryInvalid as ProjectRegistryInvalid,
 )
 
+PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION = "project-registry.v2"
+
 PROJECT_REGISTRY_SCHEMA_VERSION = "gotm-project-registry.v1"
 PROJECT_REGISTRY_SERIALIZER = "RFC8785-JCS"
 PROJECT_REGISTRY_UNASSIGNED_GROUP = "UNASSIGNED"
@@ -445,7 +447,7 @@ class ProjectRegistry:
             "consumers": [consumer.to_dict() for consumer in consumers],
         }
         if profile is not None:
-            value["schema_version"] = "project-registry.v2"
+            value["schema_version"] = PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION
             value["deployment_profile"] = project_registry_strict_json(profile.to_bytes())
         value["registry_sha256"] = hashlib.sha256(
             project_registry_canonical_json(value)
@@ -456,13 +458,13 @@ class ProjectRegistry:
     def from_dict(cls, value: object) -> ProjectRegistry:
         """Parse and cross-check one exact registry generation."""
         data = _mapping(value, "registry")
-        profiled = data.get("schema_version") == "project-registry.v2"
+        profiled = data.get("schema_version") == PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION
         _exact_fields(
             data, _REGISTRY_FIELDS | ({"deployment_profile"} if profiled else set()), "registry"
         )
         if data.get("schema_version") not in {
             PROJECT_REGISTRY_SCHEMA_VERSION,
-            "project-registry.v2",
+            PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION,
         }:
             raise ProjectRegistryInvalid("registry schema version is unsupported")
         try:
@@ -664,7 +666,7 @@ class ProjectRegistry:
             "consumers": [consumer.to_dict() for consumer in self.consumers],
         }
         if self.profile is not None:
-            value["schema_version"] = "project-registry.v2"
+            value["schema_version"] = PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION
             value["deployment_profile"] = project_registry_strict_json(self.profile.to_bytes())
         if include_digest:
             value["registry_sha256"] = self.registry_sha256

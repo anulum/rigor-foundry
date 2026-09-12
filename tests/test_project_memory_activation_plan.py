@@ -14,7 +14,7 @@ import posixpath
 from dataclasses import dataclass, replace
 
 import pytest
-from test_project_memory_store import record
+from project_memory_store_support import record
 from test_project_registry_models import consumers, group, profiled_registry, project, registry
 
 from rigor_foundry.project_memory_activation_plan import validate_project_memory_activation_plan
@@ -37,6 +37,8 @@ from rigor_foundry.project_registry_views import (
 
 @dataclass
 class Proposal:
+    """Hold exact predecessor, candidate and bootstrap bytes for activation validation."""
+
     previous: ProjectRegistry
     prior_outputs: tuple[ProjectRegistryConsumerOutput, ...]
     cutover: ProjectRegistryCutoverPlan
@@ -45,6 +47,7 @@ class Proposal:
     index: bytes = b"# Original project index\n"
 
     def check(self, schema_version: str = "project-memory-activation-plan-binding.v1") -> str:
+        """Validate this proposal and return its binding digest without filesystem writes."""
         return validate_project_memory_activation_plan(
             self.previous,
             self.prior_outputs,
@@ -58,6 +61,7 @@ class Proposal:
 
 @pytest.mark.parametrize("side", ["previous", "candidate"])
 def test_v1_activation_refuses_profiled_registry(side: str) -> None:
+    """Reject a profiled predecessor or candidate at the legacy activation boundary."""
     p = proposal()
     if side == "previous":
         p.previous = profiled_registry(p.previous)
@@ -84,6 +88,7 @@ def test_v1_activation_refuses_profiled_registry(side: str) -> None:
 
 
 def proposal() -> Proposal:
+    """Build a single-project activation with an unchanged sibling and global consumer."""
     groups = (group(),)
     projects = (project(), project("PROJECT-B"))
     base = registry(groups=groups, projects=projects)
@@ -216,6 +221,7 @@ def profiled_proposal() -> Proposal:
 
 
 def test_profiled_activation_requires_explicit_version_and_exact_objects() -> None:
+    """Bind exact profile-aware inputs and reject implicit legacy or unknown versions."""
     p = profiled_proposal()
     schema = "project-memory-activation-plan-binding.v2"
     digest = p.check(schema)
@@ -233,6 +239,7 @@ def test_profiled_activation_requires_explicit_version_and_exact_objects() -> No
     "case", ["legacy", "legacy-memory", "changed-candidate-profile", "foreign-group"]
 )
 def test_profiled_activation_refuses_mixed_profile_or_owner(case: str) -> None:
+    """Reject mismatched schema families, deployment profiles and registered groups."""
     from test_deployment_profile import encode_profile
 
     from rigor_foundry.deployment_profile import DeploymentProfile
@@ -276,7 +283,7 @@ def rebuild_memory(
     parents: tuple[ProjectMemoryParent, ...] | None = None,
     records: tuple[ProjectMemoryRecord, ...] | None = None,
 ) -> None:
-    # Rebuild through the public constructor to test semantic, not digest, refusal.
+    """Replace proposal memory through its constructor, retaining valid content digests."""
     candidate = replace(
         p.memory,
         project_id=project_id or p.memory.project_id,
@@ -297,6 +304,7 @@ def rebuild_memory(
 
 
 def rebuild_registry(p: Proposal, candidate: ProjectRegistry) -> None:
+    """Rebuild candidate consumers and bind their updates to exact predecessor digests."""
     candidate = ProjectRegistry.build(
         generated_at=candidate.generated_at,
         previous_registry_sha256=candidate.previous_registry_sha256,
@@ -326,6 +334,7 @@ def rebuild_registry(p: Proposal, candidate: ProjectRegistry) -> None:
 
 
 def test_initial_proposal_digest_binds_original_bytes_without_mutating_inputs() -> None:
+    """Preserve inputs while binding even whitespace changes in retained bootstrap bytes."""
     p = proposal()
     before = (
         p.previous.to_bytes(),
@@ -373,6 +382,7 @@ def test_initial_proposal_digest_binds_original_bytes_without_mutating_inputs() 
     ],
 )
 def test_cross_object_inconsistency_is_refused(case: str) -> None:
+    """Refuse collateral changes and inconsistent identity, time, claim or consumer state."""
     p = proposal()
     if case == "unknown-project":
         rebuild_memory(p, project_id="FOREIGN")
@@ -493,6 +503,7 @@ def test_cross_object_inconsistency_is_refused(case: str) -> None:
     "payload", [b"", b" " * 65537, b"[]", b"{}", b'{"schema_version":1,"schema_version":2}']
 )
 def test_unknown_bootstrap_is_never_treated_as_empty(payload: bytes) -> None:
+    """Reject malformed or oversized bootstrap bytes instead of inferring an empty state."""
     p = proposal()
     p.bootstrap = payload
     with pytest.raises(ValueError):
@@ -509,6 +520,7 @@ def test_unknown_bootstrap_is_never_treated_as_empty(payload: bytes) -> None:
     ],
 )
 def test_nonempty_or_foreign_bootstrap_refused(field: str, value: object) -> None:
+    """Reject bootstrap objects carrying records, active state or another project owner."""
     p = proposal()
     payload = json.loads(p.bootstrap)
     payload[field] = value
@@ -521,6 +533,7 @@ def test_nonempty_or_foreign_bootstrap_refused(field: str, value: object) -> Non
     "payload", [b"", b" " * 16385, b"\xff\n", b"\x00\n", b"\xef\xbb\xbfindex\n", b"index"]
 )
 def test_unpreservable_index_is_refused(payload: bytes) -> None:
+    """Reject indices that cannot be retained as bounded newline-terminated UTF-8 text."""
     p = proposal()
     p.index = payload
     with pytest.raises(ValueError):

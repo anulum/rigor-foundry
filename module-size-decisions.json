@@ -57,6 +57,20 @@
       "responsibility": "Ignored-inventory protocol and real-filesystem integration test owner for strict parsing, canonical evidence, file and directory capture, no-follow path custody, hardlink and special-file rejection, bounded resources, and deterministic concurrent-mutation failure."
     },
     {
+      "dependency_boundary": "Public registry cutover plans, consumer outputs, state loading and transition validation share real temporary registry/consumer targets. Recovery workers and the integrity CLI verify the same transaction state. Model builders come from test_project_registry_models; filesystem and plan builders are also consumed by cutover safety, fault, recovery and command tests. No physical project migration, live registry authority, remote publication or memory activation is performed.",
+      "lines": 790,
+      "path": "tests/test_project_registry_cutover.py",
+      "reassess_when": "The file exceeds 900 lines, another registry backend or transaction lifecycle is added, or shared filesystem/plan fixtures change responsibility; extract shared support before extending those fixture contracts.",
+      "responsibility": "Registry cutover transaction contract: exact predecessor and consumer identity admission, initial and successor commit, profiled upgrade and downgrade refusal, private target custody, rollback, recovery and complete post-write state verification."
+    },
+    {
+      "dependency_boundary": "Public protected-file, directory, lock and snapshot declarations compile canonical operation arrays and immutable payloads through prepare_protected_file_publication and prepare_protected_snapshot_publication. One activation-content composition case checks original-byte preservation. No filesystem operation, writer enrolment, permission grant, remote transport or durability execution is performed or certified.",
+      "lines": 733,
+      "path": "tests/test_protected_file_publication.py",
+      "reassess_when": "The file exceeds 850 lines, runtime execution or receipt validation enters this owner, or lock/directory/snapshot declarations acquire an independently versioned lifecycle rather than composing the same publication sequence.",
+      "responsibility": "Protected publication compiler contract: complete create/replace effects, snapshot-before-write ordering, explicit parent creation and lock ordering, shared byte/operation budgets, immutable content references and cross-effect collision refusal."
+    },
+    {
       "dependency_boundary": "Public remediation-plan types consume ControlAssessment, EffectiveProfileLock, project-profile, standard-pack, and canonical-digest records plus signing fixtures. Command-bound AdapterLock fixtures derive their digest through the public canonical_digest contract; no private production helper, remediation executor, or mutation authority is exercised.",
       "lines": 711,
       "path": "tests/test_remediation_plan.py",

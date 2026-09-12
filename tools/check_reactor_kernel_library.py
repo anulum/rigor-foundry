@@ -50,6 +50,7 @@ VERSION_ASSIGNMENT: Final = re.compile(
     rb"^__version__(?:\s*:\s*[^=]+)?\s*=\s*['\"]([^'\"]+)['\"]",
     re.MULTILINE,
 )
+GIT_EXECUTABLE: Final = "/usr/bin/git"
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -63,7 +64,7 @@ def _load_object(path: Path) -> dict[str, Any]:
 def _git_bytes(repo: Path, commit: str, path: str) -> bytes:
     """Read one file from an exact commit after proving commit-object type."""
     object_type = subprocess.run(
-        ["git", "-C", str(repo), "cat-file", "-t", commit],
+        [GIT_EXECUTABLE, "-C", str(repo), "cat-file", "-t", commit],
         check=False,
         capture_output=True,
         text=True,
@@ -71,7 +72,7 @@ def _git_bytes(repo: Path, commit: str, path: str) -> bytes:
     if object_type.returncode != 0 or object_type.stdout.strip() != "commit":
         raise ValueError("source_commit does not resolve to a commit object")
     result = subprocess.run(
-        ["git", "-C", str(repo), "show", f"{commit}:{path}"],
+        [GIT_EXECUTABLE, "-C", str(repo), "show", f"{commit}:{path}"],
         check=False,
         capture_output=True,
     )

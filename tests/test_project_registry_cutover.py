@@ -95,6 +95,7 @@ def plan(
 
 @pytest.mark.parametrize("upgrade", [False, True])
 def test_profiled_cutover_real_files_and_cli(tmp_path: Path, upgrade: bool) -> None:
+    """Commit profiled generations, retain prior bytes and reject schema downgrades."""
     first = registry() if upgrade else profiled_registry()
     root, transactions = filesystem(tmp_path, first)
     initial = plan(first)
@@ -129,6 +130,7 @@ def test_profiled_cutover_real_files_and_cli(tmp_path: Path, upgrade: bool) -> N
 def test_profiled_upgrade_crash_recovery_preserves_exact_state(
     tmp_path: Path, ordinal: int
 ) -> None:
+    """Recover interrupted upgrades idempotently without touching untracked owner files."""
     from test_project_registry_recovery import run_crash_worker
 
     from rigor_foundry.project_registry_recovery import recover_project_registry_cutover
@@ -161,6 +163,7 @@ def test_profiled_upgrade_crash_recovery_preserves_exact_state(
 
 
 def test_external_group_custom_memory_path_closes_on_disk(tmp_path: Path) -> None:
+    """Commit external-group navigation at its declared path without inventing a code root."""
     from test_deployment_profile import encode_profile
     from test_project_registry_models import resign
 
@@ -775,6 +778,7 @@ def test_verification_failure_restores_successor_registry_and_consumers(
     second_plan = plan(second, previous_outputs=first_outputs)
 
     def reject_verification(*_arguments: object) -> None:
+        """Inject post-write verification refusal to exercise exact predecessor rollback."""
         raise ProjectRegistryCutoverInvalid("simulated verification failure")
 
     monkeypatch.setattr(cutover_module, "_verify_live_state", reject_verification)

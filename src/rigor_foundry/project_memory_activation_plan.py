@@ -32,6 +32,10 @@ from .project_registry_views import (
     validate_consumer_output_for_registry,
 )
 
+PROJECT_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION = "project-memory-activation-plan-binding.v1"
+PROFILED_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION = "project-memory-activation-plan-binding.v2"
+PROJECT_MEMORY_BOOTSTRAP_SCHEMA_VERSION = "project-memory.bootstrap.v1"
+
 
 class ProjectMemoryActivationPlanInvalid(ValueError):
     """An activation proposal changes unrelated state or has inconsistent evidence."""
@@ -45,7 +49,7 @@ def validate_project_memory_activation_plan(
     *,
     bootstrap_manifest: bytes,
     bootstrap_index: bytes,
-    schema_version: str = "project-memory-activation-plan-binding.v1",
+    schema_version: str = PROJECT_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION,
 ) -> str:
     """Bind a single-project initial activation to an all-consumer registry plan.
 
@@ -89,11 +93,11 @@ def validate_project_memory_activation_plan(
     A caller-supplied actor or digest is not proof of those conditions.
     """
     if schema_version not in {
-        "project-memory-activation-plan-binding.v1",
-        "project-memory-activation-plan-binding.v2",
+        PROJECT_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION,
+        PROFILED_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION,
     }:
         raise ProjectMemoryActivationPlanInvalid("activation binding schema is unsupported")
-    profiled = schema_version == "project-memory-activation-plan-binding.v2"
+    profiled = schema_version == PROFILED_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION
     previous = ProjectRegistry.from_bytes(previous.to_bytes())
     if not profiled and (
         previous.profile is not None
@@ -189,7 +193,7 @@ def validate_project_memory_activation_plan(
     if not isinstance(bootstrap, dict):
         raise ProjectMemoryActivationPlanInvalid("bootstrap manifest must be an object")
     expected_bootstrap = {
-        "schema_version": "project-memory.bootstrap.v1",
+        "schema_version": PROJECT_MEMORY_BOOTSTRAP_SCHEMA_VERSION,
         "schema_status": "NON_RATIFIED_BOOTSTRAP",
         "activation_state": "SCAFFOLD_ONLY",
         "project_id": selected.project_id,

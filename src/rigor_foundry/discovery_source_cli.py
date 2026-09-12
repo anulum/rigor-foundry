@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     means declared snapshot integrity only, two means invalid input, and one
     means inaccessible input or unsupported platform. There are no writes.
     """
-    parser = _Parser(description=__doc__, exit_on_error=False)
+    parser = _Parser(description=__doc__)
     parser.add_argument("--root", required=True)
     parser.add_argument("--manifest", required=True)
     for name in ("total-bytes", "file-bytes", "sources", "shards", "candidates", "spans"):

@@ -98,6 +98,34 @@ _SCHEMA_SYMBOLS = {
 }
 
 _SCHEMA_DISCOVERY_EXCLUSIONS = {
+    "deployment_profile.DEPLOYMENT_PROFILE_SCHEMA_VERSION": (
+        "operator-local deployment topology and memory paths, not a frozen public "
+        "1.0 interchange; generic parser availability does not publish profile contents"
+    ),
+    "project_memory_activation_plan.PROJECT_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION": (
+        "private memory activation proposal binding, not a public activation receipt"
+    ),
+    "project_memory_activation_plan.PROFILED_MEMORY_ACTIVATION_BINDING_SCHEMA_VERSION": (
+        "profile-bound private memory activation proposal, not a public activation receipt"
+    ),
+    "project_memory_activation_plan.PROJECT_MEMORY_BOOTSTRAP_SCHEMA_VERSION": (
+        "non-ratified private scaffold-only memory envelope, never public project memory"
+    ),
+    "project_memory_models.PROFILED_PROJECT_MEMORY_SCHEMA_VERSION": (
+        "profile-bound version of the private per-repository memory-store format"
+    ),
+    "project_registry_models.PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION": (
+        "profile-bound version of the private coordination registry format"
+    ),
+    "project_registry_views.PROFILED_REGISTRY_CONSUMER_SCHEMA_VERSION": (
+        "profile-bound private coordination consumer envelope"
+    ),
+    "project_registry_views.PROFILED_GROUP_VIEW_SCHEMA_VERSION": (
+        "profile-bound private generated group-memory view"
+    ),
+    "project_registry_views.PROFILED_MEMORY_REGISTRY_BINDING_SCHEMA_VERSION": (
+        "profile-bound private generated project-memory binding"
+    ),
     "audit_primitives.SCHEMA_VERSION": "alias of audit_primitives.REPORT_SCHEMA_VERSION",
     "ignored_inventory._DIRECTORY_MANIFEST_SCHEMA_VERSION": (
         "private nested helper, not a public or standalone interchange identifier"
@@ -237,6 +265,44 @@ def test_every_production_schema_version_is_frozen_or_explicitly_private() -> No
 def test_production_serializers_do_not_use_bare_schema_version_literals() -> None:
     """A nested wire format cannot evade discovery by using a bare version string."""
     assert _literal_schema_version_sites() == ()
+
+
+def test_profiled_serializers_preserve_wire_versions() -> None:
+    """Round-trip actual profiled objects with unchanged envelope and payload versions."""
+    from test_project_memory_models import profiled_manifest
+    from test_project_registry_models import profiled_registry
+
+    from rigor_foundry.deployment_profile import DeploymentProfile
+    from rigor_foundry.project_memory_models import ProjectMemoryManifest
+    from rigor_foundry.project_registry_models import ProjectRegistry
+    from rigor_foundry.project_registry_views import (
+        ProjectRegistryConsumerOutput,
+        build_registry_consumer_outputs,
+    )
+
+    registry = profiled_registry()
+    assert ProjectRegistry.from_bytes(registry.to_bytes()) == registry
+    assert json.loads(registry.to_bytes())["schema_version"] == "project-registry.v2"
+    assert registry.profile is not None
+    profile_bytes = registry.profile.to_bytes()
+    assert json.loads(profile_bytes)["schema_version"] == "deployment-profile.v1"
+    assert DeploymentProfile.from_bytes(profile_bytes) == registry.profile
+    memory = profiled_manifest()
+    assert json.loads(memory.to_bytes())["schema_version"] == "project-memory.v2"
+    assert ProjectMemoryManifest.from_bytes(memory.to_bytes()) == memory
+    outputs = build_registry_consumer_outputs(registry, {})
+    assert {output.consumer_kind for output in outputs} == {"group-view", "project-index"}
+    for output in outputs:
+        data = json.loads(output.to_bytes())
+        assert data["schema_version"] == "project-registry-consumer.v2"
+        assert (
+            data["payload"]["schema_version"]
+            == {
+                "group-view": "project-group-view.v2",
+                "project-index": "project-memory-registry-binding.v2",
+            }[output.consumer_kind]
+        )
+        assert ProjectRegistryConsumerOutput.from_dict(data) == output
 
 
 def test_manifest_is_deterministic_digest_bound_json() -> None:
