@@ -24,10 +24,10 @@ LABEL org.opencontainers.image.source="https://github.com/anulum/rigor-foundry"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 
-# Keep this snapshot date aligned with the pinned base image's debian.sources.
+# Freeze security upgrades independently of the older digest-pinned base image.
 RUN sed -i \
-        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20260830T000000Z|g' \
-        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20260830T000000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20260912T150000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20260912T150000Z|g' \
         /etc/apt/sources.list.d/debian.sources \
     && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
     && apt-get update \

@@ -5,6 +5,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- Refresh the pinned Debian package snapshot to include patched PCRE2, Perl,
+  SQLite and libssh2 packages while retaining the digest-pinned container base.
+- Update the VS Code extension's js-yaml lock to 4.3.2 for GHSA-2883-xcg3-v3hh.
+
 ### Added
 
 - Dedicated signed dispatch permits bind the exact operation payload and complete
