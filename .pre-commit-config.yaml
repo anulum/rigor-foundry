@@ -110,6 +110,7 @@ repos:
         entry: >-
           .venv/bin/python -m ruff check --config 'lint.per-file-ignores={}'
           tests/test_campaign_admission.py
+          tests/test_signed_campaign_admission.py
         language: system
         pass_filenames: false
         always_run: true
@@ -118,6 +119,7 @@ repos:
         entry: >-
           .venv/bin/python -m mypy --strict
           src/rigor_foundry/campaign_admission.py tests/test_campaign_admission.py
+          src/rigor_foundry/signed_campaign_admission.py tests/test_signed_campaign_admission.py
         language: system
         pass_filenames: false
         always_run: true

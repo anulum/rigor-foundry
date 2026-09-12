@@ -10,6 +10,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Opt-in campaign creation inside a trusted host admission lease, before storage
   preparation or repository scanning. The existing local API remains unchanged;
   the boundary does not authenticate providers or activate ecosystem policy.
+- A signed campaign admission provider verifies exact-request Ed25519 permits,
+  current issuer validity and permit revocation inside a fresh trusted host lease.
+  It does not supply runtime capability evidence or activate the CLI gate.
 
 ## [1.0.0] - 2026-07-21
 
