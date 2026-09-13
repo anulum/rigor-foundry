@@ -510,6 +510,7 @@
         "tests/test_rules.py",
         "tests/test_sandbox_provenance.py",
         "tests/test_signed_native_dispatch.py",
+        "tests/test_tool_authority_acceptance.py",
         "tests/test_trusted_executable.py"
       ],
       "forbidden_import_prefixes": [

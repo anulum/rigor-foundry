@@ -31,6 +31,7 @@ PATHS = (
     "tests/test_instruction_scope.py",
     "tests/test_instruction_resolution.py",
     "tests/test_instruction_dispatch.py",
+    "tests/test_tool_authority_acceptance.py",
     "tools/check_instruction_documentation.py",
     "tests/test_check_instruction_documentation.py",
 )

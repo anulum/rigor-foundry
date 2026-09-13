@@ -166,6 +166,7 @@ def test_native_dispatch_cohort_is_enforced_in_ci_and_commit_hook() -> None:
             "tests/native_dispatch_support.py",
             "tests/test_native_dispatch.py",
             "tests/test_signed_native_dispatch.py",
+            "tests/test_tool_authority_acceptance.py",
         ):
             assert path in command.split()
     exact_coverage = next(

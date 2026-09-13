@@ -52,6 +52,12 @@ The documentation gate checks every declaration in this maintained cohort,
 including private/nested/test definitions. Presence checks do not prove meaningful
 documentation; review still owns that judgement.
 
+The maintained acceptance cohort names all fourteen ratified boundary cases. It
+uses real local file bytes and a loopback HTTP service to observe forbidden
+transport independently of decision text. These tests establish the cooperative
+dispatch contract only; they do not certify a hosted Git provider, production
+consumer registration, deployment or rollout.
+
 ## Signed operation and policy binding
 
 `signed_instruction_dispatch.dispatch_signed_instruction_action` composes the same
@@ -99,5 +105,5 @@ This API is opt-in and does not change the legacy CLI or generic argv adapter.
 The existing executor enforces tracked-input, per-file, output, and timeout bounds.
 Hosts must enforce any additional CPU, RAM, process, provider, or billing limit
 inside their retained state lease, or refuse the operation. This local consumer
-does not claim remote publication, provider transport, production rollout, or
-completion of the wider tool-authority acceptance programme.
+does not by itself claim remote publication, provider transport, production
+rollout, or completion of the wider tool-authority acceptance programme.
