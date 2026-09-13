@@ -76,3 +76,28 @@ It does not independently authenticate every referenced policy document or verif
 the adapter's effect claims. Registered production providers still own truthful
 effects, current resource availability, executable/target custody and isolation.
 The signed API adds no wire parser or automatic production consumer cutover.
+
+## Opt-in native audit consumer
+
+`native_dispatch.dispatch_native_audit` is the first concrete consumer of the
+signed boundary. A trusted host registers a canonical built-in adapter profile,
+canonical source and allocation paths, the exact tracked-content digest, runtime
+generation, Git policy, and previously authorised version/audit invocation
+identities. `NativeAuditOperation.request` derives every repository read,
+workspace write and cleanup, and Git, Bubblewrap, and adapter execution effect;
+callers cannot omit one while retaining the same signed payload.
+
+Admission completes before snapshot allocation or any process launch. The same
+host lease then compares the actual descriptor-held version and audit identities
+and rechecks custody, signature, expiry, revocation, and runtime state immediately
+before each process. Only tracked profile inputs enter the explicit host-owned
+allocation, and successful return means the unique owned workspace was removed.
+The receipt binds the request and policy digests, runtime generation, cleanup
+disposition, and the existing source-linked adapter result.
+
+This API is opt-in and does not change the legacy CLI or generic argv adapter.
+The existing executor enforces tracked-input, per-file, output, and timeout bounds.
+Hosts must enforce any additional CPU, RAM, process, provider, or billing limit
+inside their retained state lease, or refuse the operation. This local consumer
+does not claim remote publication, provider transport, production rollout, or
+completion of the wider tool-authority acceptance programme.

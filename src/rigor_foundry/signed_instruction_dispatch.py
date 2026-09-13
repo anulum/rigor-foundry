@@ -99,55 +99,70 @@ class SignedDispatchState:
     revoked_permits: frozenset[str]
 
 
+@contextmanager
+def signed_dispatch_lease(
+    request: DispatchRequest,
+    *,
+    state: Callable[[DispatchRequest], AbstractContextManager[SignedDispatchState]],
+    clock: Callable[[], datetime],
+) -> Iterator[DispatchLease]:
+    """Retain host state and expose repeatable exact signed-boundary validation.
+
+    Host custody validation precedes the final signature/time check. The clock,
+    issuer policy, state factory and handler registration are trusted composition,
+    never request-controlled inputs. No callback or evidence advertisement becomes
+    permission on its own. Keep existing adapter confinement and resource checks.
+    Acquisition alone does not validate or grant execution. Consumers must use
+    dispatch_instruction_action for initial admission and call the yielded
+    revalidate immediately before each subsequent effect boundary. This permits
+    preparation and invocation to share one signature implementation and lease.
+    No wire parser, provider or post-admission cancellation is installed here.
+    """
+    with state(request) as current:
+
+        def revalidate(exact: DispatchRequest) -> None:
+            """Recheck host custody, then exact signature and live validity."""
+            current.lease.revalidate(exact)
+            permit = current.permit
+            digest = permit.payload_digest
+            if permit.request_digest != dispatch_request_digest(
+                exact
+            ) or permit.policy_digest != instruction_policy_digest(current.lease.policy):
+                raise PermissionError("dispatch permit does not bind request and policy")
+            trust = current.issuer_policy.trust_store()
+            if not trust.verify(
+                key_id=permit.key_id,
+                algorithm="ed25519",
+                signature_domain=DISPATCH_SIGNATURE_DOMAIN,
+                payload_digest=digest,
+                signature_hex=permit.signature_hex,
+            ):
+                raise PermissionError("dispatch permit signature is invalid")
+            now = clock()
+            issued = parse_utc_timestamp(permit.issued_at, "dispatch.issued_at")
+            expires = parse_utc_timestamp(permit.expires_at, "dispatch.expires_at")
+            if (
+                current.issuer_policy.key_status(permit.key_id, now) != "active"
+                or current.issuer_policy.key_status(permit.key_id, issued) != "active"
+                or not issued <= now < expires
+                or digest in current.revoked_permits
+            ):
+                raise PermissionError("dispatch permit is inactive or revoked")
+
+        yield replace(current.lease, revalidate=revalidate)
+
+
 def dispatch_signed_instruction_action(
     request: DispatchRequest,
     *,
     state: Callable[[DispatchRequest], AbstractContextManager[SignedDispatchState]],
     clock: Callable[[], datetime],
 ) -> DispatchResult:
-    """Authenticate current exact permission immediately before the real handler.
+    """Authenticate exact current permission before the registered real handler.
 
-    Host custody validation precedes the final signature/time check. The clock,
-    issuer policy, state factory and handler registration are trusted composition,
-    never request-controlled inputs. No callback or evidence advertisement becomes
-    permission on its own. Keep existing adapter confinement and resource checks.
-    This API does not install a wire parser, provider or post-admission cancellation.
+    Host state, clock and registration are trusted composition. No instruction
+    text, advertisement or callback can manufacture its own permission.
     """
-
-    @contextmanager
-    def authenticated(received: DispatchRequest) -> Iterator[DispatchLease]:
-        """Retain the original host lease while replacing its final admission check."""
-        with state(received) as current:
-
-            def revalidate(exact: DispatchRequest) -> None:
-                """Recheck host custody, then exact signature and live validity."""
-                current.lease.revalidate(exact)
-                permit = current.permit
-                digest = permit.payload_digest
-                if permit.request_digest != dispatch_request_digest(
-                    exact
-                ) or permit.policy_digest != instruction_policy_digest(current.lease.policy):
-                    raise PermissionError("dispatch permit does not bind request and policy")
-                trust = current.issuer_policy.trust_store()
-                if not trust.verify(
-                    key_id=permit.key_id,
-                    algorithm="ed25519",
-                    signature_domain=DISPATCH_SIGNATURE_DOMAIN,
-                    payload_digest=digest,
-                    signature_hex=permit.signature_hex,
-                ):
-                    raise PermissionError("dispatch permit signature is invalid")
-                now = clock()
-                issued = parse_utc_timestamp(permit.issued_at, "dispatch.issued_at")
-                expires = parse_utc_timestamp(permit.expires_at, "dispatch.expires_at")
-                if (
-                    current.issuer_policy.key_status(permit.key_id, now) != "active"
-                    or current.issuer_policy.key_status(permit.key_id, issued) != "active"
-                    or not issued <= now < expires
-                    or digest in current.revoked_permits
-                ):
-                    raise PermissionError("dispatch permit is inactive or revoked")
-
-            yield replace(current.lease, revalidate=revalidate)
-
-    return dispatch_instruction_action(request, state=authenticated)
+    return dispatch_instruction_action(
+        request, state=lambda received: signed_dispatch_lease(received, state=state, clock=clock)
+    )
