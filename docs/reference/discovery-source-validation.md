@@ -103,3 +103,28 @@ a filesystem-wide atomic snapshot or trusted acquisition receipt. The caller
 owns capture provenance, semantic interpretation and separate policy approval.
 Legacy format conversion must preserve unresolved source references rather than
 guessing them. Private policy corpora must not become public package fixtures.
+
+## Append-only inventory intake and mixed lineage
+
+`replay_discovery_lineage` in `rigor_foundry.discovery_progress` extends the
+read-only replay surface without relaxing `discovery-progress-change.v1`. It
+accepts an explicit ordered list containing that binding envelope and the
+separate `discovery-inventory-intake.v1` envelope. One open directory descriptor,
+aggregate byte budget and in-memory state cover the complete chain; callers
+cannot inject an intermediate object or request latest-file discovery.
+
+An intake has exactly `schema_version`, `parent_sha256`, `result_sha256` and a
+nonempty bounded `additions` list. Each addition has `candidate_id`, `capture_key`,
+`descriptor` containing only `capture_digest`, and a flat `capture` filename. The
+captured JSON is provenance owned by the caller, but its canonical body digest,
+`promotable: false`, and `assertion_class: discovery-source-capture-only` are
+mandatory. Successful intake appends a minimal record with a null source receipt,
+the capture key, `semantic_status: unreviewed`, and `promotable: false`. Existing
+candidate IDs and captures cannot be updated, removed, reordered or reused.
+
+Later ordered v1 binding may attach an integrity receipt to the new record; it
+cannot replace candidate content or change semantic status. Returned total,
+bound, pending and intake-pending counts are derived from the complete verified
+state. Success is still non-promotable and performs no write, network, policy,
+cutover or audit action. The original `replay_discovery_progress` API remains
+byte-compatible and rejects intake envelopes.

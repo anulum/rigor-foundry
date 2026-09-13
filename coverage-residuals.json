@@ -503,6 +503,8 @@
         "tests/test_adapters.py",
         "tests/test_bootstrap.py",
         "tests/test_digest_dependencies.py",
+        "tests/test_discovery_inventory_intake.py",
+        "tests/test_discovery_progress.py",
         "tests/test_git_provenance.py",
         "tests/test_native_dispatch.py",
         "tests/test_preflight.py",
