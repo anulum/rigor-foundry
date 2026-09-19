@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/scientific-numerical-rules/">
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/rule-chain-candidate/">
       
       
-        <link rel="prev" href="../documentation-rules/">
+        <link rel="prev" href="../offline-verification/">
       
       
-        <link rel="next" href="../operations-observability-rules/">
+        <link rel="next" href="../source-provenance/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Scientific and numerical rules - RigorFoundry</title>
+        <title>Rule-chain candidate inspection - RigorFoundry</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#scientific-and-numerical-correctness-rules" class="md-skip">
+        <a href="#rule-chain-candidate-inspection" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scientific and numerical rules
+              Rule-chain candidate inspection
             
           </span>
         </div>
@@ -489,10 +489,19 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../rule-chain-candidate/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -508,6 +517,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -840,37 +850,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Scientific and numerical rules
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
         
   
   
@@ -886,37 +869,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rules
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1454,25 +1406,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rules
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1491,52 +1424,33 @@
   
 
 
-<h1 id="scientific-and-numerical-correctness-rules">Scientific and numerical correctness rules<a class="headerlink" href="#scientific-and-numerical-correctness-rules" title="Permanent link">&para;</a></h1>
-<p>Rule-pack <code>rigor-foundry/1.13.0</code> adds the bounded <code>scientific</code> category (prefix
-<code>SN</code>). Findings are anchored <strong>needs-evidence candidates</strong>, not proof that a
-numerical result is wrong or a stochastic test is flaky.</p>
-<h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Rule</th>
-<th>Signal</th>
-<th style="text-align: center;">Confidence</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>SN001-exact-float-equality-in-test</code></td>
-<td>a Python test function compares a direct signed or unsigned float literal with <code>==</code> or <code>!=</code></td>
-<td style="text-align: center;">high</td>
-</tr>
-<tr>
-<td><code>SN002-unseeded-stochastic-test</code></td>
-<td>an explicitly imported supported <code>random</code> or <code>numpy.random</code> API is used before local deterministic seeding, or a supported generator is constructed without a seed</td>
-<td style="text-align: center;">high</td>
-</tr>
-</tbody>
-</table>
-<p>SN001 is deliberately narrower than type inference. It ignores integer,
-Decimal, container, and string comparisons, and explicit <code>approx</code> or <code>isclose</code>
-operands. Reviewers should replace accidental exactness with a justified
-absolute/relative tolerance, while preserving exact comparison when the test
-really specifies binary identity, parsing, or serialisation.</p>
-<p>SN002 resolves explicit module and direct imports for a bounded set of common
-draw APIs. It treats <code>random.seed</code>, <code>numpy.random.seed</code>, <code>random.Random</code>, and
-<code>numpy.random.default_rng</code> as deterministic only when a non-<code>None</code> seed is
-supplied before the relevant draw. Module-level seeds, custom wrappers,
-fixtures, and arbitrary generator data flow are not inferred. Reviewers should
-seed locally before the first draw or prove that an external fixture establishes
-the exact replay contract.</p>
-<p>Only tracked UTF-8 <code>.py</code> files classified as tests by repository policy or
-test naming are parsed. Invalid Python yields no SN candidate because the
-existing unparseable-test authenticity rule owns that condition. Evidence
-contains exact tracked-blob and line/file digests without copying source text.</p>
-<p>The family contributes a portable control to the
-<code>scientific-numerical-correctness</code> audit domain. Both rules enter maturity
-probation; enforcement still requires adjudicated cross-repository precision,
-false-positive, and reviewer-effort evidence.</p>
+<h1 id="rule-chain-candidate-inspection">Rule-chain candidate inspection<a class="headerlink" href="#rule-chain-candidate-inspection" title="Permanent link">&para;</a></h1>
+<p><code>rigor_foundry.rule_chain_candidate.inspect_rule_chain_candidate</code> is a
+read-only Python API for checking whether one proposed semantic transition,
+its signed review, retained StandardPack sources, and a signed ProjectProfile
+refer to the same exact objects. It composes the host-selected discovery and
+native-source readers, review verifier, pack verifiers, and profile selection.
+It does not fetch a remote source or assign a numeric freshness lifetime.</p>
+<p>The caller supplies the exact proposal artefact and source captures, typed v2
+pack and profile objects, a host-composed semantic-review verifier, one
+host-composed retained-source verifier per selected pack, the role-separated
+trust policies, the expected project and scope, and an explicit UTC instant.
+The host must protect selections and revocations throughout its leases. A
+caller-controlled test provider can exercise the API but cannot enrol live
+authority. A signed <code>clear</code> review is checked as a source dependency; the
+reviewer must have a separate identity and trusted signing key from the author.</p>
+<p>The result is <code>RuleChainCandidateReport</code>. Its digest binds the proposal,
+review acceptance dependency, profile, packs, selected authority clauses and
+reviewer policy. <code>guard_admissible</code> is always <code>False</code>. A report is neither a
+signed EffectiveProfileLock nor an active dispatch permit. It cannot resolve
+local constraints, current grants, adapter custody, revocation or mutable
+evidence state, and it cannot authorise an effect. The v1 pack, profile,
+audit-lock and dispatch formats remain unchanged; no automatic CLI or Guard
+cutover occurs.</p>
+<p>Applications that need an active gate must separately implement and select a
+reviewed effective lock, verify current state and grant authority before each
+effect, and obtain rollout authority. Reusing this inspection result as an
+effect permission is a contract violation.</p>
 
 
 
