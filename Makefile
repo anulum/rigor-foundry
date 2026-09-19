@@ -7,6 +7,7 @@
 # RigorFoundry — Development commands
 
 PYTHON ?= .venv/bin/python
+LOCK_PYTHON ?= $(PYTHON)
 TYPOS ?= typos
 
 .PHONY: install lock lint fmt typecheck bandit typos audit audit-authoring residuals test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean
@@ -16,11 +17,13 @@ install:
 	$(PYTHON) -m pip install --no-build-isolation --no-deps -e .
 
 lock:
-	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/build.txt requirements/build.in
-	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/ci.txt requirements/ci.in
-	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/runtime.txt requirements/runtime.in
-	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/security.txt requirements/security.in
-	$(PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --output-file requirements/test.txt requirements/test.in
+	@$(LOCK_PYTHON) -c 'import sys; sys.exit(0 if sys.version_info[:2] == (3, 11) else "Lock generation requires Python 3.11; set LOCK_PYTHON to a verified 3.11 environment")'
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --output-file requirements/build.txt requirements/build.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --output-file requirements/ci.txt requirements/ci.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/runtime.txt requirements/runtime.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/security.txt requirements/security.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/test.txt requirements/test.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/native.txt requirements/native.in
 
 lint:
 	$(PYTHON) -m ruff check src tests tools

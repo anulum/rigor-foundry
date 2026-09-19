@@ -7,12 +7,16 @@
 # RigorFoundry — CI lock inputs
 
 bandit==1.9.4
+backports.tarfile==1.2.0; python_version < "3.12"
 build==1.6.1
+# Keep shared CI/security locks compatible with the pinned Semgrep 1.170 graph.
+click==8.1.8
 cyclonedx-bom==7.4.0
 editables==0.6
 hatchling==1.32.3
 hypothesis==6.168.0
-jsonschema==4.26.0
+importlib-metadata==8.7.1
+jsonschema==4.25.1
 mkdocs==1.6.1
 mkdocs-material==9.7.7
 mypy==2.3.1

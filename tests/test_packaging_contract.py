@@ -19,6 +19,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from packaging.utils import canonicalize_name
 
 from rigor_foundry.version import __version__
 from tools._repository import ROOT
@@ -134,6 +135,32 @@ def test_hash_locks_cover_each_resolved_distribution() -> None:
         resolved = [entry for entry in entries if "==" in entry]
         assert resolved, name
         assert all("--hash=sha256:" in entry for entry in resolved), name
+
+
+def test_ci_lock_covers_python311_conditional_dependencies() -> None:
+    """The oldest CI interpreter can install its complete hash-locked graph."""
+    lock = (ROOT / "requirements/ci.txt").read_text(encoding="utf-8")
+    assert 'backports-tarfile==1.2.0 ; python_version < "3.12"' in lock
+    for name in ("backports-tarfile", "importlib-metadata", "zipp"):
+        assert re.search(rf"^{name}==[^\n]+\\\n\s+--hash=sha256:", lock, re.MULTILINE)
+
+
+def test_hash_locks_share_one_version_per_distribution() -> None:
+    """Combined CI, test, runtime, security and native installs cannot disagree."""
+    versions: dict[str, tuple[str, str]] = {}
+    for lock_name in (
+        "build.txt",
+        "ci.txt",
+        "test.txt",
+        "runtime.txt",
+        "security.txt",
+        "native.txt",
+    ):
+        lock = (ROOT / "requirements" / lock_name).read_text(encoding="utf-8")
+        for name, version in re.findall(r"^([\w.-]+)==([^\s;\\]+)", lock, re.MULTILINE):
+            key = canonicalize_name(name)
+            previous = versions.setdefault(key, (version, lock_name))
+            assert previous[0] == version, (key, previous, (version, lock_name))
 
 
 def test_container_scan_uses_repository_verified_trivy() -> None:
