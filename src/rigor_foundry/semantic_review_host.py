@@ -24,6 +24,8 @@ from .semantic_transition_review import SemanticTransitionReview
 from .signed_rule_chain_v2 import RuleChainV2TrustRoles
 
 MAX_PROPOSAL_ARTIFACT_BYTES = 1_048_576
+HOST_SEMANTIC_REVIEW_SELECTION_SCHEMA_VERSION = "host-semantic-review-selection.v1"
+HOST_SEMANTIC_REVIEW_VERIFICATION_SCHEMA_VERSION = "host-semantic-review-verification.v1"
 
 
 @dataclass(frozen=True)
@@ -55,7 +57,7 @@ class HostSemanticReviewSelection:
     ) -> HostSemanticReviewSelection:
         """Digest the host's complete reviewer and source choice."""
         body: dict[str, str] = {
-            "schema_version": "host-semantic-review-selection.v1",
+            "schema_version": HOST_SEMANTIC_REVIEW_SELECTION_SCHEMA_VERSION,
             "proposal_digest": require_digest(proposal_digest, "review host.proposal_digest"),
             "proposal_artifact_digest": require_digest(
                 proposal_artifact_digest, "review host.proposal_artifact_digest"
@@ -196,7 +198,7 @@ class HostSemanticReviewVerifier:
             if accepted is None:
                 raise PermissionError("independent semantic CLEAR is absent or inactive")
             proof = {
-                "schema_version": "host-semantic-review-verification.v1",
+                "schema_version": HOST_SEMANTIC_REVIEW_VERIFICATION_SCHEMA_VERSION,
                 "assertion_class": "reviewed-transition-dependency-only",
                 "guard_admissible": False,
                 "selection_digest": expected,

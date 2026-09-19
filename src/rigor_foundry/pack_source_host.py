@@ -19,6 +19,9 @@ from .model_primitives import require_digest, require_identifier
 from .models import canonical_digest, require_string
 from .source_capture import MAX_SOURCE_BYTES, read_source_payload
 
+HOST_PACK_SOURCE_SELECTION_SCHEMA_VERSION = "host-pack-source.v1"
+HOST_PACK_SOURCE_VERIFICATION_SCHEMA_VERSION = "host-pack-source-verification.v1"
+
 
 @dataclass(frozen=True)
 class HostPackSourceSelection:
@@ -78,7 +81,7 @@ class HostPackSourceSelection:
         identity = require_identifier(pack_id, "pack source.pack_id")
         digest = require_digest(source_digest, "pack source.source_digest")
         body: dict[str, object] = {
-            "schema_version": "host-pack-source.v1",
+            "schema_version": HOST_PACK_SOURCE_SELECTION_SCHEMA_VERSION,
             "pack_id": identity,
             "source_uri": uri,
             "source_digest": digest,
@@ -172,7 +175,7 @@ class HostPackSourceVerifier:
             if hashlib.sha256(payload).hexdigest() != checked.source_digest:
                 raise ValueError("retained pack source digest differs")
             body: dict[str, object] = {
-                "schema_version": "host-pack-source-verification.v1",
+                "schema_version": HOST_PACK_SOURCE_VERIFICATION_SCHEMA_VERSION,
                 "assertion_class": "retained-object-integrity-only",
                 "promotable": False,
                 "pack_id": checked.pack_id,

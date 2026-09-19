@@ -1,6 +1,13 @@
 {
   "files": [
     {
+      "dependency_boundary": "Public adapter result and invocation records bind built-in profiles, trusted executable handles, sandbox provenance, isolated workspaces, and Git trust checks. Profile configuration and output interpretation live in adapter_profiles; process, environment, and sandbox primitives live in adapter_runtime; workspace custody lives in adapter_workspace. No campaign admission, policy authority, or remediation execution is owned here.",
+      "lines": 747,
+      "path": "src/rigor_foundry/adapters.py",
+      "reassess_when": "The file exceeds 850 lines, a fourth adapter family adds an independent execution lifecycle, or the guarded native invocation protocol gains a separate host authority owner.",
+      "responsibility": "Consented repository-native adapter execution owner for command selection, guarded version and audit invocation, tool and sandbox identity continuity, bounded process evidence, and canonical AdapterResult construction."
+    },
+    {
       "dependency_boundary": "Public audit-domain constants and canonical model primitives define strict compliance-map records; built-in AICPA TSC, EU CRA, and ISO/IEC 27001 templates are consumed by the OSCAL exporter, CLI, documentation, and CRA pack source binding. No evidence collection, conformity adjudication, network retrieval, or external-standard content is owned here.",
       "lines": 827,
       "path": "src/rigor_foundry/compliance_maps.py",

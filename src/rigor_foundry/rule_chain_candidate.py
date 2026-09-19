@@ -22,6 +22,8 @@ from .semantic_review_host import HostSemanticReviewVerifier
 from .semantic_transition import SemanticTransitionProposal
 from .signed_rule_chain_v2 import RuleChainV2TrustRoles
 
+RULE_CHAIN_CANDIDATE_REPORT_SCHEMA_VERSION = "rule-chain-candidate-report.v1"
+
 
 @dataclass(frozen=True)
 class RuleChainCandidateReport:
@@ -152,7 +154,7 @@ def inspect_rule_chain_candidate(
     ):
         raise PermissionError("candidate authority clause differs from reviewed source")
     body: dict[str, object] = {
-        "schema_version": "rule-chain-candidate-report.v1",
+        "schema_version": RULE_CHAIN_CANDIDATE_REPORT_SCHEMA_VERSION,
         "proposal_digest": parsed.proposal_digest,
         "acceptance_digest": acceptance,
         "profile_digest": selected.profile_digest,

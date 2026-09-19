@@ -19,6 +19,9 @@ from .models import canonical_digest
 from .native_source_host import HostNativeSourceVerifier
 from .semantic_transition import SemanticTransitionProposal
 
+HOST_SEMANTIC_SOURCE_SELECTION_SCHEMA_VERSION = "host-semantic-source-selection.v1"
+HOST_SEMANTIC_SOURCE_VERIFICATION_SCHEMA_VERSION = "host-semantic-source-verification.v1"
+
 
 @dataclass(frozen=True)
 class HostSemanticSourceSelection:
@@ -44,7 +47,7 @@ class HostSemanticSourceSelection:
         )
         native = require_digest(native_pin_digest, "semantic source.native_pin_digest")
         body: dict[str, object] = {
-            "schema_version": "host-semantic-source-selection.v1",
+            "schema_version": HOST_SEMANTIC_SOURCE_SELECTION_SCHEMA_VERSION,
             "proposal_digest": proposal,
             "discovery_selection_digest": discovery,
             "native_pin_digest": native,
@@ -132,7 +135,7 @@ class HostSemanticSourceVerifier:
             ):
                 raise ValueError("semantic source proofs do not match the host selection")
             body: dict[str, object] = {
-                "schema_version": "host-semantic-source-verification.v1",
+                "schema_version": HOST_SEMANTIC_SOURCE_VERIFICATION_SCHEMA_VERSION,
                 "assertion_class": "selected-semantic-source-integrity-only",
                 "promotable": False,
                 "selection_digest": expected,

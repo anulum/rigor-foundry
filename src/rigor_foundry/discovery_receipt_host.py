@@ -20,6 +20,9 @@ from .model_primitives import require_digest, require_identifier
 from .models import canonical_digest
 from .semantic_transition import SemanticTransitionProposal
 
+HOST_DISCOVERY_RECEIPT_SELECTION_SCHEMA_VERSION = "host-discovery-receipt-selection.v1"
+HOST_DISCOVERY_RECEIPT_VERIFICATION_SCHEMA_VERSION = "host-discovery-receipt-verification.v2"
+
 
 @dataclass(frozen=True)
 class HostDiscoveryReceiptSelection:
@@ -84,7 +87,7 @@ class HostDiscoveryReceiptSelection:
         proposal = require_digest(proposal_digest, "discovery host.proposal_digest")
         identity = require_identifier(receipt_id, "discovery host.receipt_id")
         body: dict[str, object] = {
-            "schema_version": "host-discovery-receipt-selection.v1",
+            "schema_version": HOST_DISCOVERY_RECEIPT_SELECTION_SCHEMA_VERSION,
             "lineage_root": str(lineage_root),
             "base_name": base,
             "transaction_names": list(transactions),
@@ -214,7 +217,7 @@ class HostDiscoveryReceiptVerifier:
             ):
                 raise ValueError("host discovery replay or captured evidence differs")
             body: dict[str, object] = {
-                "schema_version": "host-discovery-receipt-verification.v2",
+                "schema_version": HOST_DISCOVERY_RECEIPT_VERIFICATION_SCHEMA_VERSION,
                 "assertion_class": "selected-discovery-integrity-only",
                 "promotable": False,
                 "selection_digest": expected,

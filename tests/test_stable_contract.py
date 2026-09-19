@@ -98,8 +98,17 @@ _SCHEMA_SYMBOLS = {
 }
 
 _SCHEMA_DISCOVERY_EXCLUSIONS = {
+    "discovery_progress._INTAKE_SCHEMA_VERSION": (
+        "private discovery intake transaction, not a frozen public 1.0 interchange"
+    ),
     "discovery_progress._PROGRESS_SCHEMA_VERSION": (
         "private discovery bookkeeping transaction, not ratified policy or frozen 1.0 interchange"
+    ),
+    "discovery_receipt_host.HOST_DISCOVERY_RECEIPT_SELECTION_SCHEMA_VERSION": (
+        "host-held candidate selection digest, not a public or Guard-effective wire contract"
+    ),
+    "discovery_receipt_host.HOST_DISCOVERY_RECEIPT_VERIFICATION_SCHEMA_VERSION": (
+        "private discovery integrity proof, not a public or Guard-effective wire contract"
     ),
     "deployment_profile.DEPLOYMENT_PROFILE_SCHEMA_VERSION": (
         "operator-local deployment topology and memory paths, not a frozen public "
@@ -133,6 +142,12 @@ _SCHEMA_DISCOVERY_EXCLUSIONS = {
     "ignored_inventory._DIRECTORY_MANIFEST_SCHEMA_VERSION": (
         "private nested helper, not a public or standalone interchange identifier"
     ),
+    "pack_source_host.HOST_PACK_SOURCE_SELECTION_SCHEMA_VERSION": (
+        "host-held retained-source selection, not a frozen public 1.0 interchange"
+    ),
+    "pack_source_host.HOST_PACK_SOURCE_VERIFICATION_SCHEMA_VERSION": (
+        "private retained-source integrity proof, not a Guard-effective rule lock"
+    ),
     "project_memory_primitives.PROJECT_MEMORY_SCHEMA_VERSION": (
         "private per-repository memory-store format, permanently excluded from public "
         "Git, package, documentation and artifact surfaces"
@@ -154,6 +169,24 @@ _SCHEMA_DISCOVERY_EXCLUSIONS = {
         "internal release-governance certificate sealed as internal evidence; not a "
         "consumer-facing 1.0 public interchange identifier, so it is excluded from the "
         "frozen public contract rather than ratcheted into it"
+    ),
+    "rule_chain_candidate.RULE_CHAIN_CANDIDATE_REPORT_SCHEMA_VERSION": (
+        "read-only provisional report, never an effective-rule lock or frozen 1.0 wire"
+    ),
+    "semantic_review_host.HOST_SEMANTIC_REVIEW_SELECTION_SCHEMA_VERSION": (
+        "host-held candidate reviewer selection, not a ratified public semantic CLEAR"
+    ),
+    "semantic_review_host.HOST_SEMANTIC_REVIEW_VERIFICATION_SCHEMA_VERSION": (
+        "private signed-review dependency proof, not Guard admission"
+    ),
+    "semantic_source_host.HOST_SEMANTIC_SOURCE_SELECTION_SCHEMA_VERSION": (
+        "host-held candidate source selection, not a frozen public 1.0 interchange"
+    ),
+    "semantic_source_host.HOST_SEMANTIC_SOURCE_VERIFICATION_SCHEMA_VERSION": (
+        "private source-integrity proof, not a semantic acceptance or Guard lock"
+    ),
+    "signed_rule_chain_v2.RULE_CHAIN_V2_SCHEMA_VERSION": (
+        "unratified v2 signed-chain proposal, not the frozen public 1.0 contract"
     ),
 }
 
