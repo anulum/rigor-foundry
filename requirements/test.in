@@ -6,9 +6,9 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Python test lock inputs
 
-build==1.5.0
+build==1.6.1
 cryptography==50.0.1
-hatchling==1.31.0
+hatchling==1.32.3
 hypothesis==6.168.0
 pytest==9.1.1
 pytest-cov==7.1.0

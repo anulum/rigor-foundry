@@ -101,7 +101,7 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     with (ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     assert project["build-system"]["requires"] == [
-        "hatchling==1.31.0",
+        "hatchling==1.32.3",
         "packaging==26.3",
         "pathspec==1.1.1",
         "pluggy==1.6.0",
