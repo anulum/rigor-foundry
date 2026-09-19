@@ -57,9 +57,9 @@ jobs:
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
           test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
-            0.9.0-1ubuntu0.1
+            0.9.0-1ubuntu0.3
           printf '%s  %s\n' \
-            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
             /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
@@ -197,9 +197,9 @@ jobs:
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
           test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
-            0.9.0-1ubuntu0.1
+            0.9.0-1ubuntu0.3
           printf '%s  %s\n' \
-            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
             /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
