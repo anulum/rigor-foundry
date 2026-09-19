@@ -9,8 +9,8 @@
 bandit==1.9.4
 backports.tarfile==1.2.0; python_version < "3.12"
 build==1.6.1
-# Keep shared CI/security locks compatible with the pinned Semgrep 1.170 graph.
-click==8.1.8
+# Keep shared CI/security locks compatible with the pinned Semgrep 1.177 graph.
+click==8.4.2
 cyclonedx-bom==7.4.0
 editables==0.6
 hatchling==1.32.3

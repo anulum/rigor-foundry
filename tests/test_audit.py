@@ -153,7 +153,7 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
     )
     waiver_path = repository.root / ".github" / "dependency-waivers.json"
     waiver = json.loads(waiver_path.read_text(encoding="utf-8"))
-    waiver["waivers"][0]["rationale"] = ""
+    waiver["waivers"].append({"advisory_id": "PYSEC-2026-2132"})
     waiver_path.write_text(
         json.dumps(waiver, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -164,7 +164,9 @@ def test_repository_guard_clis_redact_adversarial_repository_details(
     assert value in "\n".join(metadata_errors(repository.root))
     assert coded_leaf in "\n".join(descriptive_naming_errors(repository.root))
     assert adversarial_leaf in "\n".join(data_boundary_errors(repository.root))
-    assert "rationale must be non-empty" in "\n".join(dependency_waiver_errors(repository.root))
+    assert "set must be empty after scanner remediation" in "\n".join(
+        dependency_waiver_errors(repository.root)
+    )
     assert adversarial_leaf in "\n".join(audit_errors(repository.root))
     repository.symlink(f"broken-{adversarial_leaf}.py", "missing-target")
 
