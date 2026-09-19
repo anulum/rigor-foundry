@@ -20,6 +20,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A read-only v2 rule-chain candidate API joins host-selected discovery and
+  native-source evidence, a signed semantic-review dependency, retained pack
+  bytes, typed pack signatures and a signed project selection. Its result is
+  expressly non-admissible for Guard effects; no effective lock or dispatch
+  authority is installed.
 - Refresh hash-locked development/build tools and immutable maintenance,
   provenance, release and Scorecard actions.
 

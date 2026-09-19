@@ -40,6 +40,7 @@ nav:
   - Digest dependencies: digest-dependencies.md
   - Report differences: report-diff.md
   - Offline evidence verification: offline-verification.md
+  - Rule-chain candidate inspection: rule-chain-candidate.md
   - Source provenance: source-provenance.md
   - Discovery source validation: reference/discovery-source-validation.md
   - Offline CRA reporting preparation: cra-reporting.md
