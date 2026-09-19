@@ -152,6 +152,7 @@ def create_adapter_workspace(
     target_paths: tuple[str, ...],
     git_trust_policy: GitTrustPolicy | None = None,
     expected_tracked_content_digest: str | None = None,
+    workspace_parent: Path | None = None,
 ) -> AdapterWorkspace:
     """Create a stable tracked-only snapshot for one built-in adapter.
 
@@ -159,9 +160,23 @@ def create_adapter_workspace(
     no-follow parent descriptor, requires a single link, and must reproduce the
     inventory SHA-256 and Git blob identity. Ignored and untracked paths cannot
     enter the snapshot because selection starts from the Git index inventory.
+
+    workspace_parent optionally selects an existing absolute no-symlink host
+    allocation outside the source repository. The caller must retain ownership
+    and synchronise that allocation throughout this workspace's lifetime; this
+    parameter does not establish a security boundary against a hostile host.
+    Omission preserves the existing repository-parent allocation. Only the new
+    uniquely allocated child is removed on close; neighbouring data is retained.
     """
     configuration, targets = validate_profile_paths(configuration_path, target_paths)
+    if workspace_parent is not None:
+        if not workspace_parent.is_absolute() or ".." in workspace_parent.parts:
+            raise ValueError("adapter workspace parent must be an absolute canonical path")
+        descriptor = open_directory_no_follow(workspace_parent)
+        os.close(descriptor)
     inventory = load_git_inventory(repository, git_trust_policy=git_trust_policy)
+    if workspace_parent is not None and workspace_parent.is_relative_to(inventory.root):
+        raise ValueError("adapter workspace parent must be outside the source repository")
     if inventory.dirty_paths:
         raise RuntimeError("built-in adapter profiles require a clean tracked worktree")
     if (
@@ -183,7 +198,8 @@ def create_adapter_workspace(
     total_bytes = sum(item.byte_size for item in selected)
     if total_bytes > MAX_PROFILE_INPUT_BYTES:
         raise RuntimeError("profile input exceeds the aggregate byte bound")
-    temporary = Path(tempfile.mkdtemp(prefix=".rigor-profile-", dir=inventory.root.parent))
+    allocation = inventory.root.parent if workspace_parent is None else workspace_parent
+    temporary = Path(tempfile.mkdtemp(prefix=".rigor-profile-", dir=allocation))
     # The sandbox UID must traverse the read-only bind source; no write bit is shared.
     os.chmod(temporary, 0o755)  # nosec B103
     records: list[dict[str, object]] = []

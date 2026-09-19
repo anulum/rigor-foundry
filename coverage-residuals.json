@@ -26,7 +26,7 @@
       "source_path": "src/rigor_foundry/adapters.py",
       "symbol": "_run_profile_adapter",
       "guard": "Bubblewrap provenance changed during native audit execution",
-      "source_digest": "fac9184220d7e48c7b7082c0662f26ce72e3ff74859f0382a2353dd9a98cc5d2",
+      "source_digest": "d290803dac666de92bd4e778cd958112b7dfe4f188832ddd350abf28ef5a8bf2",
       "owner": "runtime-security",
       "rationale": "honest activation requires replacing the root-owned installed Bubblewrap package during a live built-in profile scan; CI must not mutate that host trust anchor, and replacing provenance results would not exercise the operating-system boundary",
       "public_verification": [
@@ -37,8 +37,8 @@
         "a disposable package-manager integration host becomes available",
         "sandbox provenance moves to a repository-owned executable"
       ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-09-13",
+      "review_by": "2026-12-12"
     },
     {
       "residual_id": "CR-ADAPTER-PROVENANCE-RACE",
@@ -46,7 +46,7 @@
       "source_path": "src/rigor_foundry/adapters.py",
       "symbol": "run_adapter",
       "guard": "Bubblewrap provenance changed during native audit execution",
-      "source_digest": "8a8eed5c7b795544dca29d34fd487dedd880d1a222bf332aa6cb3c6ce506ff10",
+      "source_digest": "a2b807d49037df4115ac9261f340f81bd37807107fd9ac93486c20a39275bd60",
       "owner": "runtime-security",
       "rationale": "honest activation requires replacing the root-owned installed Bubblewrap package during a live audit; CI must not mutate that host trust anchor, and a patched provenance function would not exercise the operating-system boundary",
       "public_verification": [
@@ -57,8 +57,8 @@
         "a disposable package-manager integration host becomes available",
         "sandbox provenance moves to a repository-owned executable"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-09-13",
+      "review_by": "2026-12-12"
     },
     {
       "residual_id": "CR-BOOTSTRAP-CREATE-INVARIANT",
@@ -496,17 +496,23 @@
     {
       "search_id": "NS-NO-PRIVATE-SIMULATION",
       "include": [
+        "tests/native_dispatch_support.py",
         "tests/test_adapter_profiles.py",
         "tests/test_adapter_runtime.py",
         "tests/test_adapter_workspace.py",
         "tests/test_adapters.py",
         "tests/test_bootstrap.py",
         "tests/test_digest_dependencies.py",
+        "tests/test_discovery_inventory_intake.py",
+        "tests/test_discovery_progress.py",
         "tests/test_git_provenance.py",
+        "tests/test_native_dispatch.py",
         "tests/test_preflight.py",
         "tests/test_remediation_plan.py",
         "tests/test_rules.py",
         "tests/test_sandbox_provenance.py",
+        "tests/test_signed_native_dispatch.py",
+        "tests/test_tool_authority_acceptance.py",
         "tests/test_trusted_executable.py"
       ],
       "forbidden_import_prefixes": [

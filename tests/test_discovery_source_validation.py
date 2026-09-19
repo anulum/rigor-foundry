@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
+from typing import cast
 
 import pytest
 from discovery_source_support import (
@@ -46,6 +47,56 @@ def test_complete_snapshot_replay_and_no_writes(tmp_path: Path) -> None:
     assert first["receipt_digest"] == canonical_digest(body)
     assert "source evidence" not in str(first)
     assert {path.name: path.read_bytes() for path in tmp_path.iterdir()} == before
+
+
+def test_required_candidate_membership_preserves_receipt(tmp_path: Path) -> None:
+    """Constrain an exact snapshot without changing its integrity receipt."""
+    snapshot(tmp_path)
+    budget = limits(tmp_path)
+    ordinary = validate_discovery_sources(tmp_path, "manifest.json", limits=budget)
+    selected = validate_discovery_sources(
+        tmp_path,
+        "manifest.json",
+        limits=budget,
+        required_candidate_ids=("rule0", "rule1"),
+    )
+    assert selected == ordinary
+    with pytest.raises(DiscoveryValidationError, match="required-candidate-absent"):
+        validate_discovery_sources(
+            tmp_path,
+            "manifest.json",
+            limits=budget,
+            required_candidate_ids=("rule0", "missing"),
+        )
+    with pytest.raises(DiscoveryValidationError, match="duplicate-required-candidate"):
+        validate_discovery_sources(
+            tmp_path,
+            "manifest.json",
+            limits=budget,
+            required_candidate_ids=("rule0", "rule0"),
+        )
+
+
+@pytest.mark.parametrize(
+    ("required", "reason"),
+    [
+        (("rule0", "rule1", "rule2"), "invalid-required-candidates"),
+        (("bad identifier",), "invalid-identifier"),
+        (cast(tuple[str, ...], ["rule0"]), "invalid-required-candidates"),
+    ],
+)
+def test_required_candidate_selection_rejects_invalid_inputs(
+    tmp_path: Path, required: tuple[str, ...], reason: str
+) -> None:
+    """Reject unbounded, malformed and non-tuple selection at the public API."""
+    snapshot(tmp_path)
+    with pytest.raises(DiscoveryValidationError, match=reason):
+        validate_discovery_sources(
+            tmp_path,
+            "manifest.json",
+            limits=limits(tmp_path),
+            required_candidate_ids=required,
+        )
 
 
 @pytest.mark.parametrize(

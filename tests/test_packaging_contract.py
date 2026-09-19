@@ -187,9 +187,9 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert workflow.count('apparmor_restrict_unprivileged_userns)" = 1') == 2
     assert workflow.count("/usr/bin/bwrap --version") == 2
     assert workflow.count("/usr/bin/dpkg-query --show") == 4
-    assert workflow.count("0.9.0-1ubuntu0.1") == 2
+    assert workflow.count("0.9.0-1ubuntu0.3") == 2
     assert workflow.count("python3 -m tools.install_bubblewrap") == 2
-    assert workflow.count("52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712") == 2
+    assert workflow.count("e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71") == 2
     assert "apt-get install" not in workflow
     assert workflow.count("--disable-userns --assert-userns-disabled") == 4
     assert workflow.count("/usr/bin/unshare --user -- /usr/bin/true") == 2

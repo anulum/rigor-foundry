@@ -57,9 +57,9 @@ jobs:
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
           test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
-            0.9.0-1ubuntu0.1
+            0.9.0-1ubuntu0.3
           printf '%s  %s\n' \
-            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
             /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
@@ -118,15 +118,17 @@ jobs:
         run: python -m mypy --strict src/rigor_foundry tools
       - name: Discovery source documentation and typing
         run: |
-          python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py
-          python -m mypy --strict src/rigor_foundry/discovery_source_*.py tests/discovery_source_support.py tests/test_discovery_source_*.py
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
+          python -m mypy --strict src/rigor_foundry/discovery_source_*.py src/rigor_foundry/discovery_progress.py tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
       - name: Discovery source closure coverage
         run: >-
           python -m pytest tests/test_discovery_source_validation.py
           tests/test_discovery_source_boundaries.py tests/test_discovery_source_cli.py
+          tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
           --cov=rigor_foundry.discovery_source_schema
           --cov=rigor_foundry.discovery_source_validation
           --cov=rigor_foundry.discovery_source_cli
+          --cov=rigor_foundry.discovery_progress
           --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Campaign admission documentation, typing and coverage
         run: |
@@ -136,9 +138,9 @@ jobs:
       - name: Instruction dispatch documentation, typing and coverage
         run: |
           python -m tools.check_instruction_documentation
-          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_check_instruction_documentation.py
-          python -m mypy --strict src/rigor_foundry/instruction_scope.py src/rigor_foundry/instruction_resolution.py src/rigor_foundry/instruction_dispatch.py src/rigor_foundry/signed_instruction_dispatch.py tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
-          python -m pytest tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/test_check_instruction_documentation.py --cov=rigor_foundry.instruction_scope --cov=rigor_foundry.instruction_resolution --cov=rigor_foundry.instruction_dispatch --cov=rigor_foundry.signed_instruction_dispatch --cov=tools.check_instruction_documentation --cov-branch --cov-report=term-missing --cov-fail-under=100
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_tool_authority_acceptance.py tests/test_adapter_workspace.py tests/native_dispatch_support.py tests/test_native_dispatch.py tests/test_signed_native_dispatch.py tests/test_check_instruction_documentation.py
+          python -m mypy --strict src/rigor_foundry/instruction_scope.py src/rigor_foundry/instruction_resolution.py src/rigor_foundry/instruction_dispatch.py src/rigor_foundry/signed_instruction_dispatch.py src/rigor_foundry/adapter_workspace.py src/rigor_foundry/adapters.py src/rigor_foundry/native_dispatch.py tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_tool_authority_acceptance.py tests/test_adapter_workspace.py tests/native_dispatch_support.py tests/test_native_dispatch.py tests/test_signed_native_dispatch.py tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
+          python -m pytest tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/test_tool_authority_acceptance.py tests/test_check_instruction_documentation.py --cov=rigor_foundry.instruction_scope --cov=rigor_foundry.instruction_resolution --cov=rigor_foundry.instruction_dispatch --cov=rigor_foundry.signed_instruction_dispatch --cov=tools.check_instruction_documentation --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Static security
         run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
       - name: Licence conformance
@@ -195,9 +197,9 @@ jobs:
             --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
             bubblewrap
           test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
-            0.9.0-1ubuntu0.1
+            0.9.0-1ubuntu0.3
           printf '%s  %s\n' \
-            52231e1caf55bcbc667b269f49c63599a6f7db4767ae6a039580d0ff853db712 \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
             /usr/bin/bwrap | sha256sum --check --strict
           /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
             --unshare-user --disable-userns --assert-userns-disabled \
@@ -245,6 +247,11 @@ jobs:
           --cov=rigor_foundry --cov-branch
           --cov-report=term-missing --cov-report=xml
           --cov-fail-under=98
+      - name: Enforce exact native dispatch coverage
+        run: >-
+          python -m coverage report
+          --include='*/native_dispatch.py'
+          --fail-under=100
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: matrix.python-version == '3.12.13'
         with:

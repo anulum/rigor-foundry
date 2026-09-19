@@ -140,7 +140,11 @@ def _candidate(
     return candidate_id, used
 
 
-def _verify(reader: _CaptureReader, manifest_name: str) -> dict[str, object]:
+def _verify(
+    reader: _CaptureReader,
+    manifest_name: str,
+    required_candidate_ids: frozenset[str],
+) -> dict[str, object]:
     """Verify the complete declared graph and build an integrity-only receipt."""
     payload = reader.read(manifest_name)
     manifest = discovery_object(
@@ -182,6 +186,8 @@ def _verify(reader: _CaptureReader, manifest_name: str) -> dict[str, object]:
         shard_ids[shard_id] = digest(record["sha256"])
     if len(candidates) != declared_count:
         raise DiscoveryValidationError("candidate-count-mismatch")
+    if not required_candidate_ids.issubset(candidates):
+        raise DiscoveryValidationError("required-candidate-absent")
     body: dict[str, object] = {
         "schema_version": SCHEMA,
         "status": "discovery-integrity-verified",
@@ -203,6 +209,7 @@ def validate_discovery_sources(
     manifest_name: str,
     *,
     limits: DiscoveryLimits,
+    required_candidate_ids: tuple[str, ...] = (),
 ) -> dict[str, object]:
     """Read a flat explicit snapshot and return a deterministic integrity receipt.
 
@@ -215,8 +222,18 @@ def validate_discovery_sources(
     raise DiscoveryReadError for inaccessible captures or unsupported platforms.
     Returned promotable=false is unconditional; this API verifies neither
     semantic support nor issuing authority, freshness or corpus completeness.
+    Required candidate IDs constrain this exact declared snapshot only; they
+    do not alter its receipt or make any candidate authoritative.
     """
     limits = DiscoveryLimits(**asdict(limits))
+    if (
+        not isinstance(required_candidate_ids, tuple)
+        or len(required_candidate_ids) > limits.candidates
+    ):
+        raise DiscoveryValidationError("invalid-required-candidates")
+    required = tuple(identifier(item) for item in required_candidate_ids)
+    if len(required) != len(set(required)):
+        raise DiscoveryValidationError("duplicate-required-candidate")
     if not root.is_absolute() or ".." in root.parts or "\0" in str(root):
         raise DiscoveryValidationError("invalid-root")
     capture_name(manifest_name)
@@ -225,6 +242,10 @@ def validate_discovery_sources(
     except (OSError, RuntimeError) as exc:
         raise DiscoveryReadError("capture-root-unavailable") from exc
     try:
-        return _verify(_CaptureReader(descriptor, limits, limits.total_bytes), manifest_name)
+        return _verify(
+            _CaptureReader(descriptor, limits, limits.total_bytes),
+            manifest_name,
+            frozenset(required),
+        )
     finally:
         os.close(descriptor)
