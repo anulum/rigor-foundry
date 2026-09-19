@@ -33,6 +33,12 @@ StageState = Literal[
     "skipped",
     "overdue",
 ]
+_TIMELINE_STAGES: tuple[Stage, ...] = (
+    "early-warning",
+    "notification",
+    "final-report",
+    "intermediate",
+)
 
 
 class _HasStage(Protocol):
@@ -273,7 +279,7 @@ def compute_reporting_timeline(
             receipt_by_stage,
             skip_by_stage,
         )
-        for stage in ("early-warning", "notification", "final-report", "intermediate")
+        for stage in _TIMELINE_STAGES
     )
     body: JsonObject = {
         "event_key": event.event_key,
