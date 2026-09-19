@@ -20,7 +20,6 @@ attrs==26.1.0 \
     --hash=sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309 \
     --hash=sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
     # via
-    #   -c requirements/ci.txt
     #   glom
     #   jsonschema
     #   referencing
@@ -28,9 +27,7 @@ attrs==26.1.0 \
 bandit==1.9.4 \
     --hash=sha256:b589e5de2afe70bd4d53fa0c1da6199f4085af666fde00e8a034f152a52cd628 \
     --hash=sha256:f89ffa663767f5a0585ea075f01020207e966a9c0f2b9ef56a57c7963a3f6f8e
-    # via
-    #   -c requirements/ci.txt
-    #   -r requirements/security.in
+    # via -r requirements/security.in
 boltons==21.0.0 \
     --hash=sha256:65e70a79a731a7fe6e98592ecfb5ccf2115873d01dbc576079874629e5c90f13 \
     --hash=sha256:b9bb7b58b2b420bbe11a6025fdef6d3e5edc9f76a42fb467afe7ca212ef9948b
@@ -41,9 +38,7 @@ boltons==21.0.0 \
 boolean-py==5.0 \
     --hash=sha256:60cbc4bad079753721d32649545505362c754e121570ada4658b852a3a318d95 \
     --hash=sha256:ef28a70bd43115208441b53a045d1549e2f0ec6e3d08a9d142cbc41c1938e8d9
-    # via
-    #   -c requirements/ci.txt
-    #   license-expression
+    # via license-expression
 bracex==3.0.1 \
     --hash=sha256:4e38e32392e4a4780fe15d644bfc7c8514057cfc3861e060b11814ce829c25e4 \
     --hash=sha256:6523ad83aeb5098a4ee597cff0f964442ff74e460bd3fafaffab6a013ff2288c
@@ -52,14 +47,12 @@ cachecontrol==0.14.4 \
     --hash=sha256:b7ac014ff72ee199b5f8af1de29d60239954f223e948196fa3d84adaffc71d2b \
     --hash=sha256:e6220afafa4c22a47dd0badb319f84475d79108100d04e26e8542ef7d3ab05a1
     # via
-    #   -c requirements/ci.txt
     #   cachecontrol
     #   pip-audit
 certifi==2026.7.22 \
     --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
     --hash=sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
     # via
-    #   -c requirements/ci.txt
     #   httpcore
     #   httpx
     #   requests
@@ -164,9 +157,7 @@ cffi==2.1.1 \
     --hash=sha256:f8ec5e643a9a937f64e1999eb9f75d072263751912dc5cd06d3c85f8f44be7c3 \
     --hash=sha256:fb92203a88b3d3053034db775110081c49d28be6551923805e039924093761e4 \
     --hash=sha256:fcd22650c908d7b7da162bbfaab594a1227a15d1643a98c68b122ac642fa2264
-    # via
-    #   -c requirements/ci.txt
-    #   cryptography
+    # via cryptography
 charset-normalizer==3.5.1 \
     --hash=sha256:00668ebb0609751758682eb0b5857e7c35b9f00e84dfdef062e103244ec94d45 \
     --hash=sha256:012a22b88a77ca2e59b98ac5889b0deb604147666032f45e6d6e217634d2550d \
@@ -340,14 +331,11 @@ charset-normalizer==3.5.1 \
     --hash=sha256:fd0350afdc3aabd5576f60ea109228bd5538139713c7b094c5cd27c73a98bc6f \
     --hash=sha256:fd0a274c0e5f9a21565cd9d3dd749b61f96b7aa1e20a93aa1ba4029518f2e5c0 \
     --hash=sha256:fdb8a068947befafba9952162645dc2fecaeb400e64584829ed5e9b2fbe21a7f
+    # via requests
+click==8.4.2 \
+    --hash=sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6 \
+    --hash=sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76
     # via
-    #   -c requirements/ci.txt
-    #   requests
-click==8.1.8 \
-    --hash=sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2 \
-    --hash=sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a
-    # via
-    #   -c requirements/ci.txt
     #   click-option-group
     #   semgrep
     #   uvicorn
@@ -358,9 +346,7 @@ click-option-group==0.5.9 \
 colorama==0.4.6 \
     --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
     --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
-    # via
-    #   -c requirements/ci.txt
-    #   semgrep
+    # via semgrep
 cryptography==50.0.1 \
     --hash=sha256:01f41478cf33fc605a6a089cd56d28b45c6c0b45a1928b61797f2621a04bac71 \
     --hash=sha256:05ba322c4da95b262a212c345af888ef2c37c88c0509756ea00a0e6d68850f23 \
@@ -408,21 +394,15 @@ cryptography==50.0.1 \
     --hash=sha256:fc3ed7ebd2a8c96f5b166de0ab9b624996bef3b07bbeb19364dfb78222c22c80 \
     --hash=sha256:fd3718b960d0b5dd213cdf03f3bcb7000e69dda0de8b956061947ff6bcff5558 \
     --hash=sha256:ff838d62ec1bfce4f9ba7fa16f4a7b554cd8d0c299e6be37502161a660c84eef
-    # via
-    #   -c requirements/ci.txt
-    #   pyjwt
+    # via pyjwt
 cyclonedx-python-lib==11.12.0 \
     --hash=sha256:0e807521a921a5c3cb8ce1153f8a61d29eedfe76a46aac2796b7c6b573391a54 \
     --hash=sha256:16767c4039de90c04e9f03348f8f0ed4b8ff842eaa7eefcad3a95685f970dacf
-    # via
-    #   -c requirements/ci.txt
-    #   pip-audit
+    # via pip-audit
 defusedxml==0.7.1 \
     --hash=sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69 \
     --hash=sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61
-    # via
-    #   -c requirements/ci.txt
-    #   py-serializable
+    # via py-serializable
 exceptiongroup==1.2.2 \
     --hash=sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b \
     --hash=sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc
@@ -434,9 +414,7 @@ face==26.0.1 \
 filelock==3.32.7 \
     --hash=sha256:37b8a3d9811b0f9aef7e5ec5c71bb320de52df51e6ca9bcd6f5ad81187660da7 \
     --hash=sha256:65ff0d0190ea42038b32bda4b77834fb05be2cad4c5b9b01aa4dfb3614536e52
-    # via
-    #   -c requirements/ci.txt
-    #   cachecontrol
+    # via cachecontrol
 glom==25.12.0 \
     --hash=sha256:1ae7da88be3693df40ad27bdf57a765a55c075c86c971bcddd67927403eb0069 \
     --hash=sha256:b9f21e77f71a6576a43864e85066b8cc3f0f778d0d50961563f8981377a6dcb1
@@ -467,51 +445,39 @@ idna==3.20 \
     --hash=sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44 \
     --hash=sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c
     # via
-    #   -c requirements/ci.txt
     #   anyio
     #   httpx
     #   requests
 importlib-metadata==8.7.1 \
     --hash=sha256:49fef1ae6440c182052f407c8d34a68f72efc36db9ca90dc0113398f2fdde8bb \
     --hash=sha256:5a1f80bf1daa489495071efbb095d75a634cf28a8bc299581244063b53176151
-    # via
-    #   -c requirements/ci.txt
-    #   opentelemetry-api
+    # via opentelemetry-api
 jsonschema==4.25.1 \
     --hash=sha256:3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63 \
     --hash=sha256:e4a9655ce0da0c0b67a085847e00a3a51449e1157f4f75e9fb5aa545e122eb85
     # via
-    #   -c requirements/ci.txt
     #   mcp
     #   semgrep
 jsonschema-specifications==2025.9.1 \
     --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe \
     --hash=sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d
-    # via
-    #   -c requirements/ci.txt
-    #   jsonschema
+    # via jsonschema
 license-expression==30.4.4 \
     --hash=sha256:421788fdcadb41f049d2dc934ce666626265aeccefddd25e162a26f23bcbf8a4 \
     --hash=sha256:73448f0aacd8d0808895bdc4b2c8e01a8d67646e4188f887375398c761f340fd
-    # via
-    #   -c requirements/ci.txt
-    #   cyclonedx-python-lib
+    # via cyclonedx-python-lib
 markdown-it-py==4.2.0 \
     --hash=sha256:04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49 \
     --hash=sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a
-    # via
-    #   -c requirements/ci.txt
-    #   rich
-mcp==1.23.3 \
-    --hash=sha256:32768af4b46a1b4f7df34e2bfdf5c6011e7b63d7f1b0e321d0fdef4cd6082031 \
-    --hash=sha256:b3b0da2cc949950ce1259c7bfc1b081905a51916fcd7c8182125b85e70825201
+    # via rich
+mcp==1.29.0 \
+    --hash=sha256:52d01f334de1868cc3bb2d6604931126a67631f99a6c5d3b82ba47290315ec36 \
+    --hash=sha256:f5a075bb611f23d6f4d080c6a1699fa62772eebc562ba9e66b306ddde1c755f7
     # via semgrep
 mdurl==0.1.2 \
     --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
     --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba
-    # via
-    #   -c requirements/ci.txt
-    #   markdown-it-py
+    # via markdown-it-py
 msgpack==1.2.2 \
     --hash=sha256:06d95f61de7afe4f4ff908a6feebfcb070d0582ac87c9cf3cedf8551cf634516 \
     --hash=sha256:0708afbf6a9587f0bfe479a9825c141d14d91e2f6a5c8103cf28bc96f4edb5d9 \
@@ -601,9 +567,7 @@ msgpack==1.2.2 \
     --hash=sha256:f466049b8e1ec0854287bbe9a074316826fe0e08dcf707245f98b1ae49e92650 \
     --hash=sha256:f80361592c13d7226b4379c8941529b63fe1a9d0e05d2de8f3306b70e522b53f \
     --hash=sha256:ffdd2f4950daf7815490f23087963e3420175b9609520b7ff5df64d351159c22
-    # via
-    #   -c requirements/ci.txt
-    #   cachecontrol
+    # via cachecontrol
 opentelemetry-api==1.37.0 \
     --hash=sha256:540735b120355bd5112738ea53621f8d5edb35ebcd6fe21ada3ab1c61d1cd9a7 \
     --hash=sha256:accf2024d3e89faec14302213bc39550ec0f4095d1cf5ca688e1bfb1c8612f47
@@ -663,14 +627,11 @@ opentelemetry-util-http==0.58b0 \
 packageurl-python==0.17.6 \
     --hash=sha256:1252ce3a102372ca6f86eb968e16f9014c4ba511c5c37d95a7f023e2ca6e5c25 \
     --hash=sha256:31a85c2717bc41dd818f3c62908685ff9eebcb68588213745b14a6ee9e7df7c9
-    # via
-    #   -c requirements/ci.txt
-    #   cyclonedx-python-lib
+    # via cyclonedx-python-lib
 packaging==26.3 \
     --hash=sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79 \
     --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
     # via
-    #   -c requirements/ci.txt
     #   opentelemetry-instrumentation
     #   pip-audit
     #   pip-requirements-parser
@@ -682,27 +643,19 @@ peewee==3.19.0 \
 pip-api==0.0.35 \
     --hash=sha256:14dea05d7b3b68f4c7582213e3ae8932bbba8e1f754bf06b95263d5fa6ab4363 \
     --hash=sha256:66990d0da25378555cbb538db79384bab92d4617c6350dfd7a2126ba2a3a9894
-    # via
-    #   -c requirements/ci.txt
-    #   pip-audit
+    # via pip-audit
 pip-audit==2.10.1 \
     --hash=sha256:1eb4565d19ebe5d48996f4b770b4d2b32887e12cb12cfa637f1a064011b55ffc \
     --hash=sha256:99ef3f600a317c1945f1e89e227ef26e1c2d618429b8bd3fa6f4f7c440c4611a
-    # via
-    #   -c requirements/ci.txt
-    #   -r requirements/security.in
+    # via -r requirements/security.in
 pip-requirements-parser==32.0.1 \
     --hash=sha256:4659bc2a667783e7a15d190f6fccf8b2486685b6dba4c19c3876314769c57526 \
     --hash=sha256:b4fa3a7a0be38243123cf9d1f3518da10c51bdb165a2b2985566247f9155a7d3
-    # via
-    #   -c requirements/ci.txt
-    #   pip-audit
+    # via pip-audit
 platformdirs==4.11.11 \
     --hash=sha256:972ea6b2b387155a536226a0750e46923d731d459a387c4a255c583ed2f64547 \
     --hash=sha256:b0befe8a90759e4a9a8b9820d434ae226a6549063210b596da0038a7a05aede4
-    # via
-    #   -c requirements/ci.txt
-    #   pip-audit
+    # via pip-audit
 protobuf==6.33.6 \
     --hash=sha256:0cd27b587afca21b7cfa59a74dcbd48a50f0a6400cfb59391340ad729d91d326 \
     --hash=sha256:77179e006c476e69bf8e8ce866640091ec42e1beb80b213c3900006ecfba6901 \
@@ -720,15 +673,11 @@ protobuf==6.33.6 \
 py-serializable==2.1.0 \
     --hash=sha256:9d5db56154a867a9b897c0163b33a793c804c80cee984116d02d49e4578fc103 \
     --hash=sha256:b56d5d686b5a03ba4f4db5e769dc32336e142fc3bd4d68a8c25579ebb0a67304
-    # via
-    #   -c requirements/ci.txt
-    #   cyclonedx-python-lib
+    # via cyclonedx-python-lib
 pycparser==3.0 \
     --hash=sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29 \
     --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
-    # via
-    #   -c requirements/ci.txt
-    #   cffi
+    # via cffi
 pydantic==2.13.5 \
     --hash=sha256:346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73 \
     --hash=sha256:51a9c5f7b2f8e636f04c6cada605d9b6a3bf1348fdf945a3d8869b19bba0ee08
@@ -864,9 +813,7 @@ pydantic-settings==2.15.0 \
 pygments==2.21.0 \
     --hash=sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9 \
     --hash=sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c
-    # via
-    #   -c requirements/ci.txt
-    #   rich
+    # via rich
 pyjwt==2.13.0 \
     --hash=sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423 \
     --hash=sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728
@@ -876,9 +823,7 @@ pyjwt==2.13.0 \
 pyparsing==3.3.2 \
     --hash=sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d \
     --hash=sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc
-    # via
-    #   -c requirements/ci.txt
-    #   pip-requirements-parser
+    # via pip-requirements-parser
 python-dotenv==1.2.3 \
     --hash=sha256:904552145e8bfed22162c09dab1c2b9b54fefa7b23ba780f4f26ca0316b0f0d9 \
     --hash=sha256:a20a594dabeaa385725aa239d5244871c143ecb356add8a20fcf23773a6c3a35
@@ -961,21 +906,17 @@ pyyaml==6.0.3 \
     --hash=sha256:f7057c9a337546edc7973c0d3ba84ddcdf0daa14533c2065749c9075001090e6 \
     --hash=sha256:fa160448684b4e94d80416c0fa4aac48967a969efe22931448d853ada8baf926 \
     --hash=sha256:fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0
-    # via
-    #   -c requirements/ci.txt
-    #   bandit
+    # via bandit
 referencing==0.37.0 \
     --hash=sha256:381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231 \
     --hash=sha256:44aefc3142c5b842538163acb373e24cce6632bd54bdb01b21ad5863489f50d8
     # via
-    #   -c requirements/ci.txt
     #   jsonschema
     #   jsonschema-specifications
 requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via
-    #   -c requirements/ci.txt
     #   cachecontrol
     #   opentelemetry-exporter-otlp-proto-http
     #   pip-audit
@@ -984,7 +925,6 @@ rich==15.0.0 \
     --hash=sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb \
     --hash=sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36
     # via
-    #   -c requirements/ci.txt
     #   bandit
     #   pip-audit
     #   semgrep
@@ -1106,7 +1046,6 @@ rpds-py==2026.6.3 \
     --hash=sha256:f90938e92afda60266da758ee7d363447f7f0138c9559f9e1811629580582d90 \
     --hash=sha256:faa679d19a6696fd54259ad321251ad77a13e70e03dd834daa762a44fb6196ef
     # via
-    #   -c requirements/ci.txt
     #   jsonschema
     #   referencing
 ruamel-yaml==0.19.1 \
@@ -1180,22 +1119,20 @@ semantic-version==2.10.0 \
     --hash=sha256:bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c \
     --hash=sha256:de78a3b8e0feda74cabc54aab2da702113e33ac9d9eb9d2389bcf1f58b7d9177
     # via semgrep
-semgrep==1.170.0 \
-    --hash=sha256:09a7e8eeff5e2549161124957184f3566f484370aa6127e425897cef725eb99b \
-    --hash=sha256:2df531de4aed90fc1eecc6dc65ac9a81df8d4bd55c07b170ed5641ec00bdcc47 \
-    --hash=sha256:525dd0e3d96aa9cb62cd6d75a523a9597e7c00ce9740330b8ec46eab89f366cb \
-    --hash=sha256:60eb9a27562048e219ab7529dab90c9c4d413e330a37bff43a87e8f6e00a12f3 \
-    --hash=sha256:a9b0178221f141ec73ca6d200ca207633b9d6b4553b20c52b5d0ed22bfde933a \
-    --hash=sha256:aaea080d24d78a5cfc46b02a4099e05275264fab07d0807538f37d562af34481 \
-    --hash=sha256:de7c86d9163bedd482c5496092f1f2bcaee45f573ae2703620438ffdff2f016f \
-    --hash=sha256:feddf137913a58c600675f4ed63ddc1b2c7a2f7b5394eca268413932490d9776
+semgrep==1.177.0 \
+    --hash=sha256:00edda4175f71417bbfab93f060d468578eca73c81447c5ff1faa77df30628f7 \
+    --hash=sha256:25df034bae3570438a39a7cb57102659b329eed62e86b3beaa8c5c0dd23932d5 \
+    --hash=sha256:32d92d0cd2e18a1495b32abfef926be0ed3c972d8cd169bffe6cbb8418e3bb5e \
+    --hash=sha256:5e3bcc4053843272f1604b9dc022f9eef1b0e824fdec901d6b979b2806566283 \
+    --hash=sha256:7778456167ed8a46d6f8aeee1ef95ec6ca1666e3c07503cc45d49d00cd4e817c \
+    --hash=sha256:a79f212544da540b5e758da6d1979ef8eedd0b8e15a8c5019601d6da0d73538d \
+    --hash=sha256:f27725632d468fb1a0d740ce5a98e406376a88de91fc6f902fb9fb3b1d6ed4d9 \
+    --hash=sha256:fa6121384b4027925c2d03d7020908c4ebbb15de05d8555b2e67852a3568e67c
     # via -r requirements/security.in
 sortedcontainers==2.4.0 \
     --hash=sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88 \
     --hash=sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0
-    # via
-    #   -c requirements/ci.txt
-    #   cyclonedx-python-lib
+    # via cyclonedx-python-lib
 sse-starlette==3.4.11 \
     --hash=sha256:1bae716c02f3e6f294be41ff333220692dae7c3cbab077c900f159676719dade \
     --hash=sha256:c7b2244bdff016fe7f64e10075e89a3e6bbf899649cc89b0fe884b5545042453
@@ -1209,9 +1146,7 @@ starlette==1.6.0 \
 stevedore==5.9.1 \
     --hash=sha256:5c8ff3a9f336cc1a06ac0f597bc79d11a2f950bfd32e290ca56b5a301fafafbf \
     --hash=sha256:e97a2667923efda926e8713fde6a73616df68210a3cbc6f02b48967b676fd8bf
-    # via
-    #   -c requirements/ci.txt
-    #   bandit
+    # via bandit
 tomli==2.4.1 \
     --hash=sha256:01f520d4f53ef97964a240a035ec2a869fe1a37dde002b57ebc4417a27ccd853 \
     --hash=sha256:0d85819802132122da43cb86656f8d1f8c6587d54ae7dcaf30e90533028b49fe \
@@ -1261,20 +1196,16 @@ tomli==2.4.1 \
     --hash=sha256:ff18e6a727ee0ab0388507b89d1bc6a22b138d1e2fa56d1ad494586d61d2eae9 \
     --hash=sha256:ff2983983d34813c1aeb0fa89091e76c3a22889ee83ab27c5eeb45100560c049
     # via
-    #   -c requirements/ci.txt
     #   pip-audit
     #   semgrep
 tomli-w==1.2.0 \
     --hash=sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90 \
     --hash=sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021
-    # via
-    #   -c requirements/ci.txt
-    #   pip-audit
+    # via pip-audit
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
     --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
     # via
-    #   -c requirements/ci.txt
     #   anyio
     #   cyclonedx-python-lib
     #   mcp
@@ -1299,7 +1230,6 @@ urllib3==2.8.0 \
     --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3 \
     --hash=sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63
     # via
-    #   -c requirements/ci.txt
     #   requests
     #   semgrep
 uvicorn==0.53.0 \
@@ -1398,14 +1328,10 @@ wrapt==1.17.3 \
 zipp==4.1.0 \
     --hash=sha256:25ad4e16390cd314347dd8f1de67a2ac538ae658ed4ab9db16029c07c188e97f \
     --hash=sha256:4cb57381f544315db7688e976e922a2b18cdb513d21cc194eb42232ba2a3e602
-    # via
-    #   -c requirements/ci.txt
-    #   importlib-metadata
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 pip==26.2.1 \
     --hash=sha256:71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e \
     --hash=sha256:f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f
-    # via
-    #   -c requirements/ci.txt
-    #   pip-api
+    # via pip-api
