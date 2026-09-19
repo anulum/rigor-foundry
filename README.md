@@ -59,6 +59,9 @@ remediation inputs without treating static heuristics as defect verdicts.
   legacy raw-digest signatures are rejected rather than reinterpreted.
 - `rigor verify` checks caller-supplied signed evidence, explicit key lifecycle,
   expiry, unavailable records, and model-alias collapse entirely offline.
+- A provisional Python API joins retained source, signed semantic-review,
+  StandardPack v2 and ProjectProfile v2 evidence into a read-only candidate
+  report; it cannot authorise Guard effects or change existing dispatch.
 - Native audit adapters use validated argv, bounded execution time, and
   `shell=False`.
 - Internal campaign records are written only below Git-ignored paths.
@@ -178,6 +181,10 @@ The [offline evidence-verification guide](docs/offline-verification.md)
 documents caller-selected trust, key lifecycle, signature domains, bundle and
 result schemas, exit codes, alias collapse, and the assurance boundary.
 
+The [rule-chain candidate guide](docs/rule-chain-candidate.md) describes the
+provisional read-only v2 inspection API and why its report is not an effective
+profile lock or a dispatch permit.
+
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,
 hard output and time bounds, process-tree termination, and structured durable
@@ -204,6 +211,7 @@ strict policy form, installation boundary, coverage limits, and benchmark.
 | Policy and records | `rules`, `domains`, `audit_primitives`, `policy_models`, `models` | Versioned rules, strict protocol primitives, applicability, repository policy, and content-addressed report/review records. |
 | Report differences | `report_diff`, `report_diff_cli` | Replay-verifiable candidate transitions over two exact reports, with explicit compatibility and ambiguity evidence. |
 | Offline verification | `verification_policy`, `offline_verification_models`, `offline_verification`, `offline_verification_report`, `offline_verification_cli` | Caller-selected key lifecycle, signed multi-protocol evidence, alias collapse, explicit unavailability, deterministic aggregate results, and a no-network CLI. |
+| Rule-chain candidate inspection | `rule_chain_candidate`, `semantic_review_host`, `semantic_source_host`, `discovery_receipt_host`, `native_source_host`, `native_source_pin`, `native_message_pair`, `semantic_transition`, `semantic_transition_review`, `pack_source_host`, `rule_chain_pack_v2`, `rule_chain_profile_v2`, `signed_rule_chain_v2` | Read-only host-selected source and signed-selection verification with a non-admissible report; no active Guard or v1 cutover. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |

@@ -22,6 +22,15 @@ CLI/API
 Independent campaigns wrap this path with frozen inputs, per-run attestations,
 append-only ignored storage, and disagreement comparison.
 
+A separate provisional Python path inspects a proposed rule-chain candidate:
+host-selected discovery/native captures and a signed semantic-review dependency
+are matched to retained StandardPack v2 source bytes, typed pack signatures,
+and a signed ProjectProfile v2 choice. Its result is read-only and explicitly
+non-admissible. It does not replace the v1 desired-state resolver, select a
+signed EffectiveProfileLock, or enter the active dispatch boundary. The
+[candidate inspection contract](docs/rule-chain-candidate.md) describes its
+inputs and refusal boundary.
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`

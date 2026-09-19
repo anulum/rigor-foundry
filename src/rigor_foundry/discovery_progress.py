@@ -26,6 +26,8 @@ from .discovery_source_schema import (
 from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 
 _PROGRESS_SCHEMA_VERSION = "discovery-progress-change.v1"
+_INTAKE_SCHEMA_VERSION = "discovery-inventory-intake.v1"
+_CAPTURE_ASSERTION_CLASS = "discovery-source-capture-only"
 
 
 @dataclass(frozen=True)
@@ -161,6 +163,89 @@ def _apply(state: dict[str, object], value: object, reader: _Reader) -> None:
         raise DiscoveryValidationError("progress-result-mismatch")
 
 
+def _apply_intake(state: dict[str, object], value: object, reader: _Reader) -> None:
+    """Append source-captured, unbound and unreviewed candidates to verified state."""
+    transaction = exact_object(value, "schema_version parent_sha256 result_sha256 additions")
+    if digest(transaction["parent_sha256"]) != canonical_digest(state):
+        raise DiscoveryValidationError("intake-parent-mismatch")
+    expected = digest(transaction["result_sha256"])
+    additions = nonempty_list(transaction["additions"], reader.limits.changes)
+    records = nonempty_list(state["records"], reader.limits.records)
+    known = {
+        identifier(require_mapping(record, "record").get("candidate_id")) for record in records
+    }
+    claimed_captures = {
+        capture_key
+        for raw in records
+        for capture_key in [require_mapping(raw, "record").get("source_capture")]
+        if isinstance(capture_key, str)
+    }
+    captures_value = state.setdefault("captures", {})
+    captures = require_mapping(captures_value, "captures")
+    for raw in additions:
+        addition = exact_object(raw, "candidate_id capture_key descriptor capture")
+        candidate = identifier(addition["candidate_id"])
+        capture_key = identifier(addition["capture_key"])
+        if candidate in known:
+            raise DiscoveryValidationError("duplicate-intake-candidate")
+        if capture_key in captures or capture_key in claimed_captures:
+            raise DiscoveryValidationError("duplicate-intake-capture")
+        descriptor = exact_object(addition["descriptor"], "capture_digest")
+        capture = require_mapping(reader.read(capture_name(addition["capture"])), "capture")
+        body = {name: item for name, item in capture.items() if name != "capture_digest"}
+        if (
+            digest(capture.get("capture_digest")) != canonical_digest(body)
+            or descriptor["capture_digest"] != capture["capture_digest"]
+            or capture.get("promotable") is not False
+            or capture.get("assertion_class") != _CAPTURE_ASSERTION_CLASS
+        ):
+            raise DiscoveryValidationError("intake-capture-mismatch")
+        records.append(
+            {
+                "candidate_id": candidate,
+                "source_receipt": None,
+                "source_capture": capture_key,
+                "semantic_status": "unreviewed",
+                "promotable": False,
+            }
+        )
+        captures[capture_key] = descriptor
+        known.add(candidate)
+        claimed_captures.add(capture_key)
+    if len(records) > reader.limits.records:
+        raise DiscoveryValidationError("intake-record-limit")
+    if canonical_digest(state) != expected:
+        raise DiscoveryValidationError("intake-result-mismatch")
+
+
+def _result(state: dict[str, object], limit: int) -> dict[str, object]:
+    """Return complete verified state and counts derived from its current records."""
+    records = nonempty_list(state["records"], limit)
+    captures = require_mapping(state.get("captures", {}), "captures")
+    bound = sum(
+        require_mapping(record, "record")["source_receipt"] is not None for record in records
+    )
+    intake_pending = 0
+    for raw in records:
+        record = require_mapping(raw, "record")
+        capture_key = record.get("source_capture")
+        if (
+            isinstance(capture_key, str)
+            and capture_key in captures
+            and record.get("source_receipt") is None
+        ):
+            intake_pending += 1
+    return {
+        "state": state,
+        "state_sha256": canonical_digest(state),
+        "total": len(records),
+        "bound": bound,
+        "pending": len(records) - bound,
+        "intake_pending": intake_pending,
+        "promotable": False,
+    }
+
+
 def replay_discovery_progress(
     root: Path,
     base_name: str,
@@ -223,17 +308,61 @@ def replay_discovery_progress(
         state = _state({"records": base["records"], "receipts": base["receipts"]}, limits.records)
         for name in transaction_names:
             _apply(state, reader.read(name), reader)
-        records = nonempty_list(state["records"], limits.records)
-        bound = sum(
-            require_mapping(record, "record")["source_receipt"] is not None for record in records
+        result = _result(state, limits.records)
+        result.pop("intake_pending")
+        return result
+    finally:
+        os.close(descriptor)
+
+
+def replay_discovery_lineage(
+    root: Path,
+    base_name: str,
+    transaction_names: tuple[str, ...],
+    *,
+    base_sha256: str,
+    limits: ProgressLimits,
+    base_metadata_fields: tuple[str, ...] = (),
+) -> dict[str, object]:
+    """Replay an explicit ordered mix of binding-v1 and inventory-intake-v1 files.
+
+    The entrypoint reads and classifies every strict envelope itself while holding
+    one no-follow directory descriptor and aggregate byte budget. Callers cannot
+    inject an unverified intermediate state. Intake appends only minimal new
+    records that are source-captured, receipt-unbound, semantically unreviewed and
+    non-promotable. Binding v1 remains the sole transition that may attach a
+    receipt, and it still cannot create or replace a candidate.
+
+    Private adapters own the opaque source-capture body. This generic validator
+    requires its canonical digest and fixed non-promotable assertion class but
+    interprets no vendor, transcript or policy content. Inputs are explicit flat
+    filenames; no scan, newest-file selection, write, network or activation occurs.
+    """
+    digest(base_sha256)
+    if not root.is_absolute() or ".." in root.parts:
+        raise DiscoveryValidationError("invalid-progress-root")
+    if len(transaction_names) > limits.transactions or len(set(transaction_names)) != len(
+        transaction_names
+    ):
+        raise DiscoveryValidationError("invalid-progress-chain")
+    descriptor = open_directory_no_follow(root)
+    try:
+        reader = _Reader(descriptor, limits, limits.total_bytes)
+        base = exact_object(
+            reader.read(base_name), " ".join(("records", "receipts", *base_metadata_fields))
         )
-        return {
-            "state": state,
-            "state_sha256": canonical_digest(state),
-            "total": len(records),
-            "bound": bound,
-            "pending": len(records) - bound,
-            "promotable": False,
-        }
+        if canonical_digest(base) != base_sha256:
+            raise DiscoveryValidationError("progress-base-mismatch")
+        state = _state({"records": base["records"], "receipts": base["receipts"]}, limits.records)
+        for name in transaction_names:
+            transaction = reader.read(name)
+            schema = require_mapping(transaction, "lineage transaction").get("schema_version")
+            if schema == _PROGRESS_SCHEMA_VERSION:
+                _apply(state, transaction, reader)
+            elif schema == _INTAKE_SCHEMA_VERSION:
+                _apply_intake(state, transaction, reader)
+            else:
+                raise DiscoveryValidationError("invalid-lineage-format")
+        return _result(state, limits.records)
     finally:
         os.close(descriptor)

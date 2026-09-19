@@ -51,6 +51,66 @@ def test_workspace_contains_only_selected_tracked_bytes(tmp_path: Path) -> None:
     assert not snapshot_root.exists()
 
 
+def test_explicit_workspace_allocation_preserves_source_and_neighbours(tmp_path: Path) -> None:
+    """Create and clean only a unique snapshot inside the host-selected allocation."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text(".gitignore", "private/\n")
+    repository.write_text("config.yml", "rules: []\n")
+    repository.write_text("src/module.py", "VALUE = 1\n")
+    repository.commit()
+    ignored = repository.write_text("private/note.txt", "ignored custody\n")
+    untracked = repository.write_text("untracked.txt", "untracked custody\n")
+    allocation = tmp_path / "group" / "workspace" / "project" / "session"
+    allocation.mkdir(parents=True)
+    neighbour = allocation / "retained.txt"
+    neighbour.write_text("neighbour custody\n")
+    with create_adapter_workspace(
+        repository.root,
+        configuration_path="config.yml",
+        target_paths=("src",),
+        workspace_parent=allocation,
+    ) as workspace:
+        snapshot = workspace.root
+        assert snapshot.parent == allocation
+        assert (snapshot / "src/module.py").read_text() == "VALUE = 1\n"
+        assert not (snapshot / "private").exists()
+        assert not (snapshot / "untracked.txt").exists()
+    assert not snapshot.exists()
+    assert sorted(path.name for path in allocation.iterdir()) == ["retained.txt"]
+    assert neighbour.read_text() == "neighbour custody\n"
+    assert ignored.read_text() == "ignored custody\n"
+    assert untracked.read_text() == "untracked custody\n"
+
+
+def test_workspace_allocation_refuses_ambiguous_and_source_paths(tmp_path: Path) -> None:
+    """Invalid allocations fail without creating snapshots or modifying source data."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("config.yml", "rules: []\n")
+    repository.write_text("src/module.py", "VALUE = 1\n")
+    repository.commit()
+    allocation = tmp_path / "allocation"
+    allocation.mkdir()
+    link = tmp_path / "linked-allocation"
+    link.symlink_to(allocation, target_is_directory=True)
+    for parent in (
+        Path("relative"),
+        tmp_path / "allocation" / ".." / "allocation",
+        repository.root,
+        repository.root / "src",
+        link,
+        tmp_path / "missing",
+    ):
+        with pytest.raises((ValueError, OSError, RuntimeError)):
+            create_adapter_workspace(
+                repository.root,
+                configuration_path="config.yml",
+                target_paths=("src",),
+                workspace_parent=parent,
+            )
+    assert list(allocation.iterdir()) == []
+    assert (repository.root / "src/module.py").read_text() == "VALUE = 1\n"
+
+
 def test_workspace_rejects_dirty_missing_oversize_and_mismatched_inputs(
     tmp_path: Path,
 ) -> None:

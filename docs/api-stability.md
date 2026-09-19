@@ -78,6 +78,11 @@ constants are provisional Python imports. The installed `rigor verify` command
 and its schema-1.0 bundle/trust-policy/result contracts form the stable offline-verification CLI
 boundary. See [Offline evidence verification](offline-verification.md).
 
+The module-level `rule_chain_candidate.inspect_rule_chain_candidate` and
+`RuleChainCandidateReport` are provisional read-only Python APIs. They are not
+package-level exports in the frozen 1.0 compatibility inventory and do not
+admit a selected lock or an effect. See [Rule-chain candidate inspection](rule-chain-candidate.md).
+
 Every other current `rigor_foundry.__all__` name is explicitly provisional in
 the pre-1.0 package. Provisional does not mean untested: these APIs remain typed,
 documented where public, and covered by production-boundary tests. It means a

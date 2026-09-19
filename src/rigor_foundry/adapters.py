@@ -13,6 +13,7 @@ import hashlib
 import os
 import stat
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
@@ -55,6 +56,28 @@ from .trusted_executable import TrustedExecutable, open_trusted_executable, run_
 
 ExecutionScope = Literal["staged", "full"]
 ADAPTER_RESULT_SCHEMA_VERSION = "2.0"
+
+
+@dataclass(frozen=True)
+class AdapterInvocation:
+    """Observed built-in invocation facts while workspace and descriptors are held.
+
+    A host guard may refuse an invocation using these facts. This observation
+    is not an admission grant and does not authorise prior preparation effects.
+    version is absent before the version query and observed before the audit.
+    The command digest names the exact stage, not an interchangeable tool name.
+    """
+
+    stage: Literal["version", "audit"]
+    executable_path: str
+    spec_digest: str
+    executable_digest: str
+    configuration_digest: str
+    input_digest: str
+    command_digest: str
+    environment_digest: str
+    sandbox_digest: str | None
+    version: str | None
 
 
 def _digest(value: object, field: str) -> str:
@@ -395,6 +418,8 @@ def _run_profile_adapter(
     *,
     git_trust_policy: GitTrustPolicy | None,
     expected_tracked_content_digest: str | None,
+    workspace_parent: Path | None = None,
+    invocation_guard: Callable[[AdapterInvocation], None] | None = None,
 ) -> AdapterResult:
     """Run one built-in profile against an exact tracked-only workspace."""
     if spec.profile is None or spec.configuration_path is None:
@@ -406,6 +431,7 @@ def _run_profile_adapter(
         target_paths=spec.target_paths,
         git_trust_policy=git_trust_policy,
         expected_tracked_content_digest=expected_tracked_content_digest,
+        workspace_parent=workspace_parent,
     ) as workspace:
         profile_environment: dict[str, str] = {}
         database_digest: str | None = None
@@ -462,16 +488,33 @@ def _run_profile_adapter(
         )
         version_output_digest = hashlib.sha256(b"").hexdigest()
         try:
+            version_environment = {
+                **CHILD_ENVIRONMENT,
+                "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+                "SEMGREP_ENABLE_VERSION_CHECK": "0",
+                "SEMGREP_SEND_METRICS": "off",
+            }
+            if invocation_guard is not None:
+                invocation_guard(
+                    AdapterInvocation(
+                        "version",
+                        str(executable_path),
+                        canonical_digest(spec.to_dict()),
+                        executable.snapshot.digest,
+                        workspace.configuration_digest,
+                        workspace.input_digest,
+                        canonical_digest((profile.executable, *profile.version_arguments)),
+                        canonical_digest(version_environment),
+                        None,
+                        None,
+                    )
+                )
+                _verify_adapter_executable(executable)
             try:
                 version_result = run_trusted_command(
                     executable,
                     profile.version_arguments,
-                    environment={
-                        **CHILD_ENVIRONMENT,
-                        "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
-                        "SEMGREP_ENABLE_VERSION_CHECK": "0",
-                        "SEMGREP_SEND_METRICS": "off",
-                    },
+                    environment=version_environment,
                     timeout_seconds=min(spec.timeout_seconds, 30),
                     output_limit=8192,
                 )
@@ -513,6 +556,28 @@ def _run_profile_adapter(
                     extra_environment=profile_environment,
                     database_digest=database_digest,
                 )
+            if invocation_guard is not None:
+                invocation_guard(
+                    AdapterInvocation(
+                        "audit",
+                        str(executable_path),
+                        canonical_digest(spec.to_dict()),
+                        executable.snapshot.digest,
+                        workspace.configuration_digest,
+                        workspace.input_digest,
+                        canonical_digest((profile.executable, *command_arguments)),
+                        canonical_digest(
+                            {
+                                **CHILD_ENVIRONMENT,
+                                "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",
+                                **profile_environment,
+                            }
+                        ),
+                        sandbox_digest,
+                        tool_version,
+                    )
+                )
+                _verify_adapter_executable(executable)
             process = stream_process(
                 (*sandbox, "--", SANDBOX_TOOL, *command_arguments),
                 environment=environment,
@@ -584,8 +649,18 @@ def run_adapter(
     trusted: bool = False,
     git_trust_policy: GitTrustPolicy | None = None,
     expected_tracked_content_digest: str | None = None,
+    workspace_parent: Path | None = None,
+    invocation_guard: Callable[[AdapterInvocation], None] | None = None,
 ) -> AdapterResult:
-    """Run one explicitly consented adapter inside a read-only sandbox."""
+    """Run one explicitly consented adapter inside a read-only sandbox.
+
+    Built-in profiles may use an explicit host-owned workspace allocation and
+    a guard before each real version/audit invocation. The guard must raise to
+    refuse execution; its failure is not converted into an unavailable result.
+    It does not authorise workspace preparation, enforce resource ceilings or
+    authenticate policy. Those obligations belong to the enclosing host lease.
+    Generic argv adapters reject these options rather than ignore the guard.
+    """
     if not trusted:
         raise ValueError("native audit execution requires explicit trusted consent")
     repository = root.resolve(strict=True)
@@ -598,7 +673,11 @@ def run_adapter(
             spec,
             git_trust_policy=git_trust_policy,
             expected_tracked_content_digest=expected_tracked_content_digest,
+            workspace_parent=workspace_parent,
+            invocation_guard=invocation_guard,
         )
+    if workspace_parent is not None or invocation_guard is not None:
+        raise ValueError("guarded allocation requires a built-in adapter profile")
     executable = resolved_executable(repository, spec.command[0])
     command = (str(executable), *spec.command[1:])
     cwd = working_directory(repository, spec.working_directory)

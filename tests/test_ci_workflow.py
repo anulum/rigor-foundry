@@ -140,3 +140,66 @@ def test_memory_documentation_cohort_is_enforced_in_ci_and_commit_hook() -> None
             "tests/test_project_registry_cutover.py",
         ):
             assert path in command.split()
+
+
+def test_native_dispatch_cohort_is_enforced_in_ci_and_commit_hook() -> None:
+    """Keep the concrete native consumer inside strict local and hosted gates."""
+    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    hosted = next(
+        step["run"]
+        for step in workflow["jobs"]["quality"]["steps"]
+        if step.get("name") == "Instruction dispatch documentation, typing and coverage"
+    )
+    local = next(
+        hook["entry"]
+        for repository in hooks["repos"]
+        for hook in repository["hooks"]
+        if hook["id"] == "instruction-dispatch-typing"
+    )
+    for command in (hosted, local):
+        for path in (
+            "src/rigor_foundry/adapter_workspace.py",
+            "src/rigor_foundry/adapters.py",
+            "src/rigor_foundry/native_dispatch.py",
+            "tests/test_adapter_workspace.py",
+            "tests/native_dispatch_support.py",
+            "tests/test_native_dispatch.py",
+            "tests/test_signed_native_dispatch.py",
+            "tests/test_tool_authority_acceptance.py",
+        ):
+            assert path in command.split()
+    exact_coverage = next(
+        step["run"]
+        for step in workflow["jobs"]["test"]["steps"]
+        if step.get("name") == "Enforce exact native dispatch coverage"
+    )
+    assert "--include='*/native_dispatch.py'" in exact_coverage
+    assert "--fail-under=100" in exact_coverage
+
+
+def test_discovery_inventory_intake_is_enforced_in_ci_and_commit_hook() -> None:
+    """Keep append-only intake inside strict docs, typing and 100% coverage gates."""
+    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    hosted_steps = workflow["jobs"]["quality"]["steps"]
+    hosted_quality = next(
+        step["run"]
+        for step in hosted_steps
+        if step.get("name") == "Discovery source documentation and typing"
+    )
+    hosted_coverage = next(
+        step["run"]
+        for step in hosted_steps
+        if step.get("name") == "Discovery source closure coverage"
+    )
+    local_entries = {
+        hook["id"]: hook["entry"] for repository in hooks["repos"] for hook in repository["hooks"]
+    }
+    path = "tests/test_discovery_inventory_intake.py"
+    assert path in hosted_quality.split()
+    assert path in hosted_coverage.split()
+    assert path in local_entries["discovery-test-documentation"].split()
+    assert path in local_entries["discovery-strict-typing"].split()
+    assert "--cov=rigor_foundry.discovery_progress" in hosted_coverage
+    assert "--cov-fail-under=100" in hosted_coverage
