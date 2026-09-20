@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from pathlib import Path
+
+import yaml
 
 from tools._repository import ROOT, redacted_guard_exit_code
 
@@ -19,8 +22,8 @@ WAIVER_PATH = Path(".github/dependency-waivers.json")
 SECURITY_WORKFLOW = Path(".github/workflows/security.yml")
 REQUIRED_COMMANDS = (
     "python -m tools.check_dependency_waivers",
-    "python -m pip_audit -r requirements/ci.txt",
-    "python -m pip_audit -r requirements/security.txt",
+    "python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip",
+    "python -m pip_audit -r requirements/security.txt --require-hashes --disable-pip",
     "semgrep scan --error --config .semgrep.yml src tools",
 )
 
@@ -48,8 +51,32 @@ def dependency_waiver_errors(root: Path = ROOT) -> list[str]:
         workflow = (root / SECURITY_WORKFLOW).read_text(encoding="utf-8")
     except OSError as error:
         return [*errors, f"cannot read security workflow: {error}"]
+    try:
+        parsed = yaml.safe_load(workflow)
+    except yaml.YAMLError as error:
+        return [*errors, f"cannot parse security workflow: {error}"]
+    jobs = parsed.get("jobs") if isinstance(parsed, dict) else None
+    scan = jobs.get("scan") if isinstance(jobs, dict) else None
+    steps = scan.get("steps") if isinstance(scan, dict) else None
+    if not isinstance(scan, dict) or not isinstance(steps, list):
+        return [*errors, "security workflow scan job must contain steps"]
+    if "if" in scan or scan.get("continue-on-error") not in (None, False):
+        errors.append("security workflow scan job must be unconditional and fail-closed")
+    commands: list[tuple[str, ...]] = []
+    for step in steps:
+        if (
+            not isinstance(step, dict)
+            or not isinstance(step.get("run"), str)
+            or "if" in step
+            or step.get("continue-on-error") not in (None, False)
+        ):
+            continue
+        try:
+            commands.append(tuple(shlex.split(step["run"], comments=True)))
+        except ValueError as error:
+            errors.append(f"cannot parse security workflow run step: {error}")
     for command in REQUIRED_COMMANDS:
-        if command not in workflow:
+        if tuple(shlex.split(command)) not in commands:
             errors.append(f"security workflow is missing guarded command: {command}")
     if re.search(r"--ignore-vuln(?:\s|=|$)", workflow):
         errors.append("security workflow must not ignore vulnerability findings")

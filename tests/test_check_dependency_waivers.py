@@ -96,3 +96,47 @@ def test_workflow_keeps_all_guarded_commands(tmp_path: Path, fragment: str) -> N
         workflow.read_text(encoding="utf-8").replace(fragment, ""), encoding="utf-8"
     )
     assert any(fragment in error for error in dependency_waiver_errors(root))
+
+
+@pytest.mark.parametrize("replacement", ["# {command}", "echo '{command}'"])
+def test_workflow_rejects_nonexecuting_command_text(tmp_path: Path, replacement: str) -> None:
+    """Comments and echo output cannot stand in for the scanner step."""
+    root = _waiver_root(tmp_path)
+    workflow = root / ".github/workflows/security.yml"
+    command = "semgrep scan --error --config .semgrep.yml src tools"
+    workflow.write_text(
+        workflow.read_text(encoding="utf-8").replace(
+            f"run: {command}", f"run: {replacement.format(command=command)}"
+        ),
+        encoding="utf-8",
+    )
+    assert any(command in error for error in dependency_waiver_errors(root))
+
+
+def test_workflow_rejects_command_in_unrelated_job(tmp_path: Path) -> None:
+    """Only the enrolled scan job can satisfy the required command set."""
+    root = _waiver_root(tmp_path)
+    workflow = root / ".github/workflows/security.yml"
+    command = "semgrep scan --error --config .semgrep.yml src tools"
+    workflow.write_text(
+        workflow.read_text(encoding="utf-8").replace(
+            f"run: {command}", f"run: true\n  decoy:\n    steps:\n      - run: {command}"
+        ),
+        encoding="utf-8",
+    )
+    assert any(command in error for error in dependency_waiver_errors(root))
+
+
+@pytest.mark.parametrize("condition", ["if: false", "continue-on-error: true"])
+def test_workflow_rejects_disabled_scanner_step(tmp_path: Path, condition: str) -> None:
+    """An enrolled command must run and propagate its failure."""
+    root = _waiver_root(tmp_path)
+    workflow = root / ".github/workflows/security.yml"
+    command = "semgrep scan --error --config .semgrep.yml src tools"
+    workflow.write_text(
+        workflow.read_text(encoding="utf-8").replace(
+            f"run: {command}", f"run: {command}\n        {condition}"
+        ),
+        encoding="utf-8",
+    )
+    assert any(command in error for error in dependency_waiver_errors(root))
