@@ -22,7 +22,7 @@ execution, or production promotion.
 | Secrets | Worktree scan with redacted findings | Required |
 | Metadata | Version, licence, Python, package, citation, and archive consistency | Required |
 | Tests | Focused single test files only | Full matrix on 3.11, 3.12, 3.13 |
-| Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 95% |
+| Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 98% |
 | Packaging | Wheel and sdist build; metadata-truth guard; wheel smoke outside checkout | Build, metadata-truth guard, Twine check, wheel smoke |
 | Consumer integrations | External Git fixture; exact-source Action shell; exact-revision system hook with hash-locked executable | Local composite Action plus cloned hook at `${GITHUB_SHA}`; three retained JSON artifacts |
 | Release tag | Isolated `python -S` CLI proves exact-version validation without site packages | Exact tag validation runs before build, container publication, and package publication |
@@ -217,6 +217,19 @@ recorded in an expiring, source-digest-bound residual manifest. Its dedicated
 test. The partial combined coverage selection from that invocation is not
 represented as repository-wide coverage evidence. Aggregate coverage and the
 supported Python/platform matrix remain hosted-CI gates.
+
+The project-registry read and recovery race regressions use an owned Linux
+x86-64 child stopped by `PTRACE_SYSCALL`. The supervisor observes syscall
+entry/exit and descriptor paths without changing registers, memory, syscall
+arguments or return values. It mutates real fixture files at the recorded
+boundary, then resumes the unchanged public API. The cases cover bounded-read
+growth, inode replacement, prior-snapshot appearance/disappearance and the
+four final registry/consumer verification windows. Real process death after
+the target rename creates interrupted cutovers for both commit-point outcomes;
+unmodified recovery controls verify successful restoration or commitment.
+Each worker has an absolute lifetime bound and is reaped on success, failure
+and interruption. These tests require the explicit Linux x86-64 test ABI and
+do not qualify a protected handler or grant tracing of unrelated processes.
 
 ## Security-boundary remediation evidence
 

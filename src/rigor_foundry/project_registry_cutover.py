@@ -114,11 +114,11 @@ def _read_optional(path: Path, maximum: int, label: str) -> bytes | None:
             if not chunk:
                 break
             payload.extend(chunk)
-            if len(payload) > maximum:  # pragma: no cover - concurrent post-fstat growth guard
+            if len(payload) > maximum:
                 raise ProjectRegistryCutoverInvalid(f"{label} exceeds its byte bound")
         after = os.fstat(descriptor)
         current = path.stat(follow_symlinks=False)
-        if (  # pragma: no cover - concurrent inode/content substitution guard
+        if (
             (after.st_dev, after.st_ino) != identity
             or (current.st_dev, current.st_ino) != identity
             or after.st_size != before.st_size
