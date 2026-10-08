@@ -69,6 +69,7 @@ def registry_with_affiliation(*, include_global: bool = False) -> ProjectRegistr
 
 @pytest.mark.parametrize("case", ["valid", "wrong-profile", "legacy-envelope", "legacy-payload"])
 def test_profiled_outputs_bind_profile_and_derived_payload(case: str) -> None:
+    """Bind every consumer output to its selected registry profile and exact derived payload."""
     registry = profiled_registry(registry_with_affiliation(include_global=True))
     outputs = build_registry_consumer_outputs(registry, {"boot-resolver": {"mode": "explicit"}})
     for output in outputs:

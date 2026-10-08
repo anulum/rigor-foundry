@@ -174,6 +174,7 @@ def profiled_registry(base: ProjectRegistry | None = None) -> ProjectRegistry:
 
 
 def test_profiled_registry_round_trip_and_embedded_identity() -> None:
+    """Preserve embedded profile identity in versioned registry round trips without changing legacy shape."""
     legacy = registry()
     current = profiled_registry(legacy)
     assert current.registry_sha256 != legacy.registry_sha256
@@ -185,6 +186,7 @@ def test_profiled_registry_round_trip_and_embedded_identity() -> None:
 
 @pytest.mark.parametrize("case", ["profile-digest", "missing", "legacy", "layout", "group-set"])
 def test_profiled_registry_rejects_inconsistent_snapshot(case: str) -> None:
+    """Reject changed profile identity, legacy envelopes and inconsistent registered layouts."""
     data = json.loads(profiled_registry().to_bytes())
     if case == "profile-digest":
         data["deployment_profile"]["profile_id"] = "tampered"
@@ -209,6 +211,7 @@ def test_profiled_registry_rejects_inconsistent_snapshot(case: str) -> None:
 
 
 def test_profiled_registry_accepts_group_outside_code_tree() -> None:
+    """Retain a canonical profile-bound group outside the code tree through registry round trips."""
     data = json.loads(profiled_registry().to_bytes())
     encoded = json.dumps(data).replace("03_CODE/GROUP-A", "06_WEBMASTER")
     data = json.loads(encoded)

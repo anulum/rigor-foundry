@@ -98,7 +98,6 @@ def test_distribution_build_excludes_real_private_memory(
 
 def test_build_backend_and_base_image_are_immutable() -> None:
     """Distribution and container builders use exact immutable inputs."""
-
     with (ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)
     assert project["build-system"]["requires"] == [
@@ -128,7 +127,6 @@ def test_build_backend_and_base_image_are_immutable() -> None:
 
 def test_hash_locks_cover_each_resolved_distribution() -> None:
     """Every non-comment lock entry carries at least one SHA-256 hash."""
-
     for name in ("build.txt", "ci.txt", "runtime.txt", "security.txt", "test.txt"):
         text = (ROOT / "requirements" / name).read_text(encoding="utf-8")
         entries = re.split(r"\n(?=[a-zA-Z0-9])", text)
@@ -179,7 +177,6 @@ def test_container_scan_uses_repository_verified_trivy() -> None:
 
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
-
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "/tmp/rigor-wheel/bin/rigor --version" in workflow
     assert "public_api_contract_errors(package.__all__, vars(package)) == ()" in workflow

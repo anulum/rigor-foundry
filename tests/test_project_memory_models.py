@@ -114,6 +114,7 @@ def profiled_manifest(
 
 @pytest.mark.parametrize("root", ["portfolios/SCIENCE", "06_WEBMASTER"])
 def test_profiled_memory_exact_index_and_roundtrip(root: str) -> None:
+    """Bind round-tripped memory manifests to exact profile-derived parent paths and index text."""
     current = profiled_manifest(root=root)
     assert ProjectMemoryManifest.from_bytes(current.to_bytes()) == current
     assert "`project-memory.v2`" in current.index_text()
@@ -139,6 +140,7 @@ def test_profiled_memory_exact_index_and_roundtrip(root: str) -> None:
     ],
 )
 def test_profiled_memory_rejects_mixed_or_changed_bindings(case: str) -> None:
+    """Reject missing, legacy, altered or reordered profile/group/parent memory bindings."""
     data = json.loads(profiled_manifest().to_bytes())
     if case == "missing-profile":
         del data["deployment_profile"]
@@ -164,6 +166,7 @@ def test_profiled_memory_rejects_mixed_or_changed_bindings(case: str) -> None:
 
 @pytest.mark.parametrize("supersedes", [None, [f"record-{i:02d}" for i in range(17)]])
 def test_record_rejects_unbounded_or_nonarray_supersession(supersedes: object) -> None:
+    """Reject supersession values outside the declared array and count bounds."""
     data = record().to_dict()
     data["supersedes"] = supersedes
     with pytest.raises(ProjectMemoryInvalid, match="supersedes count"):
@@ -171,6 +174,7 @@ def test_record_rejects_unbounded_or_nonarray_supersession(supersedes: object) -
 
 
 def test_profiled_constructor_rejects_unbound_parents_and_group() -> None:
+    """Require matching selected profile, group and derived parents in memory construction."""
     current = profiled_manifest()
     for profile, group_id, selected_parents in (
         (None, "SCIENCE", parents()),

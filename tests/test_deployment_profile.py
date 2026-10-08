@@ -74,6 +74,7 @@ def encode_profile(document: dict[str, object]) -> bytes:
 
 @pytest.mark.parametrize("root", ["03_CODE/SCIENCE", "06_WEBMASTER", "workspace/science"])
 def test_profile_round_trip_and_explicit_parent_resolution(root: str) -> None:
+    """Resolve exact parent layers from round-tripped profile bytes across supported lexical layouts."""
     profile = DeploymentProfile.from_bytes(encode_profile(profile_document(root)))
     assert DeploymentProfile.from_bytes(profile.to_bytes()) == profile
     assert profile.parent_paths(
@@ -118,6 +119,7 @@ def test_profile_round_trip_and_explicit_parent_resolution(root: str) -> None:
     ],
 )
 def test_profile_rejects_ambiguous_or_unsupported_layout(case: str) -> None:
+    """Reject unknown fields, invalid layer shapes, overlapping groups and escaped parent paths."""
     document = profile_document()
     groups = [dict(group) for group in json.loads(json.dumps(document))["groups"]]
     layers = [dict(layer) for layer in json.loads(json.dumps(document))["parent_layers"]]
@@ -203,11 +205,13 @@ def test_profile_rejects_ambiguous_or_unsupported_layout(case: str) -> None:
     ],
 )
 def test_profile_refuses_unsafe_lexical_paths(path: str) -> None:
+    """Reject unsafe root spellings before accepting a deployment profile."""
     with pytest.raises(ValueError):
         DeploymentProfile.from_bytes(encode_profile(profile_document(path)))
 
 
 def test_profile_requires_exact_canonical_bytes_and_matching_digest() -> None:
+    """Bind canonical profile bytes and exact group/project/digest selection without accepting tampering."""
     encoded = encode_profile(profile_document())
     profile = DeploymentProfile.from_bytes(encoded)
     for data in (

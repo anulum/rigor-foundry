@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — CRA record protocol tests
+"""Exercise digest-bound CRA records, trigger fields and revision/submission relationships."""
 
 from __future__ import annotations
 
@@ -30,6 +31,18 @@ DIGEST = "a" * 64
 
 
 def registration(**changes: object) -> ProductRegistration:
+    """Build a product registration with explicit fixture-field mutations.
+
+    Parameters
+    ----------
+    **changes
+        Values replacing the fixed registration inputs, including deliberate invalid inputs.
+
+    Returns
+    -------
+    ProductRegistration
+        Validated registration when all supplied fields satisfy the public protocol.
+    """
     values: dict[str, object] = {
         "product_key": "widget",
         "product_name": "Widget",
@@ -48,6 +61,18 @@ def registration(**changes: object) -> ProductRegistration:
 
 
 def vulnerability(**changes: object) -> SecurityEventRevision:
+    """Build a vulnerability revision with explicit fixture-field mutations.
+
+    Parameters
+    ----------
+    **changes
+        Values replacing the fixed vulnerability trigger or revision fields.
+
+    Returns
+    -------
+    SecurityEventRevision
+        Validated vulnerability revision when the supplied trigger remains coherent.
+    """
     values: dict[str, object] = {
         "event_key": "VULN-1",
         "product_key": "widget",
@@ -65,6 +90,18 @@ def vulnerability(**changes: object) -> SecurityEventRevision:
 
 
 def incident(**changes: object) -> SecurityEventRevision:
+    """Build an incident revision with explicit fixture-field mutations.
+
+    Parameters
+    ----------
+    **changes
+        Values replacing the fixed incident trigger or revision fields.
+
+    Returns
+    -------
+    SecurityEventRevision
+        Validated incident revision when the supplied trigger remains coherent.
+    """
     values: dict[str, object] = {
         "event_key": "INC-1",
         "product_key": "widget",
@@ -82,6 +119,18 @@ def incident(**changes: object) -> SecurityEventRevision:
 
 
 def draft(**changes: object) -> StageDraft:
+    """Build a stage draft from fixed outbox paths and explicit field mutations.
+
+    Parameters
+    ----------
+    **changes
+        Values replacing the selected stage, revision, payload or generation fields.
+
+    Returns
+    -------
+    StageDraft
+        Validated prepare-only draft without a submission receipt.
+    """
     values: dict[str, object] = {
         "product_key": "widget",
         "event_key": "VULN-1",
@@ -100,6 +149,20 @@ def draft(**changes: object) -> StageDraft:
 
 
 def receipt(selected: StageDraft, **changes: object) -> SubmissionReceipt:
+    """Build a submission receipt for the selected draft with explicit mutations.
+
+    Parameters
+    ----------
+    selected
+        Draft supplying the original event, stage and payload bindings.
+    **changes
+        Values replacing the fixed submission evidence or selected draft bindings.
+
+    Returns
+    -------
+    SubmissionReceipt
+        Validated receipt data; separate binding validation checks it against the draft.
+    """
     values: dict[str, object] = {
         "product_key": selected.product_key,
         "event_key": selected.event_key,
@@ -122,11 +185,13 @@ def receipt(selected: StageDraft, **changes: object) -> SubmissionReceipt:
     ["2026-07-20T00:00:00+00:00", "2026-07-20T00:00:00.1Z", "2026-07-20"],
 )
 def test_cra_records_reject_noncanonical_timestamps(value: str) -> None:
+    """Require whole-second UTC spelling rather than accepting alternate timestamp representations."""
     with pytest.raises(ValueError, match="UTC whole seconds"):
         registration(registered_at=value)
 
 
 def test_cra_primitives_reject_invalid_values() -> None:
+    """Reject nonexistent UTC dates, unknown enum values and escaping relative paths."""
     with pytest.raises(ValueError, match="valid UTC"):
         registration(registered_at="2026-02-30T00:00:00Z")
     with pytest.raises(ValueError, match="unsupported"):
@@ -136,6 +201,7 @@ def test_cra_primitives_reject_invalid_values() -> None:
 
 
 def test_product_registration_round_trip_and_expected_use_exception() -> None:
+    """Bind registration round trips and shorter-support evidence; reject tampering and wrong roles."""
     expected = registration(
         support_period_months=36,
         expected_use_months=36,
@@ -163,6 +229,7 @@ def test_product_registration_round_trip_and_expected_use_exception() -> None:
 
 
 def test_track_trigger_fields_fail_closed() -> None:
+    """Keep vulnerability exploitation evidence and incident severity triggers separate and complete."""
     with pytest.raises(ValueError, match="at least 1"):
         vulnerability(exploitation_evidence=())
     with pytest.raises(ValueError, match="incident trigger"):
@@ -174,6 +241,7 @@ def test_track_trigger_fields_fail_closed() -> None:
 
 
 def test_event_round_trip_and_revision_chain() -> None:
+    """Preserve event identity, immutable triggers, ordered transitions and digest-bound round trips."""
     first = vulnerability()
     assert SecurityEventRevision.from_dict(json.loads(first.to_json())) == first
     second = vulnerability(
@@ -201,6 +269,7 @@ def test_event_round_trip_and_revision_chain() -> None:
 
 
 def test_event_optional_fields_are_coherent() -> None:
+    """Require paired severity and intermediate-request evidence with ordered times and valid state codes."""
     with pytest.raises(ValueError, match="declared together"):
         vulnerability(severity_value="high")
     with pytest.raises(ValueError, match="all required"):
@@ -216,6 +285,7 @@ def test_event_optional_fields_are_coherent() -> None:
 
 
 def test_draft_receipt_skip_and_notice_round_trip() -> None:
+    """Round-trip each closed CRA record and reject changed schemas or bound digests."""
     selected = draft()
     bound = receipt(selected)
     validate_receipt_binding(selected, bound)
@@ -264,6 +334,7 @@ def test_draft_receipt_skip_and_notice_round_trip() -> None:
 
 
 def test_submission_bindings_reject_cross_wiring() -> None:
+    """Reject receipts for other payloads and skips without one matching earlier-stage receipt."""
     selected = draft()
     bound = receipt(selected)
     with pytest.raises(ValueError, match="selected draft"):

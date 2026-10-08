@@ -24,6 +24,20 @@ from tools.check_project_memory_activation_plan import main
 
 
 def inputs(root: Path, *, profiled: bool = False) -> list[str]:
+    """Write complete private proposal inputs and return their explicit command arguments.
+
+    Parameters
+    ----------
+    root
+        Existing fixture directory for proposal bytes and consumer outputs.
+    profiled
+        Select the deployment-profile-bound proposal variant.
+
+    Returns
+    -------
+    list[str]
+        Input paths followed by explicit previous/candidate consumer-output arguments.
+    """
     p = profiled_proposal() if profiled else proposal()
     entries = (
         ("previous.json", p.previous.to_bytes()),
@@ -54,6 +68,7 @@ def inputs(root: Path, *, profiled: bool = False) -> list[str]:
 def test_process_checks_proposal_without_changing_any_input(
     tmp_path: Path, profiled: bool
 ) -> None:
+    """Check both proposal schemas in a real process without changing bytes, modes or timestamps."""
     args = inputs(tmp_path, profiled=profiled)
     if profiled:
         args.extend(("--schema-version", "project-memory-activation-plan-binding.v2"))
@@ -86,6 +101,7 @@ def test_process_checks_proposal_without_changing_any_input(
 def test_rejected_private_input_is_redacted(
     tmp_path: Path, case: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Report a bounded failure without leaking malformed bytes or unsafe private-input details."""
     args = inputs(tmp_path)
     target = Path(args[3])
     if case == "public-mode":
@@ -106,6 +122,7 @@ def test_rejected_private_input_is_redacted(
 
 @pytest.mark.parametrize("case", ["implicit-version", "profile-tamper"])
 def test_profiled_process_refuses_unselected_or_altered_binding(tmp_path: Path, case: str) -> None:
+    """Reject unselected or altered profile bindings without rewriting any proposal input."""
     args = inputs(tmp_path, profiled=True)
     if case == "profile-tamper":
         target = Path(args[2])
@@ -132,12 +149,14 @@ def test_profiled_process_refuses_unselected_or_altered_binding(tmp_path: Path, 
 def test_cli_refuses_oversized_consumer_set_before_reading_files(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Enforce the consumer-count ceiling before attempting to open nonexistent input paths."""
     args = ["absent"] * 5 + ["--previous-output", "absent"] * (PROJECT_REGISTRY_MAX_CONSUMERS + 1)
     assert main(args) == 1
     assert capsys.readouterr().out == "project-memory-activation-plan: FAIL\n"
 
 
 def test_cli_cannot_apply_a_proposal(tmp_path: Path) -> None:
+    """Reject an apply option because this command validates proposals without activating them."""
     args = inputs(tmp_path)
     with pytest.raises(SystemExit) as error:
         main([*args, "--apply"])
@@ -147,6 +166,7 @@ def test_cli_cannot_apply_a_proposal(tmp_path: Path) -> None:
 def test_aggregate_byte_budget_applies_across_all_real_inputs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Count all actual input files against the selected aggregate byte ceiling."""
     args = inputs(tmp_path)
     total = sum(path.stat().st_size for path in tmp_path.iterdir())
     monkeypatch.setattr(command, "PROJECT_REGISTRY_MAX_TRANSACTION_BYTES", total)
@@ -158,6 +178,7 @@ def test_aggregate_byte_budget_applies_across_all_real_inputs(
 def test_script_entrypoint_returns_proposal_only_status(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Keep the executable script entrypoint equivalent to non-authorising proposal validation."""
     args = inputs(tmp_path)
     script = Path(__file__).resolve().parents[1] / "tools/check_project_memory_activation_plan.py"
     monkeypatch.setattr(sys, "argv", [str(script), *args])

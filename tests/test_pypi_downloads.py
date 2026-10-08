@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — tests for the bounded PyPI metrics branch snapshot
+"""Exercise bounded snapshot parsing, actual CSV updates and declared writer boundaries."""
 
 from __future__ import annotations
 
@@ -36,6 +37,7 @@ _SAMPLE: dict[str, Any] = {
 
 
 def test_detect_package_reads_real_project_contract(tmp_path: Path) -> None:
+    """Read the package identity from an actual project TOML file."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nname = "rigor-foundry"\n', encoding="utf-8")
     assert downloads.detect_package(pyproject) == "rigor-foundry"
@@ -89,6 +91,7 @@ def test_project_writer_rejects_every_alternate_target_before_fetch(
 def test_detect_package_rejects_missing_identity(
     tmp_path: Path, document: str, message: str
 ) -> None:
+    """Reject missing project tables and absent or empty package names."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(document, encoding="utf-8")
     with pytest.raises(ValueError, match=re.escape(message)):
@@ -96,6 +99,7 @@ def test_detect_package_rejects_missing_identity(
 
 
 def test_package_endpoint_encodes_untrusted_path_characters() -> None:
+    """Encode embedded path separators and reject an empty package endpoint identity."""
     assert downloads.package_endpoint_path("package/name") == (
         "/api/packages/package%2Fname/overall"
     )
@@ -104,6 +108,7 @@ def test_package_endpoint_encodes_untrusted_path_characters() -> None:
 
 
 def test_fetch_overall_decodes_object_payload() -> None:
+    """Parse a supplied valid snapshot into exact dated category counts."""
     payload = json.dumps(_SAMPLE).encode()
     assert downloads.fetch_overall("rigor-foundry", lambda package: payload) == {
         "2026-07-17": {"without_mirrors": 11, "with_mirrors": 19},
@@ -113,6 +118,7 @@ def test_fetch_overall_decodes_object_payload() -> None:
 
 @pytest.mark.parametrize("payload", [b"not-json", b"[]", b"null"])
 def test_fetch_overall_rejects_invalid_contract(payload: bytes) -> None:
+    """Reject invalid JSON and non-object snapshot payloads."""
     with pytest.raises(downloads.DownloadSnapshotError):
         downloads.fetch_overall("rigor-foundry", lambda package: payload)
 
@@ -163,11 +169,13 @@ def test_fetch_overall_rejects_invalid_contract(payload: bytes) -> None:
     ],
 )
 def test_fetch_overall_rejects_remote_schema_drift(payload: dict[str, Any]) -> None:
+    """Reject changed snapshot identities, open fields, invalid categories/counts and duplicate rows."""
     with pytest.raises(downloads.DownloadSnapshotError):
         downloads.fetch_overall("rigor-foundry", lambda package: json.dumps(payload).encode())
 
 
 def test_csv_roundtrip_is_date_sorted_and_schema_fixed(tmp_path: Path) -> None:
+    """Round-trip actual CSV history with fixed columns and sorted dates."""
     csv_path = tmp_path / "downloads" / "rigor-foundry.csv"
     rows = {
         "2026-07-18": {"without_mirrors": 13, "with_mirrors": 23},
@@ -202,6 +210,7 @@ def test_csv_roundtrip_is_date_sorted_and_schema_fixed(tmp_path: Path) -> None:
     ],
 )
 def test_read_csv_rejects_corrupted_history(tmp_path: Path, csv_text: str, message: str) -> None:
+    """Reject malformed CSV headers, dates, duplicate days and negative counts."""
     csv_path = tmp_path / "series.csv"
     csv_path.write_text(csv_text, encoding="utf-8")
     with pytest.raises(ValueError, match=message):
@@ -209,6 +218,7 @@ def test_read_csv_rejects_corrupted_history(tmp_path: Path, csv_text: str, messa
 
 
 def test_write_csv_real_replace_failure_preserves_destination(tmp_path: Path) -> None:
+    """Preserve the existing destination and remove temporary output when actual replacement fails."""
     csv_path = tmp_path / "series.csv"
     csv_path.mkdir()
     marker = csv_path / "trusted-history"
@@ -224,6 +234,7 @@ def test_write_csv_real_replace_failure_preserves_destination(tmp_path: Path) ->
 
 
 def test_merge_rows_upserts_without_mutating_inputs() -> None:
+    """Merge partial fresh counts without modifying the caller's existing history."""
     existing = {"2026-07-17": {"without_mirrors": 11, "with_mirrors": 19}}
     fresh = {
         "2026-07-17": {"without_mirrors": 12},
@@ -238,6 +249,7 @@ def test_merge_rows_upserts_without_mutating_inputs() -> None:
 def test_main_prints_package_from_real_pyproject(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Print the detected package identity through the public command entrypoint."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nname = "rigor-foundry"\n', encoding="utf-8")
     assert downloads.main(["--pyproject", str(pyproject), "--print-package"]) == 0
@@ -247,6 +259,7 @@ def test_main_prints_package_from_real_pyproject(
 def test_main_upserts_real_csv_and_reports_latest_day(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Preserve historical days while writing a supplied current snapshot and reporting its latest day."""
     csv_path = tmp_path / "downloads" / "rigor-foundry.csv"
     downloads.write_csv(
         csv_path,
@@ -271,6 +284,7 @@ def test_main_upserts_real_csv_and_reports_latest_day(
 def test_main_failure_keeps_existing_series(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Keep actual CSV bytes unchanged when the selected fetch adapter reports failure."""
     csv_path = tmp_path / "series.csv"
     original = "date,without_mirrors,with_mirrors\n2026-07-16,7,9\n"
     csv_path.write_text(original, encoding="utf-8")
@@ -286,6 +300,7 @@ def test_main_failure_keeps_existing_series(
 def test_main_normalizes_omitted_zero_category_before_replacement(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Normalise an omitted category to zero before replacing the actual dated CSV snapshot."""
     csv_path = tmp_path / "series.csv"
     original = "date,without_mirrors,with_mirrors\n2026-07-16,7,9\n"
     csv_path.write_text(original, encoding="utf-8")
@@ -351,11 +366,13 @@ def test_transient_failures_retry_then_soft_skip(
 
 
 def test_main_requires_csv_when_not_printing() -> None:
+    """Reject a write invocation without its explicit CSV target."""
     with pytest.raises(SystemExit):
         downloads.main(["--package", "rigor-foundry"])
 
 
 def test_workflow_has_one_bounded_writer_and_hash_pinned_actions() -> None:
+    """Check declared exact-path writer, credential, artifact-order and immutable-action boundaries."""
     workflow = (_ROOT / ".github" / "workflows" / "pypi-downloads.yml").read_text(encoding="utf-8")
     assert "permissions:\n  contents: read" in workflow
     assert "permissions:\n      contents: write" in workflow

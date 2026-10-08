@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — documentation deployment workflow contract
+"""Check the declared documentation workflow permissions, generated-content guards and action pins."""
 
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ _WORKFLOW = _ROOT / ".github" / "workflows" / "docs.yml"
 
 
 def test_docs_workflow_has_read_only_build_and_bounded_branch_writer() -> None:
+    """Check declared read-only build permissions and the restricted non-PR documentation writer."""
     workflow = _WORKFLOW.read_text(encoding="utf-8")
     assert "permissions:\n  contents: read" in workflow
     assert "permissions:\n      contents: write" in workflow
@@ -31,6 +33,7 @@ def test_docs_workflow_has_read_only_build_and_bounded_branch_writer() -> None:
 
 
 def test_docs_workflow_rejects_unbounded_generated_content() -> None:
+    """Require declared index, symlink and nested-Git checks before publishing generated docs."""
     workflow = _WORKFLOW.read_text(encoding="utf-8")
     assert "test -f site/index.html" in workflow
     assert 'test -z "$(find site -type l -print -quit)"' in workflow
@@ -40,6 +43,7 @@ def test_docs_workflow_rejects_unbounded_generated_content() -> None:
 
 
 def test_docs_workflow_uses_only_immutable_action_revisions() -> None:
+    """Require complete action commit pins and reject the undeclared Pages deployment actions."""
     workflow = _WORKFLOW.read_text(encoding="utf-8")
     action_refs = re.findall(r"uses: [^@\n]+@([^\s#]+)", workflow)
     assert action_refs

@@ -13,6 +13,7 @@ import json
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
+from typing import cast
 
 import pytest
 from discovery_source_support import limits as source_limits
@@ -93,7 +94,7 @@ def _snapshot_with_successors(root: Path) -> None:
     manifest["candidate_count"] = 4
     for index in (0, 1):
         shard = load_shard(root, index)
-        original = shard["candidates"][0]
+        original = cast(list[dict[str, object]], shard["candidates"])[0]
         first = deepcopy(original)
         second = deepcopy(original)
         first["candidate_id"] = f"new-{2 * index + 1}"

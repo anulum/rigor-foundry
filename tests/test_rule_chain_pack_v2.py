@@ -199,6 +199,7 @@ def _host_source(
 
 
 def test_pack_round_trip_and_exact_external_source_dependencies() -> None:
+    """Round-trip exact pack components and verify only the retained external source bytes."""
     pack = _pack()
     assert StandardPackV2.from_dict(pack.to_dict()) == pack
     assert AuthorityClauseV2.from_dict(_clause().to_dict()) == _clause()
@@ -222,6 +223,7 @@ def test_pack_round_trip_and_exact_external_source_dependencies() -> None:
     ],
 )
 def test_nested_tamper_is_rejected(component: str, field: str, replacement: str) -> None:
+    """Reject altered clause/freshness component fields within a canonical pack wire."""
     wire = deepcopy(_pack().to_dict())
     entries = cast(list[dict[str, object]], wire[component])
     entries[0][field] = replacement
@@ -240,6 +242,7 @@ def test_nested_tamper_is_rejected(component: str, field: str, replacement: str)
     ],
 )
 def test_pack_tamper_and_downgrade_are_rejected(field: str, replacement: str) -> None:
+    """Reject changed pack identity fields and schema downgrades."""
     wire = _pack().to_dict()
     wire[field] = replacement
     with pytest.raises(ValueError):
@@ -247,6 +250,7 @@ def test_pack_tamper_and_downgrade_are_rejected(field: str, replacement: str) ->
 
 
 def test_v2_refuses_numeric_ttl_extra_fields_and_v1_parser() -> None:
+    """Reject numeric TTL substitutions, extra fields and reinterpretation through the legacy parser."""
     wire = _pack().to_dict()
     policies = cast(list[dict[str, object]], wire["freshness_policies"])
     policies[0]["freshness_seconds"] = 3600
@@ -261,6 +265,7 @@ def test_v2_refuses_numeric_ttl_extra_fields_and_v1_parser() -> None:
 
 
 def test_component_wire_requires_v2_schema_and_typed_arrays() -> None:
+    """Require versioned component schemas, typed arrays and unambiguous source URI spelling."""
     clause = _clause().to_dict()
     clause["schema_version"] = "1.0"
     with pytest.raises(ValueError, match="authority-clause schema"):
@@ -284,6 +289,7 @@ def test_component_wire_requires_v2_schema_and_typed_arrays() -> None:
 
 
 def test_unsigned_source_claim_or_structural_signature_cannot_admit_pack() -> None:
+    """Require actual selected source bytes and matching signatures/digests at structural verification."""
     replacement = b"another retained source\n"
     pack = _pack(source=sha256(replacement).hexdigest())
     assert not _verify(pack)
@@ -303,6 +309,7 @@ def test_same_source_bytes_at_another_uri_do_not_borrow_admission() -> None:
 
 
 def test_missing_retained_object_refuses_at_signed_pack_boundary() -> None:
+    """Reject missing actual retained bytes and unavailable host verifier objects."""
     pack = _pack()
     with _host_source() as source_verifier:
         with source_verifier.state() as current:
@@ -345,6 +352,7 @@ def test_suppressing_host_lease_cannot_admit_signed_pack() -> None:
 
 
 def test_component_identity_and_semantic_transition_are_exact() -> None:
+    """Require matching semantic transitions and distinct namespaced authority/freshness identities."""
     with pytest.raises(ValueError, match="semantic transition"):
         _pack(clauses=(_clause(transition_digest="9" * 64),))
     with pytest.raises(ValueError, match="namespace"):
@@ -400,6 +408,7 @@ def test_clause_links_exact_successor_statement_and_receipt(tmp_path: Path) -> N
 
 
 def test_immutable_and_mutable_policy_modes_are_explicit() -> None:
+    """Round-trip explicit immutable-object policy data and reject unsupported freshness modes."""
     immutable = FreshnessPolicyV2.build(
         policy_id="core/immutable",
         claim_type="content-digest",

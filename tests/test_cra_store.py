@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — append-only CRA storage tests
+"""Exercise append-only CRA storage, actual-file replay and evidence binding failures."""
 
 from __future__ import annotations
 
@@ -27,6 +28,15 @@ NOW = "2026-07-20T00:00:00Z"
 
 
 def git(root: Path, *arguments: str) -> None:
+    """Run a real Git fixture operation and propagate its process failure.
+
+    Parameters
+    ----------
+    root
+        Existing repository fixture directory.
+    *arguments
+        Git arguments executed with explicit fixture safe-directory configuration.
+    """
     subprocess.run(
         ["git", "-c", f"safe.directory={root}", *arguments],
         cwd=root,
@@ -37,6 +47,18 @@ def git(root: Path, *arguments: str) -> None:
 
 
 def worktree(tmp_path: Path) -> Path:
+    """Create a real Git fixture with tracked ignore rules for private CRA storage.
+
+    Parameters
+    ----------
+    tmp_path
+        Existing temporary parent directory.
+
+    Returns
+    -------
+    Path
+        Repository root whose .rigor state is ignored.
+    """
     root = tmp_path / "repository"
     root.mkdir()
     git(root, "init", "--quiet")
@@ -46,6 +68,13 @@ def worktree(tmp_path: Path) -> Path:
 
 
 def registration() -> ProductRegistration:
+    """Build the fixed registration used by actual append-only repository fixtures.
+
+    Returns
+    -------
+    ProductRegistration
+        Registration with declared expected-use evidence for its shorter support period.
+    """
     return ProductRegistration.build(
         product_key="widget",
         product_name="Widget",
@@ -62,6 +91,18 @@ def registration() -> ProductRegistration:
 
 
 def event(**changes: object) -> SecurityEventRevision:
+    """Build a vulnerability revision with explicit storage-fixture field changes.
+
+    Parameters
+    ----------
+    **changes
+        Overrides used to exercise revision identities, transitions and invalid bindings.
+
+    Returns
+    -------
+    SecurityEventRevision
+        Validated revision when the supplied fields satisfy the public event protocol.
+    """
     values: dict[str, object] = {
         "event_key": "EVENT-1",
         "product_key": "widget",
@@ -77,10 +118,36 @@ def event(**changes: object) -> SecurityEventRevision:
 
 
 def repository(tmp_path: Path) -> CraRepository:
+    """Bootstrap actual ignored CRA state in a new Git fixture.
+
+    Parameters
+    ----------
+    tmp_path
+        Existing fixture parent directory.
+
+    Returns
+    -------
+    CraRepository
+        Append-only repository using the fixed product registration.
+    """
     return CraRepository.bootstrap(worktree(tmp_path), registration())
 
 
 def receipt_for(draft_digest: str, payload_digest: str) -> SubmissionReceipt:
+    """Build fixed receipt evidence for exact draft and payload identities.
+
+    Parameters
+    ----------
+    draft_digest
+        Digest of the selected early-warning draft.
+    payload_digest
+        Digest of that draft's selected JSON payload.
+
+    Returns
+    -------
+    SubmissionReceipt
+        Operator evidence data for local binding checks, without external submission.
+    """
     return SubmissionReceipt.build(
         product_key="widget",
         event_key="EVENT-1",
@@ -97,6 +164,7 @@ def receipt_for(draft_digest: str, payload_digest: str) -> SubmissionReceipt:
 
 
 def test_complete_storage_workflow_is_append_only_and_replayable(tmp_path: Path) -> None:
+    """Replay registrations, events, idempotent drafts, receipts, skips and prepared notices from real files."""
     store = repository(tmp_path)
     assert CraRepository.open(store.repository_root).storage_root == store.storage_root
     assert store.registrations() == (registration(),)
@@ -148,6 +216,7 @@ def test_complete_storage_workflow_is_append_only_and_replayable(tmp_path: Path)
 
 
 def test_successor_chain_selects_one_tip_and_rejects_invalid_append(tmp_path: Path) -> None:
+    """Append one current successor and reject stale parents, orphan initials and unknown products."""
     store = repository(tmp_path)
     first = event()
     store.append_event(first)
@@ -178,6 +247,7 @@ def test_successor_chain_selects_one_tip_and_rejects_invalid_append(tmp_path: Pa
 
 
 def test_chain_replay_rejects_missing_parent_fork_and_multiple_roots(tmp_path: Path) -> None:
+    """Reject externally written missing-parent, forked and multiple-root revision histories."""
     for mode in ("missing", "fork", "roots"):
         root = tmp_path / mode
         root.mkdir()
@@ -221,6 +291,7 @@ def test_chain_replay_rejects_missing_parent_fork_and_multiple_roots(tmp_path: P
 
 
 def test_replay_rejects_tampering_filename_and_unexpected_entries(tmp_path: Path) -> None:
+    """Reject changed record bytes, wrong digest filenames, unexpected entries and noncanonical JSON."""
     store = repository(tmp_path)
     selected = event()
     path = store.append_event(selected)
@@ -252,6 +323,7 @@ def test_replay_rejects_tampering_filename_and_unexpected_entries(tmp_path: Path
 
 
 def test_replay_rejects_invalid_json_utf8_symlink_and_oversize(tmp_path: Path) -> None:
+    """Reject malformed, non-UTF-8, linked and oversized actual revision files during replay."""
     cases = ("json", "utf8", "symlink", "oversize")
     for case in cases:
         case_root = tmp_path / case
@@ -279,6 +351,7 @@ def test_replay_rejects_invalid_json_utf8_symlink_and_oversize(tmp_path: Path) -
 
 
 def test_duplicate_current_stage_records_and_binding_conflicts_fail(tmp_path: Path) -> None:
+    """Reject conflicting current drafts and duplicate receipt/skip bindings on actual storage."""
     store = repository(tmp_path)
     selected = event()
     store.append_event(selected)
@@ -343,6 +416,7 @@ def test_duplicate_current_stage_records_and_binding_conflicts_fail(tmp_path: Pa
 
 
 def test_cross_wired_draft_receipt_skip_and_notice_fail(tmp_path: Path) -> None:
+    """Reject stale revisions and mismatched draft, receipt, skip and notice identities or payloads."""
     store = repository(tmp_path)
     selected = event()
     store.append_event(selected)
@@ -414,6 +488,7 @@ def test_cross_wired_draft_receipt_skip_and_notice_fail(tmp_path: Path) -> None:
 
 
 def test_bootstrap_and_open_reject_existing_missing_or_linked_state(tmp_path: Path) -> None:
+    """Reject duplicate bootstrap and absent or symlinked private state roots."""
     store = repository(tmp_path)
     with pytest.raises(ValueError, match="already exists"):
         CraRepository.bootstrap(store.repository_root, registration())
@@ -433,6 +508,7 @@ def test_bootstrap_and_open_reject_existing_missing_or_linked_state(tmp_path: Pa
 
 
 def test_registration_and_event_directory_ambiguity_fail_closed(tmp_path: Path) -> None:
+    """Reject multiple registrations for one product and non-directory event entries."""
     store = repository(tmp_path)
     registration_path = next((store.storage_root / "registrations/widget").glob("*.json"))
     duplicate = ProductRegistration.build(
@@ -460,6 +536,7 @@ def test_registration_and_event_directory_ambiguity_fail_closed(tmp_path: Path) 
 
 
 def test_crash_replay_refuses_digest_path_with_different_bytes(tmp_path: Path) -> None:
+    """Refuse a preexisting outbox digest path whose actual payload bytes conflict."""
     store = repository(tmp_path)
     selected = event()
     store.append_event(selected)
@@ -475,6 +552,7 @@ def test_crash_replay_refuses_digest_path_with_different_bytes(tmp_path: Path) -
 
 
 def test_storage_public_guards_cover_links_and_graph_disconnection(tmp_path: Path) -> None:
+    """Reject hardlinked revision bytes, duplicate digests and disconnected cyclic revision graphs."""
     linked_case = tmp_path / "linked-case"
     linked_case.mkdir()
     store = repository(linked_case)
@@ -504,6 +582,7 @@ def test_storage_public_guards_cover_links_and_graph_disconnection(tmp_path: Pat
 
 
 def test_receipt_and_skip_coexistence_are_rejected_both_directions(tmp_path: Path) -> None:
+    """Reject a receipt for a skipped stage and a skip for an already receipted stage."""
     store = repository(tmp_path)
     selected = event()
     store.append_event(selected)
@@ -574,6 +653,7 @@ def test_receipt_and_skip_coexistence_are_rejected_both_directions(tmp_path: Pat
 
 
 def test_historical_draft_and_receipt_survive_a_valid_event_successor(tmp_path: Path) -> None:
+    """Retain historical draft and receipt evidence when a valid current revision advances."""
     store = repository(tmp_path)
     first = event()
     store.append_event(first)
@@ -595,6 +675,7 @@ def test_historical_draft_and_receipt_survive_a_valid_event_successor(tmp_path: 
 
 
 def test_full_replay_rejects_cross_wired_and_unknown_records(tmp_path: Path) -> None:
+    """Reject externally written records for foreign event identities or unknown revisions."""
     cases = (
         "draft-identity",
         "draft-revision",
@@ -691,6 +772,7 @@ def test_full_replay_rejects_cross_wired_and_unknown_records(tmp_path: Path) -> 
 
 
 def test_payload_replay_rejects_wrong_paths_and_mutated_bytes(tmp_path: Path) -> None:
+    """Bind replay to canonical outbox paths and actual unchanged payload bytes."""
     wrong_parent = tmp_path / "wrong-path"
     wrong_parent.mkdir()
     store = repository(wrong_parent)
@@ -730,6 +812,7 @@ def test_payload_replay_rejects_wrong_paths_and_mutated_bytes(tmp_path: Path) ->
 
 
 def test_missing_event_state_is_explicit(tmp_path: Path) -> None:
+    """Report an absent verified event history instead of manufacturing an empty current state."""
     store = repository(tmp_path)
     with pytest.raises(ValueError, match="no verified revisions"):
         store.event_state("MISSING")

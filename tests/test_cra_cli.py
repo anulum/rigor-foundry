@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — offline CRA CLI integration tests
+"""Exercise the offline CRA command workflow against real Git and private-state fixtures."""
 
 from __future__ import annotations
 
@@ -23,6 +24,15 @@ NOW = "2026-07-20T00:00:00Z"
 
 
 def git(root: Path, *arguments: str) -> None:
+    """Run a real Git fixture operation and propagate its process failure.
+
+    Parameters
+    ----------
+    root
+        Existing repository fixture directory.
+    *arguments
+        Git arguments executed with explicit fixture safe-directory configuration.
+    """
     subprocess.run(
         ["git", "-c", f"safe.directory={root}", *arguments],
         cwd=root,
@@ -33,6 +43,18 @@ def git(root: Path, *arguments: str) -> None:
 
 
 def worktree(tmp_path: Path) -> Path:
+    """Create a real Git fixture with tracked ignore rules for private CRA storage.
+
+    Parameters
+    ----------
+    tmp_path
+        Existing temporary parent directory.
+
+    Returns
+    -------
+    Path
+        Repository root whose .rigor state is ignored.
+    """
     root = tmp_path / "repository"
     root.mkdir()
     git(root, "init", "--quiet")
@@ -42,6 +64,20 @@ def worktree(tmp_path: Path) -> Path:
 
 
 def bootstrap(root: Path, *, registered_at: bool = True) -> list[str]:
+    """Build explicit prepare-only product-bootstrap command arguments.
+
+    Parameters
+    ----------
+    root
+        Git fixture receiving the ignored CRA repository state.
+    registered_at
+        Include the fixed timestamp or exercise the command default.
+
+    Returns
+    -------
+    list[str]
+        Complete product registration command arguments.
+    """
     argv = [
         "cra-bootstrap",
         "--root",
@@ -69,6 +105,22 @@ def bootstrap(root: Path, *, registered_at: bool = True) -> list[str]:
 
 
 def register(root: Path, *, event_key: str = "EVENT-1", track: str = "vulnerability") -> list[str]:
+    """Build trigger-complete event-registration command arguments.
+
+    Parameters
+    ----------
+    root
+        Git fixture holding the selected registered product.
+    event_key
+        Event identity used by subsequent CRA commands.
+    track
+        Track selecting vulnerability exploitation or incident severity fields.
+
+    Returns
+    -------
+    list[str]
+        Complete event registration command arguments.
+    """
     argv = [
         "vuln-register",
         event_key,
@@ -106,6 +158,7 @@ def register(root: Path, *, event_key: str = "EVENT-1", track: str = "vulnerabil
 def test_complete_cli_workflow_never_submits_or_sends(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Exercise the complete offline draft, receipt, skip, notice and status command workflow."""
     root = worktree(tmp_path)
     assert main(bootstrap(root)) == 0
     assert main(register(root)) == 0
@@ -206,6 +259,7 @@ def test_complete_cli_workflow_never_submits_or_sends(
 def test_incident_cli_and_alert_exit_codes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Report incident operational alerts through both timeline and machine-readable status exit codes."""
     root = worktree(tmp_path)
     assert main(bootstrap(root, registered_at=False)) == 0
     assert main(register(root, event_key="INC-1", track="incident")) == 0
@@ -232,6 +286,7 @@ def test_cli_rejects_mismatched_receipt_and_skip_selectors(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Reject missing or incorrect draft/receipt selectors instead of cross-binding event evidence."""
     root = worktree(tmp_path)
     assert main(bootstrap(root)) == 0
     assert main(register(root)) == 0
@@ -320,6 +375,7 @@ def test_register_propagates_ambiguous_existing_event_state(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Reject a new registration when existing revision files contain an actual fork."""
     root = worktree(tmp_path)
     assert main(bootstrap(root)) == 0
     assert main(register(root)) == 0
@@ -359,6 +415,7 @@ def test_register_propagates_ambiguous_existing_event_state(
 def test_cli_rejects_unsafe_evidence_files(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Reject directories, oversized files and symlinked receipt evidence through the real CLI."""
     root = worktree(tmp_path)
     assert main(bootstrap(root)) == 0
     assert main(register(root)) == 0
@@ -411,6 +468,7 @@ def test_cli_rejects_unsafe_evidence_files(
 
 
 def test_static_cra_modules_import_no_network_clients() -> None:
+    """Check every CRA module for imports of the declared prohibited network client families."""
     forbidden = {"aiohttp", "httpx", "requests", "socket", "urllib"}
     source_root = Path(__file__).parents[1] / "src/rigor_foundry"
     inspected = tuple(sorted(source_root.glob("cra_*.py")))
@@ -436,6 +494,7 @@ def test_static_cra_modules_import_no_network_clients() -> None:
 def test_status_json_is_machine_readable(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    """Return an empty-event JSON status with the explicit query timestamp."""
     root = worktree(tmp_path)
     assert main(bootstrap(root)) == 0
     capsys.readouterr()

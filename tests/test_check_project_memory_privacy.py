@@ -202,6 +202,7 @@ def test_guard_rejects_repository_root_alias(tmp_path: Path) -> None:
 
 
 def test_absent_tree_mode_retains_git_and_publication_protection(tmp_path: Path) -> None:
+    """Allow genuine tree absence while still requiring publication scope and portable Git ignores."""
     root = _repository(tmp_path)
     memory = root / "agentic_project_memory"
     (memory / "memory_index.md").unlink()
@@ -220,6 +221,7 @@ def test_absent_tree_mode_retains_git_and_publication_protection(tmp_path: Path)
 
 
 def test_absent_tree_mode_never_skips_existing_or_dangling_tree(tmp_path: Path) -> None:
+    """Retain mode, cached-content and real-directory checks when absent-tree mode is selected."""
     root = _repository(tmp_path)
     memory = root / "agentic_project_memory"
     memory.chmod(0o755)

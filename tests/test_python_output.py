@@ -30,6 +30,7 @@ def _pep695_supported() -> bool:
 
 
 def test_class_and_comprehension_execution_scopes() -> None:
+    """Distinguish class/function builtin resolution and comprehension binding order."""
     source = """
     class Local:
         print = lambda *values: values
@@ -51,6 +52,7 @@ def test_class_and_comprehension_execution_scopes() -> None:
 
 
 def test_function_closure_lambda_and_pattern_bindings() -> None:
+    """Separate explicit builtin aliases from closure, lambda and pattern-local print bindings."""
     source = """
     from builtins import print as output
     output('explicit builtin')
@@ -72,6 +74,7 @@ def test_function_closure_lambda_and_pattern_bindings() -> None:
 
 
 def test_nested_builtins_aliases_and_class_definition_timing() -> None:
+    """Respect alias reassignment and class-suite default/decorator evaluation timing."""
     nested_aliases = """
     def function_output():
         import builtins as runtime
@@ -111,6 +114,7 @@ def test_nested_builtins_aliases_and_class_definition_timing() -> None:
 
 
 def test_pep695_type_bindings_when_supported() -> None:
+    """Exclude supported PEP695 aliases and type parameters that shadow print."""
     if not _pep695_supported():
         return
     source = """
@@ -129,6 +133,7 @@ def test_pep695_type_bindings_when_supported() -> None:
 
 
 def test_builtin_module_alias_lexical_scopes() -> None:
+    """Resolve builtin-module aliases across local bindings, comprehensions and class definition scopes."""
     source = """
     import builtins as runtime
     runtime.print('module builtin')

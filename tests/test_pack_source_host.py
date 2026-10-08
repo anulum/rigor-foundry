@@ -52,6 +52,7 @@ def _state(selection: HostPackSourceSelection) -> HostPackSourceState:
 
 
 def test_host_selection_reads_exact_retained_bytes_without_remote_lookup(tmp_path: Path) -> None:
+    """Bind actual retained source bytes to the host selection without freshness or promotion claims."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     selection = _selection(path)
@@ -66,6 +67,7 @@ def test_host_selection_reads_exact_retained_bytes_without_remote_lookup(tmp_pat
 
 
 def test_mutated_or_missing_retained_bytes_refuse(tmp_path: Path) -> None:
+    """Reject a retained source whose actual bytes changed or whose file disappeared."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     selection = _selection(path)
@@ -80,6 +82,7 @@ def test_mutated_or_missing_retained_bytes_refuse(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("field", ["pack_id", "source_uri", "source_digest"])
 def test_pack_cannot_choose_another_host_source(tmp_path: Path, field: str) -> None:
+    """Reject caller-selected pack, URI or digest identities different from the host selection."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     selection = _selection(path)
@@ -98,6 +101,7 @@ def test_pack_cannot_choose_another_host_source(tmp_path: Path, field: str) -> N
 
 
 def test_changed_selection_or_revocation_refuses(tmp_path: Path) -> None:
+    """Refuse changed selection bindings and revoked or malformed selection digests."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     selection = _selection(path)
@@ -122,6 +126,7 @@ def test_changed_selection_or_revocation_refuses(tmp_path: Path) -> None:
 
 
 def test_unavailable_host_state_refuses(tmp_path: Path) -> None:
+    """Reject an unavailable selected host state instead of accepting caller source assertions."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     selection = _selection(path)
@@ -154,6 +159,7 @@ def test_host_cannot_suppress_pack_source_failure(tmp_path: Path) -> None:
 
 
 def test_linked_retained_sources_refuse(tmp_path: Path) -> None:
+    """Reject actual hardlink aliases and symlinked retained source paths."""
     path = tmp_path / "source"
     path.write_bytes(_PAYLOAD)
     linked = tmp_path / "hardlink"
@@ -170,6 +176,7 @@ def test_linked_retained_sources_refuse(tmp_path: Path) -> None:
 
 
 def test_selection_requires_absolute_untraversed_file_path() -> None:
+    """Require absolute untraversed retained paths and URI spellings without whitespace."""
     with pytest.raises(ValueError, match="absolute untraversed"):
         _selection(Path("relative/source"))
     with pytest.raises(ValueError, match="absolute untraversed"):

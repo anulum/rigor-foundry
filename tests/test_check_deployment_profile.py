@@ -25,6 +25,7 @@ from tools.check_deployment_profile import main
 def test_cli_validates_real_private_profile_without_modification(
     tmp_path: Path, layout: str
 ) -> None:
+    """Validate exact private profile bindings without writes; reject a changed expected digest."""
     payload = encode_profile(profile_document(layout))
     profile = DeploymentProfile.from_bytes(payload)
     path = tmp_path / "profile.json"
@@ -55,6 +56,7 @@ def test_cli_validates_real_private_profile_without_modification(
 
 @pytest.mark.parametrize("change", ["mode", "symlink", "hardlink", "fifo", "missing", "malformed"])
 def test_cli_refuses_unsafe_private_input(tmp_path: Path, change: str) -> None:
+    """Refuse unsafe modes, links, FIFOs, missing files and malformed private profile bytes."""
     payload = encode_profile(profile_document())
     path = tmp_path / "profile.json"
     path.write_bytes(payload)
@@ -100,6 +102,7 @@ def test_embedded_cli_uses_the_same_private_file_contract(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """Keep embedded validation subject to the same private-file and non-authorisation contract."""
     payload = encode_profile(profile_document())
     path = tmp_path / "profile.json"
     path.write_bytes(payload)

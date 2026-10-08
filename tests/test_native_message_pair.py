@@ -34,6 +34,8 @@ LIMITS = NativeReadLimits(total_bytes=2000, line_bytes=1000, intervening_lines=3
 
 
 class NativeArguments(TypedDict):
+    """Bind actual JSONL fixture paths, selected messages and exact captured bytes."""
+
     root: Path
     filename: str
     session_id: str
@@ -155,7 +157,13 @@ def test_changed_or_unbounded_native_source_is_refused(tmp_path: Path, fault: st
         replacement = (
             "0" * 64 if "digest" in fault else (REPLY_TIME if field == "timestamp" else REPLY_ID)
         )
-        kwargs["question"] = replace(selector, **{field: replacement})
+        kwargs["question"] = replace(
+            selector,
+            message_id=replacement if field == "message_id" else selector.message_id,
+            timestamp=replacement if field == "timestamp" else selector.timestamp,
+            line_digest=replacement if field == "line_digest" else selector.line_digest,
+            capture_digest=replacement if field == "capture_digest" else selector.capture_digest,
+        )
     elif fault in {"reply-id", "reply-time", "reply-digest", "reply-capture-digest"}:
         selector = kwargs["reply"]
         assert isinstance(selector, NativeMessageSelector)
@@ -170,9 +178,17 @@ def test_changed_or_unbounded_native_source_is_refused(tmp_path: Path, fault: st
             if "digest" in fault
             else (QUESTION_TIME if field == "timestamp" else QUESTION_ID)
         )
-        kwargs["reply"] = replace(selector, **{field: replacement})
-    elif fault in {"question-capture", "reply-capture"}:
-        kwargs[fault.replace("-", "_")] = b"Changed.\n"
+        kwargs["reply"] = replace(
+            selector,
+            message_id=replacement if field == "message_id" else selector.message_id,
+            timestamp=replacement if field == "timestamp" else selector.timestamp,
+            line_digest=replacement if field == "line_digest" else selector.line_digest,
+            capture_digest=replacement if field == "capture_digest" else selector.capture_digest,
+        )
+    elif fault == "question-capture":
+        kwargs["question_capture"] = b"Changed.\n"
+    elif fault == "reply-capture":
+        kwargs["reply_capture"] = b"Changed.\n"
     elif fault == "session-id":
         kwargs["session_id"] = "different-session"
     elif fault == "filename":
@@ -236,12 +252,12 @@ def test_line_limit_must_fit_total_limit() -> None:
 
 @pytest.mark.parametrize("fault", ["wrong-native-session", "nonbytes", "large-capture"])
 def test_invalid_session_or_capture_is_refused(tmp_path: Path, fault: str) -> None:
-    """A matching filename alone cannot establish session identity."""
+    """Reject wrong session identity, non-byte captures and oversized capture bytes."""
     path, kwargs = _fixture(tmp_path)
     if fault == "wrong-native-session":
         path.write_bytes(path.read_bytes().replace(SESSION.encode(), b"0" * len(SESSION)))
     elif fault == "nonbytes":
-        kwargs["question_capture"] = "Exact question?\n"
+        kwargs["question_capture"] = cast(bytes, "Exact question?\n")
     else:
         kwargs["question_capture"] = b"X" * 1001
     with pytest.raises(ValueError):
@@ -285,13 +301,15 @@ def test_growth_past_budget_during_read_is_refused(
     called = False
 
     def growing_stat(
-        pathname: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-        *args: object,
-        **kwargs: object,
+        pathname: str | bytes | os.PathLike[str] | os.PathLike[bytes] | int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
     ) -> os.stat_result:
+        """Delegate real stat reads and append bytes at the first relative native-source read."""
         nonlocal called
-        result = original_stat(pathname, *args, **kwargs)
-        if pathname == FILENAME and kwargs.get("dir_fd") is not None and not called:
+        result = original_stat(pathname, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+        if pathname == FILENAME and dir_fd is not None and not called:
             called = True
             with path.open("ab") as stream:
                 stream.write(_line({"type": "event_msg", "payload": {"type": "extra"}}))

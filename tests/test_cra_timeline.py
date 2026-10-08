@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — CRA operational timeline tests
+"""Exercise evidence-dependent CRA model clocks, deadline boundaries and operational alerts."""
 
 from __future__ import annotations
 
@@ -26,6 +27,20 @@ AWARE = "2026-07-20T00:00:00Z"
 
 
 def event(*, track: str = "vulnerability", **changes: object) -> SecurityEventRevision:
+    """Build an explicit trigger revision for the selected timeline track.
+
+    Parameters
+    ----------
+    track
+        Vulnerability or incident track selecting the fixed trigger fields.
+    **changes
+        Explicit overrides of the fixed revision inputs.
+
+    Returns
+    -------
+    SecurityEventRevision
+        Validated fixture revision for public timeline computation.
+    """
     values: dict[str, object] = {
         "event_key": "EV-1",
         "product_key": "widget",
@@ -47,6 +62,22 @@ def event(*, track: str = "vulnerability", **changes: object) -> SecurityEventRe
 
 
 def draft(selected: SecurityEventRevision, stage: str, generated_at: str = AWARE) -> StageDraft:
+    """Build a stage draft bound to the selected revision and outbox paths.
+
+    Parameters
+    ----------
+    selected
+        Revision supplying the original product, event and track identities.
+    stage
+        Stage spelling passed through the public draft builder.
+    generated_at
+        Recorded generation time for the draft.
+
+    Returns
+    -------
+    StageDraft
+        Prepare-only draft with fixed fixture payload hashes.
+    """
     return StageDraft.build(
         product_key=selected.product_key,
         event_key=selected.event_key,
@@ -63,6 +94,20 @@ def draft(selected: SecurityEventRevision, stage: str, generated_at: str = AWARE
 
 
 def receipt(selected: StageDraft, submitted_at: str) -> SubmissionReceipt:
+    """Build evidence data binding an operator submission time to a selected draft.
+
+    Parameters
+    ----------
+    selected
+        Draft supplying the exact event, stage and payload hashes.
+    submitted_at
+        Recorded operator submission and evidence-binding time.
+
+    Returns
+    -------
+    SubmissionReceipt
+        Receipt data for public timeline validation without a network submission.
+    """
     return SubmissionReceipt.build(
         product_key=selected.product_key,
         event_key=selected.event_key,
@@ -79,10 +124,25 @@ def receipt(selected: StageDraft, submitted_at: str) -> SubmissionReceipt:
 
 
 def state(timeline: ReportingTimeline, stage: str) -> TimelineStage:
+    """Select one named stage from a computed public timeline.
+
+    Parameters
+    ----------
+    timeline
+        Computed timeline whose stage states are inspected.
+    stage
+        Exact stage name expected to be present.
+
+    Returns
+    -------
+    TimelineStage
+        Matching stage, including deadline, state and alert fields.
+    """
     return next(item for item in timeline.stages if item.stage == stage)
 
 
 def test_early_and_notification_boundaries_are_strictly_after_deadline() -> None:
+    """Keep the exact model deadline pending and mark the following whole second overdue."""
     selected = event()
     at_24 = compute_reporting_timeline(selected, now="2026-07-21T00:00:00Z")
     assert state(at_24, "early-warning").state == "pending"
@@ -95,6 +155,7 @@ def test_early_and_notification_boundaries_are_strictly_after_deadline() -> None
 
 
 def test_vulnerability_final_clock_starts_only_when_measure_exists() -> None:
+    """Start the final-report model clock only from a recorded corrective measure."""
     no_measure = compute_reporting_timeline(event(), now="2027-01-01T00:00:00Z")
     assert state(no_measure, "final-report").state == "not-started"
     selected = event(corrective_measure_available_at="2026-07-25T00:00:00Z")
@@ -116,6 +177,7 @@ def test_vulnerability_final_clock_starts_only_when_measure_exists() -> None:
 def test_calendar_month_clamps_end_of_month(
     source: tuple[int, int, int], expected: tuple[int, int, int]
 ) -> None:
+    """Clamp month-end days while preserving UTC time through leap years and year rollover."""
     value = datetime(*source, 12, 30, tzinfo=UTC)
     shifted = add_calendar_month_conservative(value)
     assert (shifted.year, shifted.month, shifted.day) == expected
@@ -123,6 +185,7 @@ def test_calendar_month_clamps_end_of_month(
 
 
 def test_incident_final_clock_uses_notification_receipt() -> None:
+    """Derive the incident final deadline from the bound notification submission time."""
     selected = event(track="incident")
     notification = draft(selected, "notification")
     bound = receipt(notification, "2026-07-31T12:00:00Z")
@@ -139,11 +202,13 @@ def test_incident_final_clock_uses_notification_receipt() -> None:
 
 
 def test_incident_final_clock_is_not_started_without_notification_evidence() -> None:
+    """Leave the incident final-report clock unstarted without notification evidence."""
     timeline = compute_reporting_timeline(event(track="incident"), now="2027-01-01T00:00:00Z")
     assert state(timeline, "final-report").state == "not-started"
 
 
 def test_incident_skip_uses_referenced_earlier_receipt() -> None:
+    """Derive a skipped notification clock from its exact earlier-stage receipt."""
     selected = event(track="incident")
     early = draft(selected, "early-warning")
     bound = receipt(early, "2026-07-20T01:00:00Z")
@@ -170,6 +235,7 @@ def test_incident_skip_uses_referenced_earlier_receipt() -> None:
 
 
 def test_draft_without_receipt_is_explicit_and_eventually_alerts() -> None:
+    """Keep drafts unverified and raise an operational alert only after the model deadline."""
     selected = event()
     early = draft(selected, "early-warning")
     fresh = compute_reporting_timeline(selected, drafts=(early,), now="2026-07-21T00:00:00Z")
@@ -181,6 +247,7 @@ def test_draft_without_receipt_is_explicit_and_eventually_alerts() -> None:
 
 
 def test_timeline_rejects_ambiguous_or_cross_wired_records() -> None:
+    """Reject duplicate drafts, orphan receipts, foreign events and conflicting receipt/skip states."""
     selected = event()
     early = draft(selected, "early-warning")
     with pytest.raises(ValueError, match="multiple draft"):
@@ -242,6 +309,7 @@ def test_timeline_rejects_ambiguous_or_cross_wired_records() -> None:
 
 
 def test_late_receipt_and_intermediate_deadline_remain_visible() -> None:
+    """Preserve late submissions and overdue requested updates in digest-bound timeline output."""
     selected = event(
         intermediate_requested_at="2026-07-20T01:00:00Z",
         intermediate_due_at="2026-07-20T03:00:00Z",
@@ -262,6 +330,7 @@ def test_late_receipt_and_intermediate_deadline_remain_visible() -> None:
 
 
 def test_timeline_requires_current_revision_in_accepted_chain() -> None:
+    """Reject a timeline whose selected current revision is absent from its accepted chain."""
     selected = event()
     with pytest.raises(ValueError, match="must contain"):
         compute_reporting_timeline(

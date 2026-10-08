@@ -24,6 +24,7 @@ _HEADER = "# SPDX-License-" + "Identifier: Apache-2.0\n"
 
 
 def test_public_scan_finds_library_output_and_credential_logging(tmp_path: Path) -> None:
+    """Find exact library-output and credential-log candidates with tracked anchors and evidence."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "src/pkg/core.py",
@@ -69,6 +70,7 @@ def test_public_scan_finds_library_output_and_credential_logging(tmp_path: Path)
 
 
 def test_print_scope_excludes_commands_tests_and_shadowed_names(tmp_path: Path) -> None:
+    """Exclude command/test output and local print bindings while retaining explicit builtin calls."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("tools/helper.py", "print('command')\n")
     repository.write_text("scripts/helper.py", "print('command')\n")
@@ -120,6 +122,7 @@ def test_print_scope_excludes_commands_tests_and_shadowed_names(tmp_path: Path) 
 def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
     tmp_path: Path,
 ) -> None:
+    """Preserve lexical binding semantics across closures, classes, captures and comprehensions."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "src/pkg/nested_scopes.py",
@@ -272,6 +275,7 @@ def test_print_scope_respects_python_bindings_and_explicit_builtin_imports(
 
 
 def test_logging_requires_import_binding_and_sensitive_value_name(tmp_path: Path) -> None:
+    """Require actual logging bindings and sensitive value names while excluding digest/custom calls."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "src/pkg/logs.py",

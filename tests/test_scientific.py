@@ -22,6 +22,7 @@ from rigor_foundry.scientific import scan_scientific
 
 
 def test_public_scan_finds_exact_float_and_unseeded_stochastic_tests(tmp_path: Path) -> None:
+    """Find anchored exact-float and unseeded-test candidates while preserving seeded alternatives."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "src/pkg/core.py",
@@ -79,6 +80,7 @@ def test_public_scan_finds_exact_float_and_unseeded_stochastic_tests(tmp_path: P
 
 
 def test_scanner_requires_python_test_scope_and_parseable_text(tmp_path: Path) -> None:
+    """Exclude non-test paths and reject unparseable or non-text sources from scientific candidates."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text("src/pkg/module.py", "def helper(value):\n    return value == 0.5\n")
     repository.write_text("scripts/test_like.py", "def helper(value):\n    return value == 0.5\n")
@@ -93,6 +95,7 @@ def test_scanner_requires_python_test_scope_and_parseable_text(tmp_path: Path) -
 
 
 def test_import_aliases_seed_order_none_and_class_tests_are_bounded(tmp_path: Path) -> None:
+    """Track random import aliases and reject absent, late or None seeds in actual test source."""
     repository = GitRepository.create(tmp_path / "repository")
     repository.write_text(
         "tests/test_aliases.py",

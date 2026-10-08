@@ -5,6 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — deterministic CRA payload tests
+"""Exercise deterministic prepare-only CRA payloads and explicit operator-input boundaries."""
 
 from __future__ import annotations
 
@@ -28,6 +29,18 @@ NOW = "2026-07-20T00:00:00Z"
 
 
 def registration(product_key: str = "widget") -> ProductRegistration:
+    """Build the fixed manufacturer/product registration used by public payload tests.
+
+    Parameters
+    ----------
+    product_key
+        Product identity used to exercise matching and cross-product rejection.
+
+    Returns
+    -------
+    ProductRegistration
+        Validated registration with the fixed manufacturer and support-period fields.
+    """
     return ProductRegistration.build(
         product_key=product_key,
         product_name="Widget",
@@ -44,6 +57,20 @@ def registration(product_key: str = "widget") -> ProductRegistration:
 
 
 def event(track: Track = "vulnerability", **changes: object) -> SecurityEventRevision:
+    """Build a selected vulnerability or incident revision with explicit field changes.
+
+    Parameters
+    ----------
+    track
+        Trigger track determining the required exploitation or severity evidence.
+    **changes
+        Values replacing the fixed revision inputs, including invalid test cases.
+
+    Returns
+    -------
+    SecurityEventRevision
+        Validated revision when all supplied trigger and optional fields are coherent.
+    """
     values: dict[str, object] = {
         "event_key": "EVENT-1",
         "product_key": "widget",
@@ -75,6 +102,7 @@ def test_all_six_statutory_payload_partitions_are_deterministic(
     track: Track,
     stage: Stage,
 ) -> None:
+    """Keep each track/stage payload deterministic and retain exact JSON/Markdown and field partitions."""
     selected = event(track)
     first = prepare_stage_payload(
         registration(),
@@ -122,6 +150,7 @@ def test_all_six_statutory_payload_partitions_are_deterministic(
 
 
 def test_intermediate_requires_explicit_request_and_keeps_it_separate() -> None:
+    """Require an operator-declared intermediate request and preserve its due time in the payload."""
     with pytest.raises(ValueError, match="no operator-declared"):
         prepare_stage_payload(registration(), event(), stage="intermediate", generated_at=NOW)
     selected = event(
@@ -138,6 +167,7 @@ def test_intermediate_requires_explicit_request_and_keeps_it_separate() -> None:
 
 
 def test_payload_rejects_cross_product_and_unsupported_stage() -> None:
+    """Reject events belonging to another registered product and unknown reporting stages."""
     with pytest.raises(ValueError, match="does not match"):
         prepare_stage_payload(
             registration("other"), event(), stage="notification", generated_at=NOW
@@ -147,6 +177,7 @@ def test_payload_rejects_cross_product_and_unsupported_stage() -> None:
 
 
 def test_user_notice_is_prepare_only_and_strict() -> None:
+    """Prepare an incomplete notice without submission and reject invalid audiences, flags or products."""
     selected = event()
     payload = prepare_user_notice(
         registration(),
@@ -186,6 +217,7 @@ def test_user_notice_is_prepare_only_and_strict() -> None:
 
 
 def test_prepared_payload_validation_rejects_either_digest_mismatch() -> None:
+    """Validate both JSON and Markdown payload digests independently."""
     valid = prepare_stage_payload(registration(), event(), stage="early-warning", generated_at=NOW)
     validate_prepared_payload(valid)
     with pytest.raises(ValueError, match="JSON payload"):
