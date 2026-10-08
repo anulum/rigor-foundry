@@ -13,6 +13,7 @@ from hypothesis import given, settings
 from property_strategies import CONDITIONS, JSON_SCALARS, REFERENCES
 
 from rigor_foundry.condition_language import ConditionExpression
+from rigor_foundry.model_primitives import JsonScalar
 
 _PROPERTY_SETTINGS = settings(max_examples=100, deadline=None)
 
@@ -42,7 +43,7 @@ def test_double_negation_preserves_evaluation(
 
 @_PROPERTY_SETTINGS
 @given(REFERENCES, JSON_SCALARS)
-def test_scalar_equality_is_reflexive(reference: str, value: object) -> None:
+def test_scalar_equality_is_reflexive(reference: str, value: JsonScalar) -> None:
     """A JSON scalar equals itself through a generated public reference."""
     expression = ConditionExpression.build("eq", reference=reference, value=value)
     context: dict[str, object] = {}

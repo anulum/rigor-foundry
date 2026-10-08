@@ -18,9 +18,10 @@ import pytest
 from signing_fixtures import pack_signature, sign_message, trust_store
 
 from rigor_foundry.control_assessment import (
+    AssessmentStatus,
+    Classification,
     ControlAssessment,
     EvidenceReference,
-    ReviewerAttestation,
 )
 from rigor_foundry.effective_profile import (
     AdapterLock,
@@ -36,6 +37,7 @@ from rigor_foundry.project_profile import (
     RequirementBinding,
     RequirementCategory,
 )
+from rigor_foundry.review_attestation import ReviewerAttestation
 from rigor_foundry.standard_pack import (
     ControlDefinition,
     EvidenceContract,
@@ -211,8 +213,8 @@ def review(
     rationale: str,
     reviewer_id: str = "independent-reviewer",
     key_id: str = "reviewer-key-1",
-    decision: str = "pass",
-    body_status: str | None = None,
+    decision: AssessmentStatus = "pass",
+    body_status: AssessmentStatus | None = None,
     proof_level: str = "cryptographically-verified",
     assessor: str = "assessment-agent",
     limitations: tuple[str, ...] = (),
@@ -226,7 +228,7 @@ def review(
     body_digest = ControlAssessment.body_digest_for_review(
         lock,
         control,
-        status=cast(object, decision if body_status is None else body_status),
+        status=decision if body_status is None else body_status,
         assessor=assessor,
         assessed_at=ASSESSED_AT,
         evidence=evidence_items,
@@ -240,7 +242,7 @@ def review(
         algorithm="ed25519",
         key_id=key_id,
         assessment_body_digest=body_digest,
-        decision=cast(object, decision),
+        decision=decision,
         reviewed_at="2026-07-15T11:45:00Z",
         expires_at="2026-07-15T13:00:00Z",
     )
@@ -248,7 +250,7 @@ def review(
         reviewer_id=reviewer_id,
         key_id=key_id,
         assessment_body_digest=body_digest,
-        decision=cast(object, decision),
+        decision=decision,
         reviewed_at="2026-07-15T11:45:00Z",
         expires_at="2026-07-15T13:00:00Z",
         signature_hex=(
@@ -633,7 +635,7 @@ def test_evidence_and_reviewer_metadata_edges_fail_closed() -> None:
             adapter_digest=adapter_lock().adapter_digest,
             artifact_digest="a" * 64,
             artifact_size=1,
-            classification=cast(object, "restricted"),
+            classification=cast(Classification, "restricted"),
             reference="sha256:a",
             observed_at="2026-07-15T11:00:00Z",
             expires_at="2026-07-15T12:00:00Z",
@@ -687,7 +689,7 @@ def test_evidence_and_reviewer_metadata_edges_fail_closed() -> None:
             control,
             evidence_items=(run,),
             rationale="invalid decision",
-            decision="unknown",
+            decision=cast(AssessmentStatus, "unknown"),
             body_status="pass",
         )
     with pytest.raises(ValueError, match="later than"):
@@ -726,7 +728,7 @@ def test_remaining_assessment_state_and_coverage_edges_are_explicit() -> None:
         ControlAssessment.build(
             lock,
             control,
-            status=cast(object, "unknown"),
+            status=cast(AssessmentStatus, "unknown"),
             assessor="agent",
             assessed_at=ASSESSED_AT,
             rationale="invalid",

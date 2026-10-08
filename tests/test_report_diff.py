@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypedDict, Unpack, cast
 
 import pytest
 from repository_audit_git_repository import sample_git_provenance
@@ -30,6 +30,22 @@ from rigor_foundry.report_diff import (
     compare_reports,
     read_report_for_diff,
 )
+
+
+class ReportChanges(TypedDict, total=False):
+    """Report fields varied by the compatibility and tampering cases."""
+
+    policy_digest: str
+    git_object_format: str
+    head: str
+    head_tree: str
+    ignored_inventory_digest: str
+    repository_root: str
+    branch: str
+    policy: AuditPolicy
+    rule_pack_version: str
+    rule_pack_digest: str
+    scanner_version: str
 
 
 def _anchor(path: str, marker: str) -> RepositoryTreeAnchor:
@@ -86,7 +102,7 @@ def _report(
     )
 
 
-def _rehash(report: AuditReport, **changes: object) -> AuditReport:
+def _rehash(report: AuditReport, **changes: Unpack[ReportChanges]) -> AuditReport:
     """Return a deliberately version-divergent but internally hashed report fixture."""
     changed = replace(report, **changes)
     body = changed.to_dict()
@@ -286,7 +302,7 @@ def test_declared_anchor_match_rejects_semantic_and_anchor_nonchanges() -> None:
     ],
 )
 def test_incompatible_inputs_require_exact_non_superfluous_declarations(
-    after_changes: dict[str, object],
+    after_changes: ReportChanges,
     declaration_field: str,
 ) -> None:
     """Every compatibility exception is both necessary and explicitly justified."""
@@ -300,8 +316,14 @@ def test_incompatible_inputs_require_exact_non_superfluous_declarations(
     with pytest.raises(ValueError, match="declaration does not match"):
         compare_reports(before, after)
 
-    values = {declaration_field: True, "justification": "operator-reviewed migration"}
-    compatibility = ReportDiffCompatibility(**values)
+    compatibility = ReportDiffCompatibility(
+        repository_change=declaration_field == "repository_change",
+        branch_change=declaration_field == "branch_change",
+        policy_change=declaration_field == "policy_change",
+        rule_pack_change=declaration_field == "rule_pack_change",
+        scanner_change=declaration_field == "scanner_change",
+        justification="operator-reviewed migration",
+    )
     assert (
         compare_reports(before, after, compatibility=compatibility).compatibility == compatibility
     )

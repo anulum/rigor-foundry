@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
@@ -392,7 +393,11 @@ def test_capture_fault_boundaries_fail_closed_through_public_api(
     capture_request = request(repository, "repo", head)
     original_run = GitRunner.run
 
-    def injected_output(payload: bytes, selected_argument: str):
+    def injected_output(
+        payload: bytes, selected_argument: str
+    ) -> Callable[..., subprocess.CompletedProcess[bytes]]:
+        """Return a Git callback that replaces one selected command's output."""
+
         def run(
             runner: GitRunner,
             cwd: Path,

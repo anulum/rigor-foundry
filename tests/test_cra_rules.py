@@ -390,12 +390,13 @@ def test_scan_rejects_cra_state_change_between_inventory_and_locked_replay(
     mutated = False
 
     def mutate_before_lock(
-        path: os.PathLike[str] | str | bytes | int,
+        path: os.PathLike[str] | str | bytes,
         flags: int,
         mode: int = 0o777,
         *,
         dir_fd: int | None = None,
     ) -> int:
+        """Mutate fixture evidence immediately before opening the real CRA lock."""
         nonlocal mutated
         if (
             not mutated
@@ -437,12 +438,13 @@ def test_scan_rejects_tracked_change_between_inventory_and_cra_replay(
     mutated = False
 
     def mutate_tracked_before_lock(
-        path: os.PathLike[str] | str | bytes | int,
+        path: os.PathLike[str] | str | bytes,
         flags: int,
         mode: int = 0o777,
         *,
         dir_fd: int | None = None,
     ) -> int:
+        """Mutate fixture evidence immediately before opening the real CRA lock."""
         nonlocal mutated
         if (
             not mutated

@@ -10,17 +10,37 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
+from typing import TypedDict, cast
 
 import pytest
 
 from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
 
 
+class ProvenanceArguments(TypedDict):
+    """Complete inputs to the executable provenance builder."""
+
+    resolved_path: str
+    trusted_root: str
+    version: str
+    executable_digest: str
+    trust_policy: GitTrustPolicy
+
+
+class ProvenanceChanges(TypedDict, total=False):
+    """Single-field mutations used to reject malformed provenance."""
+
+    resolved_path: str
+    trusted_root: str
+    version: str
+    executable_digest: str
+    trust_policy: GitTrustPolicy
+
+
 def test_policy_and_provenance_parsers_reject_malformed_contracts(tmp_path: Path) -> None:
     """Malformed versions, paths, digests, shapes, and schema revisions are rejected."""
     root = str(tmp_path / "trusted")
-    invalid_policies: tuple[tuple[dict[str, object], str], ...] = (
+    invalid_policies: tuple[tuple[dict[str, str], str], ...] = (
         ({"executable": ""}, "non-empty"),
         ({"executable": "bin/git"}, "basename"),
         ({"executable": str(Path(root) / ".." / "git")}, "normalised"),
@@ -33,9 +53,9 @@ def test_policy_and_provenance_parsers_reject_malformed_contracts(tmp_path: Path
             "non-empty",
         ),
     )
-    for changes, message in invalid_policies:
+    for policy_changes, message in invalid_policies:
         with pytest.raises(ValueError, match=message):
-            GitTrustPolicy(trusted_roots=(root,), **changes)
+            GitTrustPolicy(trusted_roots=(root,), **policy_changes)
 
     encoded_policy = GitTrustPolicy(trusted_roots=(root,)).to_dict()
     with pytest.raises(ValueError, match="schema"):
@@ -47,14 +67,14 @@ def test_policy_and_provenance_parsers_reject_malformed_contracts(tmp_path: Path
     with pytest.raises(ValueError, match="normalised canonical"):
         GitTrustPolicy(trusted_roots=("/usr//bin",))
 
-    base = {
+    base: ProvenanceArguments = {
         "resolved_path": "/usr/bin/git",
         "trusted_root": "/usr/bin",
         "version": "2.43.0",
         "executable_digest": "1" * 64,
         "trust_policy": GitTrustPolicy(trusted_roots=("/usr/bin",)),
     }
-    cases: tuple[tuple[dict[str, object], str], ...] = (
+    cases: tuple[tuple[ProvenanceChanges, str], ...] = (
         ({"resolved_path": "relative/git"}, "absolute"),
         ({"resolved_path": "C:/Git/git.exe"}, "same path format"),
         ({"trusted_root": "/opt/git"}, "outside"),
@@ -94,8 +114,10 @@ def test_policy_and_provenance_parsers_reject_malformed_contracts(tmp_path: Path
         ({"executable_digest": "invalid"}, "SHA-256"),
     )
     for changes, message in cases:
+        arguments = base.copy()
+        arguments.update(changes)
         with pytest.raises(ValueError, match=message):
-            GitExecutableProvenance.build(**{**base, **changes})
+            GitExecutableProvenance.build(**arguments)
     valid = GitExecutableProvenance.build(**base).to_dict()
     with pytest.raises(ValueError, match="schema"):
         GitExecutableProvenance.from_dict({**valid, "schema_version": "2.0"})

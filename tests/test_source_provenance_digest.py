@@ -9,8 +9,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from rigor_foundry.digest_dependencies import DigestNode, transitive_dependents
 from rigor_foundry.source_capture import SourceCapture, SourceRetrievalPolicy
 from rigor_foundry.source_provenance import (
@@ -101,7 +99,7 @@ def _assert_transition(
 def test_source_claim_mutation_changes_only_verification() -> None:
     """Claim semantics bind verification without changing acquisition evidence."""
     _assert_transition(
-        cast(DigestNode, "source-claim"),
+        "source-claim",
         _snapshot(),
         _snapshot(subject="example-package-renamed"),
     )
@@ -110,7 +108,7 @@ def test_source_claim_mutation_changes_only_verification() -> None:
 def test_retrieval_policy_mutation_changes_capture_and_verification() -> None:
     """Acquisition-policy semantics propagate through capture to verification."""
     _assert_transition(
-        cast(DigestNode, "source-retrieval-policy"),
+        "source-retrieval-policy",
         _snapshot(),
         _snapshot(freshness_seconds=7200),
     )

@@ -14,6 +14,7 @@ import json
 import os
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from repository_audit_git_repository import GitRepository
@@ -298,7 +299,9 @@ def test_inventory_parser_rejects_unsorted_imported_record() -> None:
         tree_binding=binding,
     )
     changed = inventory.to_dict()
-    changed["top_level_components"] = list(reversed(changed["top_level_components"]))  # type: ignore[arg-type]
+    changed["top_level_components"] = list(
+        reversed(cast(list[dict[str, object]], changed["top_level_components"]))
+    )
     with pytest.raises(ValueError, match="canonical sort order"):
         ComponentInventory.from_dict(changed)
     assert replace(inventory, inventory_digest="0" * 64) != inventory

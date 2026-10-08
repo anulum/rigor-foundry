@@ -12,7 +12,7 @@ from __future__ import annotations
 import shutil
 from dataclasses import replace
 from pathlib import Path
-from typing import cast
+from typing import TypedDict, cast
 
 import pytest
 from repository_audit_git_repository import GitRepository
@@ -35,6 +35,17 @@ from rigor_foundry.campaign_workflow import create_campaign, execute_campaign
 from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.models import AuditReport, canonical_digest
 from rigor_foundry.scanner import scan_repository
+
+
+class CampaignArguments(TypedDict):
+    """Campaign identity fields shared by the witness validation cases."""
+
+    campaign_id: str
+    project: str
+    policy_path: str
+    toolchain: ToolchainIdentity
+    created_by: str
+    created_at: str
 
 
 def _inference_identity() -> InferenceIdentity:
@@ -201,7 +212,7 @@ def test_campaign_contract_enforces_purpose_witness_counts_and_outer_digest(
 ) -> None:
     """Promotion thresholds and the complete outer campaign digest fail closed."""
     campaign, _attestation, report = _protocol_records(tmp_path)
-    common = {
+    common: CampaignArguments = {
         "campaign_id": "promotion-contract",
         "project": campaign.project,
         "policy_path": campaign.policy_path,

@@ -14,6 +14,7 @@ import os
 import subprocess
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 import pytest
 from repository_audit_git_repository import GitRepository
@@ -126,6 +127,7 @@ def test_adapter_requires_consent_hides_ambient_secrets_and_cannot_mutate_reposi
     repository.write_text(
         "controls/boundary.py",
         """from pathlib import Path
+from typing import cast
 import os
 if os.environ.get("RIGOR_AMBIENT_SECRET"):
     raise SystemExit(9)
@@ -231,7 +233,7 @@ def test_adapter_evidence_parser_rejects_tampered_protocol_fields(tmp_path: Path
         AdapterResult.from_dict(inconsistent_pass)
 
     changed_provenance = result.to_dict()
-    provenance = dict(changed_provenance["sandbox_provenance"])
+    provenance = dict(cast(dict[str, object], changed_provenance["sandbox_provenance"]))
     provenance["package_version"] = "0.9.0-tampered"
     changed_provenance["sandbox_provenance"] = provenance
     with pytest.raises(ValueError, match="identity digest"):

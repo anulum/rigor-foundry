@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+from typing import cast
 
 import rigor_foundry
 from rigor_foundry.api_stability import (
@@ -69,7 +70,7 @@ def test_public_api_manifest_is_deterministic_machine_readable_json() -> None:
         "stable_bindings",
     }
     assert manifest["stable"] == sorted(STABLE_PUBLIC_API)
-    assert set(manifest["stable_bindings"]) == STABLE_PUBLIC_API
+    assert set(cast(dict[str, object], manifest["stable_bindings"])) == STABLE_PUBLIC_API
     assert manifest["provisional"] == sorted(PROVISIONAL_PUBLIC_API)
     assert json.loads(json.dumps(manifest, allow_nan=False, sort_keys=True)) == manifest
 

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import cast
 
 import pytest
 from offline_verification_fixtures import (
@@ -28,6 +29,7 @@ from rigor_foundry.campaign_identity import InferenceIdentity
 from rigor_foundry.offline_verification_models import (
     AUDIT_REPORT_SIGNATURE_DOMAIN,
     MODEL_ALIASES_SIGNATURE_DOMAIN,
+    ArtifactKind,
     DetachedEvidenceSignature,
     EvidenceEntry,
     ModelAliasEvidence,
@@ -81,7 +83,9 @@ def test_detached_signature_builder_rejects_unsupported_protocol_shapes(
         **changes,
     }
     with pytest.raises(ValueError, match=message):
-        DetachedEvidenceSignature.build(**arguments)
+        DetachedEvidenceSignature.build(
+            artifact_kind=cast(ArtifactKind, arguments.pop("artifact_kind")), **arguments
+        )
 
 
 def test_detached_signature_parser_rejects_shape_schema_and_derived_tampering() -> None:
@@ -205,7 +209,8 @@ def test_unavailable_entry_is_explicit_and_cannot_smuggle_document_bytes() -> No
         reason="air-gapped archive not supplied",
     )
     assert EvidenceEntry.from_dict(entry.to_dict()) == entry
-    assert entry.document is entry.signature is None
+    assert entry.document is None
+    assert entry.signature is None
     with pytest.raises(ValueError, match="non-empty"):
         EvidenceEntry.unavailable(
             "missing-report",

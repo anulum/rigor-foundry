@@ -10,11 +10,25 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import TypedDict, cast
 
 import pytest
 
 from rigor_foundry.audit_primitives import canonical_digest
-from rigor_foundry.condition_language import CONDITION_SCHEMA_VERSION, ConditionExpression
+from rigor_foundry.condition_language import (
+    CONDITION_SCHEMA_VERSION,
+    ConditionExpression,
+    ConditionOperator,
+    ConditionValue,
+)
+
+
+class ConditionArguments(TypedDict, total=False):
+    """Optional builder arguments for public condition-shape rejection cases."""
+
+    reference: str
+    value: ConditionValue
+    children: tuple[ConditionExpression, ...]
 
 
 def test_all_operators_evaluate_over_inert_mapping_data() -> None:
@@ -86,7 +100,9 @@ def test_nested_tree_round_trips_and_reports_references() -> None:
         ("not", {"children": ()}),
     ],
 )
-def test_invalid_shapes_are_rejected(operator: str, kwargs: dict[str, object]) -> None:
+def test_invalid_shapes_are_rejected(
+    operator: ConditionOperator, kwargs: ConditionArguments
+) -> None:
     """Operators reject executable references, ambiguous values, and invalid arity."""
     with pytest.raises(ValueError):
         ConditionExpression.build(operator, **kwargs)
@@ -119,7 +135,7 @@ def test_parser_and_remaining_shape_branches_fail_closed() -> None:
     with pytest.raises(ValueError, match="exactly one"):
         ConditionExpression.build("not", reference="project.enabled", children=(leaf,))
     with pytest.raises(ValueError, match="unsupported"):
-        ConditionExpression.build("execute")
+        ConditionExpression.build(cast(ConditionOperator, "execute"))
 
     overdeep_child = leaf
     for _ in range(7):

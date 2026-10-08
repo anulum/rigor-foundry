@@ -511,7 +511,10 @@ def test_directory_digest_rejects_entry_inserted_during_manifest_read(
     real_listdir = os.listdir
     enumerations = 0
 
-    def insert_before_final_enumeration(path: os.PathLike[str] | str | bytes | int) -> list[str]:
+    def insert_before_final_enumeration(
+        path: os.PathLike[str] | os.PathLike[bytes] | str | bytes | int,
+    ) -> list[str] | list[bytes]:
+        """Insert a real entry before the selected directory's final enumeration."""
         nonlocal enumerations
         if isinstance(path, int):
             observed = os.fstat(path)
@@ -548,12 +551,13 @@ def test_directory_digest_reports_inaccessible_directory_open(
     real_open = os.open
 
     def reject_selected_directory(
-        path: os.PathLike[str] | str | bytes | int,
+        path: os.PathLike[str] | os.PathLike[bytes] | str | bytes,
         flags: int,
         mode: int = 0o777,
         *,
         dir_fd: int | None = None,
     ) -> int:
+        """Refuse the selected actual directory without altering other open calls."""
         if path == blocked_name and dir_fd is not None and flags & os.O_DIRECTORY:
             observed_parent = os.fstat(dir_fd)
             if (observed_parent.st_dev, observed_parent.st_ino) == (
@@ -859,13 +863,14 @@ def test_public_scan_fails_closed_on_repository_root_replacement(
     replaced = False
 
     def replace_root_before_revalidation(path: Path) -> int:
+        """Replace the actual repository root before its second directory read."""
         nonlocal replaced, root_opens
         root_opens += 1
         if root_opens == 2:
             repository.root.rename(displaced)
             repository.root.mkdir()
             replaced = True
-        return cast(int, open_directory_no_follow(path))
+        return open_directory_no_follow(path)
 
     monkeypatch.setattr(
         "rigor_foundry.ignored_inventory.open_directory_no_follow",

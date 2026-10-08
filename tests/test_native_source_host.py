@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager, suppress
 from dataclasses import replace
 from pathlib import Path
@@ -22,7 +22,8 @@ from rigor_foundry.native_source_host import HostNativeSourceState, HostNativeSo
 from rigor_foundry.native_source_pin import NativeSourcePin
 
 
-def _captures(kwargs: dict[str, object]) -> dict[str, bytes]:
+def _captures(kwargs: Mapping[str, object]) -> dict[str, bytes]:
+    """Copy the fixture's validated question and reply bytes for verifier calls."""
     question = kwargs["question_capture"]
     reply = kwargs["reply_capture"]
     assert isinstance(question, bytes)

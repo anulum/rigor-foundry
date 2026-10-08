@@ -12,16 +12,16 @@ from __future__ import annotations
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
-from typing import cast
 
 import pytest
-from test_native_message_pair import FILENAME, LIMITS, SESSION, _fixture
+from test_native_message_pair import FILENAME, LIMITS, SESSION, NativeArguments, _fixture
 
 from rigor_foundry.native_message_pair import NativeMessageSelector, NativeReadLimits
 from rigor_foundry.native_source_pin import NativeSourcePin
 
 
-def _pin(tmp_path: Path) -> tuple[NativeSourcePin, dict[str, object], Path]:
+def _pin(tmp_path: Path) -> tuple[NativeSourcePin, NativeArguments, Path]:
+    """Bind the native fixture to a source pin and retain its read arguments."""
     path, kwargs = _fixture(tmp_path)
     question = kwargs["question"]
     reply = kwargs["reply"]
@@ -46,8 +46,8 @@ def test_exact_external_pin_verifies_source_without_promoting_it(tmp_path: Path)
     assert NativeSourcePin.from_dict(pin.to_dict()) == pin
     result = pin.verify_with_host_pin(
         expected_pin_digest=pin.pin_digest,
-        question_capture=cast(bytes, kwargs["question_capture"]),
-        reply_capture=cast(bytes, kwargs["reply_capture"]),
+        question_capture=kwargs["question_capture"],
+        reply_capture=kwargs["reply_capture"],
     )
     assert result["schema_version"] == "native-source-verification.v1"
     assert result["promotable"] is False
@@ -104,8 +104,8 @@ def test_changed_source_or_selection_cannot_match_host_pin(tmp_path: Path, fault
     with pytest.raises((ValueError, OSError)):
         pin.verify_with_host_pin(
             expected_pin_digest=host_digest,
-            question_capture=cast(bytes, kwargs["question_capture"]),
-            reply_capture=cast(bytes, kwargs["reply_capture"]),
+            question_capture=kwargs["question_capture"],
+            reply_capture=kwargs["reply_capture"],
         )
 
 

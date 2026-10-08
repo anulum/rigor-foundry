@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
-from typing import cast
+from typing import TypedDict, cast
 
 import pytest
 from repository_audit_git_repository import sample_git_provenance, sample_tree_anchor
@@ -26,7 +26,28 @@ from rigor_foundry.models import (
     ReviewRecord,
     canonical_digest,
 )
-from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkTask
+from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkState, WorkTask
+
+
+class EventIdentity(TypedDict):
+    """Git and actor fields shared by the transition validation cases."""
+
+    task_id: str
+    actor: str
+    occurred_at: str
+    head: str
+    head_tree: str
+    tracked_content_digest: str
+
+
+class EventAdditions(TypedDict, total=False):
+    """State-specific fields supplied by the negative transition cases."""
+
+    owner: str
+    commit_sha: str
+    commit_tree: str
+    verifier: str
+
 
 HEAD = "1" * 40
 TREE = "2" * 40
@@ -112,7 +133,9 @@ def evidence(label: str) -> WorkEvidence:
     )
 
 
-def lifecycle(*, verifier: str = "independent-verifier", verified_commit: str = COMMIT):
+def lifecycle(
+    *, verifier: str = "independent-verifier", verified_commit: str = COMMIT
+) -> tuple[WorkTask, tuple[WorkEvent, ...]]:
     """Return a complete immutable lifecycle for one task."""
     definition = task()
     events = []
@@ -409,7 +432,7 @@ def test_task_crosswiring_completeness_schema_and_severity_fail_closed() -> None
         WorkTask.from_dict(encoded)
 
 
-def event_kwargs() -> dict[str, object]:
+def event_kwargs() -> EventIdentity:
     """Return common exact Git identity for negative transition tests."""
     return {
         "task_id": task().task_id,
@@ -428,7 +451,7 @@ def test_state_specific_event_requirements_cover_every_clearance_boundary() -> N
         WorkEvent.build(
             sequence=1,
             previous_state=None,
-            state=cast(object, "unknown"),
+            state=cast(WorkState, "unknown"),
             **common,
         )
     with pytest.raises(ValueError, match="first event"):
@@ -441,7 +464,7 @@ def test_state_specific_event_requirements_cover_every_clearance_boundary() -> N
             **common,
         )
     previous = "a" * 64
-    cases = (
+    cases: tuple[tuple[WorkState, EventAdditions, str], ...] = (
         ("revalidated", {}, "revalidation requires"),
         ("claimed", {}, "requires an owner"),
         (
@@ -456,7 +479,7 @@ def test_state_specific_event_requirements_cover_every_clearance_boundary() -> N
         ),
         ("needs-evidence", {}, "requires a reason"),
     )
-    previous_states = {
+    previous_states: dict[WorkState, WorkState] = {
         "revalidated": "proposed-task",
         "claimed": "revalidated",
         "resolved-pending-verification": "in-progress",
@@ -467,8 +490,8 @@ def test_state_specific_event_requirements_cover_every_clearance_boundary() -> N
         with pytest.raises(ValueError, match=message):
             WorkEvent.build(
                 sequence=2,
-                previous_state=cast(object, previous_states[state]),
-                state=cast(object, state),
+                previous_state=previous_states[state],
+                state=state,
                 previous_event_digest=previous,
                 **common,
                 **additions,

@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.bootstrap import bootstrap_repository
+from rigor_foundry.bootstrap import BootstrapResult, bootstrap_repository
 from rigor_foundry.models import AUDIT_DOMAINS, AuditPolicy
 
 _POLICY = Path("rigor-foundry-policy.json")
@@ -37,7 +37,7 @@ def _repository(path: Path) -> GitRepository:
     return repository
 
 
-def _bootstrap(repository: GitRepository, *, ledger_path: Path = _LEDGER):
+def _bootstrap(repository: GitRepository, *, ledger_path: Path = _LEDGER) -> BootstrapResult:
     """Run the public bootstrap with the fixture's explicit contract."""
     return bootstrap_repository(
         repository.root,

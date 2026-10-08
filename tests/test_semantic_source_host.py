@@ -21,7 +21,10 @@ import pytest
 from test_discovery_receipt_host import _host_evidence, _host_verifier
 from test_semantic_transition import _HOST_QUESTION, _HOST_REPLY, _HOST_SOURCE
 
-from rigor_foundry.discovery_receipt_host import HostDiscoveryReceiptState
+from rigor_foundry.discovery_receipt_host import (
+    HostDiscoveryReceiptState,
+    HostDiscoveryReceiptVerifier,
+)
 from rigor_foundry.native_message_pair import NativeMessageSelector, NativeReadLimits
 from rigor_foundry.native_source_host import HostNativeSourceState, HostNativeSourceVerifier
 from rigor_foundry.native_source_pin import NativeSourcePin
@@ -184,9 +187,9 @@ def test_crossed_or_revoked_host_selection_refuses(tmp_path: Path, fault: str) -
             state, revoked_selection_digests=frozenset({state.selected.selection_digest})
         )
     elif fault == "missing-discovery":
-        state = replace(state, discovery_verifier=cast(object, None))
+        state = replace(state, discovery_verifier=cast(HostDiscoveryReceiptVerifier, None))
     elif fault == "missing-native":
-        state = replace(state, native_verifier=cast(object, None))
+        state = replace(state, native_verifier=cast(HostNativeSourceVerifier, None))
     else:
         state = cast(HostSemanticSourceState, object())
     with pytest.raises((PermissionError, ValueError)):

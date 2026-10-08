@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import cast
+from typing import TypedDict, cast
 
 import pytest
 from signing_fixtures import pack_signature, trust_store
@@ -20,6 +20,7 @@ from rigor_foundry.effective_profile import (
     PACK_VERIFICATION_SCHEMA_VERSION,
     AdapterLock,
     PackVerification,
+    ProfileResolution,
 )
 from rigor_foundry.model_primitives import VariableConstraints, VariableDefinition
 from rigor_foundry.profile_resolution import resolve_effective_profile
@@ -36,19 +37,33 @@ from rigor_foundry.project_profile import (
 )
 from rigor_foundry.standard_pack import (
     ControlDefinition,
+    ControlMode,
     EvidenceContract,
     RemediationContract,
     StandardPack,
+    TargetLevel,
 )
-from rigor_foundry.trust import REVIEW_ATTESTATION_SIGNATURE_DOMAIN
+from rigor_foundry.trust import REVIEW_ATTESTATION_SIGNATURE_DOMAIN, VerificationTrustStore
+
+
+class ResolutionArguments(TypedDict):
+    """Shared public resolver inputs while varying the supplied pack inventory."""
+
+    profile: ProjectProfile
+    verifications: tuple[PackVerification, ...]
+    adapters: tuple[AdapterLock, ...]
+    trust_store: VerificationTrustStore
+    allowed_licences: tuple[str, ...]
+    toolchain_digest: str
+    resolved_at: str
 
 
 def control(
     *,
     pack_id: str = "core",
     control_name: str = "no-godfiles",
-    target_level: str = "production",
-    mode: str = "require",
+    target_level: TargetLevel = "production",
+    mode: ControlMode = "require",
     condition: ConditionExpression | None = None,
     dependencies: tuple[str, ...] = (),
 ) -> ControlDefinition:
@@ -59,8 +74,8 @@ def control(
         title="Verified architecture responsibility boundary",
         domain="godfile-responsibility",
         severity="P1",
-        target_level=cast(object, target_level),
-        mode=cast(object, mode),
+        target_level=target_level,
+        mode=mode,
         default_applicable=True,
         condition=condition,
         evidence=EvidenceContract.build(
@@ -188,7 +203,7 @@ def resolve(
     verifications: tuple[PackVerification, ...] | None = None,
     adapters: tuple[AdapterLock, ...] | None = None,
     allowed_licences: tuple[str, ...] = ("MIT",),
-):
+) -> ProfileResolution:
     """Resolve one profile with deterministic evidence coordinates."""
     return resolve_effective_profile(
         project,
@@ -452,7 +467,7 @@ def test_pack_and_adapter_inventory_crosswiring_is_reported() -> None:
     """Missing, duplicate, unexpected, and pin-mismatched inputs produce explicit blockers."""
     standard = pack()
     project = profile(standard)
-    common = {
+    common: ResolutionArguments = {
         "profile": project,
         "verifications": (verification(standard),),
         "adapters": (adapter(),),

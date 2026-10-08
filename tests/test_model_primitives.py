@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
+from typing import TypedDict, cast
 
 import pytest
 
@@ -17,9 +19,13 @@ from rigor_foundry.model_primitives import (
     VARIABLE_ASSIGNMENT_SCHEMA_VERSION,
     VARIABLE_DEFINITION_SCHEMA_VERSION,
     SecretReference,
+    Sensitivity,
     VariableAssignment,
     VariableConstraints,
     VariableDefinition,
+    VariableScope,
+    VariableType,
+    VariableValue,
     WorkEvidence,
     require_boolean,
     require_digest,
@@ -34,6 +40,21 @@ from rigor_foundry.model_primitives import (
     require_variable_type,
     require_variable_value,
 )
+
+
+class DefinitionArguments(TypedDict):
+    """Exact VariableDefinition builder inputs with typed per-field mutations."""
+
+    variable_id: str
+    value_type: VariableType
+    scope: VariableScope
+    sensitivity: Sensitivity
+    required: bool
+    constraints: VariableConstraints
+    default_value: VariableValue | None
+    default_secret_ref: SecretReference | None
+    source: str
+
 
 DIGEST = "a" * 64
 
@@ -52,7 +73,7 @@ DIGEST = "a" * 64
     ],
 )
 def test_strict_primitive_validators_reject_ambiguous_values(
-    validator: object,
+    validator: Callable[[object, str], object],
     value: object,
 ) -> None:
     """Protocol validators reject coercion, local time, and malformed identities."""
@@ -243,7 +264,7 @@ def test_all_constraint_failure_modes_are_explicit() -> None:
 def test_definition_and_assignment_schema_edges_are_digest_bound() -> None:
     """Invalid scope/sensitivity/secret use and serialized bindings fail closed."""
     reference = SecretReference.build(provider="vault", reference="kv/token", version="1")
-    kwargs = {
+    kwargs: DefinitionArguments = {
         "variable_id": "deployment.os",
         "value_type": "string",
         "scope": "project",
@@ -254,20 +275,23 @@ def test_definition_and_assignment_schema_edges_are_digest_bound() -> None:
         "default_secret_ref": None,
         "source": "profile",
     }
+    invalid_scope = kwargs.copy()
+    invalid_scope["scope"] = cast(VariableScope, "global")
     with pytest.raises(ValueError, match="scope"):
-        VariableDefinition.build(**{**kwargs, "scope": "global"})
+        VariableDefinition.build(**invalid_scope)
+    invalid_sensitivity = kwargs.copy()
+    invalid_sensitivity["sensitivity"] = cast(Sensitivity, "classified")
     with pytest.raises(ValueError, match="sensitivity"):
-        VariableDefinition.build(**{**kwargs, "sensitivity": "classified"})
+        VariableDefinition.build(**invalid_sensitivity)
+    raw_secret_default = kwargs.copy()
+    raw_secret_default["sensitivity"] = "secret"
+    raw_secret_default["default_secret_ref"] = reference
     with pytest.raises(ValueError, match="raw default"):
-        VariableDefinition.build(
-            **{
-                **kwargs,
-                "sensitivity": "secret",
-                "default_secret_ref": reference,
-            }
-        )
+        VariableDefinition.build(**raw_secret_default)
+    public_secret_reference = kwargs.copy()
+    public_secret_reference["default_secret_ref"] = reference
     with pytest.raises(ValueError, match="cannot carry secret"):
-        VariableDefinition.build(**{**kwargs, "default_secret_ref": reference})
+        VariableDefinition.build(**public_secret_reference)
 
     expected = definition()
     encoded = expected.to_dict()

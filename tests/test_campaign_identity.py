@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 import rigor_foundry
@@ -75,7 +77,7 @@ def test_inference_identity_rejects_ambiguous_or_unsafe_components(
     message: str,
 ) -> None:
     """Identity fields reject schema drift and non-portable correlation keys."""
-    document = _identity("family-one").to_dict()
+    document: dict[str, object] = dict(_identity("family-one").to_dict())
     document[field] = value
     with pytest.raises(ValueError, match=message):
         InferenceIdentity.from_dict(document)
@@ -194,8 +196,8 @@ def test_model_witness_parser_and_input_reject_duplicates_and_tampering() -> Non
 
     changed = witness.to_dict()
     changed["exact_models"] = [
-        *changed["exact_models"],
-        *changed["exact_models"],
+        *cast(list[dict[str, str]], changed["exact_models"]),
+        *cast(list[dict[str, str]], changed["exact_models"]),
     ]
     with pytest.raises(ValueError, match="sorted and contain unique"):
         ModelWitness.from_dict(changed)

@@ -31,6 +31,7 @@ from rigor_foundry.project_profile import (
     RequirementBinding,
     RequirementCategory,
 )
+from rigor_foundry.standard_pack import ControlMode
 
 DIGEST = "a" * 64
 
@@ -264,7 +265,7 @@ def test_invalid_requirement_overlay_and_empty_pack_set_fail_closed() -> None:
         ControlOverlay.build(
             control_id="core/no-godfiles",
             target_level="production",
-            mode=cast(object, "allow"),
+            mode=cast(ControlMode, "allow"),
             source="invalid",
         )
     with pytest.raises(ValueError, match="at least one"):

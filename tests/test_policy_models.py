@@ -161,14 +161,15 @@ def test_builtin_profile_policy_round_trip_owns_command_and_domains() -> None:
     assert spec.to_dict() == {**declaration, "target_paths": ["src", "tests"]}
     assert AdapterSpec.from_dict(spec.to_dict(), 0) == spec
 
-    for change in (
+    changes: tuple[dict[str, object], ...] = (
         {"profile": "unknown-profile"},
         {"command": ["semgrep", "--config", "auto"]},
         {"domains": ["supply-chain"]},
         {"configuration_path": "../semgrep.yml"},
         {"target_paths": []},
         {"working_directory": "src"},
-    ):
+    )
+    for change in changes:
         with pytest.raises(ValueError):
             AdapterSpec.from_dict({**declaration, **change}, 0)
 
