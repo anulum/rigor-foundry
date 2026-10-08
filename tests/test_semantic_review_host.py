@@ -76,6 +76,7 @@ def _review(
     source_digest: str,
     verdict: ReviewVerdict = "clear",
 ) -> SemanticTransitionReview:
+    """Sign the exact proposal and source review with the fixture's semantic-review key."""
     arguments = {
         "proposal_digest": proposal.proposal_digest,
         "proposal_artifact_digest": artifact_digest,
@@ -84,13 +85,12 @@ def _review(
         "author_id": _AUTHOR,
         "reviewer_id": _REVIEWER,
         "reviewer_key_id": _KEY,
-        "verdict": verdict,
         "findings_digest": "f" * 64,
         "reviewed_at": _SIGNED_AT,
     }
-    payload = SemanticTransitionReview.payload(**arguments)
+    payload = SemanticTransitionReview.payload(**arguments, verdict=verdict)
     signature = sign_message(_KEY, SEMANTIC_REVIEW_DOMAIN, canonical_digest(payload))
-    return SemanticTransitionReview.build(**arguments, signature_hex=signature)
+    return SemanticTransitionReview.build(**arguments, verdict=verdict, signature_hex=signature)
 
 
 def _fixture(
@@ -241,15 +241,18 @@ def test_changed_or_missing_host_review_refuses(tmp_path: Path, fault: str) -> N
 @pytest.mark.parametrize("fault", ["objection", "revoked-key", "future-clock"])
 def test_signed_but_ineligible_clear_refuses(tmp_path: Path, fault: str) -> None:
     """A real signature does not bypass verdict, key lifecycle or time."""
-    kwargs: dict[str, object] = {}
+    verdict: ReviewVerdict = "clear"
+    reviewer_revoked_at = ""
     now = _NOW
     if fault == "objection":
-        kwargs["verdict"] = "changes-requested"
+        verdict = "changes-requested"
     elif fault == "revoked-key":
-        kwargs["reviewer_revoked_at"] = "2026-09-18T12:00:00Z"
+        reviewer_revoked_at = "2026-09-18T12:00:00Z"
     else:
         now = datetime(2026, 9, 17, tzinfo=UTC)
-    proposal, artifact, state, _ = _fixture(tmp_path, **kwargs)
+    proposal, artifact, state, _ = _fixture(
+        tmp_path, verdict=verdict, reviewer_revoked_at=reviewer_revoked_at
+    )
     with pytest.raises(PermissionError, match="CLEAR is absent"):
         _verify(_verifier(state, now=now), proposal, artifact)
 

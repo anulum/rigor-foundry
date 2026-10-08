@@ -17,6 +17,7 @@ from test_project_registry_cutover import REGISTRY_PATH, filesystem, plan
 from test_project_registry_models import authority, registry
 
 import rigor_foundry.project_registry_cutover as cutover_module
+from rigor_foundry.internal_storage import atomic_replace_text, write_new_text
 from rigor_foundry.project_registry_cutover import (
     ProjectRegistryCutoverInvalid,
     apply_project_registry_cutover,
@@ -44,8 +45,8 @@ def test_cutover_rejects_snapshot_and_journal_storage_failures(
     candidate = registry()
     root, transactions = filesystem(tmp_path, candidate)
     cutover = plan(candidate)
-    original_write = cutover_module.write_new_text
-    original_replace = cutover_module.atomic_replace_text
+    original_write = write_new_text
+    original_replace = atomic_replace_text
 
     def injected_write(path: Path, text: str) -> None:
         if scenario == "snapshot-write":
@@ -104,7 +105,7 @@ def test_cutover_detects_atomic_write_that_did_not_change_target(
     cutover = plan(candidate)
     registry_target = root / REGISTRY_PATH
     consumer_target = root / cutover.updates[0].output.target_path
-    original_replace = cutover_module.atomic_replace_text
+    original_replace = atomic_replace_text
 
     def skip_one_target(path: Path, text: str) -> None:
         selected = registry_target if skipped_target == "registry" else consumer_target
@@ -179,7 +180,7 @@ def test_cutover_surfaces_rollback_storage_failure(
     first_target = root / cutover.updates[0].output.target_path
     second_target = root / cutover.updates[1].output.target_path
     registry_target = root / REGISTRY_PATH
-    original_atomic_replace = cutover_module.atomic_replace_text
+    original_atomic_replace = atomic_replace_text
     original_unlink = Path.unlink
 
     def fail_second_write(path: Path, text: str) -> None:
@@ -189,10 +190,11 @@ def test_cutover_surfaces_rollback_storage_failure(
             raise OSError("injected second consumer failure")
         original_atomic_replace(path, text)
 
-    def fail_first_rollback(path: Path, *args: object, **kwargs: object) -> None:
+    def fail_first_rollback(path: Path, missing_ok: bool = False) -> None:
+        """Fail the selected rollback unlink and delegate other actual unlink calls."""
         if not external_registry and path == first_target:
             raise OSError("injected rollback unlink failure")
-        original_unlink(path, *args, **kwargs)
+        original_unlink(path, missing_ok=missing_ok)
 
     monkeypatch.setattr(cutover_module, "atomic_replace_text", fail_second_write)
     monkeypatch.setattr(Path, "unlink", fail_first_rollback)

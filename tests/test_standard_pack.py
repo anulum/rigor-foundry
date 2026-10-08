@@ -9,20 +9,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
+from typing import cast
 
 import pytest
 from signing_fixtures import pack_signature
 
+from rigor_foundry.audit_primitives import Severity
 from rigor_foundry.condition_language import ConditionExpression
 from rigor_foundry.standard_pack import (
     PACK_COMPONENT_SCHEMA_VERSION,
     PACK_SCHEMA_VERSION,
     PACK_SIGNATURE_SCHEMA_VERSION,
     ControlDefinition,
+    ControlMode,
     EvidenceContract,
     RemediationContract,
     StandardPack,
+    TargetLevel,
 )
 from rigor_foundry.trust import STANDARD_PACK_SIGNATURE_DOMAIN
 
@@ -169,7 +174,7 @@ def test_nested_pack_schemas_and_digests_fail_closed() -> None:
     expected = pack()
     evidence = expected.controls[0].evidence
     remediation = expected.controls[0].remediation
-    cases: list[tuple[object, object, str]] = []
+    cases: list[tuple[Callable[[object], object], object, str]] = []
     evidence_schema = deepcopy(evidence.to_dict())
     evidence_schema["schema_version"] = "9.0"
     cases.append((EvidenceContract.from_dict, evidence_schema, "schema"))
@@ -212,19 +217,6 @@ def test_control_and_pack_validation_rejects_unsupported_or_ambiguous_inputs() -
     """Unsupported maturity/severity/domain/mode and ambiguous pack payloads are rejected."""
     expected = pack()
     item = expected.controls[0]
-    base = {
-        "control_id": item.control_id,
-        "version": item.version,
-        "title": item.title,
-        "domain": item.domain,
-        "severity": item.severity,
-        "target_level": item.target_level,
-        "mode": item.mode,
-        "default_applicable": item.default_applicable,
-        "condition": item.condition,
-        "evidence": item.evidence,
-        "remediation": item.remediation,
-    }
     for change, message in (
         ({"target_level": "ultimate"}, "target_level"),
         ({"severity": "P9"}, "severity"),
@@ -232,7 +224,19 @@ def test_control_and_pack_validation_rejects_unsupported_or_ambiguous_inputs() -
         ({"mode": "allow"}, "mode"),
     ):
         with pytest.raises(ValueError, match=message):
-            ControlDefinition.build(**{**base, **change})
+            ControlDefinition.build(
+                control_id=item.control_id,
+                version=item.version,
+                title=item.title,
+                domain=change.get("domain", item.domain),
+                severity=cast(Severity, change.get("severity", item.severity)),
+                target_level=cast(TargetLevel, change.get("target_level", item.target_level)),
+                mode=cast(ControlMode, change.get("mode", item.mode)),
+                default_applicable=item.default_applicable,
+                condition=item.condition,
+                evidence=item.evidence,
+                remediation=item.remediation,
+            )
     with pytest.raises(ValueError, match="must not be empty"):
         StandardPack.payload_digest(
             pack_id="core",

@@ -8,6 +8,7 @@
 """Verify correlation witness and durable comparison schema relations."""
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 from campaign_compare_support import (
@@ -111,13 +112,15 @@ def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
         AuditComparison.from_dict(missing_attestation)
 
     reversed_witnesses = comparison.to_dict()
-    reversed_witnesses["model_witnesses"] = list(reversed(reversed_witnesses["model_witnesses"]))
+    reversed_witnesses["model_witnesses"] = list(
+        reversed(cast(list[dict[str, object]], reversed_witnesses["model_witnesses"]))
+    )
     with pytest.raises(ValueError, match="sorted with unique correlation components"):
         AuditComparison.from_dict(reversed_witnesses)
 
     excess_witnesses = comparison.to_dict()
     excess_witnesses["model_witnesses"] = [
-        *excess_witnesses["model_witnesses"],
+        *cast(list[dict[str, object]], excess_witnesses["model_witnesses"]),
         ModelWitness.build(
             model_families=("family-3",),
             exact_models=(("provider-family-3", "family-3-v1"),),
@@ -130,7 +133,9 @@ def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
         AuditComparison.from_dict(excess_witnesses)
 
     overlapping_witnesses = comparison.to_dict()
-    witness_documents = list(overlapping_witnesses["model_witnesses"])
+    witness_documents = list(
+        cast(list[dict[str, object]], overlapping_witnesses["model_witnesses"])
+    )
     first_witness = dict(witness_documents[0])
     first_witness["run_ids"] = ["agent-2"]
     first_witness.pop("witness_digest")
@@ -141,9 +146,13 @@ def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
         AuditComparison.from_dict(overlapping_witnesses)
 
     repeated_family = comparison.to_dict()
-    repeated_family_witnesses = list(repeated_family["model_witnesses"])
+    repeated_family_witnesses = list(
+        cast(list[dict[str, object]], repeated_family["model_witnesses"])
+    )
     repeated_family_second = dict(repeated_family_witnesses[1])
-    repeated_family_second["model_families"] = list(repeated_family_witnesses[0]["model_families"])
+    repeated_family_second["model_families"] = list(
+        cast(list[str], repeated_family_witnesses[0]["model_families"])
+    )
     repeated_family_second.pop("witness_digest")
     repeated_family_second["witness_digest"] = canonical_digest(repeated_family_second)
     repeated_family_witnesses[1] = repeated_family_second
@@ -154,11 +163,17 @@ def test_comparison_parser_rejects_schema_relations_and_digest_tampering(
         AuditComparison.from_dict(repeated_family)
 
     repeated_exact_model = comparison.to_dict()
-    repeated_exact_witnesses = list(repeated_exact_model["model_witnesses"])
+    repeated_exact_witnesses = list(
+        cast(list[dict[str, object]], repeated_exact_model["model_witnesses"])
+    )
     repeated_exact_second = dict(repeated_exact_witnesses[1])
-    repeated_exact_second["exact_models"] = list(repeated_exact_witnesses[0]["exact_models"])
-    repeated_exact_second["providers"] = list(repeated_exact_witnesses[0]["providers"])
-    repeated_exact_second["models"] = list(repeated_exact_witnesses[0]["models"])
+    repeated_exact_second["exact_models"] = list(
+        cast(list[dict[str, str]], repeated_exact_witnesses[0]["exact_models"])
+    )
+    repeated_exact_second["providers"] = list(
+        cast(list[str], repeated_exact_witnesses[0]["providers"])
+    )
+    repeated_exact_second["models"] = list(cast(list[str], repeated_exact_witnesses[0]["models"]))
     repeated_exact_second.pop("witness_digest")
     repeated_exact_second["witness_digest"] = canonical_digest(repeated_exact_second)
     repeated_exact_witnesses[1] = repeated_exact_second

@@ -15,10 +15,11 @@ import os
 import pickle
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, cast
+from typing import TypedDict, Unpack, cast
 
 import pytest
 
+from rigor_foundry.model_primitives import JsonScalar
 from rigor_foundry.source_capture import (
     MAX_SOURCE_BYTES,
     SourceCapture,
@@ -28,6 +29,8 @@ from rigor_foundry.source_capture import (
 )
 from rigor_foundry.source_provenance import (
     ExternalSourceClaim,
+    ExtractionMethod,
+    SourceKind,
     SourceVerification,
     source_provenance_to_json,
     verify_external_source,
@@ -37,9 +40,49 @@ PAYLOAD = b'{"advisory":{"id":"CVE-2026-52869","affected":true},"version":"2.4.1
 URI = "https://advisories.example.test/v1/CVE-2026-52869.json"
 
 
-def policy(**changes: Any) -> SourceRetrievalPolicy:
+class PolicyArguments(TypedDict, total=False):
+    """Retrieval-policy fields varied by the source boundary cases."""
+
+    allowed_hosts: tuple[str, ...]
+    allow_cross_origin_redirects: bool
+    maximum_redirects: int
+    timeout_seconds: int
+    maximum_bytes: int
+    allowed_media_types: tuple[str, ...]
+    freshness_seconds: int
+
+
+class ClaimArguments(TypedDict, total=False):
+    """Claim fields varied while retaining the exact source assertion."""
+
+    claim_id: str
+    kind: SourceKind
+    subject: str
+    predicate: str
+    expected_value: JsonScalar
+    source_uri: str
+    extraction_method: ExtractionMethod
+    selector: str
+
+
+class CaptureArguments(TypedDict, total=False):
+    """Acquisition fields varied by the capture validation cases."""
+
+    requested_uri: str
+    final_uri: str
+    redirect_count: int
+    http_status: int
+    media_type: str
+    retrieved_at: str
+    retrieval_policy: SourceRetrievalPolicy
+    retriever_name: str
+    retriever_version: str
+    retriever_executable_digest: str
+
+
+def policy(**changes: Unpack[PolicyArguments]) -> SourceRetrievalPolicy:
     """Return one strict source retrieval policy."""
-    values: dict[str, object] = {
+    values: PolicyArguments = {
         "allowed_hosts": ("advisories.example.test",),
         "allow_cross_origin_redirects": False,
         "maximum_redirects": 2,
@@ -52,9 +95,9 @@ def policy(**changes: Any) -> SourceRetrievalPolicy:
     return SourceRetrievalPolicy.build(**values)
 
 
-def claim(**changes: Any) -> ExternalSourceClaim:
+def claim(**changes: Unpack[ClaimArguments]) -> ExternalSourceClaim:
     """Return one JSON-pointer advisory assertion."""
-    values: dict[str, object] = {
+    values: ClaimArguments = {
         "claim_id": "cve-2026-52869-affected",
         "kind": "advisory",
         "subject": "CVE-2026-52869",
@@ -68,9 +111,9 @@ def claim(**changes: Any) -> ExternalSourceClaim:
     return ExternalSourceClaim.build(**values)
 
 
-def capture(payload: bytes = PAYLOAD, **changes: Any) -> SourceCapture:
+def capture(payload: bytes = PAYLOAD, **changes: Unpack[CaptureArguments]) -> SourceCapture:
     """Return one exact retained-payload capture."""
-    values: dict[str, object] = {
+    values: CaptureArguments = {
         "requested_uri": URI,
         "final_uri": URI,
         "redirect_count": 0,
@@ -231,7 +274,7 @@ def test_claim_policy_capture_and_verification_round_trip_and_tamper() -> None:
     ],
 )
 def test_claim_rejects_ambiguous_kind_uri_and_selector(
-    changes: dict[str, object], message: str
+    changes: ClaimArguments, message: str
 ) -> None:
     """Claims cannot broaden source identity or use non-deterministic extraction."""
     with pytest.raises(ValueError, match=message):
@@ -240,7 +283,7 @@ def test_claim_rejects_ambiguous_kind_uri_and_selector(
 
 def test_digest_claim_relations_are_exact() -> None:
     """A whole-payload claim is reserved for an exact lowercase SHA-256 assertion."""
-    base = {
+    base: ClaimArguments = {
         "claim_id": "payload-digest",
         "kind": "content-digest",
         "predicate": "sha256",
@@ -248,14 +291,17 @@ def test_digest_claim_relations_are_exact() -> None:
         "extraction_method": "whole-payload-sha256",
         "selector": "",
     }
-    for changes in (
+    mutations: tuple[ClaimArguments, ...] = (
         {"predicate": "sha512"},
         {"extraction_method": "json-pointer"},
         {"expected_value": "not-a-digest"},
         {"selector": "/digest"},
-    ):
+    )
+    for changes in mutations:
+        arguments = base.copy()
+        arguments.update(changes)
         with pytest.raises(ValueError):
-            claim(**{**base, **changes})
+            claim(**arguments)
     with pytest.raises(ValueError, match="non-digest"):
         claim(extraction_method="whole-payload-sha256", selector="")
 
@@ -285,7 +331,7 @@ def test_digest_claim_relations_are_exact() -> None:
     ],
 )
 def test_retrieval_policy_rejects_ambiguous_or_unbounded_values(
-    changes: dict[str, object], message: str
+    changes: PolicyArguments, message: str
 ) -> None:
     """Authority, redirects, time, bytes, media, and freshness are finite."""
     with pytest.raises(ValueError, match=message):
@@ -320,11 +366,11 @@ def test_retrieval_policy_rejects_ambiguous_or_unbounded_values(
     ],
 )
 def test_capture_rejects_policy_and_observation_divergence(
-    changes: dict[str, object], message: str
+    changes: CaptureArguments, message: str
 ) -> None:
     """Capture construction cannot launder transport-policy divergence."""
     with pytest.raises(ValueError, match=message):
-        capture(**changes)  # type: ignore[arg-type]
+        capture(**changes)
     with pytest.raises(ValueError, match="exceeds"):
         capture(b"12345", retrieval_policy=policy(maximum_bytes=4))
 
@@ -362,7 +408,7 @@ def test_capture_accepts_bounded_same_and_cross_origin_redirects() -> None:
 def test_verification_rejects_malformed_or_nonmatching_source_values(
     payload: bytes,
     selector: str,
-    expected: object,
+    expected: JsonScalar,
     message: str,
 ) -> None:
     """Only one exact finite JSON scalar can become successful evidence."""
@@ -451,7 +497,7 @@ def test_real_file_read_is_no_follow_single_link_stable_and_bounded(tmp_path: Pa
         read_source_payload(payload, maximum_bytes=len(PAYLOAD))
 
     with pytest.raises(ValueError, match="JSON scalar"):
-        claim(expected_value={})
+        claim(expected_value=cast(JsonScalar, {}))
 
 
 def test_parser_rejects_nested_policy_and_capture_identity_drift() -> None:

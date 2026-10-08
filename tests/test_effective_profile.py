@@ -40,9 +40,11 @@ from rigor_foundry.project_profile import (
 )
 from rigor_foundry.standard_pack import (
     ControlDefinition,
+    ControlMode,
     EvidenceContract,
     RemediationContract,
     StandardPack,
+    TargetLevel,
 )
 
 
@@ -400,26 +402,33 @@ def test_effective_control_and_lock_uniqueness_edges_fail_closed() -> None:
                 control=pack.controls[0],
                 applicable=True,
                 applicability_rationale="invalid",
-                target_level=cast(object, target),
-                mode=cast(object, mode),
+                target_level=cast(TargetLevel, target),
+                mode=cast(ControlMode, mode),
                 active_waiver_ids=(),
                 missing_adapter_ids=(),
             )
 
-    def build_lock(**changes: object) -> EffectiveProfileLock:
-        values = {
-            "profile": project,
-            "packs": (pack,),
-            "verifications": (verification,),
-            "adapters": (adapter,),
-            "variables": (variable,),
-            "controls": (control,),
-            "warnings": (),
-            "trust_store": trust_store("trusted-key"),
-            "toolchain_digest": "9" * 64,
-            "resolved_at": "2026-07-15T12:00:00Z",
-        }
-        return EffectiveProfileLock.build(**{**values, **changes})
+    def build_lock(
+        *,
+        packs: tuple[StandardPack, ...] = (pack,),
+        verifications: tuple[PackVerification, ...] = (verification,),
+        adapters: tuple[AdapterLock, ...] = (adapter,),
+        variables: tuple[ResolvedVariable, ...] = (variable,),
+        controls: tuple[EffectiveControl, ...] = (control,),
+    ) -> EffectiveProfileLock:
+        """Vary the tuple inventories while retaining all shared lock inputs."""
+        return EffectiveProfileLock.build(
+            profile=project,
+            packs=packs,
+            verifications=verifications,
+            adapters=adapters,
+            variables=variables,
+            controls=controls,
+            warnings=(),
+            trust_store=trust_store("trusted-key"),
+            toolchain_digest="9" * 64,
+            resolved_at="2026-07-15T12:00:00Z",
+        )
 
     with pytest.raises(ValueError, match="unique ids"):
         build_lock(packs=(pack, pack), verifications=(verification,))

@@ -12,8 +12,9 @@ from __future__ import annotations
 import sys
 
 import atheris
+from atheris.import_hook import instrument_imports
 
-with atheris.instrument_imports():
+with instrument_imports():
     from _record_fuzz import fuzz_mapping_parser
 
     from rigor_foundry import ReviewRecord

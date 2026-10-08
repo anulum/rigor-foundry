@@ -33,6 +33,7 @@ from rigor_foundry.discovery_receipt_host import (
     HostDiscoveryReceiptState,
     HostDiscoveryReceiptVerifier,
 )
+from rigor_foundry.discovery_source_schema import DiscoveryLimits
 from rigor_foundry.discovery_source_validation import validate_discovery_sources
 from rigor_foundry.semantic_transition import SemanticTransitionProposal
 
@@ -241,7 +242,29 @@ def test_host_selected_receipt_binds_exact_limits_and_manifest(tmp_path: Path) -
 def test_host_selection_refuses_invalid_state(tmp_path: Path, field: str, value: object) -> None:
     """Reject invalid roots, collections, duplicate names and absent limits."""
     proposal, selection = _host_evidence(tmp_path)
-    altered = replace(selection, **{field: value})
+    altered = replace(
+        selection,
+        lineage_root=cast(Path, value) if field == "lineage_root" else selection.lineage_root,
+        source_root=cast(Path, value) if field == "source_root" else selection.source_root,
+        transaction_names=(
+            cast(tuple[str, ...], value)
+            if field == "transaction_names"
+            else selection.transaction_names
+        ),
+        base_metadata_fields=(
+            cast(tuple[str, ...], value)
+            if field == "base_metadata_fields"
+            else selection.base_metadata_fields
+        ),
+        progress_limits=(
+            cast(ProgressLimits, value)
+            if field == "progress_limits"
+            else selection.progress_limits
+        ),
+        source_limits=(
+            cast(DiscoveryLimits, value) if field == "source_limits" else selection.source_limits
+        ),
+    )
     state = HostDiscoveryReceiptState(altered, selection.selection_digest, frozenset())
     with pytest.raises(ValueError):
         _verify_host(_host_verifier(state), proposal)
