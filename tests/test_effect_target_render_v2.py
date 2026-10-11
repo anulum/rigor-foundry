@@ -52,3 +52,70 @@ def test_malformed_or_misclassified_target_refuses(
     """A caller cannot smuggle host spelling into a different target kind."""
     with pytest.raises(ValueError, match=reason):
         render_target_v2(target_ref, kind)
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "https://example.test/path?public=1",
+        "https://example.test:443/path",
+        "https://[::1]/path",
+        "https://[2001:db8::1]:443/path",
+        "https://[fe80::1%eth0]/path",
+        "https://[v1.future]/path",
+        "https://caf\u00e9.example/path",
+        "custom+v2.1://example.test/path",
+        "https://example.test/path@name?value=%40",
+    ],
+)
+def test_remote_target_identity_survives_consumer_rendering(uri: str) -> None:
+    """Preserve a valid remote identity through the public admission consumer.
+
+    Parameters
+    ----------
+    uri
+        URI covering DNS, Unicode, bracketed address, port or opaque suffix syntax.
+    """
+    assert render_target_v2({"form": "remote", "value": uri}, "repository") == f"remote:{uri}"
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "http:example.test",
+        "HTTPS://example.test/",
+        "1https://example.test/",
+        "https://",
+        "https:///path",
+        "https://?query",
+        "https://user@example.test/",
+        "https://user%40example.test/",
+        "https://example.test/#",
+        "https://example.test/a b",
+        "https://example.test/\tpath",
+        "https://example\uff0ftest/",
+        "https://example\uff1ftest/",
+        "https://example\uff03test/",
+        "https://example\uff20test/",
+        "https://example\uff1atest/",
+        "https://[::1/",
+        "https://::1]/",
+        "https://prefix[::1]/",
+        "https://[::1]suffix/",
+        "https://[::1]:443]/",
+        "https://[127.0.0.1]/",
+        "https://[invalid]/",
+        "https://[v.future]/",
+        "https://[v1.]/",
+    ],
+)
+def test_malformed_remote_identity_refuses_consumer_rendering(uri: str) -> None:
+    """Reject malformed remote identities before admission selectors are emitted.
+
+    Parameters
+    ----------
+    uri
+        URI with a malformed scheme or authority, forbidden field or ambiguous delimiter.
+    """
+    with pytest.raises(ValueError, match="remote"):
+        render_target_v2({"form": "remote", "value": uri}, "repository")

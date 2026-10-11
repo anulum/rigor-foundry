@@ -26,8 +26,8 @@ LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 
 # Freeze security upgrades independently of the older digest-pinned base image.
 RUN sed -i \
-        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20260912T150000Z|g' \
-        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20260912T150000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20261011T000000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20261011T000000Z|g' \
         /etc/apt/sources.list.d/debian.sources \
     && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
     && apt-get update \

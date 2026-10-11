@@ -37,14 +37,14 @@
     },
     {
       "dependency_boundary": "Public ControlAssessment, EvidenceReference, ReviewerAttestation, EffectiveProfileLock, EffectiveControl, project-profile, and standard-pack records; trust-domain and real signing fixtures construct verified inputs. No CLI, campaign, filesystem, or remediation execution.",
-      "lines": 844,
+      "lines": 846,
       "path": "tests/test_control_assessment.py",
       "reassess_when": "The file exceeds 950 lines, evidence or reviewer records gain a lifecycle independent of assessment acceptance, another protocol owner is added, or its builders become shared by another test module.",
       "responsibility": "ControlAssessment aggregate protocol owner for assessment states, nested evidence acceptance, independent reviewer acceptance, risk waivers, strict parsing, identity binding, and round trips."
     },
     {
       "dependency_boundary": "Public CRA repository, product-registration, security-event, prepared-payload, submission-receipt, stage-skip, user-notice, and fixed-vulnerability advisory records; real temporary Git repositories exercise the ignored local store and append-only replay boundary. No CLI parsing, network transport, remote publication or submission, or conformity adjudication is exercised.",
-      "lines": 870,
+      "lines": 953,
       "path": "tests/test_cra_store.py",
       "reassess_when": "The file exceeds 1000 lines, advisory and Article 14 record replay require independent fixture lifecycles, another persistence backend is introduced, or its Git/store fixtures become shared by another test module.",
       "responsibility": "CRA append-only repository protocol owner for bootstrap and open, event revision chains, prepared drafts, receipts, stage skips, user notices, fixed-vulnerability advisories, crash replay, content-addressed paths, cross-record binding, and fail-closed tamper, link, ambiguity, and partial-state rejection."
@@ -58,7 +58,7 @@
     },
     {
       "dependency_boundary": "Public ignored-inventory declarations, evidence, digest, scanner, policy, and real-Git test repository fixtures exercise descriptor and Git-ignore behavior. Monkeypatched filesystem primitives create deterministic replacement, mutation, hardlink, non-UTF-8, inaccessible, and resource-limit cases without reaching CRA rule semantics or external storage.",
-      "lines": 1024,
+      "lines": 1029,
       "path": "tests/test_ignored_inventory.py",
       "reassess_when": "The file exceeds 1150 lines, directory-manifest and single-file capture require independent fixture lifecycles, another operating-system implementation is added, or race-fixture construction becomes shared test support.",
       "responsibility": "Ignored-inventory protocol and real-filesystem integration test owner for strict parsing, canonical evidence, file and directory capture, no-follow path custody, hardlink and special-file rejection, bounded resources, and deterministic concurrent-mutation failure."

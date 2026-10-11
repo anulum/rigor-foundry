@@ -15,10 +15,9 @@ import struct
 from dataclasses import dataclass
 from hashlib import sha256
 from typing import Final, cast
-from urllib.parse import urlsplit
 from uuid import UUID
 
-from .effect_target_grammar_v2 import TARGET_VARIANT_V2
+from .effect_target_grammar_v2 import TARGET_VARIANT_V2, require_remote_target_v2
 from .model_primitives import require_utc_timestamp
 from .project_registry_primitives import ProjectRegistryInvalid, project_registry_strict_json
 from .trust import ED25519_SIGNATURE_HEX_LENGTH, require_lower_hex
@@ -36,7 +35,6 @@ _REGISTRY_ID: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 _SEAT_ID: Final = re.compile(
     r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z"
 )
-_URI_SCHEME: Final = re.compile(r"[a-z][a-z0-9+.-]*\Z")
 _EFFECT_CLASSES: Final = frozenset(
     {
         "read",
@@ -250,21 +248,7 @@ def parse_effect_target_ref_v2(value: object) -> tuple[str, str]:
         ):
             raise ValueError("target_ref path is not canonical absolute POSIX")
     elif form == "remote":
-        scheme, separator, remainder = name.partition("://")
-        parsed = urlsplit(name)
-        if (
-            separator != "://"
-            or not remainder
-            or _URI_SCHEME.fullmatch(scheme) is None
-            or parsed.scheme != scheme
-            or not parsed.netloc
-            or "@" in parsed.netloc
-            or "%40" in parsed.netloc.lower()
-            or parsed.fragment
-            or "#" in name
-            or any(ord(char) <= 0x20 for char in name)
-        ):
-            raise ValueError("target_ref remote URL is malformed")
+        require_remote_target_v2(name)
     elif form == "endpoint":
         service, separator, resource = name.partition(":")
         if (
