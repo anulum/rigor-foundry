@@ -7,9 +7,9 @@
 # RigorFoundry — Python test lock inputs
 
 build==1.6.1
-cryptography==50.0.1
-hatchling==1.32.3
-hypothesis==6.168.0
-mypy==2.3.1
+cryptography==50.0.2
+hatchling==1.32.4
+hypothesis==6.169.0
+mypy==2.4.0
 pytest==9.1.1
 pytest-cov==7.1.0

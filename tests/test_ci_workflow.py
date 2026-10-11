@@ -105,7 +105,7 @@ def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     assert "permissions:\n      contents: read\n      id-token: write" in coverage_job
     assert "persist-credentials: false" in coverage_job
     assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c" in coverage_job
-    assert "codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f" in coverage_job
+    assert "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5" in coverage_job
     assert "use_oidc: true" in coverage_job
     assert "files: coverage.xml" in coverage_job
     assert "disable_search: true" in coverage_job

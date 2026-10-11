@@ -18,6 +18,18 @@ python3 -m venv .venv
 make install-hooks
 ```
 
+## Dependency maintenance
+
+Maintainers review dependency alerts and available versions weekly. Python
+updates use an owner-controlled batch because the automated updater removes
+lock-generation provenance. Regenerate affected hash locks with the pinned
+`pip-tools` on Python 3.11, retain their generation commands and mandatory
+metadata, and align shared versions across build, CI, runtime, security and test
+inputs. Record upstream compatibility bounds when a newer release cannot be
+installed. Verify the complete dependency diff and scoped checks before review;
+remote CI validates the published commit. Dependency detection and alerts remain
+enabled. CodeQL action steps are updated together to keep their versions equal.
+
 ## Quality contract
 
 - Public Python symbols use complete typing and NumPy-convention docstrings.

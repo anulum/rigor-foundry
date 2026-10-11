@@ -26,7 +26,7 @@ def test_official_codeql_checksum_document_matches_both_release_pins() -> None:
     payload = f"{CODEQL_BUNDLE_DIGEST}  {CODEQL_BUNDLE_NAME}\n".encode()
     verify_checksum_document(payload)
     assert len(CODEQL_CHECKSUM_DIGEST) == 64
-    assert CODEQL_VERSION == "2.26.0"
+    assert CODEQL_VERSION == "2.27.2"
 
 
 def test_codeql_installer_cli_and_digest_failure_are_fail_closed(

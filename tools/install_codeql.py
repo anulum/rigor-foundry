@@ -20,12 +20,12 @@ from pathlib import Path
 from typing import Protocol, cast
 from urllib.parse import urlparse
 
-CODEQL_VERSION = "2.26.0"
+CODEQL_VERSION = "2.27.2"
 CODEQL_BUNDLE_NAME = "codeql-bundle-linux64.tar.zst"
 CODEQL_CHECKSUM_NAME = f"{CODEQL_BUNDLE_NAME}.checksum.txt"
-CODEQL_CHECKSUM_DIGEST = "b609931c8e7e5a91d53cb4870d795da9dcc7a8b9bb4601cbf4968b1a1169b23f"
-CODEQL_BUNDLE_DIGEST = "eeaaffa28291513a11565654d9828bac39d9234375a6fc0cd698f61c6d007bae"
-CODEQL_BUNDLE_BYTES = 578_485_312
+CODEQL_CHECKSUM_DIGEST = "17cc4e25f7b985f179c971c65f258124349d235ab1695b6f3885f85c0e2acb95"
+CODEQL_BUNDLE_DIGEST = "f24406b1557c506133db1f972758ee64f14eb3587a53367a1bd737f24495ea97"
+CODEQL_BUNDLE_BYTES = 557_977_127
 _BASE_URL = (
     f"https://github.com/github/codeql-action/releases/download/codeql-bundle-v{CODEQL_VERSION}"
 )
