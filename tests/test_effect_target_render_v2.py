@@ -63,7 +63,7 @@ def test_malformed_or_misclassified_target_refuses(
         "https://[2001:db8::1]:443/path",
         "https://[fe80::1%eth0]/path",
         "https://[v1.future]/path",
-        "https://caf\u00e9.example/path",
+        "https://example\u00e9.test/path",
         "custom+v2.1://example.test/path",
         "https://example.test/path@name?value=%40",
     ],
