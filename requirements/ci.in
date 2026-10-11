@@ -13,7 +13,7 @@ build==1.6.1
 click==8.4.2
 cyclonedx-bom==7.4.0
 editables==0.6
-hatchling==1.32.3
+hatchling==1.32.4
 hypothesis==6.168.0
 importlib-metadata==8.7.1
 jsonschema==4.25.1
