@@ -13,13 +13,13 @@ import json
 from typing import cast
 
 import pytest
+from test_oscal_export import _lock as two_control_lock
 
 from rigor_foundry.effective_profile import (
     AdapterLock,
     EffectiveProfileLock,
     PolicyContradiction,
 )
-from tests.test_oscal_export import _lock as two_control_lock
 
 
 def test_lock_round_trip_preserves_digest() -> None:

@@ -13,11 +13,11 @@ import json
 from pathlib import Path
 
 import pytest
+from test_oscal_export import GENERATED_AT, _assessment, _lock
 
 from rigor_foundry.cli import main
 from rigor_foundry.compliance_maps import NON_CERTIFICATION_NOTICE, builtin_template
 from rigor_foundry.oscal_export import report_oscal
-from tests.test_oscal_export import GENERATED_AT, _assessment, _lock
 
 
 def _fixture(tmp_path: Path) -> tuple[Path, Path, str]:
