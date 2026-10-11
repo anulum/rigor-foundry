@@ -93,12 +93,19 @@ jobs:
           python -m pip install --no-build-isolation --no-deps .
       - name: Audit repository contracts
         run: python -m tools.audit
+      - name: Dependency audit guard coverage
+        shell: bash
+        run: >-
+          python -m pytest tests/test_check_dependency_audits.py
+          tests/test_check_dependency_waivers.py
+          --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers
+          --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Validate classified coverage residuals
         run: python -m rigor_foundry residuals-check --root .
       - name: Lint and format
         run: |
-          python -m ruff check src tests tools
-          python -m ruff format --check src tests tools
+          python -m ruff check src tools tests fuzz benchmarks
+          python -m ruff format --check src tools tests fuzz benchmarks
       - name: Memory preparation test documentation
         run: >-
           python -m ruff check --config 'lint.per-file-ignores={}'
@@ -115,7 +122,7 @@ jobs:
           tests/test_project_memory_sources.py
           tests/test_protected_file_publication.py
       - name: Strict typing
-        run: python -m mypy --strict src/rigor_foundry tools
+        run: python -m mypy --strict src tools tests fuzz benchmarks
       - name: Discovery source documentation and typing
         run: |
           python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
@@ -443,7 +450,7 @@ jobs:
           npm ci --ignore-scripts --prefix editors/vscode
       - name: Audit, type-check, test, and package extension
         run: |
-          npm audit --audit-level=high --prefix editors/vscode
+          npm audit --prefix editors/vscode
           npm run check --prefix editors/vscode
           npm run package --prefix editors/vscode
       - name: Exercise real Extension Development Host

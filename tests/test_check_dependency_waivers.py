@@ -8,25 +8,34 @@
 """Verify that scanner remediation removes every audit exception."""
 
 import json
+import subprocess
 from pathlib import Path
 from shutil import copy2
 
 import pytest
 
 from tools._repository import ROOT
+from tools.check_dependency_audits import NODE_LOCK, PYTHON_LOCKS
 from tools.check_dependency_waivers import dependency_waiver_errors, main
 
 
 def _waiver_root(tmp_path: Path) -> Path:
-    for relative in (".github/dependency-waivers.json", ".github/workflows/security.yml"):
+    for relative in (
+        ".github/dependency-waivers.json",
+        ".github/workflows/security.yml",
+        ".github/workflows/ci.yml",
+        *PYTHON_LOCKS,
+        NODE_LOCK,
+    ):
         target = tmp_path / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         copy2(ROOT / relative, target)
+    subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True, timeout=10)
     return tmp_path
 
 
 def test_repository_has_no_dependency_waivers() -> None:
-    """The canonical security workflow audits both locks without exclusions."""
+    """The canonical security workflow audits every lock without exclusions."""
     assert dependency_waiver_errors() == []
     assert main() == 0
 
@@ -89,7 +98,15 @@ def test_missing_document_fails_closed(tmp_path: Path) -> None:
     ),
 )
 def test_workflow_keeps_all_guarded_commands(tmp_path: Path, fragment: str) -> None:
-    """Both dependency audits, the guard and the scanner remain enrolled."""
+    """Both dependency audits, the guard and the scanner remain enrolled.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    fragment : str
+        Required scanner or audit command removed from the workflow.
+    """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
     workflow.write_text(
@@ -114,7 +131,13 @@ def test_workflow_rejects_nonexecuting_command_text(tmp_path: Path, replacement:
 
 
 def test_workflow_rejects_command_in_unrelated_job(tmp_path: Path) -> None:
-    """Only the enrolled scan job can satisfy the required command set."""
+    """Only the enrolled scan job can satisfy the required command set.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
     command = "semgrep scan --error --config .semgrep.yml src tools"
@@ -129,7 +152,15 @@ def test_workflow_rejects_command_in_unrelated_job(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("condition", ["if: false", "continue-on-error: true"])
 def test_workflow_rejects_disabled_scanner_step(tmp_path: Path, condition: str) -> None:
-    """An enrolled command must run and propagate its failure."""
+    """An enrolled command must run and propagate its failure.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    condition : str
+        Step setting that skips scanning or permits scanner failure.
+    """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
     command = "semgrep scan --error --config .semgrep.yml src tools"
@@ -140,3 +171,75 @@ def test_workflow_rejects_disabled_scanner_step(tmp_path: Path, condition: str) 
         encoding="utf-8",
     )
     assert any(command in error for error in dependency_waiver_errors(root))
+
+
+def test_missing_security_workflow_refuses(tmp_path: Path) -> None:
+    """The composed public guard refuses an absent scanner workflow.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    """
+    root = _waiver_root(tmp_path)
+    (root / ".github/workflows/security.yml").unlink()
+    assert any(
+        "cannot read security workflow" in error for error in dependency_waiver_errors(root)
+    )
+
+
+@pytest.mark.parametrize("content", ["[", "[]", "jobs: []", "jobs: {scan: {steps: wrong}}"])
+def test_malformed_security_workflow_refuses(tmp_path: Path, content: str) -> None:
+    """Malformed YAML and absent or malformed scanner steps remain failures.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    content : str
+        Malformed YAML or an invalid scanner-job step structure.
+    """
+    root = _waiver_root(tmp_path)
+    (root / ".github/workflows/security.yml").write_text(content)
+    assert dependency_waiver_errors(root)
+
+
+@pytest.mark.parametrize("condition", ["if: false", "continue-on-error: true"])
+def test_disabled_scan_job_refuses(tmp_path: Path, condition: str) -> None:
+    """The owning scanner job cannot be skipped or allowed to ignore errors.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    condition : str
+        Job setting that skips scanning or permits scanner failure.
+    """
+    root = _waiver_root(tmp_path)
+    path = root / ".github/workflows/security.yml"
+    path.write_text(path.read_text().replace("  scan:\n", f"  scan:\n    {condition}\n"))
+    assert (
+        "security workflow scan job must be unconditional and fail-closed"
+        in dependency_waiver_errors(root)
+    )
+
+
+def test_invalid_scanner_shell_quoting_refuses(tmp_path: Path) -> None:
+    """A malformed real run step cannot satisfy the public scanner guard.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    """
+    root = _waiver_root(tmp_path)
+    path = root / ".github/workflows/security.yml"
+    path.write_text(
+        path.read_text()
+        .replace("run: semgrep scan", 'run: "\\"semgrep scan')
+        .replace(".semgrep.yml src tools", '.semgrep.yml src tools"')
+    )
+    assert any(
+        "cannot parse security workflow run step" in error
+        for error in dependency_waiver_errors(root)
+    )

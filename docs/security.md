@@ -98,6 +98,23 @@ and archive members as adversarial input.
 - Package publication uses a protected OIDC environment rather than a stored
   package credential.
 
+## Dependency advisory audits
+
+The Security workflow audits all seven hash-locked Python profiles (build,
+CI, fuzz, native, runtime, security and test) and the VS Code extension's
+committed npm lock on every push and pull request to `main`. Python audits
+require hashes, avoid installation and fail when dependency collection fails.
+The npm audit includes development dependencies and uses the default failure
+threshold. Advisory findings and registry errors block the jobs.
+
+The repository's dependency-waiver guard also checks the actual Git-visible
+lock inventory, exact scanner commands, event enrolment and the aggregate
+`security-gate`. Both scanner jobs must succeed, including when one is skipped
+or cancelled. Adding another lock requires explicit audit enrolment; an
+unsupported lock fails the guard. The current waiver set remains empty.
+These source checks do not prove that hosted branch protection requires the
+gate or that the current head has passed a hosted audit.
+
 ## GitHub-hosted AppArmor boundary
 
 Ubuntu 24.04 mediates unprivileged user namespaces and requires applications
@@ -125,3 +142,21 @@ host root.
 Do not disclose a suspected vulnerability in a public issue. Follow the
 [security policy](https://github.com/anulum/RIGOR-FOUNDRY/security/policy) and
 use private vulnerability reporting.
+
+
+The security-tool lock is generated with uv 0.12.21 and CPython 3.12, retaining
+the complete CI constraints and SHA-256 hashes. With that uv version and a
+Python 3.12 interpreter installed, regenerate it from the repository root:
+
+```sh
+uv --no-config pip compile --python python3.12 --no-managed-python \
+  --no-python-downloads --generate-hashes --upgrade \
+  --constraint requirements/ci.txt \
+  --output-file requirements/security.txt requirements/security.in
+```
+
+Keep the canonical seven-line licence header above the generated header.
+After regeneration, run the strict audit and install the entire hash-locked
+profile in a fresh environment; run pip check, Bandit and the installed
+semgrep console entry point with the repository policy. The local lock
+qualification does not establish hosted CI or runtime admission.

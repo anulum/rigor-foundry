@@ -6,5 +6,5 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Runtime dependency declaration
 
-# RigorFoundry has no third-party runtime dependency. Install the package with
-# `python -m pip install .`; this file exists as the explicit runtime inventory.
+# Runtime installations use the same audited hash lock as CI and distribution builds.
+-r requirements/runtime.txt

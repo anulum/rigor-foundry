@@ -17,19 +17,32 @@ from pathlib import Path
 import yaml
 
 from tools._repository import ROOT, redacted_guard_exit_code
+from tools.check_dependency_audits import dependency_audit_errors
 
 WAIVER_PATH = Path(".github/dependency-waivers.json")
 SECURITY_WORKFLOW = Path(".github/workflows/security.yml")
 REQUIRED_COMMANDS = (
     "python -m tools.check_dependency_waivers",
-    "python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip",
-    "python -m pip_audit -r requirements/security.txt --require-hashes --disable-pip",
+    "python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip --strict",
+    "python -m pip_audit -r requirements/security.txt --require-hashes --disable-pip --strict",
     "semgrep scan --error --config .semgrep.yml src tools",
 )
 
 
 def dependency_waiver_errors(root: Path = ROOT) -> list[str]:
-    """Return errors if any audit waiver or unguarded scanner command remains."""
+    """Check audit waivers, scanner commands and complete lock enrolment.
+
+    Parameters
+    ----------
+    root:
+        Actual repository containing the waiver document, dependency locks and CI.
+
+    Returns
+    -------
+    list[str]
+        Findings for malformed documents, exceptions, disabled scanners or missing
+        blocking audit enrolment. Advisory queries are performed by CI scanners.
+    """
     errors: list[str] = []
     try:
         document = json.loads((root / WAIVER_PATH).read_text(encoding="utf-8"))
@@ -80,7 +93,7 @@ def dependency_waiver_errors(root: Path = ROOT) -> list[str]:
             errors.append(f"security workflow is missing guarded command: {command}")
     if re.search(r"--ignore-vuln(?:\s|=|$)", workflow):
         errors.append("security workflow must not ignore vulnerability findings")
-    return errors
+    return [*errors, *dependency_audit_errors(root)]
 
 
 def main() -> int:

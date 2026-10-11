@@ -9,7 +9,7 @@
 bandit==1.9.4
 backports.tarfile==1.2.0; python_version < "3.12"
 build==1.6.1
-# Keep shared CI/security locks compatible with the pinned Semgrep 1.177 graph.
+# Keep shared CI/security locks compatible with the pinned security scanner graph.
 click==8.4.2
 cyclonedx-bom==7.4.0
 editables==0.6
@@ -29,4 +29,5 @@ pyyaml==6.0.3
 reuse==6.2.0
 ruff==0.16.8
 twine==7.0.0
+types-atheris==3.1.0.20260630
 types-PyYAML==6.0.12.20260906

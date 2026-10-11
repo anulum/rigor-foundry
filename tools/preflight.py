@@ -27,18 +27,31 @@ class PreflightStep:
 
 
 def preflight_commands(*, fast: bool) -> tuple[PreflightStep, ...]:
-    """Return the explicit, shell-free preflight command contract."""
+    """Return the explicit, shell-free preflight command contract.
+
+    Parameters
+    ----------
+    fast:
+        Omit documentation and distribution builds when true.
+
+    Returns
+    -------
+    tuple[PreflightStep, ...]
+        Ordered gate commands, each using the current interpreter and a finite
+        wall-clock budget. Static Python gates include every maintained root.
+    """
     python = sys.executable
+    python_roots = ("src", "tools", "tests", "fuzz", "benchmarks")
     commands = [
         PreflightStep((python, "-m", "tools.check_descriptive_production_naming"), 60),
         PreflightStep((python, "-m", "tools.audit"), 180),
-        PreflightStep((python, "-m", "ruff", "check", "src", "tests", "tools"), 180),
+        PreflightStep((python, "-m", "ruff", "check", *python_roots), 180),
         PreflightStep(
-            (python, "-m", "ruff", "format", "--check", "src", "tests", "tools"),
+            (python, "-m", "ruff", "format", "--check", *python_roots),
             180,
         ),
         PreflightStep(
-            (python, "-m", "mypy", "--strict", "src/rigor_foundry", "tools"),
+            (python, "-m", "mypy", "--strict", *python_roots),
             300,
         ),
         PreflightStep(

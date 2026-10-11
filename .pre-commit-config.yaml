@@ -73,7 +73,7 @@ repos:
         always_run: true
       - id: mypy
         name: strict MyPy
-        entry: .venv/bin/python -m mypy --strict src/rigor_foundry tools
+        entry: .venv/bin/python -m mypy --strict src tools tests fuzz benchmarks
         language: system
         pass_filenames: false
       - id: discovery-test-documentation

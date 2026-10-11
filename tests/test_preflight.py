@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 from tools.preflight import PreflightStep, preflight_commands, run_preflight_steps
 
 
@@ -42,3 +44,28 @@ def test_preflight_terminates_a_command_that_exceeds_its_budget(tmp_path: Path) 
     started = time.monotonic()
     assert run_preflight_steps((step,), tmp_path) == 124
     assert time.monotonic() - started < 5
+
+
+@pytest.mark.parametrize("invalid_root", ["src", "tools", "tests", "fuzz", "benchmarks", None])
+def test_typing_preflight_checks_every_maintained_python_root(
+    tmp_path: Path, invalid_root: str | None
+) -> None:
+    """The real compiler refuses a type defect in each root and accepts valid input.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory containing all five maintained Python roots.
+    invalid_root : str or None
+        Maintained root containing a type error, or None for valid input.
+    """
+    for number, root in enumerate(("src", "tools", "tests", "fuzz", "benchmarks")):
+        directory = tmp_path / root
+        directory.mkdir()
+        value = '"wrong type"' if root == invalid_root else "1"
+        (directory / f"typed_owner_{number}.py").write_text(
+            f'"""Declare one value checked by the real typing gate."""\nvalue: int = {value}\n',
+            encoding="utf-8",
+        )
+    typing_step = next(step for step in preflight_commands(fast=True) if "mypy" in step.argv)
+    assert run_preflight_steps((typing_step,), tmp_path) == (0 if invalid_root is None else 1)

@@ -12,7 +12,6 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
   schedule:
     - cron: "43 3 * * 3"
   workflow_dispatch:
@@ -41,16 +40,65 @@ jobs:
           cache-dependency-path: requirements/security.txt
       - run: python -m pip install --require-hashes -r requirements/security.txt
       - name: Validate bounded dependency waivers
+        shell: bash
         run: python -m tools.check_dependency_waivers
       - name: Redaction-safe repository scan
         run: python -m tools.check_secrets
       - name: Python security analysis
         run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
       - name: Dependency vulnerability audit
-        run: python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip
+        shell: bash
+        run: python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip --strict
       - name: Security-tool dependency audit
+        shell: bash
         run: >-
           python -m pip_audit -r requirements/security.txt
-          --require-hashes --disable-pip
+          --require-hashes --disable-pip --strict
+      - name: Build dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/build.txt --require-hashes --disable-pip --strict
+      - name: Fuzz dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/fuzz.txt --require-hashes --disable-pip --strict
+      - name: Native dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/native.txt --require-hashes --disable-pip --strict
+      - name: Runtime dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/runtime.txt --require-hashes --disable-pip --strict
+      - name: Test dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/test.txt --require-hashes --disable-pip --strict
       - name: Repository Semgrep policy
         run: semgrep scan --error --config .semgrep.yml src tools
+
+  npm-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.1"
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - name: Audit committed extension dependency lock
+        shell: bash
+        run: npm audit --prefix editors/vscode
+
+  security-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [scan, npm-audit]
+    if: ${{ always() }}
+    steps:
+      - name: Require both dependency audit jobs
+        shell: bash
+        env:
+          SCAN_RESULT: ${{ needs.scan.result }}
+          NODE_RESULT: ${{ needs.npm-audit.result }}
+        run: |
+          test "$SCAN_RESULT" = success
+          test "$NODE_RESULT" = success

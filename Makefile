@@ -26,15 +26,15 @@ lock:
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/native.txt requirements/native.in
 
 lint:
-	$(PYTHON) -m ruff check src tests tools
-	$(PYTHON) -m ruff format --check src tests tools
+	$(PYTHON) -m ruff check src tools tests fuzz benchmarks
+	$(PYTHON) -m ruff format --check src tools tests fuzz benchmarks
 
 fmt:
-	$(PYTHON) -m ruff check --fix src tests tools
-	$(PYTHON) -m ruff format src tests tools
+	$(PYTHON) -m ruff check --fix src tools tests fuzz benchmarks
+	$(PYTHON) -m ruff format src tools tests fuzz benchmarks
 
 typecheck:
-	$(PYTHON) -m mypy --strict src/rigor_foundry tools
+	$(PYTHON) -m mypy --strict src tools tests fuzz benchmarks
 
 bandit:
 	$(PYTHON) -m bandit -q -c pyproject.toml -r src/rigor_foundry tools

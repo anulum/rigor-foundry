@@ -15,7 +15,7 @@ execution, or production promotion.
 | Gate | Local policy | CI policy |
 | --- | --- | --- |
 | Ruff lint and format | Entire touched source/test/tool scope | Entire repository |
-| Strict MyPy | Entire `src/rigor_foundry` and `tools` scope | Same scope on Python 3.12 |
+| Strict MyPy | All maintained Python in `src`, `tools`, `tests`, `fuzz`, and `benchmarks` | Same scope on Python 3.12 |
 | Bandit | Source and security-sensitive tools | Source and tools |
 | SPDX / REUSE | Pure-Python header audit and REUSE lint | Required |
 | Action pins | Every `uses:` value must be a full commit SHA | Required |
