@@ -175,3 +175,54 @@ files can satisfy the structural relation. Authenticating the owner, selecting
 trusted transcript custody and expected digests, and repeating verification at
 final host admission are separate obligations. Fixture transcripts and parsed
 records do not enroll a live policy or ratify a pending technical decision.
+
+## Selected semantics lease
+
+`render_clause_semantics_question_v2()` presents the complete canonical body,
+its digest and warnings for veto exclusions. The exact approval line is
+`SCHVAĽUJEM clause-semantics-set <body_digest>`.
+`verify_clause_semantics_ratification_v2()` requires that full question and
+the exact later native human reply after NFC and surrounding ASCII whitespace
+normalization. It retains the native source limitations above; the proof is a
+ratification dependency with `guard_admissible == False`.
+
+`expand_clause_scope_v2()` resolves templates against the selected active
+project, owning group and exact registry generation. Its
+`registry-v1-interim` resolver accepts only the unprofiled v1 layout. A
+profiled registry is explicitly refused: this resolver does not implement its
+parent-layer contract and cannot guess coordination, workspace or exchange
+paths. Concrete target matching remains a separate consumer responsibility.
+A veto or constraint target element wholly removed by its exclusions refuses;
+path containment uses component boundaries, and URL, endpoint and host
+exclusions require matching forms and exact values.
+
+`HostSelectedClauseSemanticsVerifierV2.verified_lease()` combines the selected
+rule-chain lease, signed reference binding, exact owner ratification and
+registry scope expansion. It checks them again after the consumer, including
+the complete current chain. `verify()` performs the same closing checks
+before returning a `SelectedClauseSemanticsProofV2`.
+
+```python
+from rigor_foundry.selected_clause_semantics_host_v2 import (
+    HostSelectedClauseSemanticsVerifierV2,
+)
+
+# The application authenticates and pins this provider's selections.
+verifier = HostSelectedClauseSemanticsVerifierV2(state=trusted_state_provider)
+with verifier.verified_lease() as (selected, proof):
+    selected.revalidate()
+    selected_lock_digest = proof.chain.lock_digest
+```
+
+The proof binds the selected lock, semantics body, native ratification and
+expanded registry selectors. Its `binding` remains non-admissible. An
+application must separately check concrete effects, active constraints,
+authority requirements, current grants, permits, journal and handler custody
+before execution. No protected installation or automatic Guard cutover is
+established by constructing a state provider or returning this proof.
+
+Frozen Python record assignment does not protect the yielded state's instance
+dictionary. A coherent change to another separately valid signed and ratified
+set is refused by the closing proof comparison, even when the chain is the same.
+That check occurs after the consumer returns; effect authorization and host
+custody therefore still need their own checks before an action.

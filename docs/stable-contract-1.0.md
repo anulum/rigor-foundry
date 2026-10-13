@@ -32,20 +32,27 @@ success as universal compatibility:
 2. **CLI spellings.** Every currently installed command, option spelling, and
    positional name is in the stable CLI set. CI rejects a removed, renamed,
    added-but-unclassified, or silently changed parser surface.
-3. **Serialized protocols.** The manifest names 61 exact schema identifiers
+3. **Serialized protocols.** The manifest names exact schema identifiers
    and versions, including reports, reviews, policies, anchors, campaigns,
    packs, maturity, enforcement, offline verification, CRA evidence, SARIF,
    OSCAL, remediation, provenance, work records, and adapter evidence. An AST
-   guard fails when any new non-private production `*_SCHEMA_VERSION`
-   declaration is absent from the inventory or a serializer/parser uses a bare
-   string `schema_version` that would evade the named inventory. The only
-   declaration exclusions are the
-   `SCHEMA_VERSION` alias of the report schema and one private nested-directory
-   helper; both are named with reasons in the test contract.
+   guard requires every production `*_SCHEMA_VERSION` declaration to have an
+   explicit classification: frozen, version-pinned provisional, or individually
+   justified outside the frozen interchange. A serializer/parser using a bare
+   string `schema_version` cannot evade the named inventory. Host-held proofs,
+   private coordination formats, aliases and provisional candidate records
+   outside the frozen set are named with their reasons in the test contract.
 
 The manifest is authoritative for the exact command and schema inventory. The
 human documentation for each command or schema continues to define semantic
 preconditions, field meanings, authority boundaries, and failure modes.
+
+The identity-bearing semantic key-policy wire at version `2.0` is explicitly
+provisional and separately version-pinned. The frozen
+`verification-key-policy` wire remains `1.0` with its original fields.
+Supplying an enrolled semantic identity selects the new record and changes
+its digest; this does not change the frozen manifest or enroll a live key.
+See [public API stability](api-stability.md) for the consuming role boundary.
 
 ## Compatibility rules
 

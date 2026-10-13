@@ -109,6 +109,22 @@ documented where public, and covered by production-boundary tests. It means a
 minor release may refine or remove the import after an explicit changelog entry
 while the project remains pre-1.0.
 
+The module-level signed-acceptance, v2 candidate, effective-lock, selected-chain
+and selected-semantics APIs are also provisional. Their full runtime dependency
+chain is documented in [Rule-chain candidate inspection](rule-chain-candidate.md)
+and [Canonical clause semantics](clause-semantics.md). They add no package-level
+exports or stable CLI dispatch path. Existing v1 pack/profile/lock wires and the
+current digest-only `AuthorityClauseV2` remain unchanged.
+
+Compatibility requires explicit selection of the new signed acceptance and
+host-state records. Identity-bearing reviewer key enrollment must agree with
+its identity binding; case aliases cannot occupy separate reviewer bindings.
+The existing semantic-source proof wire retains its fields: the new consumer
+checks the nested discovery selection on its held source state. The interim
+scope resolver explicitly refuses profiled registries instead of interpreting
+their layout with fixed v1 paths. Path-root derivation uses the explicit roots
+in either canonical registry schema.
+
 Consumers that need a provisional name should pin an exact RigorFoundry
 version and test the relevant schema or behavior rather than inferring
 compatibility from package import success.

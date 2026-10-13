@@ -20,6 +20,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Provisional signed v2 semantic acceptance, complete effective-profile lock
+  and selected-chain/semantics host leases. They recheck real reviewer
+  signatures, exact source spans, selected discovery budgets, native human
+  owner ratification and the full signed projection. Reviewer enrollment
+  agreement and identity uniqueness both ignore case. The interim registry
+  resolver refuses profiled layouts instead of guessing fixed paths.
+- Closed first-operation metadata and bounded atomic-replacement invocation
+  extraction, with real Linux no-follow descriptor admission and exact
+  declaration comparisons. These APIs grant no execution authority, install
+  no handler and preserve current v1 wires and stable CLI behavior.
+
 - A provisional clause-semantics binding API verifies complete selected clause
   references, current signature roles, active project registry and fixed mapping
   pins. It refuses supersession cycles and edges to vetoes or constraints.

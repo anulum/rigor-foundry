@@ -39,6 +39,18 @@ source dependency. Native source and confirmation proofs remain integrity-only;
 protected custody, actual effect applicability and final admission are separate
 host obligations. See [canonical clause semantics](docs/clause-semantics.md).
 
+The selected v2 chain composes a complete signed reviewer acceptance, retained
+source spans, four exact signed successors and a resolver-signed effective
+projection under a host state lease. The selected semantics lease nests that
+chain with dual-signed reference binding, native human owner ratification and
+current registry scope expansion; both leases repeat their checks after the
+consumer. Protected providers pin selection and revocation custody. The interim
+scope resolver refuses profiled layouts rather than guessing their paths.
+Separate registry-root derivation and descriptor-backed extraction compare the
+first atomic replacement's actual path, content count and fixed variant with
+caller declarations. These provisional APIs provide read-only dependencies,
+retaining no execution permit or handler and changing no stable CLI or v1 wire.
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`

@@ -97,6 +97,10 @@ _SCHEMA_SYMBOLS = {
     "work-record": "work_models.WORK_SCHEMA_VERSION",
 }
 
+_PROVISIONAL_SCHEMA_SYMBOLS = {
+    "verification_policy.SEMANTIC_KEY_POLICY_SCHEMA_VERSION": "2.0",
+}
+
 _SCHEMA_DISCOVERY_EXCLUSIONS = {
     "discovery_progress._INTAKE_SCHEMA_VERSION": (
         "private discovery intake transaction, not a frozen public 1.0 interchange"
@@ -290,12 +294,25 @@ def test_live_surfaces_match_the_frozen_1_0_contract() -> None:
     )
 
 
-def test_every_production_schema_version_is_frozen_or_explicitly_private() -> None:
-    """A new non-private schema declaration cannot silently evade the 1.0 inventory."""
+def test_every_production_schema_version_has_an_explicit_classification() -> None:
+    """Every declaration is frozen, version-pinned provisional or individually justified."""
     observed_symbols = set(_SCHEMA_SYMBOLS.values()) - set(_EXTERNAL_PROTOCOL_VERSION_SYMBOLS)
     discovered = _declared_schema_symbols()
     assert set(_SCHEMA_DISCOVERY_EXCLUSIONS) <= discovered
-    assert discovered - set(_SCHEMA_DISCOVERY_EXCLUSIONS) == observed_symbols
+    assert set(_PROVISIONAL_SCHEMA_SYMBOLS) <= discovered
+    assert not set(_PROVISIONAL_SCHEMA_SYMBOLS).intersection(observed_symbols)
+    assert not set(_PROVISIONAL_SCHEMA_SYMBOLS).intersection(_SCHEMA_DISCOVERY_EXCLUSIONS)
+    assert discovered - set(_SCHEMA_DISCOVERY_EXCLUSIONS) == (
+        observed_symbols | set(_PROVISIONAL_SCHEMA_SYMBOLS)
+    )
+
+
+def test_provisional_schema_versions_are_explicit_and_cannot_drift() -> None:
+    """Provisional declarations retain their pinned version outside the frozen manifest."""
+    for target, expected_version in _PROVISIONAL_SCHEMA_SYMBOLS.items():
+        module_name, symbol = target.rsplit(".", 1)
+        module = importlib.import_module(f"rigor_foundry.{module_name}")
+        assert getattr(module, symbol) == expected_version
 
 
 def test_production_serializers_do_not_use_bare_schema_version_literals() -> None:
