@@ -31,6 +31,14 @@ signed EffectiveProfileLock, or enter the active dispatch boundary. The
 [candidate inspection contract](docs/rule-chain-candidate.md) describes its
 inputs and refusal boundary.
 
+A separate clause-semantics binding API rechecks dual signatures, complete
+selected authority-clause references, an active project registry and fixed
+mapping identities. Its supersession graph excludes vetoes and constraints and
+refuses cycles. Preconditions require an exact retained owner-confirmation
+source dependency. Native source and confirmation proofs remain integrity-only;
+protected custody, actual effect applicability and final admission are separate
+host obligations. See [canonical clause semantics](docs/clause-semantics.md).
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`

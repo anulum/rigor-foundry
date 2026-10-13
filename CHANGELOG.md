@@ -20,6 +20,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A provisional clause-semantics binding API verifies complete selected clause
+  references, current signature roles, active project registry and fixed mapping
+  pins. It refuses supersession cycles and edges to vetoes or constraints.
+  Preconditions require an exact retained native owner-confirmation dependency
+  with explicit human origin and main-chain messages; older records without
+  origin and unsupported bookkeeping lineage refuse. All resulting proofs remain integrity-only and grant no effect admission.
+
 - A canonical clause-semantics body can be verified with separate author and
   reviewer signatures, current key lifecycles and digest-bound semantic
   identities. Rule-chain role construction requires an explicit semantic-author

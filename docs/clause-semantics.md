@@ -89,3 +89,89 @@ bytes, wrong roles, expired or revoked keys, future signing times or conflicting
 identities. A successful result proves authenticity of the supplied semantics
 body. Reference-object custody, source ratification, effect applicability,
 effective-lock resolution and authorised adoption remain consumer obligations.
+
+## Selected reference binding
+
+`bind_clause_semantics_v2()` joins a verified signed body with the complete
+selected `AuthorityClauseV2` tuple, the ordered successor subset, predecessor
+and projection pins, chain scope, active project registry generation, fixed
+vocabulary and target table, evaluator registry and resolver identifier.
+It revalidates every supplied record against its canonical bytes and selected
+digest. Each authority clause requires exactly one entry whose statement,
+successor, effect class and scope-selector digest match. The existing clause
+format remains digest-only: pack and source verification must happen upstream.
+
+Group references bind to the selected project's active owning group. Foreign
+exchange inboxes must name another active registered group. Supersession edges
+may target only admits in the selected set; vetoes and constraints cannot be
+superseded. Cycles, including self-edges, refuse. Shared ancestors are accepted
+and graph validation visits each node and edge once.
+
+The returned `ClauseSemanticsBindingV2` exposes the authenticated body identity,
+ordered successors and sorted admits with no incoming supersession edge.
+`active_admit_clause_digests` describes this graph only: it does not mean an
+admit applies to a concrete action. `guard_admissible` is always `False`.
+Concrete target matching, constraint execution, evaluator code identity,
+source ratification, protected selection and final admission remain consuming
+host responsibilities. These provisional APIs introduce no CLI dispatch path.
+
+`ConstraintEvaluatorRegistryV2.build()` and `from_bytes()` retain the fixed
+four identifiers for rate, window, route and precondition subjects. The closed
+`rigor.constraint-evaluator-registry.v2` mapping contains no executable code or
+loader. Its digest stays separate from any measured evaluator implementation.
+
+## Owner-confirmation dependency
+
+A body with any precondition requires a selected
+`EffectClassAuthorityRequirementV2`, `OwnerConfirmationRecordV2`, their exact
+expected digests and retained manifest/question/reply captures. Bodies without
+preconditions leave both returned dependency digests unset and do not consult
+these optional records. The confirmation binds its selected requirement list;
+it does not relate individual precondition entries to that list. An empty list
+is a valid dependency if explicitly selected and confirmed. The admission
+consumer must bind concrete preconditions, effects and enforced requirements.
+
+The requirement parser accepts sorted unique subsets of the fixed effect
+vocabulary, including an empty proposal. `build_default()` constructs a proposed
+list; it does not select an operative policy or establish owner consent.
+`requires_enforced()` checks declared class membership without evaluating scope.
+
+`verify_owner_confirmation_v2()` binds the selected list to its confirmation
+record and rechecks the retained native source. The question must contain one
+exact `--- enforced_required ---` / `--- end ---` block with the selected classes
+and one `SCHVAĽUJEM effect-class-authority-requirement <digest>` decision line.
+The reply must be exactly that decision after NFC normalization and trimming
+ASCII space, tab, CR and LF. The native reply must follow the question both in
+selected line order and declared UTC time. Decision lines are split on LF only;
+other Unicode line separators cannot create a decision line. `captured_at` remains declared record
+metadata, not an authenticated clock.
+
+`verify_full_text_ratification_source()` accepts a constrained subset of retained
+Claude JSONL. Both selected messages must have absent or explicitly false
+`isSidechain`, `isMeta` and `isCompactSummary` markers; other values refuse.
+The reply must explicitly carry `origin.kind == "human"`. Legacy records with
+no origin, peer injections, task notifications and scheduled origins refuse.
+These native markers distinguish source classes; they remain unauthenticated
+if the caller supplies its own transcript. The manifest's two capture keys are `CEO_QUESTION_FULL_TEXT.txt` and
+`OWNER_REPLY.txt`; each binds the native one-based line, UUID, timestamp, role,
+message-byte count, message hash and complete native-line hash. Complete captures
+are LF-terminated and bounded to 16 KiB, as is the manifest. The selected reply
+follows one to sixteen non-message lineage events; another assistant or user
+message intervening refuses. Each JSONL line is at most 2 MiB and the selected
+prefix at most 64 MiB. Bookkeeping records without `uuid`/`parentUuid` lineage
+are refused; they are not skipped. A bounded independent review of one native
+transcript found 62 human-origin replies: 33 passed this lineage subset, 24
+failed lineage, one had an intervening message and four lacked a single-text
+assistant question in the window. This dated sample is a compatibility
+observation, not a general provider success rate. Paths must name the physical
+transcript location; a provider home-directory symlink is refused.
+The verifier walks no-follow directories, refuses linked
+or nonregular transcripts, retains one descriptor, checks pathname identity
+and rehashes the complete selected prefix. Later transcript appends are allowed;
+selected-prefix rewrites, truncations and inode replacement refuse.
+
+Both verification functions return `guard_admissible: false` proofs. Caller-owned
+files can satisfy the structural relation. Authenticating the owner, selecting
+trusted transcript custody and expected digests, and repeating verification at
+final host admission are separate obligations. Fixture transcripts and parsed
+records do not enroll a live policy or ratify a pending technical decision.

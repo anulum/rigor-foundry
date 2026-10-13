@@ -91,6 +91,13 @@ parser and verifier are provisional Python APIs. They authenticate an exact
 semantics body with separate author and reviewer signatures without granting
 adoption or effect authority. See [Canonical clause semantics](clause-semantics.md).
 
+The module-level clause-semantics binding, constraint-evaluator registry,
+authority-requirement and owner-confirmation APIs are provisional. The binding
+retains the current digest-only authority-clause wire. Native ratification-source
+verification supports the explicitly selected Claude JSONL format and produces
+an integrity-only proof. None of these APIs adds a stable package-level export
+or effect-admission authority. See [Canonical clause semantics](clause-semantics.md).
+
 The module-level `rule_chain_candidate.inspect_rule_chain_candidate` and
 `RuleChainCandidateReport` are provisional read-only Python APIs. They are not
 package-level exports in the frozen 1.0 compatibility inventory and do not
