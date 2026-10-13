@@ -58,6 +58,13 @@ only after closing checks. Journal rate contexts rescan real retained history
 and validate each intent's original catalogue; shared descriptor I/O is independent
 of permit accounting. See [selected dispatch applicability](docs/selected-dispatch-applicability.md).
 
+`instruction_dispatch_permit_v2` independently binds an exact provisional v2.1
+decision to an external Ed25519 signature. It separates the permit issuer from
+all five chain roles by key ID and public bytes, rebuilding policies during
+verification. Caller-selected UTC time bounds the window and issuer lifecycle;
+clock authentication and host admission remain separate. See
+[dispatch permit candidates](docs/dispatch-permit-candidates.md).
+
 `permit_consumption_ledger_v2` independently supplies durable consumption of both
 permit and single-use UUIDs through actual owner-only files and retained locks.
 Its issued append lease verifies current custody and complete history before

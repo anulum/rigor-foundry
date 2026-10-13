@@ -43,6 +43,7 @@ nav:
   - Rule-chain candidate inspection: rule-chain-candidate.md
   - Canonical clause semantics: clause-semantics.md
   - Selected dispatch applicability: selected-dispatch-applicability.md
+  - Dispatch permit candidates: dispatch-permit-candidates.md
   - Permit consumption ledger: permit-consumption-ledger.md
   - Source provenance: source-provenance.md
   - Discovery source validation: reference/discovery-source-validation.md

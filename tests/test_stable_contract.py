@@ -98,6 +98,7 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "instruction_dispatch_permit_v2.PERMIT_V2_SCHEMA_VERSION": "instruction-dispatch-permit.v2.1",
     "verification_policy.SEMANTIC_KEY_POLICY_SCHEMA_VERSION": "2.0",
 }
 

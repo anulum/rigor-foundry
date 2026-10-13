@@ -6,6 +6,11 @@ retained chain and semantics context. Its journal-backed rate reader checks
 actual descriptor history. The API returns after closing verification and
 leaves effect permission, accounting and handler execution to the qualified host.
 
+The [dispatch permit candidate API](dispatch-permit-candidates.md) binds exact
+v2.1 decision digests to an external issuer signature under six distinct signing
+roles. Verification checks the bounded window and issuer lifecycle with
+caller-selected UTC time; host selection and admission remain separate.
+
 The separate [permit consumption ledger](permit-consumption-ledger.md) supplies
 durable UUID replay refusal and complete binary-history checks. Actual file
 custody and append-lease lifetime are checked through public storage operations;

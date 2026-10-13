@@ -195,6 +195,11 @@ describes the composed module-level Python API, actual journal-backed rate
 history, fixed constraint boundary and closing source checks. It introduces
 no stable CLI command or automatic effect execution.
 
+The [dispatch permit candidate guide](docs/dispatch-permit-candidates.md)
+describes exact v2.1 envelopes, six-role separation and bounded signature
+verification with caller-selected policy and UTC time. Host admission remains
+a separate responsibility.
+
 The [permit consumption ledger guide](docs/permit-consumption-ledger.md)
 describes complete binary replay, owner-only file custody, selected-prefix
 checks, process-bound append leases and explicit torn-tail recovery.
@@ -227,6 +232,7 @@ strict policy form, installation boundary, coverage limits, and benchmark.
 | Offline verification | `verification_policy`, `offline_verification_models`, `offline_verification`, `offline_verification_report`, `offline_verification_cli` | Caller-selected key lifecycle, signed multi-protocol evidence, alias collapse, explicit unavailability, deterministic aggregate results, and a no-network CLI. |
 | Rule-chain candidate inspection | `rule_chain_candidate`, `semantic_review_host`, `semantic_source_host`, `discovery_receipt_host`, `native_source_host`, `native_source_pin`, `native_message_pair`, `semantic_transition`, `semantic_transition_review`, `pack_source_host`, `rule_chain_pack_v2`, `rule_chain_profile_v2`, `signed_rule_chain_v2` | Read-only host-selected source and signed-selection verification with a non-admissible report; no active Guard or v1 cutover. |
 | Selected dispatch applicability | `selected_dispatch_applicability_v2`, `selected_dispatch_extraction_v2`, `selected_stage_b_results_v3`, `stage_b_evaluator_v2`, `effect_journal_rate_v2` | Actual invocation extraction and signed clause evaluation under one retained context, with real journal history and no effect admission. |
+| Dispatch permit candidates | `instruction_dispatch_permit_v2` | Exact provisional v2.1 decision envelopes, six disjoint signing policies and actual issuer signature/lifecycle verification. |
 | Permit consumption | `permit_consumption_ledger_v2`, `_permit_ledger_records_v2`, `_permit_ledger_storage_io_v2` | Durable dual-ID replay refusal, full binary history, exact selected prefixes, file custody and scoped append-lease lifetime. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
