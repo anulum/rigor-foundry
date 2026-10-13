@@ -42,12 +42,15 @@ from rigor_foundry.verification_policy import OfflineTrustPolicy, VerificationKe
 
 _NOW = datetime(2026, 9, 19, tzinfo=UTC)
 _SIGNED_AT = "2026-09-18T00:00:00Z"
-_AUTHOR = "fixture-author"
-_REVIEWER = "fixture-independent-reviewer"
+_AUTHOR = "RIGOR-FOUNDRY/author-fixture"
+_REVIEWER = "RIGOR-FOUNDRY/reviewer-fixture"
 _KEY = "fixture-reviewer-key"
 
 
-def _policy(key_id: str, *, revoked_at: str = "") -> OfflineTrustPolicy:
+def _policy(
+    key_id: str, *, revoked_at: str = "", enrolled_identity: str | None = None
+) -> OfflineTrustPolicy:
+    """Select one fixture public key, lifecycle and optional semantic identity."""
     return OfflineTrustPolicy.build(
         (
             VerificationKeyPolicy.build(
@@ -55,6 +58,7 @@ def _policy(key_id: str, *, revoked_at: str = "") -> OfflineTrustPolicy:
                 valid_from="2026-09-01T00:00:00Z",
                 valid_until="2026-10-01T00:00:00Z",
                 revoked_at=revoked_at,
+                enrolled_identity=enrolled_identity,
             ),
         )
     )
@@ -65,7 +69,14 @@ def _roles(*, revoked_at: str = "") -> RuleChainV2TrustRoles:
         pack_issuers=_policy("fixture-pack-key"),
         project_selectors=_policy("fixture-selector-key"),
         lock_resolvers=_policy("fixture-resolver-key"),
-        semantic_reviewers=_policy(_KEY, revoked_at=revoked_at),
+        semantic_authors=_policy(
+            "fixture-author-key", enrolled_identity="RIGOR-FOUNDRY/author-fixture"
+        ),
+        semantic_reviewers=_policy(
+            _KEY,
+            revoked_at=revoked_at,
+            enrolled_identity="RIGOR-FOUNDRY/reviewer-fixture",
+        ),
     )
 
 

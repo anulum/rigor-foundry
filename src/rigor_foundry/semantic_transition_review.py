@@ -267,6 +267,31 @@ class SemanticTransitionReview:
 
         The host must authenticate every expected value and the role policies.
         This digest is a source dependency, not a selected profile or grant.
+        The reviewer's exact key must be enrolled to its named identity; the
+        named author must belong to the selected author policy. Role validation
+        prevents either identity from belonging to the opposite semantic role.
+
+        Parameters
+        ----------
+        roles : RuleChainV2TrustRoles
+            Selected policies whose semantic keys carry enrolled identities.
+        expected_policy_digest : str
+            Authenticated digest of the selected reviewer policy.
+        expected_proposal_digest, expected_proposal_artifact_digest : str
+            Exact selected proposal identities.
+        expected_source_verification_digest, expected_parent_replay_digest : str
+            Authenticated source verification and parent replay identities.
+        expected_author_id, expected_reviewer_id, expected_reviewer_key_id : str
+            Host-authenticated names and reviewer key, matched without changing
+            the signed review. Enrollment comparisons separately ignore case.
+        now : datetime
+            Explicit UTC verification instant.
+
+        Returns
+        -------
+        str or None
+            Accepted source-dependency digest only for the exact current CLEAR
+            and identity bindings; None for inconsistent or ineligible evidence.
         """
         try:
             SemanticTransitionReview.from_dict(self.to_dict())
@@ -274,9 +299,25 @@ class SemanticTransitionReview:
                 pack_issuers=roles.pack_issuers,
                 project_selectors=roles.project_selectors,
                 lock_resolvers=roles.lock_resolvers,
+                semantic_authors=roles.semantic_authors,
                 semantic_reviewers=roles.semantic_reviewers,
             )
             policy = validated_roles.semantic_reviewers
+            reviewer_identities = {
+                item.key.key_id: item.enrolled_identity.casefold()
+                for item in policy.keys
+                if item.enrolled_identity is not None
+            }
+            author_identities = {
+                item.enrolled_identity.casefold()
+                for item in validated_roles.semantic_authors.keys
+                if item.enrolled_identity is not None
+            }
+            if (
+                reviewer_identities.get(self.reviewer_key_id) != self.reviewer_id.casefold()
+                or self.author_id.casefold() not in author_identities
+            ):
+                return None
             if now.tzinfo is None or now.utcoffset() != UTC.utcoffset(now):
                 return None
             reviewed = parse_utc_timestamp(self.reviewed_at, "transition_review.reviewed_at")

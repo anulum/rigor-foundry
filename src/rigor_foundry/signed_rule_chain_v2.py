@@ -30,13 +30,26 @@ from .trust import (
 from .verification_policy import OfflineTrustPolicy
 
 RULE_CHAIN_V2_SCHEMA_VERSION: Final = "2.0"
-RuleObjectKind = Literal["standard-pack", "project-profile", "effective-profile-lock"]
-SignerRole = Literal["pack-issuer", "project-selector", "lock-resolver"]
+RuleObjectKind = Literal[
+    "standard-pack",
+    "project-profile",
+    "effective-profile-lock",
+    "clause-semantics-set-author",
+    "clause-semantics-set",
+]
+SignerRole = Literal[
+    "pack-issuer", "project-selector", "lock-resolver", "semantic-author", "semantic-reviewer"
+]
 
 _KIND_BOUNDARIES: Final[dict[str, tuple[SignerRole, str]]] = {
     "standard-pack": ("pack-issuer", "rigor-foundry.standard-pack.v2"),
     "project-profile": ("project-selector", "rigor-foundry.project-profile-selection.v2"),
     "effective-profile-lock": ("lock-resolver", "rigor-foundry.effective-profile-lock.v2"),
+    "clause-semantics-set-author": (
+        "semantic-author",
+        "rigor-foundry.clause-semantics-set-author.v2",
+    ),
+    "clause-semantics-set": ("semantic-reviewer", "rigor-foundry.clause-semantics-set.v2"),
 }
 _SIGNATURE_FIELDS: Final = frozenset(
     {
@@ -86,11 +99,12 @@ def rule_chain_v2_payload_digest(
 
 @dataclass(frozen=True)
 class RuleChainV2TrustRoles:
-    """Separate lifecycle-aware verification policies for four signing roles."""
+    """Separate lifecycle-aware verification policies for five signing roles."""
 
     pack_issuers: OfflineTrustPolicy
     project_selectors: OfflineTrustPolicy
     lock_resolvers: OfflineTrustPolicy
+    semantic_authors: OfflineTrustPolicy
     semantic_reviewers: OfflineTrustPolicy
 
     @classmethod
@@ -100,28 +114,94 @@ class RuleChainV2TrustRoles:
         pack_issuers: OfflineTrustPolicy,
         project_selectors: OfflineTrustPolicy,
         lock_resolvers: OfflineTrustPolicy,
+        semantic_authors: OfflineTrustPolicy,
         semantic_reviewers: OfflineTrustPolicy,
     ) -> RuleChainV2TrustRoles:
-        """Refuse key-id or public-key reuse across signing roles."""
+        """Validate five distinct role policies and semantic identity separation.
+
+        Parameters
+        ----------
+        pack_issuers, project_selectors, lock_resolvers : OfflineTrustPolicy
+            Distinct v1 lifecycle policies for the existing three object kinds.
+        semantic_authors, semantic_reviewers : OfflineTrustPolicy
+            Distinct v2 lifecycle policies carrying caller-selected identities.
+            Author and reviewer identity sets must be disjoint ignoring case.
+
+        Returns
+        -------
+        RuleChainV2TrustRoles
+            Revalidated policies with no shared key identifiers or material.
+
+        Raises
+        ------
+        ValueError
+            If policies are inconsistent, role versions differ or keys or
+            semantic identities overlap. Validation does not enrol live keys.
+        """
         policies = tuple(
             OfflineTrustPolicy.from_dict(item.to_dict())
-            for item in (pack_issuers, project_selectors, lock_resolvers, semantic_reviewers)
+            for item in (
+                pack_issuers,
+                project_selectors,
+                lock_resolvers,
+                semantic_authors,
+                semantic_reviewers,
+            )
         )
         keys = tuple(key.key for policy in policies for key in policy.keys)
         if len({key.key_id for key in keys}) != len(keys):
             raise ValueError("rule-chain signer key ids must be distinct across roles")
         if len({key.public_key_hex for key in keys}) != len(keys):
             raise ValueError("rule-chain signer public keys must be distinct across roles")
+        if any(
+            key.enrolled_identity is not None for policy in policies[:3] for key in policy.keys
+        ):
+            raise ValueError("non-semantic roles require v1 key policies")
+        if any(key.enrolled_identity is None for policy in policies[3:] for key in policy.keys):
+            raise ValueError("semantic roles require v2 enrolled identities")
+        author_ids = {
+            key.enrolled_identity.casefold()
+            for key in policies[3].keys
+            if key.enrolled_identity is not None
+        }
+        reviewer_ids = {
+            key.enrolled_identity.casefold()
+            for key in policies[4].keys
+            if key.enrolled_identity is not None
+        }
+        if author_ids & reviewer_ids:
+            raise ValueError("semantic author and reviewer identities must differ")
         return cls(*policies)
 
     def policy_for(self, object_kind: RuleObjectKind) -> OfflineTrustPolicy:
-        """Return only the policy assigned to the exact signed object type."""
-        kind, _, _ = _boundary(object_kind)
-        if kind == "standard-pack":
+        """Return only the policy assigned to the exact signed object type.
+
+        Parameters
+        ----------
+        object_kind : RuleObjectKind
+            Pack, profile, lock, semantics-author or semantics-reviewer kind.
+
+        Returns
+        -------
+        OfflineTrustPolicy
+            Policy assigned to that kind's distinct signing role.
+
+        Raises
+        ------
+        ValueError
+            If the object kind is unsupported.
+        """
+        if object_kind == "standard-pack":
             return self.pack_issuers
-        if kind == "project-profile":
+        if object_kind == "project-profile":
             return self.project_selectors
-        return self.lock_resolvers
+        if object_kind == "effective-profile-lock":
+            return self.lock_resolvers
+        if object_kind == "clause-semantics-set-author":
+            return self.semantic_authors
+        if object_kind == "clause-semantics-set":
+            return self.semantic_reviewers
+        raise ValueError("unsupported rule-chain v2 object kind")
 
 
 @dataclass(frozen=True)
@@ -227,6 +307,21 @@ class RuleChainV2Signature:
 
         A true result proves only authenticity of the caller-validated body
         digest. It does not resolve semantics or authorize an effect.
+
+        Parameters
+        ----------
+        body_digest : str
+            Digest of the exact body already validated by its owning parser.
+        roles : RuleChainV2TrustRoles
+            Caller-selected policies for all five distinct signing roles.
+        now : datetime
+            UTC instant at which current key eligibility is rechecked.
+
+        Returns
+        -------
+        bool
+            True for consistent metadata, matching role and domain, an actual
+            Ed25519 signature and a key active both at signing and at recheck.
         """
         try:
             signature = RuleChainV2Signature.from_dict(self.to_dict())
@@ -236,6 +331,7 @@ class RuleChainV2Signature:
                 pack_issuers=roles.pack_issuers,
                 project_selectors=roles.project_selectors,
                 lock_resolvers=roles.lock_resolvers,
+                semantic_authors=roles.semantic_authors,
                 semantic_reviewers=roles.semantic_reviewers,
             )
             if (

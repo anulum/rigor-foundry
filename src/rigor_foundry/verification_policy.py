@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
@@ -19,6 +20,8 @@ from .trust import TrustedPublicKey, VerificationTrustStore
 
 OFFLINE_TRUST_POLICY_SCHEMA_VERSION = "1.0"
 VERIFICATION_KEY_POLICY_SCHEMA_VERSION = "1.0"
+SEMANTIC_KEY_POLICY_SCHEMA_VERSION = "2.0"
+_SEAT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 
 KeyStatus = Literal["active", "unknown", "not-yet-valid", "expired", "revoked"]
 
@@ -32,6 +35,7 @@ class VerificationKeyPolicy:
     valid_until: str
     revoked_at: str
     key_policy_digest: str
+    enrolled_identity: str | None = None
 
     @classmethod
     def build(
@@ -41,8 +45,32 @@ class VerificationKeyPolicy:
         valid_from: str,
         valid_until: str,
         revoked_at: str = "",
+        enrolled_identity: str | None = None,
     ) -> VerificationKeyPolicy:
-        """Build one integrity-bound key lifecycle record."""
+        """Build one integrity-bound key lifecycle record.
+
+        Parameters
+        ----------
+        key : TrustedPublicKey
+            Selected Ed25519 public key, revalidated before binding.
+        valid_from, valid_until : str
+            UTC timestamps defining the half-open validity interval.
+        revoked_at : str
+            UTC revocation timestamp within that interval, or an empty string.
+        enrolled_identity : str or None
+            Caller-selected ``project/seat`` identity. An identity selects the
+            closed v2 key-policy format; None retains the v1 format and digest.
+
+        Returns
+        -------
+        VerificationKeyPolicy
+            Key and lifecycle record with a digest covering its identity.
+
+        Raises
+        ------
+        ValueError
+            If the key, interval, revocation or identity is malformed.
+        """
         rebuilt_key = TrustedPublicKey.from_dict(key.to_dict())
         start = require_utc_timestamp(valid_from, "verification key.valid_from")
         end = require_utc_timestamp(valid_until, "verification key.valid_until")
@@ -57,17 +85,29 @@ class VerificationKeyPolicy:
             if not start_time <= revoked_time < end_time:
                 raise ValueError("verification key.revoked_at must fall within its validity")
         fields: dict[str, object] = {
-            "schema_version": VERIFICATION_KEY_POLICY_SCHEMA_VERSION,
+            "schema_version": (
+                SEMANTIC_KEY_POLICY_SCHEMA_VERSION
+                if enrolled_identity is not None
+                else VERIFICATION_KEY_POLICY_SCHEMA_VERSION
+            ),
             "key": rebuilt_key.to_dict(),
             "valid_from": start,
             "valid_until": end,
             "revoked_at": revoked,
         }
+        if enrolled_identity is not None:
+            enrolled_identity = require_string(
+                enrolled_identity, "verification key.enrolled_identity"
+            )
+            if _SEAT_ID.fullmatch(enrolled_identity) is None:
+                raise ValueError("verification key enrolled_identity must be a project/seat")
+            fields["enrolled_identity"] = enrolled_identity
         return cls(
             key=rebuilt_key,
             valid_from=start,
             valid_until=end,
             revoked_at=revoked,
+            enrolled_identity=enrolled_identity,
             key_policy_digest=canonical_digest(fields),
         )
 
@@ -89,19 +129,49 @@ class VerificationKeyPolicy:
         return "active"
 
     def to_dict(self) -> dict[str, object]:
-        """Serialise one key lifecycle without private material."""
-        return {
-            "schema_version": VERIFICATION_KEY_POLICY_SCHEMA_VERSION,
+        """Serialise one key lifecycle without private material.
+
+        Returns
+        -------
+        dict[str, object]
+            Closed v1 fields when identity is absent, or closed v2 fields with
+            the selected identity. Both retain the recorded content digest.
+        """
+        fields: dict[str, object] = {
+            "schema_version": (
+                SEMANTIC_KEY_POLICY_SCHEMA_VERSION
+                if self.enrolled_identity is not None
+                else VERIFICATION_KEY_POLICY_SCHEMA_VERSION
+            ),
             "key": self.key.to_dict(),
             "valid_from": self.valid_from,
             "valid_until": self.valid_until,
             "revoked_at": self.revoked_at,
             "key_policy_digest": self.key_policy_digest,
         }
+        if self.enrolled_identity is not None:
+            fields["enrolled_identity"] = self.enrolled_identity
+        return fields
 
     @classmethod
     def from_dict(cls, value: object) -> VerificationKeyPolicy:
-        """Parse and integrity-check one key lifecycle record."""
+        """Parse and integrity-check one versioned key lifecycle record.
+
+        Parameters
+        ----------
+        value : object
+            Mapping with the exact v1 or identity-bearing v2 field set.
+
+        Returns
+        -------
+        VerificationKeyPolicy
+            Revalidated public key, lifecycle and optional identity binding.
+
+        Raises
+        ------
+        ValueError
+            If the schema, field set, content or recorded digest is invalid.
+        """
         data = require_mapping(value, "verification key")
         expected = {
             "schema_version",
@@ -111,10 +181,13 @@ class VerificationKeyPolicy:
             "revoked_at",
             "key_policy_digest",
         }
+        schema = data.get("schema_version")
+        if schema == SEMANTIC_KEY_POLICY_SCHEMA_VERSION:
+            expected.add("enrolled_identity")
+        elif schema != VERIFICATION_KEY_POLICY_SCHEMA_VERSION:
+            raise ValueError("unsupported verification-key schema version")
         if set(data) != expected:
             raise ValueError("verification key fields do not match the schema")
-        if data.get("schema_version") != VERIFICATION_KEY_POLICY_SCHEMA_VERSION:
-            raise ValueError("unsupported verification-key schema version")
         key_policy = cls.build(
             key=TrustedPublicKey.from_dict(data.get("key")),
             valid_from=require_string(data.get("valid_from"), "verification key.valid_from"),
@@ -123,6 +196,11 @@ class VerificationKeyPolicy:
                 data.get("revoked_at"),
                 "verification key.revoked_at",
                 allow_empty=True,
+            ),
+            enrolled_identity=(
+                require_string(data["enrolled_identity"], "verification key.enrolled_identity")
+                if schema == SEMANTIC_KEY_POLICY_SCHEMA_VERSION
+                else None
             ),
         )
         if (

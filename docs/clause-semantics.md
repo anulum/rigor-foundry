@@ -49,4 +49,43 @@ These APIs validate data. Digest references are checked for format here;
 matching them to retained objects, checking effect applicability, authenticating
 signatures and current registry custody belong to their consuming verifier.
 Parsing a body or passing a group set grants no permission to execute an effect.
-The body is unsigned, and this API does not change CLI or fleet enforcement.
+The body parser is unsigned, and this API does not change CLI or fleet enforcement.
+
+## Author and reviewer signatures
+
+`SignedClauseSemanticsSetV2.from_bytes()` pairs the exact canonical body with
+two `RuleChainV2Signature` envelopes. The author signs object kind
+`clause-semantics-set-author` in domain
+`rigor-foundry.clause-semantics-set-author.v2`; the reviewer signs object kind
+`clause-semantics-set` in domain `rigor-foundry.clause-semantics-set.v2`.
+Both envelopes must name the parsed body's digest. Parsing validates their
+shape and binding; call `verify(roles=selected_roles, now=utc_instant)` to
+check real Ed25519 signatures and current key eligibility.
+
+The caller supplies `RuleChainV2TrustRoles.build()` with five explicit policies:
+pack issuers, project selectors, lock resolvers, semantic authors and semantic
+reviewers. Key identifiers and public-key material must be distinct across all
+roles. The first three policies retain v1 key records. Semantic policies use
+v2 `VerificationKeyPolicy` records with a digest-bound `enrolled_identity` in
+`project/seat` form. Author and reviewer identity sets must be disjoint ignoring
+case; different keys cannot stand in for independent identities.
+
+Existing v1 key records retain their exact closed fields and digest. Supplying
+`enrolled_identity` to `VerificationKeyPolicy.build()` selects the v2 record;
+the parser refuses mixed version/field combinations. This records a caller's
+selected identity and does not enrol it into a live trust service. All existing
+role builders must explicitly supply the new `semantic_authors` policy.
+
+Verification requires an explicit UTC instant, both keys active at their
+declared signing times and at that instant, and a declared reviewer time no
+earlier than the declared author time. These signer-supplied timestamps do not
+prove the order of actual events. The reviewer signature covers the exact body
+and its declared review time; it does not bind a particular author's key or
+signature. Another eligible author's signature over the same body can pair
+with it. A consumer requiring submission-specific review must use a separately
+reviewed format that also binds the author's key and signature digest. The API
+rechecks the body, envelopes and role policies and returns `False` for changed
+bytes, wrong roles, expired or revoked keys, future signing times or conflicting
+identities. A successful result proves authenticity of the supplied semantics
+body. Reference-object custody, source ratification, effect applicability,
+effective-lock resolution and authorised adoption remain consumer obligations.

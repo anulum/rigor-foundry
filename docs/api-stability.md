@@ -77,6 +77,19 @@ capture, and successful offline verification through separate digests.
 constants are provisional Python imports. The installed `rigor verify` command
 and its schema-1.0 bundle/trust-policy/result contracts form the stable offline-verification CLI
 boundary. See [Offline evidence verification](offline-verification.md).
+The v1 verification-key wire remains closed and unchanged. Explicitly supplying
+`enrolled_identity` selects a separate v2 key record for semantic signing roles;
+its identity is included in the key-policy digest.
+Existing `semantic_reviewers` policies containing v1 records are refused by the
+five-role builder. Reissue those records with selected identities and update
+their changed policy digest in the host's expected selection. Construct
+`RuleChainV2TrustRoles` through its keyword builder: the author policy is a new
+required role, and positional dataclass construction is not a migration route.
+
+The module-level `signed_clause_semantics_set_v2.SignedClauseSemanticsSetV2`
+parser and verifier are provisional Python APIs. They authenticate an exact
+semantics body with separate author and reviewer signatures without granting
+adoption or effect authority. See [Canonical clause semantics](clause-semantics.md).
 
 The module-level `rule_chain_candidate.inspect_rule_chain_candidate` and
 `RuleChainCandidateReport` are provisional read-only Python APIs. They are not

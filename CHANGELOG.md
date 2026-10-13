@@ -20,6 +20,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- A canonical clause-semantics body can be verified with separate author and
+  reviewer signatures, current key lifecycles and digest-bound semantic
+  identities. Rule-chain role construction requires an explicit semantic-author
+  policy alongside the reviewer policy; existing v1 key records and the three
+  existing object signature formats retain their fields and digests.
+  Existing v1 semantic-reviewer role records must be reissued with identities,
+  and their changed policy digest must be updated in the host selection.
 - A read-only v2 rule-chain candidate API joins host-selected discovery and
   native-source evidence, a signed semantic-review dependency, retained pack
   bytes, typed pack signatures and a signed project selection. Its result is

@@ -38,7 +38,10 @@ _SIGNED_AT = "2026-09-18T00:00:00Z"
 _NOW = datetime(2026, 9, 19, tzinfo=UTC)
 
 
-def _policy(*, key_id: str = _KEY_ID, revoked_at: str = "") -> OfflineTrustPolicy:
+def _policy(
+    *, key_id: str = _KEY_ID, revoked_at: str = "", enrolled_identity: str | None = None
+) -> OfflineTrustPolicy:
+    """Build a lifecycle policy with the review fixture's explicit seat binding."""
     key = TrustedPublicKey.build(key_id=key_id, public_key_hex=public_key_hex(key_id))
     return OfflineTrustPolicy.build(
         (
@@ -47,17 +50,29 @@ def _policy(*, key_id: str = _KEY_ID, revoked_at: str = "") -> OfflineTrustPolic
                 valid_from="2026-09-01T00:00:00Z",
                 valid_until="2026-10-01T00:00:00Z",
                 revoked_at=revoked_at,
+                enrolled_identity=(
+                    _REVIEWER
+                    if key_id == _KEY_ID and enrolled_identity is None
+                    else enrolled_identity
+                ),
             ),
         )
     )
 
 
-def _roles(reviewer_policy: OfflineTrustPolicy) -> RuleChainV2TrustRoles:
+def _roles(
+    reviewer_policy: OfflineTrustPolicy, *, author_policy: OfflineTrustPolicy | None = None
+) -> RuleChainV2TrustRoles:
     """Assign an independently keyed reviewer beside all rule-chain signers."""
     return RuleChainV2TrustRoles.build(
         pack_issuers=_policy(key_id="review-test-pack"),
         project_selectors=_policy(key_id="review-test-selector"),
         lock_resolvers=_policy(key_id="review-test-resolver"),
+        semantic_authors=(
+            _policy(key_id="review-test-author", enrolled_identity=_AUTHOR)
+            if author_policy is None
+            else author_policy
+        ),
         semantic_reviewers=reviewer_policy,
     )
 
@@ -97,6 +112,7 @@ def _acceptance(
     review: SemanticTransitionReview,
     *,
     policy: OfflineTrustPolicy | None = None,
+    author_policy: OfflineTrustPolicy | None = None,
     now: datetime = _NOW,
     **expected: str,
 ) -> str | None:
@@ -113,7 +129,7 @@ def _acceptance(
         **expected,
     }
     return review.verified_acceptance_digest(
-        roles=_roles(chosen),
+        roles=_roles(chosen, author_policy=author_policy),
         now=now,
         **arguments,
     )
@@ -132,6 +148,35 @@ def test_synthetic_signature_round_trip_and_exact_acceptance_digest() -> None:
         }
     )
     assert _acceptance(review) == expected
+
+
+@pytest.mark.parametrize("fault", ("reviewer-mismatch", "author-missing", "self-review"))
+def test_named_review_identities_must_match_enrolled_roles(fault: str) -> None:
+    """A valid signature cannot turn mismatched or self-review identities into CLEAR.
+
+    Parameters
+    ----------
+    fault : str
+        Independently selected role identity that contradicts the signed review.
+    """
+    reviewer_identity = (
+        "RIGOR-FOUNDRY/somebody-else"
+        if fault == "reviewer-mismatch"
+        else _AUTHOR
+        if fault == "self-review"
+        else _REVIEWER
+    )
+    author_identity = _AUTHOR if fault == "reviewer-mismatch" else "RIGOR-FOUNDRY/not-the-author"
+    reviewer = _policy(enrolled_identity=reviewer_identity)
+    author = _policy(key_id="review-test-author", enrolled_identity=author_identity)
+    assert _acceptance(_review(), policy=reviewer, author_policy=author) is None
+
+
+def test_enrolled_identity_matching_uses_casefold_for_both_roles() -> None:
+    """Case differences cannot invent a second seat or discard a matching enrollment."""
+    reviewer = _policy(enrolled_identity=_REVIEWER.swapcase())
+    author = _policy(key_id="review-test-author", enrolled_identity=_AUTHOR.swapcase())
+    assert _acceptance(_review(), policy=reviewer, author_policy=author) is not None
 
 
 def test_reviewer_role_alias_refuses_even_with_valid_review_signature() -> None:
@@ -208,7 +253,7 @@ def test_untrusted_or_changed_review_cannot_yield_acceptance(fault: str) -> None
     elif fault == "wrong-key-id":
         expected["expected_reviewer_key_id"] = "different-key"
     elif fault == "wrong-key-material":
-        policy = _policy(key_id="other-test-key")
+        policy = _policy(key_id="other-test-key", enrolled_identity="RIGOR-FOUNDRY/other-reviewer")
     elif fault == "revoked-key":
         policy = _policy(revoked_at="2026-09-18T12:00:00Z")
     elif fault == "revoked-before-review":
@@ -239,7 +284,7 @@ def test_untrusted_or_changed_review_cannot_yield_acceptance(fault: str) -> None
         )
     else:
         review = replace(review, review_digest="0" * 64)
-    assert _acceptance(review, policy=policy, now=now, **expected) is None
+    assert _acceptance(review, policy=policy, author_policy=None, now=now, **expected) is None
 
 
 @pytest.mark.parametrize(

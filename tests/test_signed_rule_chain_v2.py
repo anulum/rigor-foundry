@@ -31,15 +31,21 @@ _DOMAINS = {
     "standard-pack": "rigor-foundry.standard-pack.v2",
     "project-profile": "rigor-foundry.project-profile-selection.v2",
     "effective-profile-lock": "rigor-foundry.effective-profile-lock.v2",
+    "clause-semantics-set-author": "rigor-foundry.clause-semantics-set-author.v2",
+    "clause-semantics-set": "rigor-foundry.clause-semantics-set.v2",
 }
 _KEYS = {
     "standard-pack": "v2-pack-issuer",
     "project-profile": "v2-project-selector",
     "effective-profile-lock": "v2-lock-resolver",
+    "clause-semantics-set-author": "v2-semantic-author",
+    "clause-semantics-set": "v2-semantic-reviewer",
 }
 
 
-def _policy(key_id: str, *, revoked_at: str = "") -> OfflineTrustPolicy:
+def _policy(
+    key_id: str, *, revoked_at: str = "", enrolled_identity: str | None = None
+) -> OfflineTrustPolicy:
     """Create one real public-key policy with an explicit lifecycle."""
     key = TrustedPublicKey.build(key_id=key_id, public_key_hex=public_key_hex(key_id))
     return OfflineTrustPolicy.build(
@@ -49,18 +55,26 @@ def _policy(key_id: str, *, revoked_at: str = "") -> OfflineTrustPolicy:
                 valid_from="2026-09-01T00:00:00Z",
                 valid_until="2026-10-01T00:00:00Z",
                 revoked_at=revoked_at,
+                enrolled_identity=enrolled_identity,
             ),
         )
     )
 
 
 def _roles(*, revoked_pack_at: str = "") -> RuleChainV2TrustRoles:
-    """Keep four signer roles on distinct actual Ed25519 keys."""
+    """Keep five signer roles on distinct actual Ed25519 keys."""
     return RuleChainV2TrustRoles.build(
         pack_issuers=_policy(_KEYS["standard-pack"], revoked_at=revoked_pack_at),
         project_selectors=_policy(_KEYS["project-profile"]),
         lock_resolvers=_policy(_KEYS["effective-profile-lock"]),
-        semantic_reviewers=_policy("v2-semantic-reviewer"),
+        semantic_authors=_policy(
+            _KEYS["clause-semantics-set-author"],
+            enrolled_identity="RIGOR-FOUNDRY/author-1",
+        ),
+        semantic_reviewers=_policy(
+            _KEYS["clause-semantics-set"],
+            enrolled_identity="RIGOR-FOUNDRY/reviewer-1",
+        ),
     )
 
 
@@ -80,7 +94,13 @@ def _signature(kind: RuleObjectKind) -> RuleChainV2Signature:
 
 @pytest.mark.parametrize("kind", tuple(_DOMAINS))
 def test_each_typed_object_verifies_only_its_own_role(kind: str) -> None:
-    """Pack, profile and lock use real distinct signature and key domains."""
+    """Every object kind uses its own real signature and key domain.
+
+    Parameters
+    ----------
+    kind : str
+        Supported object kind paired with its selected signing-role policy.
+    """
     signature = _signature(cast(RuleObjectKind, kind))
     parsed = RuleChainV2Signature.from_dict(signature.to_dict())
     assert parsed == signature
@@ -202,6 +222,8 @@ def test_v2_wire_parser_refuses_unknown_object_kind() -> None:
     wire["object_kind"] = "audit-receipt"
     with pytest.raises(ValueError, match="unsupported rule-chain v2 object kind"):
         RuleChainV2Signature.from_dict(wire)
+    with pytest.raises(ValueError, match="unsupported rule-chain v2 object kind"):
+        _roles().policy_for(cast(RuleObjectKind, "audit-receipt"))
 
 
 def test_role_store_refuses_key_aliases() -> None:
@@ -212,7 +234,8 @@ def test_role_store_refuses_key_aliases() -> None:
             pack_issuers=policy,
             project_selectors=policy,
             lock_resolvers=_policy(_KEYS["effective-profile-lock"]),
-            semantic_reviewers=_policy("v2-semantic-reviewer"),
+            semantic_authors=_roles().semantic_authors,
+            semantic_reviewers=_roles().semantic_reviewers,
         )
     reused_material = TrustedPublicKey.build(
         key_id="other-id",
@@ -232,7 +255,8 @@ def test_role_store_refuses_key_aliases() -> None:
             pack_issuers=policy,
             project_selectors=alias,
             lock_resolvers=_policy(_KEYS["effective-profile-lock"]),
-            semantic_reviewers=_policy("v2-semantic-reviewer"),
+            semantic_authors=_roles().semantic_authors,
+            semantic_reviewers=_roles().semantic_reviewers,
         )
 
 
@@ -244,6 +268,7 @@ def test_semantic_reviewer_cannot_reuse_pack_signer_key() -> None:
             pack_issuers=pack,
             project_selectors=_policy(_KEYS["project-profile"]),
             lock_resolvers=_policy(_KEYS["effective-profile-lock"]),
+            semantic_authors=_roles().semantic_authors,
             semantic_reviewers=pack,
         )
     alias = OfflineTrustPolicy.build(
@@ -263,5 +288,66 @@ def test_semantic_reviewer_cannot_reuse_pack_signer_key() -> None:
             pack_issuers=pack,
             project_selectors=_policy(_KEYS["project-profile"]),
             lock_resolvers=_policy(_KEYS["effective-profile-lock"]),
+            semantic_authors=_roles().semantic_authors,
             semantic_reviewers=alias,
+        )
+
+
+@pytest.mark.parametrize("kind", tuple(_DOMAINS))
+@pytest.mark.parametrize("signing_kind", tuple(_DOMAINS))
+def test_five_role_matrix_rejects_cross_role_signatures(kind: str, signing_kind: str) -> None:
+    """Only one of the five selected roles can sign each typed object kind.
+
+    Parameters
+    ----------
+    kind : str
+        Object kind whose domain and body digest are signed.
+    signing_kind : str
+        Role supplying the real Ed25519 signing key.
+    """
+    object_kind = cast(RuleObjectKind, kind)
+    digest = rule_chain_v2_payload_digest(
+        object_kind=object_kind, body_digest=_BODY, signed_at=_SIGNED_AT
+    )
+    signer = _KEYS[signing_kind]
+    signature = RuleChainV2Signature.build(
+        object_kind=object_kind,
+        key_id=signer,
+        body_digest=_BODY,
+        signed_at=_SIGNED_AT,
+        signature_hex=sign_message(signer, _DOMAINS[kind], digest),
+    )
+    assert signature.verify(
+        body_digest=_BODY, roles=_roles(), now=datetime(2026, 9, 19, tzinfo=UTC)
+    ) is (kind == signing_kind)
+
+
+def test_role_store_rejects_wrong_key_versions_and_shared_identity() -> None:
+    """Semantic roles need v2 seats; other roles retain the closed v1 wire."""
+    roles = _roles()
+    with pytest.raises(ValueError, match="semantic roles require v2"):
+        RuleChainV2TrustRoles.build(
+            pack_issuers=roles.pack_issuers,
+            project_selectors=roles.project_selectors,
+            lock_resolvers=roles.lock_resolvers,
+            semantic_authors=roles.semantic_authors,
+            semantic_reviewers=_policy("old-reviewer"),
+        )
+    with pytest.raises(ValueError, match="non-semantic roles require v1"):
+        RuleChainV2TrustRoles.build(
+            pack_issuers=_policy("new-pack", enrolled_identity="RIGOR-FOUNDRY/pack-seat"),
+            project_selectors=roles.project_selectors,
+            lock_resolvers=roles.lock_resolvers,
+            semantic_authors=roles.semantic_authors,
+            semantic_reviewers=roles.semantic_reviewers,
+        )
+    with pytest.raises(ValueError, match="identities must differ"):
+        RuleChainV2TrustRoles.build(
+            pack_issuers=roles.pack_issuers,
+            project_selectors=roles.project_selectors,
+            lock_resolvers=roles.lock_resolvers,
+            semantic_authors=roles.semantic_authors,
+            semantic_reviewers=_policy(
+                "same-seat-reviewer", enrolled_identity="rigor-foundry/AUTHOR-1"
+            ),
         )

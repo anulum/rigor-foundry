@@ -54,7 +54,8 @@ _NOW = datetime(2026, 9, 19, tzinfo=UTC)
 
 
 def _roles() -> RuleChainV2TrustRoles:
-    def policy(key_id: str) -> OfflineTrustPolicy:
+    def policy(key_id: str, *, enrolled_identity: str | None = None) -> OfflineTrustPolicy:
+        """Bind one signing key to its lifecycle and optional semantic seat."""
         return OfflineTrustPolicy.build(
             (
                 VerificationKeyPolicy.build(
@@ -63,6 +64,7 @@ def _roles() -> RuleChainV2TrustRoles:
                     ),
                     valid_from="2026-09-01T00:00:00Z",
                     valid_until="2026-10-01T00:00:00Z",
+                    enrolled_identity=enrolled_identity,
                 ),
             )
         )
@@ -71,7 +73,12 @@ def _roles() -> RuleChainV2TrustRoles:
         pack_issuers=policy(_KEY),
         project_selectors=policy("v2-project-selector"),
         lock_resolvers=policy("v2-lock-resolver"),
-        semantic_reviewers=policy("v2-semantic-reviewer"),
+        semantic_authors=policy(
+            "v2-semantic-author", enrolled_identity="RIGOR-FOUNDRY/author-fixture"
+        ),
+        semantic_reviewers=policy(
+            "v2-semantic-reviewer", enrolled_identity="RIGOR-FOUNDRY/reviewer-fixture"
+        ),
     )
 
 

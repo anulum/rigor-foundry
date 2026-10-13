@@ -119,7 +119,7 @@ def test_policy_parsers_reject_schema_shape_array_and_digest_tampering() -> None
     key = key_policy()
     for mutation, message in (
         ({**key.to_dict(), "extra": True}, "fields"),
-        ({**key.to_dict(), "schema_version": "2.0"}, "schema"),
+        ({**key.to_dict(), "schema_version": "2.0"}, "fields"),
         ({**key.to_dict(), "key_policy_digest": "0" * 64}, "digest"),
     ):
         with pytest.raises(ValueError, match=message):
@@ -145,3 +145,58 @@ def test_policy_parsers_reject_schema_shape_array_and_digest_tampering() -> None
     tampered_key["revoked_at"] = "2026-07-20T00:00:00Z"
     with pytest.raises(ValueError, match="digest"):
         VerificationKeyPolicy.from_dict(tampered_key)
+
+
+def test_semantic_key_identity_is_versioned_and_digest_bound() -> None:
+    """A v2 semantic key has one enrolled seat; v1 remains a closed old wire."""
+    old = key_policy()
+    semantic = VerificationKeyPolicy.build(
+        key=old.key,
+        valid_from=old.valid_from,
+        valid_until=old.valid_until,
+        enrolled_identity="RIGOR-FOUNDRY/reviewer-1",
+    )
+    assert semantic.to_dict()["schema_version"] == "2.0"
+    assert semantic.to_dict()["enrolled_identity"] == "RIGOR-FOUNDRY/reviewer-1"
+    assert semantic.key_policy_digest != old.key_policy_digest
+    assert VerificationKeyPolicy.from_dict(semantic.to_dict()) == semantic
+    mixed = OfflineTrustPolicy.build((key_policy("key-b"), semantic))
+    assert OfflineTrustPolicy.from_dict(mixed.to_dict()) == mixed
+    with pytest.raises(ValueError, match="fields"):
+        VerificationKeyPolicy.from_dict(
+            {**old.to_dict(), "enrolled_identity": "RIGOR-FOUNDRY/reviewer-1"}
+        )
+    with pytest.raises(ValueError, match="fields"):
+        VerificationKeyPolicy.from_dict(
+            {key: value for key, value in semantic.to_dict().items() if key != "enrolled_identity"}
+        )
+    with pytest.raises(ValueError, match="schema version"):
+        VerificationKeyPolicy.from_dict({**semantic.to_dict(), "schema_version": "3.0"})
+
+
+@pytest.mark.parametrize(
+    "identity",
+    [
+        "RIGOR-FOUNDRY",
+        "RIGOR-FOUNDRY/",
+        "RIGOR-FOUNDRY/reviewer@session",
+        "RIGOR-FOUNDRY/a/b",
+        "RIGOR-FOUNDRY/{reviewer}",
+    ],
+)
+def test_semantic_key_rejects_non_seat_identity(identity: str) -> None:
+    """Refuse identifiers that do not name one project and seat.
+
+    Parameters
+    ----------
+    identity : str
+        Malformed caller-selected signing identity.
+    """
+    old = key_policy()
+    with pytest.raises(ValueError, match="project/seat"):
+        VerificationKeyPolicy.build(
+            key=old.key,
+            valid_from=old.valid_from,
+            valid_until=old.valid_until,
+            enrolled_identity=identity,
+        )

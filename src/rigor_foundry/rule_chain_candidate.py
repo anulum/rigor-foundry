@@ -112,6 +112,7 @@ def inspect_rule_chain_candidate(
         pack_issuers=roles.pack_issuers,
         project_selectors=roles.project_selectors,
         lock_resolvers=roles.lock_resolvers,
+        semantic_authors=roles.semantic_authors,
         semantic_reviewers=roles.semantic_reviewers,
     )
     review = review_verifier.verify(

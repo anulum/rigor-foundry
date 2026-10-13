@@ -74,6 +74,7 @@ def _candidate(
         pack_issuers=pack_trust.pack_issuers,
         project_selectors=pack_trust.project_selectors,
         lock_resolvers=pack_trust.lock_resolvers,
+        semantic_authors=pack_trust.semantic_authors,
         semantic_reviewers=review_state.roles.semantic_reviewers,
     )
     return proposal, artifact, verifier, pack, profile, roles

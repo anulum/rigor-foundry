@@ -15,6 +15,16 @@ The host must protect selections and revocations throughout its leases. A
 caller-controlled test provider can exercise the API but cannot enrol live
 authority. A signed `clear` review is checked as a source dependency; the
 reviewer must have a separate identity and trusted signing key from the author.
+Role construction now explicitly supplies `semantic_authors` and
+`semantic_reviewers` alongside the three existing rule-chain policies. Semantic
+key records carry caller-selected, digest-bound v2 identities; the three other
+roles retain v1 records. All role key material is distinct, and semantic author
+and reviewer identity sets are disjoint ignoring case. The host still
+authenticates the selected review identities and exact expected objects. The
+review verifier additionally binds the named reviewer to its exact enrolled key
+identity and requires the named author to belong to the selected author policy,
+using case-insensitive enrollment comparisons. The role policies' disjointness
+then prevents a named author from holding a reviewer key.
 
 The result is `RuleChainCandidateReport`. Its digest binds the proposal,
 review acceptance dependency, profile, packs, selected authority clauses and
