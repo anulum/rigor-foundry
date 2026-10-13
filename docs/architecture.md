@@ -6,6 +6,11 @@ retained chain and semantics context. Its journal-backed rate reader checks
 actual descriptor history. The API returns after closing verification and
 leaves effect permission, accounting and handler execution to the qualified host.
 
+The separate [permit consumption ledger](permit-consumption-ledger.md) supplies
+durable UUID replay refusal and complete binary-history checks. Actual file
+custody and append-lease lifetime are checked through public storage operations;
+protected selection, signature validity and handler admission remain separate.
+
 RigorFoundry treats a repository audit as an evidence pipeline, not a verdict
 generator.
 

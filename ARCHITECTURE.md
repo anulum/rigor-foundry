@@ -58,6 +58,14 @@ only after closing checks. Journal rate contexts rescan real retained history
 and validate each intent's original catalogue; shared descriptor I/O is independent
 of permit accounting. See [selected dispatch applicability](docs/selected-dispatch-applicability.md).
 
+`permit_consumption_ledger_v2` independently supplies durable consumption of both
+permit and single-use UUIDs through actual owner-only files and retained locks.
+Its issued append lease verifies current custody and complete history before
+mutation, refuses use after closure or a fork, and records at most one append
+attempt. The binary replay/immutable records and descriptor I/O have separate
+cohesive owners. Protected anchor selection, signature/expiry verification and
+effect admission remain host duties. See [permit consumption](docs/permit-consumption-ledger.md).
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`
