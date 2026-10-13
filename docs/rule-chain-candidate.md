@@ -123,3 +123,9 @@ These APIs extract and verify read-only dependencies. They install no handler,
 write no replacement file, grant no permit and change no stable CLI or v1
 serialized contract. Actual execution still requires protected installed-code
 custody, current action applicability, grants, permits and final revalidation.
+
+[Selected dispatch applicability](selected-dispatch-applicability.md) composes
+the actual selected extractor with active admits, vetoes and constraints under
+the same retained chain and semantics context. Journal-backed rate constraints
+read the real retained history and its original catalogues. These evaluated
+results remain read-only data with `guard_admissible == False`.

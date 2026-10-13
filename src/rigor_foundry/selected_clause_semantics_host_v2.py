@@ -294,13 +294,50 @@ class HostSelectedClauseSemanticsVerifierV2:
         The same pinned chain state is rechecked. The context supplies proof, while the protected effect
         path supplies action-specific authorization.
         """
+        with self.verified_context() as (selected, _chain_state, proof):
+            yield selected, proof
+
+    @contextmanager
+    def verified_context(
+        self,
+    ) -> Iterator[
+        tuple[
+            HostSelectedClauseSemanticsStateV2,
+            HostSelectedRuleChainStateV2,
+            SelectedClauseSemanticsProofV2,
+        ]
+    ]:
+        """Expose the actual chain state held by the complete semantics lease.
+
+        Yields
+        ------
+        tuple[HostSelectedClauseSemanticsStateV2, HostSelectedRuleChainStateV2, SelectedClauseSemanticsProofV2]
+            Pinned semantics, the same held chain used for verification, and their read-only proof.
+            Consumers use these values only while this context remains open.
+
+        Raises
+        ------
+        ValueError
+            A signed body, registry, native capture or selected digest is malformed.
+        PermissionError
+            Initial verification or closing source, role, selection or proof checks refuse.
+        OSError
+            A retained source or deployment root cannot be safely opened.
+        RuntimeError
+            A provider suppresses a failure without completing the lease.
+
+        Notes
+        -----
+        This acquires each protected state provider once. It permits composed consumers to use the
+        already held chain rather than reentering its provider. It creates no effect authority.
+        """
         completed = False
         with self.state() as selected:
             if not isinstance(selected, HostSelectedClauseSemanticsStateV2):
                 raise PermissionError("selected clause semantics host state is unavailable")
             with selected.chain.verified_lease() as (chain_state, chain_proof):
                 proof = _verify_selected(selected, chain_state, chain_proof)
-                yield selected, proof
+                yield selected, chain_state, proof
                 selected.revalidate()
                 final_chain = HostSelectedRuleChainVerifierV2(
                     lambda: nullcontext(chain_state)

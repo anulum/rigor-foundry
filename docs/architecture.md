@@ -1,5 +1,11 @@
 # Architecture
 
+The [selected dispatch applicability API](selected-dispatch-applicability.md)
+extracts the actual invocation and evaluates active signed clauses under one
+retained chain and semantics context. Its journal-backed rate reader checks
+actual descriptor history. The API returns after closing verification and
+leaves effect permission, accounting and handler execution to the qualified host.
+
 RigorFoundry treats a repository audit as an evidence pipeline, not a verdict
 generator.
 

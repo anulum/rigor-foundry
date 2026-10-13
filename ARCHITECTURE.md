@@ -51,6 +51,13 @@ first atomic replacement's actual path, content count and fixed variant with
 caller declarations. These provisional APIs provide read-only dependencies,
 retaining no execution permit or handler and changing no stable CLI or v1 wire.
 
+`selected_dispatch_applicability_v2` consumes the same held chain through the
+semantics verifier's three-value `verified_context()`. It composes actual request
+extraction with active admits, vetoes and fixed constraint evaluation, returning
+only after closing checks. Journal rate contexts rescan real retained history
+and validate each intent's original catalogue; shared descriptor I/O is independent
+of permit accounting. See [selected dispatch applicability](docs/selected-dispatch-applicability.md).
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`

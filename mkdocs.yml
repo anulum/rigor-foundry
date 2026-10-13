@@ -42,6 +42,7 @@ nav:
   - Offline evidence verification: offline-verification.md
   - Rule-chain candidate inspection: rule-chain-candidate.md
   - Canonical clause semantics: clause-semantics.md
+  - Selected dispatch applicability: selected-dispatch-applicability.md
   - Source provenance: source-provenance.md
   - Discovery source validation: reference/discovery-source-validation.md
   - Offline CRA reporting preparation: cra-reporting.md

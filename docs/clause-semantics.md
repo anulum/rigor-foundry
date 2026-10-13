@@ -202,6 +202,13 @@ registry scope expansion. It checks them again after the consumer, including
 the complete current chain. `verify()` performs the same closing checks
 before returning a `SelectedClauseSemanticsProofV2`.
 
+`verified_context()` exposes the actual held chain alongside the same semantics
+and proof, as a three-value tuple. Consumers needing chain state use this method
+instead of reopening the chain provider. The two-value `verified_lease()` API
+keeps its existing shape. The [selected dispatch applicability
+API](selected-dispatch-applicability.md) uses the three-value context to extract
+the actual request and evaluate its clauses before closing verification.
+
 ```python
 from rigor_foundry.selected_clause_semantics_host_v2 import (
     HostSelectedClauseSemanticsVerifierV2,
