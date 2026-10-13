@@ -9,8 +9,13 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 from typing import cast
 
 import pytest
@@ -213,3 +218,59 @@ def test_builtin_exception_refuses() -> None:
         "count_basis": "operation-intent",
     }
     assert _check("rate", ctx, params) == ConstraintDecisionV2("refuse", "evaluator-error")
+
+
+def test_real_module_reload_refuses_a_changed_result_class(tmp_path: Path) -> None:
+    """A retained boundary refuses a real result after unchanged evaluator source reloads.
+
+    The child preserves parent module identities. Its public loader reinitializes
+    the real module; no producer, result, module dictionary or registry is manually
+    substituted. Ordinary caller inputs continue to produce a valid builtin pair.
+    """
+    script = """
+import hashlib
+import importlib
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+import rigor_foundry.constraint_evaluation_boundary_v2 as boundary
+import rigor_foundry.constraint_evaluators_v2 as evaluators
+
+files = [Path(evaluators.__file__), Path(boundary.__file__)]
+before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
+now = datetime(2026, 10, 13, 18, 0, tzinfo=UTC)
+params = {"limit": 1, "window_seconds": 60, "count_basis": "operation-intent"}
+args = {"subject": "rate", "effect_class": "local-file-write", "params": params,
+        "authority_requirement": None, "selected_authority_requirement_digest": None}
+ctx = evaluators.RateContextV2(now, "local-file-write", "x", (), True)
+initial = boundary.evaluate_selected_constraint_v2(ctx=ctx, **args)
+original_class = evaluators.EvaluatorResultV2
+importlib.reload(evaluators)
+ctx = evaluators.RateContextV2(now, "local-file-write", "x", (), True)
+actual = evaluators.evaluate_builtin_constraint_v2("rate", ctx, params)
+assert type(actual) is evaluators.EvaluatorResultV2
+checked = boundary.evaluate_selected_constraint_v2(ctx=ctx, **args)
+after = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
+print(json.dumps({"initial": [initial.outcome, initial.reason],
+                  "actual_builtin": [actual.outcome, actual.reason],
+                  "retained_boundary": [checked.outcome, checked.reason],
+                  "result_class_changed": evaluators.EvaluatorResultV2 is not original_class,
+                  "source_unchanged": before == after}))
+"""
+    child = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert child.returncode == 0, child.stderr
+    assert json.loads(child.stdout) == {
+        "initial": ["pass", "passed"],
+        "actual_builtin": ["pass", "passed"],
+        "retained_boundary": ["refuse", "evaluator-result-invalid"],
+        "result_class_changed": True,
+        "source_unchanged": True,
+    }
