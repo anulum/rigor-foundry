@@ -45,6 +45,7 @@ nav:
   - Selected dispatch applicability: selected-dispatch-applicability.md
   - Dispatch permit candidates: dispatch-permit-candidates.md
   - Permit consumption ledger: permit-consumption-ledger.md
+  - Permit anchor verification: permit-anchor-verification.md
   - Source provenance: source-provenance.md
   - Discovery source validation: reference/discovery-source-validation.md
   - Offline CRA reporting preparation: cra-reporting.md

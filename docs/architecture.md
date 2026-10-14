@@ -16,6 +16,12 @@ durable UUID replay refusal and complete binary-history checks. Actual file
 custody and append-lease lifetime are checked through public storage operations;
 protected selection, signature validity and handler admission remain separate.
 
+The [permit anchor verification API](permit-anchor-verification.md) binds ordinary selections
+to complete ledger and journal histories under retained ordered locks. Immutable
+recovery evidence is checked separately for canonical bytes, file custody and
+its exact selected-chain commitments. Pending intents and final damage refuse
+ordinary reads; authenticated destructive recovery remains a supervisor duty.
+
 RigorFoundry treats a repository audit as an evidence pipeline, not a verdict
 generator.
 

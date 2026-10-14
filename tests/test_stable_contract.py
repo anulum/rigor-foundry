@@ -100,6 +100,10 @@ _SCHEMA_SYMBOLS = {
 _PROVISIONAL_SCHEMA_SYMBOLS = {
     "instruction_dispatch_permit_v2.PERMIT_V2_SCHEMA_VERSION": "instruction-dispatch-permit.v2.1",
     "verification_policy.SEMANTIC_KEY_POLICY_SCHEMA_VERSION": "2.0",
+    "permit_anchor_records_v2.ANCHOR_SCHEMA_VERSION": "2.4",
+    "recovery_evidence_schema_v2.ANCHOR_FINAL_RECOVERY_SCHEMA_VERSION": "rigor.permit-anchor-final-recovery.v2.4",
+    "recovery_evidence_schema_v2.ANCHOR_ADOPTION_RECOVERY_SCHEMA_VERSION": "rigor.permit-anchor-recovery.v2.4",
+    "recovery_evidence_schema_v2.JOURNAL_TAIL_RECOVERY_SCHEMA_VERSION": "rigor.effect-journal-tail-recovery.v2.1",
 }
 
 _SCHEMA_DISCOVERY_EXCLUSIONS = {

@@ -204,6 +204,10 @@ The [permit consumption ledger guide](docs/permit-consumption-ledger.md)
 describes complete binary replay, owner-only file custody, selected-prefix
 checks, process-bound append leases and explicit torn-tail recovery.
 
+The [permit anchor verification guide](docs/permit-anchor-verification.md)
+describes selected ledger/journal bindings, immutable recovery evidence custody,
+and ordinary refusal of damaged or unresolved recovery state.
+
 Declared native adapters run only after `--allow-native-audits` consent. They
 execute in a no-network, read-only sandbox with a credential-free environment,
 hard output and time bounds, process-tree termination, and structured durable
@@ -234,6 +238,7 @@ strict policy form, installation boundary, coverage limits, and benchmark.
 | Selected dispatch applicability | `selected_dispatch_applicability_v2`, `selected_dispatch_extraction_v2`, `selected_stage_b_results_v3`, `stage_b_evaluator_v2`, `effect_journal_rate_v2` | Actual invocation extraction and signed clause evaluation under one retained context, with real journal history and no effect admission. |
 | Dispatch permit candidates | `instruction_dispatch_permit_v2` | Exact provisional v2.1 decision envelopes, six disjoint signing policies and actual issuer signature/lifecycle verification. |
 | Permit consumption | `permit_consumption_ledger_v2`, `_permit_ledger_records_v2`, `_permit_ledger_storage_io_v2` | Durable dual-ID replay refusal, full binary history, exact selected prefixes, file custody and scoped append-lease lifetime. |
+| Permit anchor verification | `permit_anchor_store_v2`, `permit_anchor_prefix_v2`, `recovery_evidence_store_v2` | Complete selected chain verification, anchored closure replay and bounded immutable recovery evidence custody. |
 | Review and enforcement | `review`, `enforcement` | Evidence validation, stale-state rejection, and controlled promotion. |
 | Rule calibration | `rule_maturity`, `rule_maturity_manifest` | Explicit activation thresholds, source-bound adjudications, reviewer-effort evidence, and probation-safe gate input. |
 | Interchange | `sarif` | Deterministic SARIF 2.1.0 projection that preserves candidate, review, and exact-anchor state. |

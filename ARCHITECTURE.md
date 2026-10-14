@@ -73,6 +73,12 @@ attempt. The binary replay/immutable records and descriptor I/O have separate
 cohesive owners. Protected anchor selection, signature/expiry verification and
 effect admission remain host duties. See [permit consumption](docs/permit-consumption-ledger.md).
 
+The [permit anchor verification API](docs/permit-anchor-verification.md) binds ordinary selections
+to complete ledger and journal histories under retained ordered locks. Immutable
+recovery evidence is checked separately for canonical bytes, file custody and
+its exact selected-chain commitments. Pending intents and final damage refuse
+ordinary reads; authenticated destructive recovery remains a supervisor duty.
+
 `sarif.py` is a read-only interchange boundary. It projects every candidate,
 its exact blob/tree anchor, and any validated review into SARIF 2.1.0. Candidate
 state and review verdict remain separate properties; only a reviewed `valid`
