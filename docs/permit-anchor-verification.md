@@ -68,6 +68,10 @@ does not authorise truncation. Ordinary reads refuse damaged tails, unresolved
 selected recovery intents, ledger suffixes requiring adoption, missing evidence,
 and orphan audit frames. A complete unanchored audit or closure remains inert.
 
+The tail scanner verifies the initial record against the ledger, journal and
+anchor genesis values before scanning successors. Each successor therefore
+inherits an already verified selection.
+
 The three closed evidence domains are:
 
 - `rigor.permit-anchor-final-recovery.v2.4`
@@ -100,6 +104,10 @@ checks canonical bytes and custody; the anchor prefix verifier separately checks
 semantic relationships to the selected chains. The destructive recovery and
 adoption operators require an authenticated supervisor integration and are not
 provided by these APIs.
+
+The public journal intent verifier also rechecks each supplied map key against
+the SHA-256 of its exact object bytes before filtering domains or file identities.
+A caller cannot introduce a digest alias by supplying an in-memory object map.
 
 This storage implementation uses POSIX locks and Linux no-replace publication.
 It has no Rust, Go, TypeScript or Windows runtime counterpart. Existing adapter

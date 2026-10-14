@@ -265,3 +265,13 @@ def test_other_selected_file_identity_is_inert(tmp_path: Path) -> None:
     assert replace(
         selected, objects={**selected.objects, **unrelated.objects}
     ).pending() == frozenset(selected.objects)
+
+
+@pytest.mark.parametrize("alias", ["f" * 64, "BAD", "a" * 64 + ".json"])
+def test_object_digest_alias_refuses_before_intent_resolution(tmp_path: Path, alias: str) -> None:
+    """A public verifier must reject a map key that does not commit its exact bytes."""
+    case = _case(tmp_path)
+    data = next(iter(case.objects.values()))
+    assert alias != sha256(data).hexdigest()
+    with pytest.raises(PermissionError, match="object filename differs"):
+        replace(case, objects={alias: data}).pending()

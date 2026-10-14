@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import os
+from hashlib import sha256
 from pathlib import Path
 from typing import cast
 
@@ -44,6 +45,7 @@ def unresolved_journal_intents_v21(
     ----------
     objects : dict[str, bytes]
         Digest-to-canonical-bytes map obtained from the bounded evidence store.
+        Every content digest is rechecked before selecting journal intents.
     anchor_heads : frozenset[str]
         Heads of the verified retained anchor prefixes.
     selected_journal_head : str
@@ -80,6 +82,8 @@ def unresolved_journal_intents_v21(
         raise PermissionError("journal recovery selected head is not verified")
     intents: dict[str, dict[str, object]] = {}
     for object_digest, data in objects.items():
+        if sha256(data).hexdigest() != object_digest:
+            raise PermissionError("journal recovery object filename differs")
         if validate_recovery_evidence_bytes_v2(data) != _DOMAIN:
             continue
         value = parse_canonical_object_bytes(data)

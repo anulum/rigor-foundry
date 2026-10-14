@@ -53,20 +53,23 @@ def _scan(path: Path) -> AnchorTailScanV24:
 
 
 def test_clean_and_partial_final_lengths(tmp_path: Path) -> None:
-    """Only an existing verified initial record makes 1 or 199 bytes eligible."""
+    """Every partial width from 1 through 199 retains the exact verified prefix."""
     anchor = tmp_path / "anchor.bin"
     initial = _initial(tmp_path / "ledger.bin")
     anchor.write_bytes(ANCHOR_MAGIC_V24 + initial)
     clean = _scan(anchor)
     assert clean.tail is None
     assert len(clean.records) == 1
-    for length in (1, 199):
+    for length in range(1, ANCHOR_RECORD_V24.size):
         anchor.write_bytes(ANCHOR_MAGIC_V24 + initial + b"x" * length)
         selected = _scan(anchor)
         assert selected.tail is not None
         assert selected.tail.failure_class == "partial-tail"
         assert selected.tail.offset == len(ANCHOR_MAGIC_V24) + 200
         assert selected.tail.raw == b"x" * length
+        assert selected.records == (initial,)
+        assert selected.selection == clean.selection
+        assert anchor.read_bytes() == ANCHOR_MAGIC_V24 + initial + b"x" * length
 
 
 def test_sole_complete_invalid_final_record_is_classified(tmp_path: Path) -> None:
@@ -133,3 +136,24 @@ def test_valid_complete_final_record_is_not_damage(tmp_path: Path) -> None:
     assert selected.tail is None
     assert len(selected.records) == 2
     assert selected.selection.journal_head == b"j" * 32
+
+
+@pytest.mark.parametrize("field", ["kind", "count", "ledger-head", "journal-head"])
+def test_intrinsically_valid_wrong_initial_selection_refuses(tmp_path: Path, field: str) -> None:
+    """A complete decodable row must still satisfy every genesis selection invariant."""
+    anchor = tmp_path / "anchor.bin"
+    fields = list(ANCHOR_RECORD_V24.unpack(_initial(tmp_path / "ledger.bin")))
+    if field == "kind":
+        fields[0], fields[6], fields[7], fields[9] = 1, 1, 1, b"e" * 32
+    elif field == "count":
+        fields[1] = 1
+    elif field == "ledger-head":
+        fields[2] = b"l" * 32
+    else:
+        fields[8] = b"j" * 32
+    raw = ANCHOR_RECORD_V24.pack(*fields)
+    anchor.write_bytes(ANCHOR_MAGIC_V24 + raw)
+    before = anchor.read_bytes()
+    with pytest.raises(PermissionError, match="first or interior record is invalid"):
+        _scan(anchor)
+    assert anchor.read_bytes() == before

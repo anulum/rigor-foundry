@@ -64,6 +64,9 @@ class AnchorTailScanV24:
 def scan_anchor_tail_v24(descriptor: int, size: int) -> AnchorTailScanV24:
     """Refuse first/interior damage and classify only the last damaged bytes.
 
+    Verify the initial selection before scanning successors. An invalid initial
+    record cannot be classified as recoverable final damage.
+
     Parameters
     ----------
     descriptor : int
@@ -95,16 +98,20 @@ def scan_anchor_tail_v24(descriptor: int, size: int) -> AnchorTailScanV24:
         if remainder:
             raise PermissionError("permit anchor initial record is incomplete")
         raise PermissionError("permit anchor initial record is absent")
-    selected: AnchorSelectionV24 | None = None
-    records: list[bytes] = []
-    for index in range(complete_count):
+    initial = _read_exact(descriptor, ANCHOR_RECORD_V24.size)
+    try:
+        record = parse_anchor_record_v24(initial, previous_head=ANCHOR_GENESIS_V24)
+        selected = advance_anchor_selection_v24(None, record)
+    except PermissionError as exc:
+        raise PermissionError("permit anchor first or interior record is invalid") from exc
+    records: list[bytes] = [initial]
+    for index in range(1, complete_count):
         raw = _read_exact(descriptor, ANCHOR_RECORD_V24.size)
-        previous = ANCHOR_GENESIS_V24 if selected is None else selected.anchor_head
         try:
-            record = parse_anchor_record_v24(raw, previous_head=previous)
+            record = parse_anchor_record_v24(raw, previous_head=selected.anchor_head)
             next_selection = advance_anchor_selection_v24(selected, record)
         except PermissionError as exc:
-            if index != complete_count - 1 or remainder or selected is None:
+            if index != complete_count - 1 or remainder:
                 raise PermissionError("permit anchor first or interior record is invalid") from exc
             return AnchorTailScanV24(
                 tuple(records),
@@ -115,8 +122,6 @@ def scan_anchor_tail_v24(descriptor: int, size: int) -> AnchorTailScanV24:
             )
         selected = next_selection
         records.append(raw)
-    if selected is None:
-        raise PermissionError("permit anchor initial record is absent")
     if remainder:
         raw = _read_exact(descriptor, remainder)
         return AnchorTailScanV24(
