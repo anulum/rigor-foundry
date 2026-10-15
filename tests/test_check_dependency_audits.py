@@ -26,6 +26,7 @@ from tools.check_dependency_audits import (
     PYTHON_LOCKS,
     dependency_audit_errors,
 )
+from tools.ci_workflows import CI_WORKFLOWS
 
 
 @pytest.fixture
@@ -45,12 +46,14 @@ def audit_root(tmp_path: Path) -> Path:
     for relative in (
         ".github/workflows/security.yml",
         ".github/workflows/ci.yml",
+        *CI_WORKFLOWS.values(),
         ".github/dependency-waivers.json",
         *PYTHON_LOCKS,
         NODE_LOCK,
         "tools/__init__.py",
         "tools/_repository.py",
         "tools/check_dependency_audits.py",
+        "tools/ci_workflows.py",
         "tools/check_dependency_waivers.py",
     ):
         target = tmp_path / relative
@@ -474,7 +477,7 @@ def test_quality_job_cannot_reduce_guard_coverage(audit_root: Path) -> None:
     audit_root : Path
         Independent Git worktree containing the actual locks and workflows.
     """
-    path = audit_root / ".github/workflows/ci.yml"
+    path = audit_root / ".github/workflows/ci-quality.yml"
     path.write_text(path.read_text().replace("--cov-fail-under=100", "--cov-fail-under=98"))
     assert any(
         "--cov=tools.check_dependency_audits" in e for e in dependency_audit_errors(audit_root)

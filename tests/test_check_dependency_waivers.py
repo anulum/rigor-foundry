@@ -17,6 +17,7 @@ import pytest
 from tools._repository import ROOT
 from tools.check_dependency_audits import NODE_LOCK, PYTHON_LOCKS
 from tools.check_dependency_waivers import dependency_waiver_errors, main
+from tools.ci_workflows import CI_WORKFLOWS
 
 
 def _waiver_root(tmp_path: Path) -> Path:
@@ -24,6 +25,7 @@ def _waiver_root(tmp_path: Path) -> Path:
         ".github/dependency-waivers.json",
         ".github/workflows/security.yml",
         ".github/workflows/ci.yml",
+        *CI_WORKFLOWS.values(),
         *PYTHON_LOCKS,
         NODE_LOCK,
     ):

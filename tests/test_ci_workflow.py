@@ -16,10 +16,13 @@ from pathlib import Path
 import coverage
 import yaml
 
+from tools.ci_workflows import ci_jobs, read_workflow
+
 
 def test_coverage_jobs_share_source_imports_without_masking_wheel() -> None:
     """Measure checkout imports consistently while keeping wheel smoke isolated."""
-    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    workflow = read_workflow(Path(".github/workflows/ci.yml"))
+    workflow["jobs"] = ci_jobs()
     assert "PYTHONPATH" not in workflow.get("env", {})
     for name in ("quality", "test"):
         job = workflow["jobs"][name]
@@ -96,12 +99,9 @@ def test_coverage_combines_real_cli_copies_from_distinct_working_directories(
 
 def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     """Require isolated OIDC upload of the existing Python 3.12 report."""
-    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
-
-    coverage_job = workflow.split("\n  coverage:\n", maxsplit=1)[1].split(
-        "\n  distribution:\n", maxsplit=1
-    )[0]
-    assert "needs: test" in coverage_job
+    callers = read_workflow(Path(".github/workflows/ci.yml"))
+    assert callers["jobs"]["coverage"]["needs"] == "test"
+    coverage_job = Path(".github/workflows/ci-coverage.yml").read_text(encoding="utf-8")
     assert "permissions:\n      contents: read\n      id-token: write" in coverage_job
     assert "persist-credentials: false" in coverage_job
     assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c" in coverage_job
@@ -115,7 +115,8 @@ def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
 
 def test_memory_documentation_cohort_is_enforced_in_ci_and_commit_hook() -> None:
     """Keep moved memory test owners inside both non-exempt documentation checks."""
-    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    workflow = read_workflow(Path(".github/workflows/ci.yml"))
+    workflow["jobs"] = ci_jobs()
     hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
     hosted = next(
         step["run"]
@@ -144,7 +145,8 @@ def test_memory_documentation_cohort_is_enforced_in_ci_and_commit_hook() -> None
 
 def test_native_dispatch_cohort_is_enforced_in_ci_and_commit_hook() -> None:
     """Keep the concrete native consumer inside strict local and hosted gates."""
-    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    workflow = read_workflow(Path(".github/workflows/ci.yml"))
+    workflow["jobs"] = ci_jobs()
     hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
     hosted = next(
         step["run"]
@@ -180,7 +182,8 @@ def test_native_dispatch_cohort_is_enforced_in_ci_and_commit_hook() -> None:
 
 def test_discovery_inventory_intake_is_enforced_in_ci_and_commit_hook() -> None:
     """Keep append-only intake inside strict docs, typing and 100% coverage gates."""
-    workflow = yaml.safe_load(Path(".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    workflow = read_workflow(Path(".github/workflows/ci.yml"))
+    workflow["jobs"] = ci_jobs()
     hooks = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
     hosted_steps = workflow["jobs"]["quality"]["steps"]
     hosted_quality = next(

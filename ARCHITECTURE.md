@@ -494,3 +494,25 @@ remain separate, and alias-expanded execution positions have their own budget.
 CI
 tests Python 3.11–3.13, builds wheel and source distributions, installs the
 wheel outside the source tree, and verifies its metadata and CLI.
+
+## Distributed validation workflows
+
+The CI coordinator owns events, concurrency, same-revision reusable calls and
+one aggregate gate. Its quality, tests, coverage, distribution and VS Code
+workflows each have one repository owner and one reason to change. Coverage
+publishes the test artifact through narrowly scoped OIDC; distribution exercises
+the actual wheel, Action and hook; VS Code exercises the real editor. Small
+existing documentation, container, security and release workflows retain
+cohesive owners rather than introducing empty wrapper layers.
+
+The versioned workflow inventory declares every executable job, including
+independent scheduled and release jobs. The tools.ci_workflows reader resolves
+actual category sources for existing contracts, refusing duplicate YAML keys,
+links and ambiguous call surfaces. The tools.check_ci_workflows guard binds
+ownership to the actual graph, narrow permissions and fixed aggregate.
+The normal action-pin guard invokes it in audit, preflight and commit hooks.
+
+Repository limits are 200 physical lines and 32 KiB for the coordinator,
+1,000 lines and 100 KiB per other workflow, and 16 reusable workflows.
+These limits retain provider headroom; they do not justify mixing unrelated
+owners. Distinct category concurrency groups cannot cancel their own caller.

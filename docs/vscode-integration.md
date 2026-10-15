@@ -74,3 +74,11 @@ a temporary Git repository. It exercises the installed RigorFoundry CLI for
 bootstrap, scan, review-template generation, and canonical review validation.
 It also asserts that the extension contributes no remediation or promotion
 command.
+
+## CI ownership
+
+The editor's build, package and actual Extension Development Host steps live in
+ci-vscode.yml, called from the CI coordinator at the same repository revision.
+Its result is required by the CI gate alongside quality, tests, coverage and
+distribution. The inventory declares its category and owner; Node/Python pins,
+the exact host and the artifact name remain explicit.

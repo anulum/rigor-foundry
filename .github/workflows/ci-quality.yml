@@ -1,0 +1,179 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Deterministic quality and test gates
+
+name: CI quality
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Install native audit sandbox
+        run: |
+          set -euo pipefail
+          python3 -m tools.install_bubblewrap \
+            --destination "$RUNNER_TEMP/bubblewrap.deb"
+          sudo dpkg -i "$RUNNER_TEMP/bubblewrap.deb"
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          # Ubuntu 24.04 globally mediates unprivileged user namespaces. This
+          # attachment grants userns only to the root-owned bwrap path; it does
+          # not provide the native-audit sandbox. RigorFoundry's attested bwrap
+          # argument contract provides that boundary and disables nested userns.
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
+          test "$(/usr/bin/cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1
+          /usr/bin/bwrap --version
+          /usr/bin/dpkg-query --show \
+            --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
+            bubblewrap
+          test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
+            0.9.0-1ubuntu0.3
+          printf '%s  %s\n' \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
+            /usr/bin/bwrap | sha256sum --check --strict
+          /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
+            --unshare-user --disable-userns --assert-userns-disabled \
+            --uid 65534 --gid 65534 --ro-bind /usr /usr \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --proc /proc --dev /dev \
+            --tmpfs /tmp --clearenv -- /usr/bin/true
+          if /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
+            --unshare-user --disable-userns --assert-userns-disabled \
+            --uid 65534 --gid 65534 --ro-bind /usr /usr \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --proc /proc --dev /dev \
+            --tmpfs /tmp --clearenv -- \
+            /usr/bin/unshare --user -- /usr/bin/true; then
+            echo "nested user namespace unexpectedly succeeded" >&2
+            exit 1
+          fi
+      - name: Install and run verified Typos
+        run: |
+          python3 -m tools.install_typos --destination "$RUNNER_TEMP/typos"
+          "$RUNNER_TEMP/typos" --version
+          "$RUNNER_TEMP/typos"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - name: Install hash-locked quality environment
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Audit repository contracts
+        run: python -m tools.audit
+      - name: Validate distributed CI workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail --location --connect-timeout 10 --max-time 60 \
+            --output "$RUNNER_TEMP/actionlint.tar.gz" \
+          https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          printf '%s  %s\n' \
+            8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 \
+            "$RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check --strict
+          mkdir "$RUNNER_TEMP/rigor-actionlint"
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/rigor-actionlint" actionlint
+          "$RUNNER_TEMP/rigor-actionlint/actionlint" -version
+          "$RUNNER_TEMP/rigor-actionlint/actionlint"
+          python -m tools.check_ci_workflows
+          python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Dependency audit guard coverage
+        shell: bash
+        run: >-
+          python -m pytest tests/test_check_dependency_audits.py
+          tests/test_check_dependency_waivers.py
+          --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers
+          --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Validate classified coverage residuals
+        run: python -m rigor_foundry residuals-check --root .
+      - name: Lint and format
+        run: |
+          python -m ruff check src tools tests fuzz benchmarks
+          python -m ruff format --check src tools tests fuzz benchmarks
+      - name: Memory preparation test documentation
+        run: >-
+          python -m ruff check --config 'lint.per-file-ignores={}'
+          tests/test_project_memory_activation_artifact.py
+          tests/test_project_memory_activation_plan.py
+          tests/project_memory_store_support.py
+          tests/test_project_memory_store.py
+          tests/test_project_memory_reader.py
+          tests/test_project_memory_history.py
+          tests/test_project_memory_filesystem_safety.py
+          tests/test_project_registry_cutover.py
+          tests/test_project_memory_activation_content.py
+          tests/test_project_memory_activation_publication.py
+          tests/test_project_memory_sources.py
+          tests/test_protected_file_publication.py
+      - name: Strict typing
+        run: python -m mypy --strict src tools tests fuzz benchmarks
+      - name: Discovery source documentation and typing
+        run: |
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
+          python -m mypy --strict src/rigor_foundry/discovery_source_*.py src/rigor_foundry/discovery_progress.py tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
+      - name: Discovery source closure coverage
+        run: >-
+          python -m pytest tests/test_discovery_source_validation.py
+          tests/test_discovery_source_boundaries.py tests/test_discovery_source_cli.py
+          tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
+          --cov=rigor_foundry.discovery_source_schema
+          --cov=rigor_foundry.discovery_source_validation
+          --cov=rigor_foundry.discovery_source_cli
+          --cov=rigor_foundry.discovery_progress
+          --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Campaign admission documentation, typing and coverage
+        run: |
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_campaign_admission.py tests/test_signed_campaign_admission.py
+          python -m mypy --strict src/rigor_foundry/campaign_admission.py src/rigor_foundry/signed_campaign_admission.py tests/test_campaign_admission.py tests/test_signed_campaign_admission.py
+          python -m pytest tests/test_campaign_admission.py tests/test_signed_campaign_admission.py --cov=rigor_foundry.campaign_admission --cov=rigor_foundry.signed_campaign_admission --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Instruction dispatch documentation, typing and coverage
+        run: |
+          python -m tools.check_instruction_documentation
+          python -m ruff check --config 'lint.per-file-ignores={}' tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_tool_authority_acceptance.py tests/test_adapter_workspace.py tests/native_dispatch_support.py tests/test_native_dispatch.py tests/test_signed_native_dispatch.py tests/test_check_instruction_documentation.py
+          python -m mypy --strict src/rigor_foundry/instruction_scope.py src/rigor_foundry/instruction_resolution.py src/rigor_foundry/instruction_dispatch.py src/rigor_foundry/signed_instruction_dispatch.py src/rigor_foundry/adapter_workspace.py src/rigor_foundry/adapters.py src/rigor_foundry/native_dispatch.py tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/instruction_dispatch_support.py tests/test_tool_authority_acceptance.py tests/test_adapter_workspace.py tests/native_dispatch_support.py tests/test_native_dispatch.py tests/test_signed_native_dispatch.py tools/check_instruction_documentation.py tests/test_check_instruction_documentation.py
+          python -m pytest tests/test_instruction_scope.py tests/test_instruction_resolution.py tests/test_instruction_dispatch.py tests/test_signed_instruction_dispatch.py tests/test_tool_authority_acceptance.py tests/test_check_instruction_documentation.py --cov=rigor_foundry.instruction_scope --cov=rigor_foundry.instruction_resolution --cov=rigor_foundry.instruction_dispatch --cov=rigor_foundry.signed_instruction_dispatch --cov=tools.check_instruction_documentation --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Static security
+        run: python -m bandit -q -c pyproject.toml -r src/rigor_foundry tools
+      - name: Licence conformance
+        run: python -m reuse lint
+      - name: Run repository self-audit and native controls
+        run: |
+          python -m rigor_foundry scan --root . --policy rigor-foundry-policy.json --json-out self-audit-report.json --markdown-out self-audit-report.md
+          python -m rigor_foundry gate --root . --policy rigor-foundry-policy.json --mode observe --scope full --allow-native-audits --output self-audit-gate.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: repository-self-audit
+          path: |
+            self-audit-report.json
+            self-audit-report.md
+            self-audit-gate.json
+          if-no-files-found: error
+          retention-days: 30

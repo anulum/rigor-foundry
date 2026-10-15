@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Deterministic quality and test gates
+
+name: CI test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11.15", "3.12.13", "3.13.14"]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Install native audit sandbox
+        run: |
+          set -euo pipefail
+          python3 -m tools.install_bubblewrap \
+            --destination "$RUNNER_TEMP/bubblewrap.deb"
+          sudo dpkg -i "$RUNNER_TEMP/bubblewrap.deb"
+          sudo install -m 0644 /dev/stdin /etc/apparmor.d/bwrap <<'APPARMOR'
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          # Ubuntu 24.04 globally mediates unprivileged user namespaces. This
+          # attachment grants userns only to the root-owned bwrap path; it does
+          # not provide the native-audit sandbox. RigorFoundry's attested bwrap
+          # argument contract provides that boundary and disables nested userns.
+          profile bwrap /usr/bin/bwrap flags=(unconfined) {
+            userns,
+          }
+          APPARMOR
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap
+          test "$(/usr/bin/cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1
+          /usr/bin/bwrap --version
+          /usr/bin/dpkg-query --show \
+            --showformat='${binary:Package}|${Version}|${Architecture}|${Status}\n' \
+            bubblewrap
+          test "$(/usr/bin/dpkg-query --showformat='${Version}' --show bubblewrap)" = \
+            0.9.0-1ubuntu0.3
+          printf '%s  %s\n' \
+            e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71 \
+            /usr/bin/bwrap | sha256sum --check --strict
+          /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
+            --unshare-user --disable-userns --assert-userns-disabled \
+            --uid 65534 --gid 65534 --ro-bind /usr /usr \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --proc /proc --dev /dev \
+            --tmpfs /tmp --clearenv -- /usr/bin/true
+          if /usr/bin/bwrap --die-with-parent --new-session --unshare-all \
+            --unshare-user --disable-userns --assert-userns-disabled \
+            --uid 65534 --gid 65534 --ro-bind /usr /usr \
+            --symlink usr/bin /bin --symlink usr/lib /lib \
+            --symlink usr/lib64 /lib64 --proc /proc --dev /dev \
+            --tmpfs /tmp --clearenv -- \
+            /usr/bin/unshare --user -- /usr/bin/true; then
+            echo "nested user namespace unexpectedly succeeded" >&2
+            exit 1
+          fi
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements/ci.txt
+            requirements/test.txt
+            requirements/security.txt
+            requirements/native.txt
+      - name: Install hash-locked test environment
+        run: |
+          python -m venv "$RUNNER_TEMP/rigor-docs-venv"
+          "$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --require-hashes -r requirements/test.txt
+          python -m pip install --require-hashes -r requirements/security.txt
+          python -m pip install --require-hashes -r requirements/native.txt
+          python -m pip install --no-build-isolation --no-deps .
+          chmod 0755 "$pythonLocation/bin/semgrep"
+          python -m tools.install_buildx --destination "$pythonLocation/bin/docker-buildx"
+          python -m tools.install_typos
+          python -m tools.install_trivy
+          python -m tools.install_osv_scanner
+      - name: Run exhaustive CI-owned suite
+        env:
+          RIGOR_DOCUMENTATION_PYTHON: ${{ runner.temp }}/rigor-docs-venv/bin/python
+        run: >-
+          python -m pytest tests -q
+          --cov=rigor_foundry --cov-branch
+          --cov-report=term-missing --cov-report=xml
+          --cov-fail-under=98
+      - name: Enforce exact native dispatch coverage
+        run: >-
+          python -m coverage report
+          --include='*/native_dispatch.py'
+          --fail-under=100
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: matrix.python-version == '3.12.13'
+        with:
+          name: coverage-python-3.12
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 14

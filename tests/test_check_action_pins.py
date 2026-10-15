@@ -245,6 +245,7 @@ def test_repository_guard_reports_absent_workflows_and_prefixes_nested_failures(
     assert action_pin_errors(tmp_path) == [
         ".github/workflows/ci.yaml: action has no immutable revision: owner/unversioned",
         ".github/actions/example/action.yaml: action must use the composite or Docker runtime",
+        "CI workflow inventory or graph is invalid",
     ]
 
 

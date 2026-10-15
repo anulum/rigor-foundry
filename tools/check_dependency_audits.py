@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 
 from tools._repository import ROOT, RepositoryError, visible_files
+from tools.ci_workflows import ci_jobs
 
 PYTHON_LOCKS = tuple(
     f"requirements/{name}.txt"
@@ -105,10 +106,8 @@ def dependency_audit_errors(root: Path = ROOT) -> list[str]:
         document: object = yaml.safe_load(
             (root / ".github/workflows/security.yml").read_text(encoding="utf-8")
         )
-        quality_document: object = yaml.safe_load(
-            (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-        )
-    except (OSError, UnicodeError, RepositoryError, yaml.YAMLError):
+        quality_job = ci_jobs(root)["quality"]
+    except (OSError, UnicodeError, RepositoryError, yaml.YAMLError, ValueError):
         return ["cannot establish dependency lock inventory and audit workflow"]
     supported = {*PYTHON_LOCKS, NODE_LOCK}
     for path in sorted(visible):
@@ -133,8 +132,6 @@ def dependency_audit_errors(root: Path = ROOT) -> list[str]:
         return [*errors, "dependency audit workflow must contain jobs"]
     python_commands = _blocking_commands(jobs.get("scan"), "scan", errors)
     node_commands = _blocking_commands(jobs.get("npm-audit"), "npm-audit", errors)
-    quality_jobs = quality_document.get("jobs") if isinstance(quality_document, dict) else None
-    quality_job = quality_jobs.get("quality") if isinstance(quality_jobs, dict) else None
     quality_commands = _blocking_commands(quality_job, "quality", errors)
     for command, commands in (
         *((command, python_commands) for command in PYTHON_COMMANDS),

@@ -23,6 +23,7 @@ from packaging.utils import canonicalize_name
 
 from rigor_foundry.version import __version__
 from tools._repository import ROOT
+from tools.ci_workflows import CI_WORKFLOWS
 
 
 def test_private_memory_has_portable_repository_exclusions() -> None:
@@ -177,7 +178,9 @@ def test_container_scan_uses_repository_verified_trivy() -> None:
 
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
-    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    workflow = "\n".join(
+        (ROOT / path).read_text(encoding="utf-8") for path in CI_WORKFLOWS.values()
+    )
     assert "/tmp/rigor-wheel/bin/rigor --version" in workflow
     assert "public_api_contract_errors(package.__all__, vars(package)) == ()" in workflow
     assert 'public_api_manifest()["schema_version"] == "1.1"' in workflow

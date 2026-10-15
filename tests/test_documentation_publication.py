@@ -17,9 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import yaml
-
 from tools._repository import ROOT
+from tools.ci_workflows import ci_jobs
 
 
 def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
@@ -89,7 +88,7 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
 
 def test_exhaustive_job_installs_documentation_dependencies() -> None:
     """The job exercising the real privacy build installs its locked renderer."""
-    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    workflow = {"jobs": ci_jobs(ROOT)}
     steps = workflow["jobs"]["test"]["steps"]
     install = next(
         step for step in steps if step.get("name") == "Install hash-locked test environment"

@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Deterministic quality and test gates
+
+name: CI distribution
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-distribution-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  distribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - name: Bind distribution Python before nested Actions
+        run: |
+          distribution_python="$(command -v python)"
+          test -x "$distribution_python"
+          printf 'RF_DISTRIBUTION_PYTHON=%s\n' "$distribution_python" >> "$GITHUB_ENV"
+      - name: Build and check distributions
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m build --no-isolation
+          python -m tools.check_distribution_metadata dist/*.whl
+          python -m twine check dist/*
+      - name: Smoke installed wheel outside checkout
+        run: |
+          python -m venv /tmp/rigor-wheel
+          /tmp/rigor-wheel/bin/python -m pip install --require-hashes -r requirements/runtime.txt
+          /tmp/rigor-wheel/bin/python -m pip install --no-deps dist/*.whl
+          cd /tmp
+          /tmp/rigor-wheel/bin/rigor --help
+          /tmp/rigor-wheel/bin/rigor --version
+          /tmp/rigor-wheel/bin/python -c 'import rigor_foundry as package; from rigor_foundry.api_stability import public_api_contract_errors, public_api_manifest; assert public_api_contract_errors(package.__all__, vars(package)) == (); assert public_api_manifest()["schema_version"] == "1.1"'
+          rm -rf /tmp/rigor-source-e2e
+          mkdir /tmp/rigor-source-e2e
+          cd /tmp/rigor-source-e2e
+          printf '%s\n' '{"advisory":{"affected":true}}' > source-payload.json
+          /tmp/rigor-wheel/bin/python -c 'from pathlib import Path; from rigor_foundry import ExternalSourceClaim, SourceRetrievalPolicy, source_provenance_to_json; policy = SourceRetrievalPolicy.build(allowed_hosts=("advisories.example.test",), allow_cross_origin_redirects=False, maximum_redirects=0, timeout_seconds=5, maximum_bytes=1024, allowed_media_types=("application/json",), freshness_seconds=3600); claim = ExternalSourceClaim.build(claim_id="cve-2026-52869-affected", kind="advisory", subject="CVE-2026-52869", predicate="affected", expected_value=True, source_uri="https://advisories.example.test/CVE-2026-52869.json", extraction_method="json-pointer", selector="/advisory/affected"); Path("source-policy.json").write_text(source_provenance_to_json(policy), encoding="utf-8"); Path("source-claim.json").write_text(source_provenance_to_json(claim), encoding="utf-8")'
+          /tmp/rigor-wheel/bin/rigor source-capture --policy source-policy.json --payload source-payload.json --requested-uri https://advisories.example.test/CVE-2026-52869.json --final-uri https://advisories.example.test/CVE-2026-52869.json --redirect-count 0 --http-status 200 --media-type application/json --retrieved-at 2026-07-17T08:00:00Z --retriever-name curl --retriever-version 8.10.1 --retriever-executable-digest aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa --output source-capture.json
+          /tmp/rigor-wheel/bin/rigor source-verify --claim source-claim.json --capture source-capture.json --payload source-payload.json --verified-at 2026-07-17T08:30:00Z --verifier distribution/smoke --output source-verification.json
+          /tmp/rigor-wheel/bin/python -c 'import json; from pathlib import Path; from rigor_foundry import SourceVerification; verification = SourceVerification.from_dict(json.loads(Path("source-verification.json").read_text(encoding="utf-8"))); assert verification.verified_value is True'
+          rm -rf /tmp/rigor-adopter
+          mkdir -p /tmp/rigor-adopter/src /tmp/rigor-adopter/tests /tmp/rigor-adopter/docs/internal /tmp/rigor-adopter/reports
+          git -C /tmp/rigor-adopter init --initial-branch=main
+          git -C /tmp/rigor-adopter config user.name "Distribution Smoke"
+          git -C /tmp/rigor-adopter config user.email "distribution-smoke@example.invalid"
+          printf '%s\n' '.rigor/' 'docs/internal/' 'reports/' > /tmp/rigor-adopter/.gitignore
+          printf '%s\n' 'VALUE = 1' > /tmp/rigor-adopter/src/example.py
+          printf '%s\n' 'def test_value() -> None:' '    assert True' > /tmp/rigor-adopter/tests/test_example.py
+          git -C /tmp/rigor-adopter add .gitignore src tests
+          git -C /tmp/rigor-adopter commit -m "test: seed installed-wheel adopter"
+          cd /tmp/rigor-adopter
+          /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests
+          git add rigor-foundry-policy.json
+          git commit -m "test: track installed-wheel adopter policy"
+          /tmp/rigor-wheel/bin/rigor cra-bootstrap --root . --product-key installed-product --product-name "Installed Product" --manufacturer-name "Distribution Smoke" --main-establishment-ms SK --establishment-basis decisions --csirt-endpoint-id installed-csirt --user-notice-channel security-page --support-period-months 60 --registered-at 2026-07-20T10:00:00Z
+          printf '%s\n' '{"bomFormat":"CycloneDX","components":[{"name":"installed-component","purl":"pkg:pypi/installed-component@1.0.0","type":"library","version":"1.0.0"}],"specVersion":"1.6","version":1}' > /tmp/rigor-installed-sbom.json
+          /tmp/rigor-wheel/bin/rigor sbom-import --root . --product-key installed-product --file /tmp/rigor-installed-sbom.json --format cyclonedx-1.6 --source-tool distribution-smoke@1.0.0 --source-evidence workflow:distribution --coverage top-level-only --captured-at 2026-07-20T10:01:00Z
+          /tmp/rigor-wheel/bin/rigor sbom-status --root . --product-key installed-product --observed-at 2026-07-20T10:02:00Z > /tmp/rigor-installed-sbom-status.json
+          /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-installed-sbom-status.json").read_text(encoding="utf-8")); assert document["drift"]["drifted"] is False; assert document["inventory"]["top_level_components"][0]["purl"] == "pkg:pypi/installed-component@1.0.0"'
+          /tmp/rigor-wheel/bin/rigor scan --root . --policy rigor-foundry-policy.json --json-out /tmp/rigor-adopter-report.json
+          /tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json --output /tmp/rigor-adopter-results.sarif
+          /tmp/rigor-wheel/bin/python -c 'import json, pathlib; document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); assert document["version"] == "2.1.0"; assert document["runs"][0]["results"]'
+          curl --proto '=https' --tlsv1.2 --fail --location --output /tmp/sarif-schema-2.1.0.json https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json
+          printf '%s  %s\n' c3b4bb2d6093897483348925aaa73af03b3e3f4bd4ca38cef26dcb4212a2682e /tmp/sarif-schema-2.1.0.json | sha256sum --check --strict
+          python -c 'import json, pathlib; from jsonschema import Draft4Validator; schema = json.loads(pathlib.Path("/tmp/sarif-schema-2.1.0.json").read_text(encoding="utf-8")); document = json.loads(pathlib.Path("/tmp/rigor-adopter-results.sarif").read_text(encoding="utf-8")); Draft4Validator.check_schema(schema); Draft4Validator(schema).validate(document)'
+          test "$(stat -c '%a' docs/internal/TODO.md)" = 600
+          test ! -e docs/internal/reviews.json
+          set +e
+          /tmp/rigor-wheel/bin/rigor bootstrap --root . --policy rigor-foundry-policy.json --todo docs/internal/TODO.md --review-ledger docs/internal/reviews.json --source-root src --test-root tests >/dev/null 2>&1
+          second_status=$?
+          set -e
+          test "$second_status" = 2
+      - name: Run consumer action against external fixture
+        uses: ./
+        with:
+          repository-root: /tmp/rigor-adopter
+          policy-path: rigor-foundry-policy.json
+          report-path: /tmp/rigor-adopter/reports/action-report.json
+          gate-report-path: /tmp/rigor-adopter/reports/action-gate.json
+          mode: observe
+          scope: full
+          allow-native-audits: "false"
+      - name: Install and run distributable hook in external fixture
+        env:
+          SOURCE_REPOSITORY: ${{ github.workspace }}
+          SOURCE_REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cd /tmp/rigor-adopter
+          printf '%s\n' \
+            'minimum_pre_commit_version: 4.6.0' \
+            'repos:' \
+            "  - repo: file://${SOURCE_REPOSITORY}" \
+            "    rev: ${SOURCE_REVISION}" \
+            '    hooks:' \
+            '      - id: rigor-foundry' \
+            '        args:' \
+            '          - gate' \
+            '          - --root' \
+            '          - .' \
+            '          - --policy' \
+            '          - rigor-foundry-policy.json' \
+            '          - --mode' \
+            '          - observe' \
+            '          - --scope' \
+            '          - staged' \
+            '          - --output' \
+            '          - reports/pre-commit-gate.json' \
+            > .pre-commit-config.yaml
+          PATH="/tmp/rigor-wheel/bin:$PATH" \
+            "$RF_DISTRIBUTION_PYTHON" -m pre_commit run --all-files --config .pre-commit-config.yaml
+          test -s reports/pre-commit-gate.json
+          test -s reports/action-report.json
+          test -s reports/action-gate.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rigor-foundry-distributions
+          path: |
+            dist/*
+            /tmp/rigor-adopter/reports/*.json
+          if-no-files-found: error
+          retention-days: 14

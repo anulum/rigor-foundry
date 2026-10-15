@@ -241,3 +241,22 @@ filenames, expose broken-link paths through tracebacks, or inject forged log
 lines. Trusted in-process secret findings retain full SHA-256 path identifiers
 without candidate values. Third-party analyser output follows the analyser's
 own reporting contract.
+
+## Workflow inventory and aggregate gate
+
+The repository CI coordinator calls five reusable categories: quality, Python
+tests, coverage publication, distribution integrations and VS Code.
+The versioned workflow inventory assigns every executable job to one owner
+and category. Existing contract tests inspect actual category sources rather
+than expecting executable steps inside the coordinator.
+
+The tools.check_ci_workflows module command validates inventory, source budgets,
+same-revision calls, category dependencies and narrow permissions. The normal
+action-pin guard also invokes it. Quality CI runs digest-verified Actionlint
+and focused inventory tests at 100% coverage for both new owner modules.
+The CI gate requires all five categories to succeed; cancelled, failed and
+unexpectedly skipped results cannot pass. The original aggregate package
+coverage floor remains 98%.
+
+Hosted required checks need actual emitted check names and separate publication
+validation. Local policy results establish source correctness, not a remote run.

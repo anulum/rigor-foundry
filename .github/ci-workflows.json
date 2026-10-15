@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "coordinator": ".github/workflows/ci.yml",
+  "aggregate": "ci-gate",
+  "workflows": {
+    ".github/workflows/ci-coverage.yml": {
+      "owner": "@anulum",
+      "category": "coverage",
+      "jobs": [
+        "coverage"
+      ]
+    },
+    ".github/workflows/ci-distribution.yml": {
+      "owner": "@anulum",
+      "category": "distribution",
+      "jobs": [
+        "distribution"
+      ]
+    },
+    ".github/workflows/ci-quality.yml": {
+      "owner": "@anulum",
+      "category": "quality",
+      "jobs": [
+        "quality"
+      ]
+    },
+    ".github/workflows/ci-tests.yml": {
+      "owner": "@anulum",
+      "category": "test",
+      "jobs": [
+        "test"
+      ]
+    },
+    ".github/workflows/ci-vscode.yml": {
+      "owner": "@anulum",
+      "category": "vscode",
+      "jobs": [
+        "vscode"
+      ]
+    },
+    ".github/workflows/ci.yml": {
+      "owner": "@anulum",
+      "category": "coordination",
+      "jobs": [
+        "quality",
+        "test",
+        "coverage",
+        "distribution",
+        "vscode",
+        "ci-gate"
+      ]
+    },
+    ".github/workflows/codeql.yml": {
+      "owner": "@anulum",
+      "category": "security",
+      "jobs": [
+        "analyse"
+      ]
+    },
+    ".github/workflows/docker.yml": {
+      "owner": "@anulum",
+      "category": "container",
+      "jobs": [
+        "smoke",
+        "publish"
+      ]
+    },
+    ".github/workflows/docs.yml": {
+      "owner": "@anulum",
+      "category": "documentation",
+      "jobs": [
+        "build",
+        "deploy"
+      ]
+    },
+    ".github/workflows/fuzz.yml": {
+      "owner": "@anulum",
+      "category": "fuzz",
+      "jobs": [
+        "atheris"
+      ]
+    },
+    ".github/workflows/pre-commit.yml": {
+      "owner": "@anulum",
+      "category": "hooks",
+      "jobs": [
+        "hooks"
+      ]
+    },
+    ".github/workflows/publish.yml": {
+      "owner": "@anulum",
+      "category": "publication",
+      "jobs": [
+        "pypi"
+      ]
+    },
+    ".github/workflows/pypi-downloads.yml": {
+      "owner": "@anulum",
+      "category": "metrics",
+      "jobs": [
+        "snapshot"
+      ]
+    },
+    ".github/workflows/release.yml": {
+      "owner": "@anulum",
+      "category": "release",
+      "jobs": [
+        "release"
+      ]
+    },
+    ".github/workflows/scorecard.yml": {
+      "owner": "@anulum",
+      "category": "security",
+      "jobs": [
+        "analysis"
+      ]
+    },
+    ".github/workflows/security.yml": {
+      "owner": "@anulum",
+      "category": "security",
+      "jobs": [
+        "scan",
+        "npm-audit",
+        "security-gate"
+      ]
+    },
+    ".github/workflows/stale.yml": {
+      "owner": "@anulum",
+      "category": "maintenance",
+      "jobs": [
+        "stale"
+      ]
+    }
+  }
+}

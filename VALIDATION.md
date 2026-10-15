@@ -340,3 +340,26 @@ Promotion requires all local gates, a clean independent exact-SHA audit, green
 remote workflows, no open high-severity security finding, an external-adopter
 campaign with reviewed evidence, and explicit owner authorisation. A static
 zero-candidate result alone cannot satisfy promotion.
+
+## Distributed CI contract
+
+Five reusable categories preserve original executable commands, step order,
+matrix, timeouts, artifact names and permission boundaries. Only the external
+coverage-to-test dependency moves to the caller. The added quality validation
+step runs Actionlint, inventory audit and focused policy tests.
+The CI gate runs with always() and requires every category to succeed.
+Tests execute its actual Bash command for failure, cancellation, skipping and
+missing or unknown results at every category.
+
+The complete inventory covers all workflows and executable jobs. Actual copied
+source tests refuse undeclared or duplicate ownership, malformed YAML/JSON,
+mutable actions, cross-category dependencies, widened call surfaces, omitted
+categories, weakened aggregation and source-size overflow. Real copied guard
+CLIs accept unchanged/restored files and redact invalid-source failures.
+Both new complete owner modules require 100% statement and branch coverage.
+Actionlint, strict typing and focused tests supplement the original consumer
+contracts, including real documentation and distribution privacy fixture builds.
+
+Hosted check-name compatibility and binding the stable aggregate in branch
+protection remain publication gates. Local validation establishes source
+correctness, not a hosted run or a change to existing required contexts.

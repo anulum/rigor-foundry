@@ -129,3 +129,29 @@ For maintainers, coordination logs and handovers live only in the monorepo
 external contributors should not create it.
 Never commit credentials, private repositories, internal plans, or audit
 reports containing proprietary source excerpts.
+
+## Workflow changes
+
+The small [CI coordinator](.github/workflows/ci.yml) calls five same-revision
+workflows for repository quality, the Python test matrix, coverage publication,
+distribution integrations and the VS Code host. Update the versioned
+[workflow inventory](.github/ci-workflows.json) whenever jobs or ownership change.
+Every executable job has exactly one declared category and owner.
+
+After workflow edits, run Actionlint and focused policy tests, then the normal
+action-pin guard; it also checks the complete inventory and graph:
+
+```bash
+actionlint
+python -m tools.check_ci_workflows
+python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
+python -m tools.check_action_pins
+```
+
+Quality CI runs the same tests and a digest-verified Actionlint 1.7.12 binary.
+The CI gate requires success from every category, including the complete Python
+matrix. Coverage upload keeps its OIDC permission and runs only after tests;
+failed, cancelled or skipped categories fail the aggregate.
+Before publishing a workflow migration, verify the emitted category and
+aggregate check names against actual required contexts and bind the stable
+aggregate accordingly. Local validation does not activate hosted protection.

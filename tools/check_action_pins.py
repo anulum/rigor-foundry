@@ -166,6 +166,9 @@ def action_pin_errors(root: Path = ROOT) -> list[str]:
     for action in action_files:
         for error in action_metadata_errors(action):
             errors.append(f"{action.relative_to(root).as_posix()}: {error}")
+    from tools.check_ci_workflows import ci_workflow_errors
+
+    errors.extend(ci_workflow_errors(root))
     return errors
 
 

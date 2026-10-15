@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Deterministic quality and test gates
+
+name: CI vscode
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-vscode-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vscode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.1"
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - name: Install exact VS Code host
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 --fail --location \
+            --output "$RUNNER_TEMP/code.deb" \
+            https://update.code.visualstudio.com/1.125.0/linux-deb-x64/stable
+          printf '%s  %s\n' \
+            7538e2b63e3a32927f7874f4790bbddb60088c80db5c737f907fce5ae56f0462 \
+            "$RUNNER_TEMP/code.deb" | sha256sum --check --strict
+          sudo dpkg -i "$RUNNER_TEMP/code.deb"
+          test "$(code --version | sed -n '1p')" = 1.125.0
+          test "$(code --version | sed -n '2p')" = 93cfdd489c3b228840d0f86ec77c3636277c93ea
+      - name: Install canonical CLI and locked extension dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --no-build-isolation --no-deps .
+          npm ci --ignore-scripts --prefix editors/vscode
+      - name: Audit, type-check, test, and package extension
+        run: |
+          npm audit --prefix editors/vscode
+          npm run check --prefix editors/vscode
+          npm run package --prefix editors/vscode
+      - name: Exercise real Extension Development Host
+        env:
+          RIGOR_FOUNDRY_CLI: ${{ env.pythonLocation }}/bin/rigor
+          VSCODE_EXECUTABLE: /usr/share/code/code
+        run: xvfb-run -a npm run test:integration --prefix editors/vscode
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: rigor-foundry-vscode-vsix
+          path: editors/vscode/rigor-foundry-vscode.vsix
+          if-no-files-found: error
+          retention-days: 14

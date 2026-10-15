@@ -79,7 +79,7 @@ def test_distributable_hook_requires_locked_runtime_and_defaults_to_passive_gate
 
 def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
     """Distribution CI runs the local Action and cloned hook outside the source tree."""
-    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/ci-distribution.yml").read_text(encoding="utf-8")
     match = re.search(
         r"^  distribution:\n(?P<body>.*?)(?=^  [a-zA-Z0-9_-]+:\n|\Z)",
         workflow,
@@ -117,7 +117,7 @@ def test_ci_installs_both_integrations_in_one_external_fixture() -> None:
 
 def test_ci_test_matrix_installs_every_verified_native_fixture() -> None:
     """Every exhaustive matrix job provisions the native tools its tests exercise."""
-    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/ci-tests.yml").read_text(encoding="utf-8")
     match = re.search(
         r"^  test:\n(?P<body>.*?)(?=^  [a-zA-Z0-9_-]+:\n|\Z)",
         workflow,
