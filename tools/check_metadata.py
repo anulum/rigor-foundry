@@ -16,6 +16,9 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import yaml
+from yaml.nodes import MappingNode, ScalarNode
+
 from tools._repository import ROOT, redacted_guard_exit_code
 
 EXPECTED_NAME = "rigor-foundry"
@@ -43,10 +46,25 @@ def _package_version(path: Path) -> str | None:
     return node.value.value
 
 
-def _citation_value(text: str, key: str) -> str | None:
-    """Read a scalar field from the repository's top-level citation metadata."""
-    match = re.search(rf"^{re.escape(key)}:\s*[\"']?([^\"'\n]+)", text, re.MULTILINE)
-    return match.group(1).strip() if match else None
+def _citation_fields(text: str) -> dict[str, str]:
+    """Read citation identity strings from a YAML mapping with unique field names."""
+    document = yaml.compose(text, Loader=yaml.SafeLoader)
+    if not isinstance(document, MappingNode) or document.tag != "tag:yaml.org,2002:map":
+        raise ValueError("CITATION.cff must contain a YAML mapping")
+    fields: dict[str, str] = {}
+    seen: set[str] = set()
+    for key, value in document.value:
+        if not isinstance(key, ScalarNode) or key.tag != "tag:yaml.org,2002:str":
+            raise ValueError("CITATION.cff field names must be strings")
+        if key.value in seen:
+            raise ValueError("CITATION.cff field names must be unique")
+        seen.add(key.value)
+        if key.value not in {"version", "license", "repository-code"}:
+            continue
+        if not isinstance(value, ScalarNode) or value.tag != "tag:yaml.org,2002:str":
+            raise ValueError("CITATION.cff identity fields must be strings")
+        fields[key.value] = value.value
+    return fields
 
 
 def metadata_errors(root: Path = ROOT) -> list[str]:
@@ -58,6 +76,8 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
         Repository containing the package, citation, archive and licence files.
         The version owner must contain only an optional module docstring and
         one assignment of a string literal to the sole target ``__version__``.
+        Citation metadata must be one YAML mapping with unique string field
+        names and string values for version, licence and repository identity.
 
     Returns
     -------
@@ -69,7 +89,10 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
     OSError
         If a required file cannot be read.
     ValueError
-        If TOML or JSON metadata cannot be decoded.
+        If TOML or JSON metadata cannot be decoded, or citation fields have
+        ambiguous names or invalid types.
+    yaml.YAMLError
+        If citation metadata is not a single valid YAML document.
     SyntaxError
         If the version owner is not valid Python syntax.
     """
@@ -104,12 +127,12 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
     if package_version != version:
         errors.append(f"package version {package_version!r} does not match {version!r}")
 
-    citation = (root / "CITATION.cff").read_text(encoding="utf-8")
-    if _citation_value(citation, "version") != version:
+    citation = _citation_fields((root / "CITATION.cff").read_text(encoding="utf-8"))
+    if citation.get("version") != version:
         errors.append("CITATION.cff version does not match pyproject.toml")
-    if _citation_value(citation, "license") != EXPECTED_LICENSE:
+    if citation.get("license") != EXPECTED_LICENSE:
         errors.append("CITATION.cff does not declare Apache-2.0")
-    if _citation_value(citation, "repository-code") != EXPECTED_REPOSITORY:
+    if citation.get("repository-code") != EXPECTED_REPOSITORY:
         errors.append("CITATION.cff repository does not match the canonical repository")
 
     archive = json.loads((root / ".zenodo.json").read_text(encoding="utf-8"))

@@ -56,6 +56,14 @@ repository metadata and the real module command, including malformed or missing
 input failures. The command prints fixed status; detailed findings remain
 available through the in-process `metadata_errors` API.
 
+Citation identity is parsed as YAML rather than extracted from text lines.
+`CITATION.cff` must contain one mapping with unique string field names;
+`version`, `license` and `repository-code` must have string values. YAML
+comments, quoting, escapes, block strings and flow mappings preserve their
+parsed meaning. Duplicate names, including equivalent escaped spellings,
+invalid syntax and incorrect identity types fail validation. This checks
+release identity, rather than the complete Citation File Format schema.
+
 The repository conformance audit distinguishes necessary third-party technical
 names from agent identity, authorship and branding. Its conservative lexical
 policy currently registers the supported native JSONL format name in explicit

@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools._repository import ROOT
 from tools.check_metadata import metadata_errors
@@ -279,7 +280,143 @@ def test_metadata_cli_accepts_the_canonical_repository() -> None:
 
 
 @pytest.mark.parametrize(
-    "state", ("valid", "duplicate-version", "syntax", "toml", "json", "missing")
+    ("field", "value"),
+    (
+        ("version", "1.0.0"),
+        ("version", "1.0.1"),
+        ("license", "Apache-2.0"),
+        ("license", "MIT"),
+        ("repository-code", "https://github.com/anulum/rigor-foundry"),
+        ("repository-code", "https://example.invalid/other"),
+        ("title", "Other title"),
+    ),
+)
+def test_metadata_rejects_duplicate_citation_fields(
+    metadata_repository: Path, field: str, value: str
+) -> None:
+    """Repeated citation fields cannot select different release identities."""
+    path = metadata_repository / "CITATION.cff"
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write(f"\n{field}: {value}\n")
+
+    with pytest.raises(ValueError, match="field names must be unique"):
+        metadata_errors(metadata_repository)
+
+
+def test_metadata_rejects_equivalent_escaped_citation_keys(metadata_repository: Path) -> None:
+    """YAML escaping cannot give a repeated version field a second spelling."""
+    path = metadata_repository / "CITATION.cff"
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write('\n"\\u0076ersion": 1.0.1\n')
+
+    with pytest.raises(ValueError, match="field names must be unique"):
+        metadata_errors(metadata_repository)
+
+
+@pytest.mark.parametrize("style", ("comment", "escape", "block", "flow", "anchor"))
+def test_metadata_accepts_equivalent_actual_citation_yaml(
+    metadata_repository: Path, style: str
+) -> None:
+    """Real citation metadata keeps its identity across equivalent YAML forms."""
+    path = metadata_repository / "CITATION.cff"
+    original = path.read_text(encoding="utf-8")
+    replacements = {
+        "comment": "version: 1.0.0 # Release identity",
+        "escape": 'version: "\\u0031.0.0"',
+        "block": "version: >-\n  1.0.0",
+        "anchor": "version: &release 1.0.0\nrelease-reference: *release",
+    }
+    if style == "flow":
+        updated = yaml.safe_dump(
+            yaml.safe_load(original), default_flow_style=True, allow_unicode=True
+        )
+    else:
+        updated = original.replace("version: 1.0.0", replacements[style], 1)
+    path.write_text(updated, encoding="utf-8")
+
+    parsed = yaml.safe_load(updated)
+    assert parsed["version"] == yaml.safe_load(original)["version"]
+    assert metadata_errors(metadata_repository) == []
+
+
+@pytest.mark.parametrize("state", ("empty", "sequence", "tag"))
+def test_metadata_rejects_nonmapping_citation_documents(
+    metadata_repository: Path, state: str
+) -> None:
+    """A citation document must have an ordinary mapping as its root."""
+    path = metadata_repository / "CITATION.cff"
+    original = path.read_text(encoding="utf-8")
+    if state == "empty":
+        updated = ""
+    elif state == "sequence":
+        updated = "-\n" + "\n".join("  " + line for line in original.splitlines()) + "\n"
+    else:
+        updated = "!citation\n" + original
+    path.write_text(updated, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="must contain a YAML mapping"):
+        metadata_errors(metadata_repository)
+
+
+@pytest.mark.parametrize("key", ("? [version]\n:", "100:"))
+def test_metadata_rejects_nonstring_citation_keys(metadata_repository: Path, key: str) -> None:
+    """Structured or numeric field names cannot declare release identity."""
+    path = metadata_repository / "CITATION.cff"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("\nversion:", f"\n{key}", 1), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="field names must be strings"):
+        metadata_errors(metadata_repository)
+
+
+@pytest.mark.parametrize(
+    "value", ("[1.0.0]", "{value: 1.0.0}", "true", "100", "null", "!release 1.0.0")
+)
+def test_metadata_rejects_nonstring_citation_identity(
+    metadata_repository: Path, value: str
+) -> None:
+    """Collections, typed values and custom tags cannot alias a version string."""
+    path = metadata_repository / "CITATION.cff"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("version: 1.0.0", f"version: {value}", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="identity fields must be strings"):
+        metadata_errors(metadata_repository)
+
+
+@pytest.mark.parametrize("state", ("quoted-suffix", "syntax", "multiple-documents"))
+def test_metadata_rejects_malformed_citation_yaml(metadata_repository: Path, state: str) -> None:
+    """Syntax errors and multiple documents cannot supply one citation identity."""
+    path = metadata_repository / "CITATION.cff"
+    original = path.read_text(encoding="utf-8")
+    if state == "quoted-suffix":
+        updated = original.replace("version: 1.0.0", 'version: "1.0.0"suffix', 1)
+    elif state == "syntax":
+        updated = original.replace("version: 1.0.0", "version: [1.0.0", 1)
+    else:
+        updated = original + "\n---\n" + original
+    path.write_text(updated, encoding="utf-8")
+
+    with pytest.raises(yaml.YAMLError):
+        metadata_errors(metadata_repository)
+
+
+@pytest.mark.parametrize(
+    "state",
+    (
+        "valid",
+        "duplicate-version",
+        "syntax",
+        "toml",
+        "json",
+        "missing",
+        "duplicate-citation",
+        "invalid-citation",
+        "typed-citation",
+    ),
 )
 def test_metadata_cli_validates_copied_actual_metadata(
     metadata_repository: Path, state: str
@@ -297,6 +434,23 @@ def test_metadata_cli_validates_copied_actual_metadata(
         (metadata_repository / ".zenodo.json").write_text("{\n", encoding="utf-8")
     elif state == "missing":
         (metadata_repository / "CITATION.cff").unlink()
+    elif state == "duplicate-citation":
+        with (metadata_repository / "CITATION.cff").open("a", encoding="utf-8") as stream:
+            stream.write("\nversion: 1.0.1\n")
+    elif state == "invalid-citation":
+        path = metadata_repository / "CITATION.cff"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "version: 1.0.0", 'version: "1.0.0"suffix', 1
+            ),
+            encoding="utf-8",
+        )
+    elif state == "typed-citation":
+        path = metadata_repository / "CITATION.cff"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("version: 1.0.0", "version: [1.0.0]", 1),
+            encoding="utf-8",
+        )
     completed = subprocess.run(
         [sys.executable, "-m", "tools.check_metadata"],
         cwd=metadata_repository,

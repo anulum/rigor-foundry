@@ -199,6 +199,14 @@ exercise valid metadata, duplicate-version drift, invalid Python/TOML/JSON and
 missing-file failures. CLI output is fixed pass/fail status; trusted callers
 can obtain detailed inconsistencies from `metadata_errors`.
 
+Citation fields are read from parsed YAML with unique string field names and
+string identity values. The owning tests retain the complete actual metadata
+while introducing duplicate or escaped-equivalent names, invalid syntax,
+multiple documents and incorrect root/key/value types. Equivalent YAML
+comments, escapes, block strings, flow mappings and aliases retain identity.
+Public API and real module processes verify refusal and fixed failure output;
+full Citation File Format schema validation is outside this identity guard.
+
 The built-wheel metadata guard runs in CI, tagged release assembly, and PyPI
 publication. It checks the real wheel's name and version, requires a
 version-matched installation command plus the public registry link, and rejects

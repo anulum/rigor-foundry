@@ -290,6 +290,15 @@ verify successful validation and fixed failure status for version drift,
 invalid Python/TOML/JSON and missing files. The existing pre-commit metadata
 hook and composed repository audit both invoke this owner.
 
+Citation identity checks parse the actual YAML document, require unique string
+field names and compare string values for version, licence and repository.
+Actual copied citation files exercise duplicate names, equivalent escaped keys,
+invalid syntax, multiple documents, incorrect root/key/value types and
+equivalent comments, escapes, block strings, flow mappings and aliases.
+API refusals and real module failure status cover these malformed citation
+states. This is a release-identity check, not full Citation File Format schema
+validation.
+
 Release-tag validation is implemented as a standard-library-only CLI. A
 real `python -S` regression proves that it runs with site-package imports
 disabled and without importing the `rigor_foundry` package. A separate
