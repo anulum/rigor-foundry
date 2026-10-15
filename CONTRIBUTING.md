@@ -43,6 +43,21 @@ enabled. CodeQL action steps are updated together to keep their versions equal.
 - New controls define evidence, applicability, remediation, and acceptance
   contracts; they never silently pass when unsupported.
 
+The repository conformance audit distinguishes necessary third-party technical
+names from agent identity, authorship and branding. Its conservative lexical
+policy currently registers the supported native JSONL format name in explicit
+format, source, transcript, message or subset context. Attribution cues in the
+same paragraph take precedence; other or ambiguous names require review and an
+explicit policy extension. Public fixtures use descriptive synthetic identities,
+including synthetic session UUIDs, rather than actual session or seat labels.
+There are no path or test-tree exceptions to this policy.
+
+The local-only dependency guard permits explicit `urllib.parse` imports and its
+documented parsing/quoting exports. It continues to reject the `urllib` root,
+clients, mixed imports, wildcard or unknown exports and relative lookalikes.
+This static import check complements the runtime sandbox; it does not establish
+network isolation, detect arbitrary dynamic loading or validate parsed URLs.
+
 Run focused tests locally:
 
 ```bash

@@ -22,8 +22,8 @@ from rigor_foundry.semantic_acceptance_policy import (
 from rigor_foundry.trust import TrustedPublicKey
 from rigor_foundry.verification_policy import OfflineTrustPolicy, VerificationKeyPolicy
 
-_AUTHOR = "RIGOR-FOUNDRY/codex-7184@01a09839-f7e6-76b0-9d2f-69c19a1fadda"
-_REVIEWER = "CEO/claude"
+_AUTHOR = "RIGOR-FOUNDRY/fixture-author@12345678-1234-4234-8234-123456789abc"
+_REVIEWER = "REVIEW/fixture-reviewer"
 
 
 def _policy() -> OfflineTrustPolicy:
@@ -59,14 +59,14 @@ def test_owner_author_attribution_requires_exact_wire_and_session() -> None:
     altered = {**record.to_dict(), "proposal_artifact_sha256": "d" * 64}
     with pytest.raises(ValueError, match="digest differs"):
         ProposalAuthorAttribution.from_dict(altered)
-    altered = {**record.to_dict(), "author_id": "RIGOR-FOUNDRY/codex-7184"}
+    altered = {**record.to_dict(), "author_id": "RIGOR-FOUNDRY/fixture-author"}
     with pytest.raises(ValueError, match="qualified session"):
         ProposalAuthorAttribution.from_dict(altered)
     with pytest.raises(ValueError, match="session must be a UUID"):
         ProposalAuthorAttribution.build(
             proposal_digest="a" * 64,
             proposal_artifact_sha256="b" * 64,
-            author_id="RIGOR-FOUNDRY/codex-7184@invalid-session",
+            author_id="RIGOR-FOUNDRY/fixture-author@invalid-session",
             evidence_sha256="c" * 64,
             attested_by="owner",
             attested_at="2026-09-23T00:00:00Z",

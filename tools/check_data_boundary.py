@@ -30,6 +30,31 @@ _NETWORK_MODULES = frozenset(
     }
 )
 _ALLOWED_RUNTIME_DEPENDENCIES = ("cryptography>=50,<51", "PyYAML>=6.0.3,<7")
+_URL_PARSING_NAMES = frozenset(
+    {
+        "urlparse",
+        "urlunparse",
+        "urlsplit",
+        "urlunsplit",
+        "urljoin",
+        "urldefrag",
+        "urlencode",
+        "parse_qs",
+        "parse_qsl",
+        "quote",
+        "quote_plus",
+        "quote_from_bytes",
+        "unquote",
+        "unquote_plus",
+        "unquote_to_bytes",
+        "DefragResult",
+        "ParseResult",
+        "SplitResult",
+        "DefragResultBytes",
+        "ParseResultBytes",
+        "SplitResultBytes",
+    }
+)
 
 
 def _imported_network_modules(path: Path) -> tuple[str, ...]:
@@ -39,9 +64,21 @@ def _imported_network_modules(path: Path) -> tuple[str, ...]:
     for node in ast.walk(tree):
         names: tuple[str, ...] = ()
         if isinstance(node, ast.Import):
-            names = tuple(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module is not None:
-            names = (node.module,)
+            names = tuple(alias.name for alias in node.names if alias.name != "urllib.parse")
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0 and (
+                (
+                    node.module == "urllib.parse"
+                    and all(alias.name in _URL_PARSING_NAMES for alias in node.names)
+                )
+                or (node.module == "urllib" and all(alias.name == "parse" for alias in node.names))
+            ):
+                continue
+            names = (
+                (node.module,)
+                if node.module is not None
+                else tuple(alias.name for alias in node.names)
+            )
         modules.update(
             name.split(".", maxsplit=1)[0]
             for name in names

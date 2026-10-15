@@ -9,10 +9,13 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+from tools._repository import ROOT
 from tools.check_data_boundary import data_boundary_errors
 
 
@@ -82,3 +85,78 @@ def test_data_boundary_rejects_dependencies_and_network_clients(tmp_path: Path) 
         "network-capable import 'socket' in local-only core: src/rigor_foundry/subsystem/core.py",
         "network-capable import 'urllib' in local-only core: src/rigor_foundry/subsystem/core.py",
     ]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import urllib.parse\n",
+        "import urllib.parse as parsing\n",
+        "from urllib import parse\n",
+        "from urllib import parse as parsing\n",
+        "from urllib.parse import urlsplit\n",
+        "from urllib.parse import urlsplit as split, quote\n",
+        "from urllib.parse import SplitResult, ParseResultBytes\n",
+        "from . import local_helper\n",
+    ],
+)
+def test_data_boundary_accepts_explicit_url_parsing_imports(tmp_path: Path, source: str) -> None:
+    """Explicit pure parsing imports remain permitted through the repository API."""
+    root = _repository(
+        tmp_path / "repository",
+        dependencies='["cryptography>=50,<51", "PyYAML>=6.0.3,<7"]',
+        source=source,
+    )
+    assert data_boundary_errors(root) == []
+
+
+@pytest.mark.parametrize(
+    ("source", "module"),
+    [
+        ("import urllib\n", "urllib"),
+        ("import urllib.request as parsing\n", "urllib"),
+        ("import urllib.parse, urllib.request\n", "urllib"),
+        ("import urllib.parse.request\n", "urllib"),
+        ("from urllib import parse, request\n", "urllib"),
+        ("from urllib import request as parse\n", "urllib"),
+        ("from urllib import unknown\n", "urllib"),
+        ("from urllib import *\n", "urllib"),
+        ("from urllib.request import urlopen\n", "urllib"),
+        ("from urllib.parse import *\n", "urllib"),
+        ("from urllib.parse import unknown\n", "urllib"),
+        ("from urllib.parse import urlsplit, __builtins__\n", "urllib"),
+        ("from .urllib import parse\n", "urllib"),
+        ("from .urllib.parse import urlsplit\n", "urllib"),
+        ("from . import urllib as parsing\n", "urllib"),
+        ("from .. import socket\n", "socket"),
+        ("if False:\n    import urllib.request\n", "urllib"),
+        ("def deferred():\n    from urllib import request\n", "urllib"),
+    ],
+)
+def test_parser_exception_refuses_root_mixed_unknown_and_relative_imports(
+    tmp_path: Path, source: str, module: str
+) -> None:
+    """Parser enrollment cannot admit clients through aliases or another AST shape."""
+    root = _repository(
+        tmp_path / "repository",
+        dependencies='["cryptography>=50,<51", "PyYAML>=6.0.3,<7"]',
+        source=source,
+    )
+    assert data_boundary_errors(root) == [
+        f"network-capable import {module!r} in local-only core: src/rigor_foundry/subsystem/core.py"
+    ]
+
+
+def test_data_boundary_cli_accepts_explicit_parser_import_in_current_core() -> None:
+    """The actual module command accepts the enrolled parser and emits fixed status."""
+    completed = subprocess.run(
+        [sys.executable, "-m", "tools.check_data_boundary"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert completed.returncode == 0, (completed.stdout, completed.stderr)
+    assert completed.stdout == "Data-boundary guard passed\n"
+    assert completed.stderr == ""

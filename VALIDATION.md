@@ -266,6 +266,14 @@ credential-bearing filenames, exposing broken-link paths through tracebacks, or
 accepting newline-bearing paths as forged log records. Third-party analyser
 output remains governed by each analyser's own reporting contract.
 
+Public identity conformance has separate ordinary API regressions for factual
+native-format references, agent attribution, actor labels, mixed occurrences and
+unregistered names. Composed repository and process tests verify that this
+policy and the explicit URL-parser import exception retain real negative cases
+and fixed redacted CLI output. The original signature, lifecycle, self-review
+and extraction assertions exercise vendor-neutral fixture identities; these
+temporary signed fixtures do not qualify protected host custody or authority.
+
 Version `v0.1.0` is published as a GitHub Release and GHCR image without a PyPI
 counterpart. Its immutable wheel retained pre-publication-only status text, so
 uploading that artefact to a permanent public index was rejected instead of

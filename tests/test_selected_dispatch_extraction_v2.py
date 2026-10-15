@@ -80,7 +80,7 @@ def _selection(
                 }
             )
             action = ActionScope(
-                "RIGOR-FOUNDRY/codex-fixture",
+                "RIGOR-FOUNDRY/fixture-actor",
                 "fixture-runtime",
                 "RIGOR-FOUNDRY",
                 "write-report",

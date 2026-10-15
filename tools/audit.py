@@ -23,6 +23,7 @@ from tools.check_descriptive_production_naming import descriptive_naming_errors
 from tools.check_headers import header_errors
 from tools.check_metadata import metadata_errors
 from tools.check_project_memory_privacy import project_memory_privacy_errors
+from tools.check_public_identity import public_identity_errors
 from tools.check_secrets import secret_errors
 
 EXPECTED_ORIGIN = "https://github.com/anulum/rigor-foundry.git"
@@ -82,15 +83,6 @@ FORBIDDEN_PUBLIC_TERMS = tuple(
         ("Commercial ", "license available"),
     )
 )
-FORBIDDEN_IDENTITIES = (
-    "co" + "dex",
-    "open" + "ai",
-    "chat" + "gpt",
-    "clau" + "de",
-    "anthro" + "pic",
-    "gr" + "ok",
-    "x" + "ai",
-)
 FORBIDDEN_QUALITY_LABELS = tuple(
     "".join(parts) for parts in (("el", "ite"), ("sup", "erior"), ("str", "ong"), ("eta", "lon"))
 )
@@ -116,15 +108,15 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
         if FORBIDDEN_PUBLIC_PARTS.intersection(path.parts):
             errors.append(f"internal state is Git-visible: {path.as_posix()}")
         text = read_text(path, root)
-        if text is None or path == Path("tools/audit.py"):
+        if text is None:
+            continue
+        errors.extend(f"{error} in {path.as_posix()}" for error in public_identity_errors(text))
+        if path == Path("tools/audit.py"):
             continue
         for term in FORBIDDEN_PUBLIC_TERMS:
             if term in text:
                 errors.append(f"legacy or incompatible public term in {path.as_posix()}: {term}")
         lowered = text.casefold()
-        for identity in FORBIDDEN_IDENTITIES:
-            if re.search(rf"\b{re.escape(identity)}\b", lowered):
-                errors.append(f"vendor identity is public in {path.as_posix()}")
         for label in FORBIDDEN_QUALITY_LABELS:
             if re.search(rf"\b{re.escape(label)}\b", lowered):
                 errors.append(f"internal quality label is public in {path.as_posix()}")

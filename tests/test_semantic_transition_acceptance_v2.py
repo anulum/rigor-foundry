@@ -32,8 +32,8 @@ from rigor_foundry.trust import TrustedPublicKey
 from rigor_foundry.verification_policy import OfflineTrustPolicy, VerificationKeyPolicy
 
 _KEY = "fixture-ceo-reviewer-key"
-_AUTHOR = "RIGOR-FOUNDRY/codex-7184@01a09839-f7e6-76b0-9d2f-69c19a1fadda"
-_REVIEWER = "CEO/claude"
+_AUTHOR = "RIGOR-FOUNDRY/fixture-author@12345678-1234-4234-8234-123456789abc"
+_REVIEWER = "REVIEW/fixture-reviewer"
 _NOW = datetime(2026, 9, 23, 0, 30, tzinfo=UTC)
 
 
@@ -244,7 +244,9 @@ def test_crossed_successor_link_refuses_even_with_valid_statement_hashes() -> No
         SemanticAcceptanceBodyV2.from_dict({**body, "replacements": crossed})
 
 
-@pytest.mark.parametrize("author_id", [_AUTHOR.upper(), "RIGOR-FOUNDRY/codex-7184@invalid-uuid"])
+@pytest.mark.parametrize(
+    "author_id", [_AUTHOR.upper(), "RIGOR-FOUNDRY/fixture-author@invalid-uuid"]
+)
 def test_acceptance_author_session_must_use_canonical_uuid(author_id: str) -> None:
     """A malformed or alternate UUID spelling refuses before signature admission."""
     with pytest.raises(ValueError, match="canonical UUID"):
