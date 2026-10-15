@@ -111,7 +111,8 @@ The repository's dependency-waiver guard also checks the actual Git-visible
 lock inventory, exact scanner commands, event enrolment and the aggregate
 `security-gate`. Both scanner jobs must succeed, including when one is skipped
 or cancelled. Adding another lock requires explicit audit enrolment; an
-unsupported lock fails the guard. The current waiver set remains empty.
+unsupported lock fails the guard. The current waiver set must remain empty; the
+guard rejects a nonempty set and any `--ignore-vuln` workflow option.
 These source checks do not prove that hosted branch protection requires the
 gate or that the current head has passed a hosted audit.
 
@@ -144,14 +145,17 @@ Do not disclose a suspected vulnerability in a public issue. Follow the
 use private vulnerability reporting.
 
 
-The security-tool lock is generated with uv 0.12.21 and CPython 3.12, retaining
-the complete CI constraints and SHA-256 hashes. With that uv version and a
-Python 3.12 interpreter installed, regenerate it from the repository root:
+## Security-tool lock maintenance
+
+The current security lock pins Semgrep `1.180.0` and Click `8.4.2`. Its retained
+generation header names `pip-compile` on Python 3.11, matching the repository
+lock target. Use a Python 3.11 environment with the `pip-tools` version pinned
+in `requirements/ci.txt` and retain the complete CI constraints and SHA-256
+hashes. Regenerate from the repository root:
 
 ```sh
-uv --no-config pip compile --python python3.12 --no-managed-python \
-  --no-python-downloads --generate-hashes --upgrade \
-  --constraint requirements/ci.txt \
+python3.11 -m piptools compile --allow-unsafe --generate-hashes --strip-extras \
+  --upgrade --constraint requirements/ci.txt \
   --output-file requirements/security.txt requirements/security.in
 ```
 

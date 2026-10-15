@@ -6,12 +6,13 @@
 rigor contract
 ```
 
-Print the deterministic, digest-bound proposed-1.0 Python, CLI, and
+Print the deterministic, digest-bound 1.0 Python, CLI, and
 serialized-schema compatibility contract. The command reads no repository,
 performs no network access, and writes no files. See the
 [1.0 stable compatibility contract](stable-contract-1.0.md) for the stability,
-deprecation, and migration rules. The package remains pre-1.0 until the release
-gates and protected tag complete.
+deprecation, and migration rules. Source metadata declares `1.0.0`; the
+installed command reports the version of the package actually installed.
+Publication requires separate release gates and owner authorisation.
 
 Install from a verified source checkout during the migration:
 
@@ -24,7 +25,7 @@ python3 -m venv .venv
 ```
 
 `rigor --version` prints the canonical package identity, for example
-`rigor 0.1.1`, without requiring a subcommand.
+`rigor 1.0.0` for this source version, without requiring a subcommand.
 
 The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but

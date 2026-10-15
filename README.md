@@ -27,8 +27,8 @@ RigorFoundry inventories Git-tracked repository content, emits reproducible
 audit candidates, binds review decisions to exact evidence, and prepares
 remediation inputs without treating static heuristics as defect verdicts.
 
-> **Current status:** stable public interface, detection rules in maturity probation.
-> RigorFoundry 1.0.0 freezes a digest-bound compatibility contract over the installed
+> **Source status:** package version `1.0.0`, detection rules in maturity probation.
+> The 1.0 compatibility manifest freezes a digest-bound contract over the installed
 > CLI commands and their option and positional spellings, the package-level Python
 > API, and the inventoried schema versions: a wire-incompatible change requires a new
 > schema identifier and an explicit migration, never a silent reinterpretation. That
@@ -143,7 +143,7 @@ explicit policy/evidence paths and no remediation authority.
 | --- | --- |
 | `rigor bootstrap` | Create one explicit policy and ignored canonical TODO without guessing or overwrite. |
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
-| `rigor contract` | Emit the digest-bound proposed-1.0 Python, CLI, and schema compatibility contract. |
+| `rigor contract` | Emit the digest-bound 1.0 Python, CLI, and schema compatibility contract. |
 | `rigor report-diff` | Compare two exact reports as replay-verifiable candidate-transition evidence. |
 | `rigor verify` | Verify signed reports, reviews, packs, model aliases, freshness, and unavailable evidence offline. |
 | `rigor review-template` | Create explicit `needs-evidence` review records. |
@@ -169,9 +169,10 @@ explicit policy/evidence paths and no remediation authority.
 `rigor --version` reports the canonical installed package version. The exact
 stable/provisional top-level import inventory and deprecation policy are
 documented in [Public API stability](docs/api-stability.md).
-The proposed-1.0 command and serialized-protocol freeze is documented in the
-[1.0 stable compatibility contract](docs/stable-contract-1.0.md); the current
-package remains pre-1.0 until the release gates and protected tag complete.
+The 1.0 command and serialized-protocol freeze is documented in the
+[1.0 stable compatibility contract](docs/stable-contract-1.0.md). The source
+metadata declares `1.0.0`; a published release requires its separate release
+gates and owner authorisation. Check the registry for an installable version.
 
 The [offline CRA preparation guide](docs/cra-reporting.md) documents the exact
 operator workflow, evidence boundary, clocks, append-only storage, and exit

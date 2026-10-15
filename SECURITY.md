@@ -14,11 +14,12 @@ or private repository content.
 
 ## Supported versions
 
-Security reports are accepted for the latest published `0.1.x` patch and the
-public `main` development branch. Superseded `0.1.x` patches are assessed when
-the reported issue also affects the latest patch; they do not receive a
-separate backport guarantee. RigorFoundry is pre-alpha and has no long-term
-support release.
+Security reports are accepted for the latest published release and the public
+`main` development branch. Determine the published version from the
+[release history](https://pypi.org/project/rigor-foundry/#history), separately
+from the source version in `pyproject.toml`. Superseded patches are assessed
+when the reported issue also affects the latest release; they do not receive
+a separate backport guarantee. No long-term support line is designated.
 
 ## Threat model
 
@@ -75,27 +76,32 @@ reviews prioritise:
   exposes no promotion or remediation operation. The distributed system
   pre-commit hook requires a separately hash-locked installation and defaults
   to a staged observe gate without native-audit consent.
-- Dependency exceptions are advisory-, package-, version-, command-, and
-  expiry-bound in `.github/dependency-waivers.json`; repository audit fails on
-  drift or expiry.
+- `.github/dependency-waivers.json` must contain an empty waiver set. The
+  repository guard rejects advisory exceptions, ignored vulnerability findings,
+  disabled scanner commands and missing blocking lock-audit enrolment.
 - Container package installation uses the exact Debian snapshot associated with
   the pinned base-image digest; vulnerability findings block rather than
   silently selecting newer mutable packages.
 - Release publication requires an exact version tag and owner-published
   release, and uses OIDC rather than a stored package credential. The manual
-  recovery path must be dispatched from the same tag ref it validates and
-  builds. Required-reviewer environment protection remains a separate
+  recovery path accepts the named tag or the repository default branch as its
+  dispatch ref, then checks out the fully qualified release tag and verifies
+  its published release. Package content always comes from that tag.
+  Required-reviewer environment protection remains a separate
   promotion gate.
 
-## Current toolchain exception
+## Toolchain dependency policy
 
-`PYSEC-2026-2132` affects `click.edit`. Semgrep 1.170.0 requires Click 8.1.8,
-while the advisory is fixed in a version outside Semgrep's declared range.
-RigorFoundry permits only the fixed, non-interactive repository scan command;
-the ephemeral security environment does not call `click.edit`. The exact
-exception expires on 2026-08-14 and blocks CI and repository audit if the lock,
-command, advisory, or date drifts. It must be removed as soon as the upstream
-constraint admits a fixed Click release.
+The current security lock selects Semgrep `1.180.0` and Click `8.4.2`, with
+SHA-256 hashes and the complete CI constraints. The waiver manifest is empty
+and its guard requires that state. Earlier dated validation records describe
+their original dependency sets; they do not authorise an exception today.
+
+The Security workflow audits every committed dependency lock and runs the
+repository Semgrep policy with errors blocking the job. The actual locks,
+waiver guard and workflow define this policy; their presence does not prove a
+current hosted audit result or the absence of vulnerabilities. See the
+[dependency audit and regeneration contract](docs/security.md#dependency-advisory-audits).
 
 ## Coordinated disclosure
 

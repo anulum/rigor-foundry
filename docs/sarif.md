@@ -47,4 +47,5 @@ inventory, tracked content, rule-pack, HEAD, tree, and Git object format.
 
 The schema URI is exported as `SARIF_SCHEMA_URI`; its current value identifies
 the OASIS SARIF 2.1.0 Errata 01 JSON schema. `report_sarif` and the schema/version
-constants are provisional package-level APIs during the pre-1.0 series.
+constants are provisional package-level APIs. Their lifecycle is independent
+of the stable SARIF wire contract; see [Public API stability](api-stability.md).

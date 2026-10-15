@@ -1,8 +1,8 @@
 # 1.0 stable compatibility contract
 
-RigorFoundry carries one digest-bound compatibility manifest for the proposed
-`1.0.0` boundary. Retrieve it from an installed wheel without consulting the
-source tree:
+RigorFoundry carries one digest-bound compatibility manifest targeting
+`1.0.0`, the version declared by the current source metadata. Retrieve it from
+an installed wheel without consulting the source tree:
 
 ```console
 rigor contract
@@ -16,10 +16,11 @@ from rigor_foundry import stable_contract_manifest
 manifest = stable_contract_manifest()
 ```
 
-The current package version remains pre-1.0. The manifest is the frozen release
-candidate contract; it becomes the published major-version commitment only if
-the same contract is released as `1.0.0`. Its SHA-256 `contract_digest` covers
-every field except the digest itself.
+Source version, compatibility target and publication state are separate. The
+manifest defines the frozen contract in this source tree. Publication requires
+the release gates and explicit owner authorisation; verify an installable
+version in the [public registry](https://pypi.org/project/rigor-foundry/). Its
+SHA-256 `contract_digest` covers every field except the digest itself.
 
 ## What is frozen
 
@@ -72,7 +73,7 @@ See [public API stability](api-stability.md) for the consuming role boundary.
   schema rather than infer stability from importability.
 
 There are no deprecated stable Python imports or CLI commands in the frozen
-1.0 candidate contract.
+1.0 contract.
 
 ## Boundaries
 

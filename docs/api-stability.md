@@ -10,11 +10,11 @@ from rigor_foundry.api_stability import public_api_manifest
 manifest = public_api_manifest()
 ```
 
-The broader proposed-1.0 Python, CLI, and serialized-schema boundary is exposed
+The broader 1.0 Python, CLI, and serialized-schema boundary is exposed
 by `rigor contract` and documented in the
-[1.0 stable compatibility contract](stable-contract-1.0.md). The package is
-still pre-1.0; this is a frozen candidate contract, not a claim that `1.0.0`
-has already been released.
+[1.0 stable compatibility contract](stable-contract-1.0.md). Source metadata
+declares package version `1.0.0`. The manifest describes compatibility; release
+authorisation and registry availability require separate evidence.
 
 The result has sorted `stable` and `provisional` name arrays, exact stable
 runtime-binding records, and structured `deprecated` records. Compatibility
@@ -103,11 +103,11 @@ The module-level `rule_chain_candidate.inspect_rule_chain_candidate` and
 package-level exports in the frozen 1.0 compatibility inventory and do not
 admit a selected lock or an effect. See [Rule-chain candidate inspection](rule-chain-candidate.md).
 
-Every other current `rigor_foundry.__all__` name is explicitly provisional in
-the pre-1.0 package. Provisional does not mean untested: these APIs remain typed,
-documented where public, and covered by production-boundary tests. It means a
-minor release may refine or remove the import after an explicit changelog entry
-while the project remains pre-1.0.
+Every other current `rigor_foundry.__all__` name is explicitly provisional.
+These APIs remain typed, documented where public, and covered by
+production-boundary tests. A minor release may refine or remove a provisional
+import after an explicit changelog entry. Any independently frozen serialized
+protocol retains its own compatibility and migration requirements.
 
 The module-level signed-acceptance, v2 candidate, effective-lock, selected-chain
 and selected-semantics APIs are also provisional. Their full runtime dependency
@@ -143,4 +143,4 @@ Compatibility tests reject duplicate or overlapping classifications,
 unclassified exports, classifications for absent names, non-final semantic
 versions, self-replacements, missing replacements, and a too-short same-major
 deprecation window. There are no deprecated stable top-level imports in the
-frozen 1.0 candidate contract.
+frozen 1.0 contract.
