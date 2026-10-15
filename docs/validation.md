@@ -188,6 +188,15 @@ only the Python standard library and is tested through an isolated `python -S`
 process, so release, container, and package-publication jobs can execute it
 before installing the project package.
 
+The guard requires a project table and a string version with three
+dot-separated decimal components before comparing the exact `v`-prefixed tag.
+It refuses missing, typed or non-release values even if their text matches the
+tag. Dedicated tests retain the complete actual manifest while exercising API
+findings and read/parse exceptions, then run the actual copied module with
+normal Python and `python -S`. The CLI preserves exact-match, mismatch and
+usage outcomes and reports unreadable or malformed manifests with fixed text
+and a nonzero status.
+
 Repository metadata consistency is checked separately by
 `python -m tools.check_metadata`, enrolled in pre-commit and the composed audit.
 The package version owner contains only an optional docstring and one assignment

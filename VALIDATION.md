@@ -301,7 +301,13 @@ validation.
 
 Release-tag validation is implemented as a standard-library-only CLI. A
 real `python -S` regression proves that it runs with site-package imports
-disabled and without importing the `rigor_foundry` package. A separate
+disabled and without importing the `rigor_foundry` package. Its contract
+requires the manifest's project version to be a string of three dot-separated
+decimal components before tag comparison. Boolean, numeric, structured, missing
+and non-release values refuse even when their text matches the tag. Actual
+copied manifests exercise API findings and read/parse errors; normal and
+`python -S` module processes verify exact success, mismatch, usage and fixed
+malformed/unreadable-manifest failure output. A separate
 distribution-metadata guard builds a real wheel, binds its name and version,
 requires an exact versioned installation command and public registry link, and
 rejects pre-publication status text. CI, tagged release assembly, and protected

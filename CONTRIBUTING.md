@@ -64,6 +64,14 @@ parsed meaning. Duplicate names, including equivalent escaped spellings,
 invalid syntax and incorrect identity types fail validation. This checks
 release identity, rather than the complete Citation File Format schema.
 
+The separate `python -m tools.check_release_tag <tag>` guard uses only the
+standard library so it can run before dependency installation. It requires a
+project table with a three-component string version and an exact `v`-prefixed
+tag. Invalid version values are findings; unreadable or malformed manifests
+produce a fixed failure status at the CLI boundary. Trusted API callers retain
+the underlying read or parse exception. Dedicated tests copy the actual guard
+and complete manifest and run both normal Python and `python -S` processes.
+
 The repository conformance audit distinguishes necessary third-party technical
 names from agent identity, authorship and branding. Its conservative lexical
 policy currently registers the supported native JSONL format name in explicit
