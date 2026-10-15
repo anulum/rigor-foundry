@@ -17,8 +17,8 @@
         "a supported Python runtime permits null PIPE streams",
         "the adapter process transport changes"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-ADAPTER-PROFILE-PROVENANCE-RACE",
@@ -77,66 +77,8 @@
         "bootstrap creation moves to a non-regular storage primitive",
         "the supported kernel changes O_CREAT plus O_EXCL semantics"
       ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
-    },
-    {
-      "residual_id": "CR-BOOTSTRAP-CREATE-RACE",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "_create_text",
-      "guard": "already exists; bootstrap never overwrites",
-      "source_digest": "81fdf89bd07418467999ddc06b16280862a2f04158c330e486f48d3dd4f10e31",
-      "owner": "onboarding-security",
-      "rationale": "the guard covers another process creating the exact leaf after the public absence check but before descriptor-relative O_EXCL; forcing this sub-instruction interval requires probabilistic scheduling or forbidden syscall substitution, while real pre-existing paths prove the public no-overwrite outcome",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_never_overwrites_and_leaves_no_partial_policy"
-      ],
-      "revisit_triggers": [
-        "a deterministic kernel-assisted leaf-create handshake is available",
-        "bootstrap no longer uses descriptor-relative O_EXCL"
-      ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
-    },
-    {
-      "residual_id": "CR-BOOTSTRAP-FINAL-REVALIDATION",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "bootstrap_repository",
-      "guard": "policy parent changed during bootstrap",
-      "source_digest": "391d7d243a06a49ac005043ec2da804aa7fb5e60a0b5ec4c157d2e6bdc940fe6",
-      "owner": "onboarding-security",
-      "rationale": "final root, policy, TODO, ledger-parent, leaf, and Git ownership guards sample those identities after exclusive creation; deterministic activation requires a public staged transaction boundary or kernel scheduler control, while patched Python syscalls and timing-dependent process races are forbidden evidence; the separate ledger-postcheck residual records the absence-sample limitation",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
-        "tests/test_bootstrap.py::test_bootstrap_preserves_created_policy_when_private_todo_cannot_be_created"
-      ],
-      "revisit_triggers": [
-        "a public staged bootstrap transaction boundary is introduced",
-        "kernel-assisted deterministic mutation scheduling becomes available"
-      ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
-    },
-    {
-      "residual_id": "CR-BOOTSTRAP-GIT-ROOT-RACE",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "bootstrap_repository",
-      "guard": "repository root identity changed during Git checks",
-      "source_digest": "391d7d243a06a49ac005043ec2da804aa7fb5e60a0b5ec4c157d2e6bdc940fe6",
-      "owner": "onboarding-security",
-      "rationale": "this earlier guard detects root replacement during fixed-root Git plumbing; deterministic activation requires scheduler control inside external Git execution, while patched syscall or process results are forbidden evidence",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo"
-      ],
-      "revisit_triggers": [
-        "a deterministic Git-command boundary mutation hook becomes public",
-        "bootstrap Git checks move behind a kernel transaction"
-      ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-BOOTSTRAP-LEDGER-POSTCHECK",
@@ -146,37 +88,18 @@
       "guard": "_require_absent(ledger_parent, ledger_name, \"review-ledger path\")",
       "source_digest": "391d7d243a06a49ac005043ec2da804aa7fb5e60a0b5ec4c157d2e6bdc940fe6",
       "owner": "onboarding-security",
-      "rationale": "review-ledger absence is sampled before writes and again before final Git checks, but cannot reserve a path the tool intentionally does not create; a concurrent owner can populate it after the last sample, so the successful result carries point-in-time absence rather than an atomic no-adoption guarantee",
+      "rationale": "Native own-child syscall scheduling now proves both sides of the final absence sample: presence before it refuses without adopting or overwriting the ledger, while a concurrent writer immediately after it can populate the intentionally uncreated path before success; this remains a point-in-time absence contract, not an atomic reservation",
       "public_verification": [
         "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
-        "tests/test_bootstrap.py::test_bootstrap_rejects_tracked_internal_paths_and_invalid_thresholds"
+        "tests/test_bootstrap.py::test_bootstrap_rejects_tracked_internal_paths_and_invalid_thresholds",
+        "tests/test_bootstrap_filesystem_races.py::test_final_ledger_absence_is_a_sample_not_a_reservation"
       ],
       "revisit_triggers": [
         "a public staged bootstrap transaction boundary is introduced",
         "adopters accept bootstrap creating an atomic ledger reservation"
       ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
-    },
-    {
-      "residual_id": "CR-BOOTSTRAP-PATH-RACE",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "_path_identity",
-      "guard": "created bootstrap path is no longer a single-link regular file",
-      "source_digest": "f34aa527d393fd22d39333072a12ee3f9bfece728ad6793cb91ba1649a39015d",
-      "owner": "onboarding-security",
-      "rationale": "the guard detects a leaf replacement or new hardlink after exclusive creation; deterministic activation inside the integrated call requires a public staged transaction boundary, while patched stat results and timing-dependent scheduler races are forbidden evidence",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
-        "tests/test_bootstrap.py::test_bootstrap_never_overwrites_and_leaves_no_partial_policy"
-      ],
-      "revisit_triggers": [
-        "a public staged bootstrap transaction boundary is introduced",
-        "kernel-assisted deterministic leaf mutation scheduling becomes available"
-      ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-BOOTSTRAP-PLATFORM",
@@ -195,8 +118,8 @@
         "a non-POSIX bootstrap backend is implemented",
         "the supported operating-system contract changes"
       ],
-      "reviewed_on": "2026-07-17",
-      "review_by": "2026-10-15"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-GIT-DESCRIPTOR-ROOT",
@@ -214,28 +137,8 @@
         "a supported runner lacks both descriptor roots",
         "portable descriptor execution support is added"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
-    },
-    {
-      "residual_id": "CR-GIT-HASH-RACE",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/git_provenance.py",
-      "symbol": "GitRunner._snapshot_file",
-      "guard": "trusted Git executable changed while hashing",
-      "source_digest": "58a096cc37b2d8c7975fbee7fe4fd11131c43f20677c938ca751736fc98d6dff",
-      "owner": "supply-chain-security",
-      "rationale": "the branch detects a metadata change between two fstat calls on one retained descriptor; deterministic activation requires kernel-scheduled mutation inside that exact interval, while patched fstat results would only simulate the guard",
-      "public_verification": [
-        "tests/test_git_provenance.py::test_constructor_binds_validation_to_component_safe_snapshot",
-        "tests/test_git_provenance.py::test_runner_detects_replacement_before_executing_new_bytes"
-      ],
-      "revisit_triggers": [
-        "a deterministic filesystem-race harness is introduced",
-        "executable hashing moves to a kernel-attested primitive"
-      ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-GIT-NOFOLLOW-PLATFORM",
@@ -253,28 +156,8 @@
         "non-POSIX Git execution becomes supported",
         "the minimum Python or operating-system contract changes"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
-    },
-    {
-      "residual_id": "CR-GIT-PREPIN-RACE",
-      "classification": "race-window",
-      "source_path": "src/rigor_foundry/git_provenance.py",
-      "symbol": "GitRunner._execute",
-      "guard": "trusted Git executable changed before descriptor pinning",
-      "source_digest": "55e6e709c5f97ba8472c573616970d3881d8bec9a7e3e156d2bcfa7b4202c5e5",
-      "owner": "supply-chain-security",
-      "rationale": "the branch covers replacement after the pre-call snapshot but before descriptor identity comparison; public tests exercise replacements on both sides of execution, while patching open or fstat would not prove the race boundary",
-      "public_verification": [
-        "tests/test_git_provenance.py::test_runner_detects_replacement_before_executing_new_bytes",
-        "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap"
-      ],
-      "revisit_triggers": [
-        "Git execution no longer uses a retained descriptor",
-        "a deterministic filesystem-race harness is introduced"
-      ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
@@ -292,8 +175,8 @@
         "a supported Linux runner omits procfs",
         "trusted execution gains a second native descriptor path"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-TRUSTED-NOFOLLOW-PLATFORM",
@@ -311,8 +194,8 @@
         "non-Linux native adapters become supported",
         "the operating-system primitive contract changes"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     },
     {
       "residual_id": "CR-TRUSTED-PIPE-INVARIANT",
@@ -331,14 +214,15 @@
         "a supported Python runtime permits null PIPE streams",
         "trusted command process transport changes"
       ],
-      "reviewed_on": "2026-07-16",
-      "review_by": "2026-10-14"
+      "reviewed_on": "2026-10-15",
+      "review_by": "2026-11-14"
     }
   ],
   "negative_searches": [
     {
       "search_id": "NS-NO-PRIVATE-SIMULATION",
       "include": [
+        "tests/filesystem_refusal_worker.py",
         "tests/native_dispatch_support.py",
         "tests/project_registry_race_worker.py",
         "tests/project_registry_syscall_scheduler.py",
@@ -347,10 +231,12 @@
         "tests/test_adapter_workspace.py",
         "tests/test_adapters.py",
         "tests/test_bootstrap.py",
+        "tests/test_bootstrap_filesystem_races.py",
         "tests/test_digest_dependencies.py",
         "tests/test_discovery_inventory_intake.py",
         "tests/test_discovery_progress.py",
         "tests/test_git_provenance.py",
+        "tests/test_git_provenance_filesystem_races.py",
         "tests/test_native_dispatch.py",
         "tests/test_preflight.py",
         "tests/test_project_registry_cutover_races.py",

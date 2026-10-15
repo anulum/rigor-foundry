@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, cast
 
@@ -228,6 +228,11 @@ def test_source_guard_and_digest_drift_fail_closed(tmp_path: Path) -> None:
 def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path) -> None:
     """Expired review and reintroduced production simulation both block validation."""
     root = _copy_contract(tmp_path)
+    document = _document()
+    residual = _first_residual(document)
+    residual["reviewed_on"] = "2026-07-16"
+    residual["review_by"] = "2026-10-14"
+    _write_document(root, document)
     adapters_test = root / "tests/test_adapters.py"
     adapters_test.write_text(
         adapters_test.read_text(encoding="utf-8")
@@ -243,6 +248,27 @@ def test_expiry_and_negative_searches_are_enforced_on_real_files(tmp_path: Path)
         "tests/test_adapters.py" in error
         for error in errors
     )
+
+
+def test_review_expiry_is_enforced_at_the_exact_declared_day(tmp_path: Path) -> None:
+    """Real source-bound declarations pass before their deadline and fail on it."""
+    root = _copy_contract(tmp_path)
+    document = _document()
+    residuals = cast(list[dict[str, object]], document["residuals"])
+    deadline = date(2026, 11, 14)
+    for residual in residuals:
+        residual["reviewed_on"] = "2026-10-15"
+        residual["review_by"] = deadline.isoformat()
+    _write_document(root, document)
+
+    assert coverage_residual_errors(root, today=deadline - timedelta(days=1)) == ()
+    errors = coverage_residual_errors(root, today=deadline)
+    assert len(errors) == len(residuals)
+    for residual in residuals:
+        assert any(
+            str(residual["residual_id"]) + ": coverage residual review is expired" in error
+            for error in errors
+        )
 
 
 @pytest.mark.parametrize(
