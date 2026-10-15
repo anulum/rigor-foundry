@@ -188,6 +188,17 @@ only the Python standard library and is tested through an isolated `python -S`
 process, so release, container, and package-publication jobs can execute it
 before installing the project package.
 
+Repository metadata consistency is checked separately by
+`python -m tools.check_metadata`, enrolled in pre-commit and the composed audit.
+The package version owner contains only an optional docstring and one assignment
+of a string literal to the sole target `__version__`. Duplicate assignments,
+other statements and computed values fail static validation without executing
+the source. Dedicated tests use copied actual project, citation, archive,
+licence and version files to check each identity relation. Real module processes
+exercise valid metadata, duplicate-version drift, invalid Python/TOML/JSON and
+missing-file failures. CLI output is fixed pass/fail status; trusted callers
+can obtain detailed inconsistencies from `metadata_errors`.
+
 The built-wheel metadata guard runs in CI, tagged release assembly, and PyPI
 publication. It checks the real wheel's name and version, requires a
 version-matched installation command plus the public registry link, and rejects

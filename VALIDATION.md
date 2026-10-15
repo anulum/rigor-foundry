@@ -280,7 +280,17 @@ uploading that artefact to a permanent public index was rejected instead of
 rebuilding under the same tag. Version `0.1.1` is the first PyPI-intended
 release.
 
-Release-tag validation is implemented as a standard-library-only CLI and a
+The repository metadata guard validates the project name, supported Python
+classifiers, licence, homepage, package version, citation and archive. Its
+version owner permits only an optional docstring and one assignment of a string
+literal to the single target `__version__`; additional executable statements and
+ambiguous assignments fail without source execution. Dedicated public-API tests
+use actual copied metadata for each consistency check. Real module processes
+verify successful validation and fixed failure status for version drift,
+invalid Python/TOML/JSON and missing files. The existing pre-commit metadata
+hook and composed repository audit both invoke this owner.
+
+Release-tag validation is implemented as a standard-library-only CLI. A
 real `python -S` regression proves that it runs with site-package imports
 disabled and without importing the `rigor_foundry` package. A separate
 distribution-metadata guard builds a real wheel, binds its name and version,

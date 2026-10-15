@@ -45,6 +45,17 @@ enabled. CodeQL action steps are updated together to keep their versions equal.
 - New controls define evidence, applicability, remediation, and acceptance
   contracts; they never silently pass when unsupported.
 
+The release metadata guard, `python -m tools.check_metadata`, binds the project,
+package version, citation, archive and licence identities. Keep
+`src/rigor_foundry/version.py` as an optional module docstring followed by exactly
+one assignment of a string literal to the sole target `__version__`. Comments
+are permitted; additional statements, repeated assignments, annotations,
+computed values and additional targets are rejected. The guard parses this
+source without importing or executing it. Its dedicated tests exercise copied
+repository metadata and the real module command, including malformed or missing
+input failures. The command prints fixed status; detailed findings remain
+available through the in-process `metadata_errors` API.
+
 The repository conformance audit distinguishes necessary third-party technical
 names from agent identity, authorship and branding. Its conservative lexical
 policy currently registers the supported native JSONL format name in explicit

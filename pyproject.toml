@@ -187,7 +187,12 @@ patch = ["subprocess"]
 [tool.coverage.paths]
 # CI installs this checkout; subprocesses can exercise either identical copy.
 rigor_foundry = ["src/rigor_foundry", "*/site-packages/rigor_foundry"]
-repository_tools = ["tools", "*/test_actual_guard_cli_accepts_*/tools"]
+repository_tools = [
+    "tools",
+    "*/test_actual_guard_cli_accepts_*/tools",
+    "*/test_metadata_cli_validates_*/repository/tools",
+    "*/test_repository_guard_clis_*/repository/tools",
+]
 
 [tool.coverage.report]
 fail_under = 98

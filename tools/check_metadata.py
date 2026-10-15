@@ -25,26 +25,54 @@ EXPECTED_REPOSITORY = "https://github.com/anulum/rigor-foundry"
 
 
 def _package_version(path: Path) -> str | None:
+    """Read one literal version assignment from the import-safe version owner."""
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    for node in tree.body:
-        if not isinstance(node, ast.Assign):
-            continue
-        if not any(
-            isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets
-        ):
-            continue
-        if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-            return node.value.value
-    return None
+    body = tree.body
+    if ast.get_docstring(tree, clean=False) is not None:
+        body = body[1:]
+    if len(body) != 1:
+        return None
+    node = body[0]
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+        return None
+    target = node.targets[0]
+    if not isinstance(target, ast.Name) or target.id != "__version__":
+        return None
+    if not isinstance(node.value, ast.Constant) or not isinstance(node.value.value, str):
+        return None
+    return node.value.value
 
 
 def _citation_value(text: str, key: str) -> str | None:
+    """Read a scalar field from the repository's top-level citation metadata."""
     match = re.search(rf"^{re.escape(key)}:\s*[\"']?([^\"'\n]+)", text, re.MULTILINE)
     return match.group(1).strip() if match else None
 
 
 def metadata_errors(root: Path = ROOT) -> list[str]:
-    """Return cross-file metadata inconsistencies."""
+    """Return cross-file metadata inconsistencies without executing package code.
+
+    Parameters
+    ----------
+    root:
+        Repository containing the package, citation, archive and licence files.
+        The version owner must contain only an optional module docstring and
+        one assignment of a string literal to the sole target ``__version__``.
+
+    Returns
+    -------
+    list[str]
+        Metadata inconsistencies, empty when all repository identities agree.
+
+    Raises
+    ------
+    OSError
+        If a required file cannot be read.
+    ValueError
+        If TOML or JSON metadata cannot be decoded.
+    SyntaxError
+        If the version owner is not valid Python syntax.
+    """
     errors: list[str] = []
     data: dict[str, Any]
     with (root / "pyproject.toml").open("rb") as stream:
@@ -97,7 +125,13 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
 
 
 def main() -> int:
-    """Validate distribution metadata and return a process exit code."""
+    """Validate distribution metadata and print fixed process status.
+
+    Returns
+    -------
+    int
+        Zero for consistent metadata; one for findings or unreadable inputs.
+    """
     return redacted_guard_exit_code("Metadata guard", metadata_errors)
 
 
