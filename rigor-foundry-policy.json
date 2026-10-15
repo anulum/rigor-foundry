@@ -70,7 +70,7 @@
     {
       "name": "data-and-privacy",
       "applicability": "required",
-      "rationale": "Repositories may contain sensitive material; the dependency-free core is local-only and must not acquire an undeclared network client."
+      "rationale": "Repositories may contain sensitive material; the core uses declared cryptography and PyYAML runtimes locally and must not acquire an undeclared network client."
     },
     {
       "name": "operations-and-observability",

@@ -488,6 +488,9 @@ sufficiency, or claims authority acceptance.
 ## Packaging
 
 The package uses a `src/` layout, a typed-package marker, Hatchling, an installed
-`rigor` entry point, and the `cryptography` runtime dependency for Ed25519. CI
+`rigor` entry point, `cryptography` for Ed25519 and PyYAML for bounded
+GitHub Actions event parsing. The workflow YAML, expression and scanner owners
+remain separate, and alias-expanded execution positions have their own budget.
+CI
 tests Python 3.11–3.13, builds wheel and source distributions, installs the
 wheel outside the source tree, and verifies its metadata and CLI.

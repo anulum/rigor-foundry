@@ -7,3 +7,4 @@
 # RigorFoundry — Runtime dependency lock inputs
 
 cryptography==50.0.2
+pyyaml==6.0.3

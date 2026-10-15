@@ -330,7 +330,7 @@ def test_cr004_cr006_and_advisory_lifecycle_share_campaign_candidates(tmp_path: 
     )
     assert "CR006-fixed-vuln-without-advisory" not in rule_ids(repository)
     report = scan_repository(repository.root)
-    assert report.rule_pack_version == "rigor-foundry/1.18.0"
+    assert report.rule_pack_version == "rigor-foundry/1.19.0"
     assert all(item.candidate_id for item in report.candidates if item.rule_id.startswith("CR"))
 
     campaign_path, campaign = create_campaign(
@@ -532,13 +532,18 @@ def test_timeline_rule_branches_preserve_product_stage_and_track_boundaries() ->
     )
 
     class FakeRepository:
+        """Existing isolated timeline fixture; not native repository evidence."""
+
         def event_keys(self) -> tuple[str, ...]:
+            """List the fixture's unrelated and selected incident identities."""
             return ("OTHER-1", "INCIDENT-1")
 
         def event_state(self, event_key: str) -> CraEventState:
+            """Return the explicit fixture state for the requested event."""
             return other if event_key == "OTHER-1" else incident_state
 
         def advisory(self, _event_key: str) -> None:
+            """Represent the fixture's deliberately absent advisory."""
             return None
 
     candidates = _timeline_candidates(
@@ -562,6 +567,7 @@ def test_corrupt_component_inventory_never_degrades_to_absence(
     bootstrap(repository)
 
     def corrupt_inventory(_self: object, _product_key: str) -> None:
+        """Raise the existing corruption control at the legacy patched boundary."""
         raise ValueError("corrupt component inventory")
 
     monkeypatch.setattr(

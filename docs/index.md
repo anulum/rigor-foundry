@@ -44,3 +44,6 @@ becomes an implicit pass.
   <br>
   <em>Developed by <a href="https://www.anulum.li">ANULUM</a> / Fortis Studio</em>
 </p>
+
+[GitHub Actions security candidates](github-actions-security.md) document the
+workflow/composite scopes, incomplete outcomes and verification boundaries.

@@ -29,7 +29,7 @@ _NETWORK_MODULES = frozenset(
         "websockets",
     }
 )
-_ALLOWED_RUNTIME_DEPENDENCIES = ("cryptography>=50,<51",)
+_ALLOWED_RUNTIME_DEPENDENCIES = ("cryptography>=50,<51", "PyYAML>=6.0.3,<7")
 
 
 def _imported_network_modules(path: Path) -> tuple[str, ...]:

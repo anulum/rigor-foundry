@@ -434,6 +434,7 @@ class Candidate:
             "performance",
             "api-compatibility",
             "regulatory-readiness",
+            "github-actions",
         }:
             raise ValueError("candidate.category is unsupported")
         if confidence not in {"low", "medium", "high"}:

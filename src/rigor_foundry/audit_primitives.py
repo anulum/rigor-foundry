@@ -56,6 +56,7 @@ Category = Literal[
     "performance",
     "api-compatibility",
     "regulatory-readiness",
+    "github-actions",
 ]
 Confidence = Literal["low", "medium", "high"]
 Decision = Literal["valid", "invalid", "accepted-boundary", "needs-evidence"]

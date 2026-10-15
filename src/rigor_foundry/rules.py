@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.18.0"
+RULE_PACK_VERSION = "rigor-foundry/1.19.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -35,9 +35,10 @@ PERFORMANCE_RULE_PACK_VERSION = "rigor-foundry/1.15.0"
 API_COMPATIBILITY_RULE_PACK_VERSION = "rigor-foundry/1.16.0"
 CRA_RULE_PACK_VERSION = "rigor-foundry/1.17.0"
 JUPYTER_RULE_PACK_VERSION = "rigor-foundry/1.18.0"
+GITHUB_ACTIONS_RULE_PACK_VERSION = "rigor-foundry/1.19.0"
 
 _RULE_ID = re.compile(
-    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA|CR)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
+    r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA|CR|GA)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
 )
 _CATEGORY_PREFIXES = {
     "test-authenticity": "TA",
@@ -55,6 +56,7 @@ _CATEGORY_PREFIXES = {
     "performance": "PR",
     "api-compatibility": "AA",
     "regulatory-readiness": "CR",
+    "github-actions": "GA",
 }
 _VERSION_PREFIX = "rigor-foundry/"
 
@@ -433,6 +435,30 @@ RULES: tuple[RuleDefinition, ...] = (
         "regulatory-readiness",
         "Fixed-vulnerability state lacks publication or justified-delay evidence.",
         CRA_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "GV006-unscanned-github-actions",
+        "governance",
+        "Tracked GitHub Actions YAML could not be completely analysed.",
+        GITHUB_ACTIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "GA001-unpinned-action-reference",
+        "github-actions",
+        "Executable action or reusable workflow reference lacks an immutable pin.",
+        GITHUB_ACTIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "GA002-run-context-interpolation",
+        "github-actions",
+        "Run script directly interpolates untrusted event, branch or input data.",
+        GITHUB_ACTIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "GA003-pull-request-target-checkout",
+        "github-actions",
+        "Target-event checkout selects PR code or an unresolved dynamic source.",
+        GITHUB_ACTIONS_RULE_PACK_VERSION,
     ),
 )
 

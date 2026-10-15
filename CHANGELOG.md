@@ -20,6 +20,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- GitHub Actions workflow and composite-action candidates cover immutable action
+  references, direct untrusted run interpolation and target-event PR checkout.
+  Bounded event parsing preserves exact source anchors and reports incomplete
+  owners explicitly. The new 1.19.0 rules remain in maturity probation.
+
 - Provisional signed v2 semantic acceptance, complete effective-profile lock
   and selected-chain/semantics host leases. They recheck real reviewer
   signatures, exact source spans, selected discovery budgets, native human

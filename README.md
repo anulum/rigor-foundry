@@ -320,3 +320,7 @@ to use the RigorFoundry name or marks except as the licence permits.
   <br>
   <em>Developed by <a href="https://www.anulum.li">ANULUM</a> / Fortis Studio</em>
 </p>
+
+[GitHub Actions security candidates](docs/github-actions-security.md) cover
+workflow and composite-action references, run interpolation and target-event
+checkout, with explicit incomplete analysis and new rules in probation.

@@ -27,6 +27,7 @@ from .documentation import scan_documentation
 from .domains import domain_governance_candidates
 from .git_inventory import GitInventory, load_git_inventory
 from .git_provenance import GitRunner, GitTrustPolicy
+from .github_actions import scan_github_actions
 from .godfiles import scan_godfiles
 from .ignored_inventory import collect_ignored_inventory
 from .language_capabilities import suffixes_with
@@ -206,6 +207,7 @@ def scan_repository(
         *scan_reliability(inventory, policy),
         *scan_supply_chain(inventory, policy),
         *scan_container(inventory, policy),
+        *scan_github_actions(inventory),
         *scan_data_privacy(inventory, policy),
         *scan_documentation(inventory, policy),
         *scan_scientific(inventory, policy),

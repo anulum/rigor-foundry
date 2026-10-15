@@ -56,6 +56,7 @@ nav:
   - Reliability rules: reliability-rules.md
   - Supply-chain rules: supply-chain-rules.md
   - Container rules: container-rules.md
+  - GitHub Actions security: github-actions-security.md
   - Data-and-privacy rules: data-privacy-rules.md
   - Documentation and licence rules: documentation-rules.md
   - Scientific and numerical rules: scientific-numerical-rules.md
