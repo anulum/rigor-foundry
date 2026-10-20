@@ -45,6 +45,7 @@ def closed_object(value: object, fields: frozenset[str], label: str) -> dict[str
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     if not isinstance(value, dict) or set(value) != fields:
         raise ValueError(f"{label} fields differ")
@@ -72,6 +73,7 @@ def bounded_int(value: object, *, minimum: int, maximum: int = _SAFE_INTEGER) ->
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     if type(value) is not int or not minimum <= value <= maximum:
         raise ValueError("recovery evidence integer is outside its range")
@@ -97,6 +99,7 @@ def digest(value: object, label: str) -> str:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     return require_digest(value, label)
 
@@ -118,6 +121,7 @@ def identity(value: object) -> dict[str, object]:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     fields = frozenset({"path", "path_digest", "device", "inode"})
     item = closed_object(value, fields, "recovery file identity")
@@ -158,6 +162,7 @@ def canonical_time(value: object) -> str:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     text = require_utc_timestamp(value, "recovery.host_time")
     if value != text:
@@ -182,6 +187,7 @@ def principal(value: object) -> str:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     return require_identifier(value, "recovery.operator_identity")
 
@@ -205,6 +211,7 @@ def removed_bytes(value: object, *, maximum: int) -> bytes:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     if not isinstance(value, str) or not value.isascii():
         raise ValueError("recovery removed bytes must be ASCII base64")
@@ -234,6 +241,7 @@ def canonical_object_bytes(value: Mapping[str, object]) -> bytes:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     return canonical_journal_json_v2(dict(value))
 
@@ -255,6 +263,7 @@ def parse_canonical_object_bytes(data: bytes) -> dict[str, object]:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     try:
         decoded = project_registry_strict_json(data)

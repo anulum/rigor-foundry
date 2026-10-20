@@ -48,8 +48,12 @@ def consumed_uuids_digest_v24(snapshot: LedgerSnapshotV2, start: int, stop: int)
 
     Raises
     ------
+    ValueError
+        Either suffix bound is not an integer, or the bounds are not ordered
+        within the snapshot's record list.
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     if (
         type(start) is not int
@@ -137,6 +141,7 @@ def verify_adoption_evidence_v24(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     value = parse_canonical_object_bytes(data)
     validate_anchor_adoption_evidence_v2(value)

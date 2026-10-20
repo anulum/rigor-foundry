@@ -46,6 +46,7 @@ class AnchorPrefixVerificationV24:
         Uncommitted selected anchor recovery intents that block admission.
     pending_journal_intents : frozenset[str]
         Selected journal intents without matching anchored audit frames.
+
     """
 
     binding: AnchorJournalBindingV24
@@ -116,6 +117,7 @@ def verify_anchor_prefix_v24(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     if not raw_records:
         raise PermissionError("permit anchor initial record is absent")

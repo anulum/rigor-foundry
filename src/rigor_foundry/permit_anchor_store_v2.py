@@ -53,6 +53,7 @@ class PermitLedgerAnchorV2:
         Verified ledger/journal relationship and honoured closure replay.
     journal_identity : EffectJournalFileIdentityV2
         Verified journal path digest, device and inode.
+
     """
 
     selection: AnchorSelectionV24
@@ -61,45 +62,49 @@ class PermitLedgerAnchorV2:
 
     @property
     def ledger_record_count(self) -> int:
-        """Return the selected complete ledger prefix length.
+        """Selected complete ledger prefix length.
 
         Returns
         -------
         int
             Complete selected ledger prefix length.
+
         """
         return self.selection.ledger_record_count
 
     @property
     def ledger_head_digest(self) -> str:
-        """Return the selected ledger head, inherited across kind-1 recovery.
+        """Selected ledger head, inherited across kind-1 recovery.
 
         Returns
         -------
         str
             Lowercase selected ledger SHA-256 inherited across kind-1 recovery.
+
         """
         return self.selection.ledger_head.hex()
 
     @property
     def journal_head_digest(self) -> str:
-        """Return the selected journal content head.
+        """Selected journal content head.
 
         Returns
         -------
         str
             Lowercase selected journal content head.
+
         """
         return self.selection.journal_head.hex()
 
     @property
     def anchor_log_head_digest(self) -> str:
-        """Return the complete V2.4 anchor chain head.
+        """Complete V2.4 anchor chain head.
 
         Returns
         -------
         str
             Lowercase complete anchor chain head.
+
         """
         return self.selection.anchor_head.hex()
 
@@ -115,6 +120,7 @@ class PermitLedgerAnchorStoreV2:
     ----------
     path : Path
         Absolute selected owner-only anchor path; parent must be mode 0700.
+
     """
 
     path: Path
@@ -216,6 +222,7 @@ class PermitLedgerAnchorStoreV2:
             The actual filesystem operation fails; no success is synthesized.
         FileExistsError
             The anchor path already exists; its bytes are never replaced.
+
         """
         with ledger.locked_snapshot(
             selected_count=0, selected_head_digest=_INITIAL_HEAD.hex()
@@ -304,6 +311,7 @@ class PermitLedgerAnchorStoreV2:
             Selected chain, commitment, pending-intent or file custody checks refuse.
         OSError
             The actual filesystem operation fails; no success is synthesized.
+
         """
         with self._locked() as (parent, descriptor, before):
             scan = scan_anchor_tail_v24(descriptor, before.st_size)

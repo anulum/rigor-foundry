@@ -35,6 +35,7 @@ class AnchorTailCandidateV24:
         Exact captured record or final-tail bytes.
     failure_class : str
         Partial tail or complete invalid final record classification.
+
     """
 
     offset: int
@@ -54,6 +55,7 @@ class AnchorTailScanV24:
         Verified intrinsic ledger and journal selection.
     tail : AnchorTailCandidateV24 | None
         Sole final damage candidate, or None; classification authorises no removal.
+
     """
 
     records: tuple[bytes, ...]
@@ -85,6 +87,7 @@ def scan_anchor_tail_v24(descriptor: int, size: int) -> AnchorTailScanV24:
         Selected chain, commitment, pending-intent or file custody checks refuse.
     OSError
         The actual filesystem operation fails; no success is synthesized.
+
     """
     header_size = len(ANCHOR_MAGIC_V24)
     remaining = size - header_size

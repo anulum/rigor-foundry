@@ -159,6 +159,7 @@ def validate_anchor_final_intent_v2(value: object) -> bytes:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     item = closed_object(value, _KIND1_FIELDS, "anchor final intent")
     if item["domain"] != ANCHOR_FINAL_RECOVERY_SCHEMA_VERSION:
@@ -209,6 +210,7 @@ def validate_anchor_adoption_evidence_v2(value: object) -> bytes:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     item = closed_object(value, _KIND2_FIELDS, "anchor adoption evidence")
     if item["domain"] != ANCHOR_ADOPTION_RECOVERY_SCHEMA_VERSION:
@@ -255,6 +257,7 @@ def validate_journal_tail_intent_v2(value: object) -> bytes:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     item = closed_object(value, _JOURNAL_FIELDS, "journal tail intent")
     if item["domain"] != JOURNAL_TAIL_RECOVERY_SCHEMA_VERSION:
@@ -314,6 +317,7 @@ def validate_recovery_evidence_bytes_v2(data: bytes) -> str:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     item = parse_canonical_object_bytes(data)
     domain = item.get("domain")
@@ -345,5 +349,6 @@ def exact_recovery_stamp_us_v2(value: object) -> int:
     ------
     ValueError
         The input violates the exact canonical field or closed schema contract.
+
     """
     return _micros(canonical_time(value), "recovery.host_time")

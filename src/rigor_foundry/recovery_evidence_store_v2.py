@@ -76,6 +76,7 @@ class RecoveryEvidenceStoreV2:
         Positive entry-count budget, including inert staging remnants.
     max_total_bytes : int
         Positive aggregate canonical-object byte budget.
+
     """
 
     directory: Path
@@ -190,6 +191,7 @@ class RecoveryEvidenceStoreV2:
             Selected chain, commitment, pending-intent or file custody checks refuse.
         OSError
             The actual filesystem operation fails; no success is synthesized.
+
         """
         with self._opened(exclusive=False) as parent:
             return self._scan(parent)
@@ -215,6 +217,7 @@ class RecoveryEvidenceStoreV2:
             The actual filesystem operation fails; no success is synthesized.
         FileNotFoundError
             The requested digest is absent from an otherwise valid store.
+
         """
         name = require_digest(object_digest, "recovery.object_digest") + ".json"
         with self._opened(exclusive=False) as parent:
@@ -239,10 +242,14 @@ class RecoveryEvidenceStoreV2:
 
         Raises
         ------
+        ValueError
+            The object is not bytes, exceeds the store's byte budget, or
+            violates the canonical recovery-evidence schema.
         PermissionError
             Selected chain, commitment, pending-intent or file custody checks refuse.
         OSError
             The actual filesystem operation fails; no success is synthesized.
+
         """
         if not isinstance(data, bytes) or len(data) > self.max_total_bytes:
             raise ValueError("recovery evidence object exceeds its byte budget")

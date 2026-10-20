@@ -112,8 +112,12 @@ def verify_anchor_intent_chain_v24(
 
     Raises
     ------
+    ValueError
+        The record is not kind 1, or fewer than one complete anchor record
+        precedes it.
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     if record.kind != 1 or prior_anchor_record_count < 1:
         raise ValueError("anchor recovery record position differs")
@@ -260,6 +264,7 @@ def pending_anchor_intents_v24(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     anchor_file = _expected_file(anchor_path, anchor_stat.st_dev, anchor_stat.st_ino)
     ledger_file = _expected_file(ledger_path, ledger.identity.device, ledger.identity.inode)

@@ -72,6 +72,7 @@ def unresolved_journal_intents_v21(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     anchor_file = _expected_file(anchor_path, anchor_stat.st_dev, anchor_stat.st_ino)
     ledger_file = _expected_file(ledger_path, ledger.identity.device, ledger.identity.inode)

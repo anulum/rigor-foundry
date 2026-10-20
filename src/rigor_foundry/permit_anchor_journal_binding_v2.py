@@ -43,6 +43,7 @@ class LedgerAdmissionBindingV24:
         Digest of the consumed signed permit.
     ledger_head : str
         Selected ledger prefix head, inherited across recovery.
+
     """
 
     record_count: int
@@ -63,6 +64,7 @@ class AnchorJournalBindingV24:
         Operation state replayed with only anchored closure authority.
     honoured_closure_digests : frozenset[str]
         New exact closure frame digests selected by kind-3 records.
+
     """
 
     selection: AnchorSelectionV24
@@ -128,6 +130,7 @@ def verify_anchor_journal_binding_v24(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     journal_records, prefixes = _journal_prefixes(journal)
     bindings = {binding.record_count: binding for binding in admissions}

@@ -58,6 +58,7 @@ class AnchorRecordV24:
         Resulting anchor chain head.
     raw : bytes
         Exact captured record or final-tail bytes.
+
     """
 
     kind: int
@@ -89,6 +90,7 @@ class AnchorSelectionV24:
         Selected journal prefix head as exactly 32 bytes.
     anchor_head : bytes
         Selected anchor chain head.
+
     """
 
     ledger_record_count: int
@@ -117,6 +119,7 @@ def parse_anchor_record_v24(raw: bytes, *, previous_head: bytes) -> AnchorRecord
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     if len(raw) != ANCHOR_RECORD_V24.size or len(previous_head) != 32:
         raise PermissionError("permit anchor record length differs")
@@ -190,6 +193,7 @@ def advance_anchor_selection_v24(
     ------
     PermissionError
         Selected chain, commitment, pending-intent or file custody checks refuse.
+
     """
     if previous is None:
         if (
