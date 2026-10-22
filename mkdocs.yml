@@ -42,6 +42,7 @@ nav:
   - Offline evidence verification: offline-verification.md
   - Rule-chain candidate inspection: rule-chain-candidate.md
   - Canonical clause semantics: clause-semantics.md
+  - Conditions with partial observations: condition-evaluation.md
   - Selected dispatch applicability: selected-dispatch-applicability.md
   - Dispatch permit candidates: dispatch-permit-candidates.md
   - Permit consumption ledger: permit-consumption-ledger.md

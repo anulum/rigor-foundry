@@ -98,6 +98,8 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "condition_evaluation_cli.CONDITION_OBSERVATIONS_SCHEMA_VERSION": "rigor.condition-observations.v1",
+    "condition_evaluation_cli.CONDITION_EVALUATION_SCHEMA_VERSION": "rigor.condition-evaluation.v1",
     "instruction_dispatch_permit_v2.PERMIT_V2_SCHEMA_VERSION": "instruction-dispatch-permit.v2.1",
     "verification_policy.SEMANTIC_KEY_POLICY_SCHEMA_VERSION": "2.0",
     "permit_anchor_records_v2.ANCHOR_SCHEMA_VERSION": "2.4",
@@ -206,6 +208,7 @@ _EXTERNAL_PROTOCOL_VERSION_SYMBOLS = {
 
 
 def _observed_commands() -> dict[str, CliCommandContract]:
+    """Read the real installed root parser's complete command signatures."""
     parser = _parser()
     subparsers = next(
         action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
@@ -226,6 +229,7 @@ def _observed_commands() -> dict[str, CliCommandContract]:
 
 
 def _observed_schemas() -> dict[str, str]:
+    """Resolve each frozen declaration from its actual owning public module."""
     observed: dict[str, str] = {}
     for name, target in _SCHEMA_SYMBOLS.items():
         module_name, symbol = target.rsplit(".", 1)

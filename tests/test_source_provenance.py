@@ -560,3 +560,21 @@ def test_record_identity_changes_only_with_semantic_inputs() -> None:
     assert changed_capture.capture_digest != baseline.capture.capture_digest
     with pytest.raises(TypeError):
         replace(baseline, verifier="auditor/two")
+
+
+@pytest.mark.parametrize("payload", [b"", b"x" * 65_536])
+def test_bounded_source_reads_retain_empty_and_limit_sized_payloads(
+    tmp_path: Path, payload: bytes
+) -> None:
+    """Equal read and buffer ceilings retain the full successful byte domain."""
+    source = tmp_path / "source.bin"
+    source.write_bytes(payload)
+    assert read_source_payload(source, maximum_bytes=65_536) == payload
+
+
+def test_streamed_source_limit_applies_when_descriptor_size_is_zero() -> None:
+    """A real kernel regular file cannot bypass the ceiling with its zero stat size."""
+    source = Path(f"/proc/{os.getpid()}/status")
+    assert source.stat().st_size == 0
+    with pytest.raises(ValueError, match="exceeds the configured byte limit"):
+        read_source_payload(source, maximum_bytes=1)

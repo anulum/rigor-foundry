@@ -23,7 +23,11 @@ from .audit_primitives import (
     require_mapping,
     require_string,
 )
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
+from .git_inventory import (
+    StableReadError,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
+)
 from .model_primitives import (
     require_boolean,
     require_digest,
@@ -485,7 +489,28 @@ class SourceCapture:
 
 
 def read_source_payload(path: Path, *, maximum_bytes: int) -> bytes:
-    """Read one single-link regular payload through no-follow descriptors."""
+    """Read a bounded single-link payload through stable no-follow descriptors.
+
+    Parameters
+    ----------
+    path : Path
+        Explicit regular-file path; every parent component must be canonical.
+    maximum_bytes : int
+        Positive payload ceiling, at most MAX_SOURCE_BYTES. Known oversized
+        files refuse before content reads; the reader also bounds stream growth.
+
+    Returns
+    -------
+    bytes
+        Complete stable payload, including an empty file, within the ceiling.
+
+    Raises
+    ------
+    ValueError
+        The ceiling is invalid or the payload exceeds it.
+    StableReadError
+        The file is aliased, inaccessible, nonregular or changes during reading.
+    """
     limit = require_integer(maximum_bytes, "source payload maximum_bytes", minimum=1)
     if limit > MAX_SOURCE_BYTES:
         raise ValueError(f"source payload maximum_bytes must be <= {MAX_SOURCE_BYTES}")
@@ -497,10 +522,14 @@ def read_source_payload(path: Path, *, maximum_bytes: int) -> bytes:
             absolute.name,
             str(absolute),
             buffer_limit=limit,
+            maximum_bytes=limit,
             require_single_link=True,
         )
+    except StableReadError as exc:
+        if exc.reason == "limit-exceeded":
+            raise ValueError("source payload exceeds the configured byte limit") from exc
+        raise
     finally:
         os.close(parent)
-    if result.payload is None:
-        raise ValueError("source payload exceeds the configured byte limit")
-    return result.payload
+    # Equal read and buffer ceilings retain every byte of any successful read.
+    return cast(bytes, result.payload)

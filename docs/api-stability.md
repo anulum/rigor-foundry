@@ -116,6 +116,15 @@ and [Canonical clause semantics](clause-semantics.md). They add no package-level
 exports or stable CLI dispatch path. Existing v1 pack/profile/lock wires and the
 current digest-only `AuthorityClauseV2` remain unchanged.
 
+The module-level `condition_facts.ConditionFact`, `ConditionTruth` and
+`condition_evaluation.evaluate_condition_state` APIs are provisional. They
+evaluate supplied known, absent and unknown observations without changing the
+existing `ConditionExpression`1.1 Boolean behavior. The provisional module
+command `python -m rigor_foundry.condition_evaluation_cli` uses its own explicit
+operand/result versions and is outside the frozen `rigor`1.0 command inventory.
+It never authenticates fact provenance or grants effects. See
+[Conditions with partial observations](condition-evaluation.md).
+
 Compatibility requires explicit selection of the new signed acceptance and
 host-state records. Identity-bearing reviewer key enrollment must agree with
 its identity binding; case aliases cannot occupy separate reviewer bindings.

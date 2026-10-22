@@ -31,6 +31,17 @@ The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
 do not expose `promote --apply`; see [Consumer integrations](integrations.md).
 
+## Conditions with partial observations
+
+The provisional module command
+`python -m rigor_foundry.condition_evaluation_cli --expression expression.json
+--observations observations.json` evaluates the existing condition language over
+explicit known, absent and unknown observations. It returns distinct true,
+false and unknown states and never grants effects. See
+[Conditions with partial observations](condition-evaluation.md) for the exact
+operand/result versions, input restrictions and exit codes. This separately
+versioned module command does not change the frozen `rigor`1.0 inventory.
+
 ## External source provenance
 
 `source-capture` records already-retained HTTPS response bytes under an exact
