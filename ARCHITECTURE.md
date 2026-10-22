@@ -188,7 +188,7 @@ thresholds.
   missing registries, missing test ownership, gitlinks, and other
   repository-wide or negative-search state without inventing a blob.
 - Candidate identifiers bind the complete anchor. The scanner verifies every
-  anchor against the same inventory before building report schema 1.2.
+  anchor against the same inventory before building report schema 1.3.
 - Human-readable evidence is whitespace-normalised and capped at 512 UTF-8
   bytes. Large cycle and duplicate-owner sets retain their count, full set
   SHA-256, and a deterministic bounded prefix.
@@ -228,7 +228,7 @@ as relocation. Ambiguous pairings require operator-declared candidate pairs;
 repository, branch, policy, rule-pack, and scanner changes require exact
 compatibility declarations. Replay binds both parent report digests and does
 not assert chronology or correctness.
-`digest_dependencies.py` publishes schema 1.7 of the machine-readable graph of
+`digest_dependencies.py` publishes schema 1.8 of the machine-readable graph of
 unconditional identity bindings and its own canonical digest. The graph
 includes ignored inventory, Git provenance, maturity policy, rule maturity,
 and toolchain identities in
