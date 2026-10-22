@@ -19,6 +19,7 @@ from .model_primitives import (
     require_git_object,
     require_identifier,
     require_optional_string,
+    require_unique_strings,
     require_utc_timestamp,
     validate_unique_strings,
 )
@@ -112,7 +113,7 @@ class WorkTask:
         created_by: str,
         created_at: str,
     ) -> WorkTask:
-        """Build a task only from one completed valid review."""
+        """Build a bounded task with an independent verifier from one valid review."""
         if review.decision != "valid":
             raise ValueError("only a valid review can define a work task")
         candidates = tuple(
@@ -124,10 +125,6 @@ class WorkTask:
             raise ValueError("review does not identify exactly one report candidate")
         if review.severity is None or not review.owner or not review.acceptance_gates:
             raise ValueError("valid review lacks severity, owner, or acceptance gates")
-        if not affected_surfaces or not prohibited_shortcuts:
-            raise ValueError("task surfaces and prohibited shortcuts must be explicit")
-        if required_verifier == review.owner:
-            raise ValueError("required verifier must differ from the suggested owner")
         fields: dict[str, object] = {
             "schema_version": WORK_SCHEMA_VERSION,
             "task_id": require_identifier(task_id, "task_id"),
@@ -143,28 +140,10 @@ class WorkTask:
             "rationale": require_string(review.rationale, "rationale"),
             "production_impact": require_string(production_impact, "production_impact"),
             "suggested_owner": require_string(review.owner, "suggested_owner"),
-            "dependencies": list(validate_unique_strings(review.dependencies, "dependencies")),
-            "acceptance_gates": list(
-                validate_unique_strings(
-                    review.acceptance_gates,
-                    "acceptance_gates",
-                    minimum=1,
-                )
-            ),
-            "affected_surfaces": list(
-                validate_unique_strings(
-                    affected_surfaces,
-                    "affected_surfaces",
-                    minimum=1,
-                )
-            ),
-            "prohibited_shortcuts": list(
-                validate_unique_strings(
-                    prohibited_shortcuts,
-                    "prohibited_shortcuts",
-                    minimum=1,
-                )
-            ),
+            "dependencies": list(review.dependencies),
+            "acceptance_gates": list(review.acceptance_gates),
+            "affected_surfaces": list(affected_surfaces),
+            "prohibited_shortcuts": list(prohibited_shortcuts),
             "required_verifier": require_string(required_verifier, "required_verifier"),
             "review_digest": review.review_digest,
             "created_by": require_string(created_by, "created_by"),
@@ -174,7 +153,14 @@ class WorkTask:
 
     @classmethod
     def _from_fields(cls, fields: dict[str, object], digest: str) -> WorkTask:
-        """Construct a task from validated canonical fields."""
+        """Enforce shared task boundaries before constructing canonical fields."""
+        if not fields["affected_surfaces"] or not fields["prohibited_shortcuts"]:
+            raise ValueError("task surfaces and prohibited shortcuts must be explicit")
+        if fields["required_verifier"] == fields["suggested_owner"]:
+            raise ValueError("required verifier must differ from the suggested owner")
+        require_unique_strings(fields["dependencies"], "dependencies")
+        for field in ("acceptance_gates", "affected_surfaces", "prohibited_shortcuts"):
+            require_unique_strings(fields[field], field, minimum=1)
         severity = cast(str, fields["severity"])
         if severity not in {"P0", "P1", "P2", "P3", "P4"}:
             raise ValueError("task severity is unsupported")
@@ -236,7 +222,7 @@ class WorkTask:
 
     @classmethod
     def from_dict(cls, value: object) -> WorkTask:
-        """Parse and integrity-check one immutable task definition."""
+        """Parse a task, checking its digest and the same boundaries as the builder."""
         data = require_mapping(value, "task")
         require_exact_fields(data, WORK_TASK_FIELDS, "work-task")
         if data.get("schema_version") != WORK_SCHEMA_VERSION:

@@ -9,8 +9,10 @@
 
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from dataclasses import replace
+from pathlib import Path
 from typing import TypedDict, cast
 
 import pytest
@@ -277,6 +279,102 @@ def test_task_and_full_lifecycle_round_trip_with_registry_projection() -> None:
     assert registry["event_count"] == 8
 
 
+@pytest.mark.parametrize(
+    ("field", "items"),
+    [
+        (field, items)
+        for field in (
+            "dependencies",
+            "acceptance_gates",
+            "affected_surfaces",
+            "prohibited_shortcuts",
+        )
+        for items in (["duplicate", "duplicate"], [""], [" \t"])
+    ]
+    + [(field, []) for field in ("acceptance_gates", "affected_surfaces", "prohibited_shortcuts")],
+)
+def test_task_builder_and_json_loader_reject_the_same_invalid_boundaries(
+    field: str, items: list[str]
+) -> None:
+    """A matching digest cannot admit a contract the public builder rejects."""
+    definition = task()
+    encoded = definition.to_dict()
+    encoded.pop("definition_digest")
+    encoded[field] = items
+    encoded["definition_digest"] = canonical_digest(encoded)
+    wire = json.dumps(encoded)
+    supplied = json.loads(wire)
+    with pytest.raises(ValueError):
+        WorkTask.from_dict(supplied)
+    assert json.dumps(supplied) == wire
+    assert WorkTask.from_dict(definition.to_dict()) == definition
+
+    report, review = source_records()
+    changed_review = replace(
+        review,
+        dependencies=tuple(items) if field == "dependencies" else review.dependencies,
+        acceptance_gates=tuple(items) if field == "acceptance_gates" else review.acceptance_gates,
+    )
+    with pytest.raises(ValueError):
+        WorkTask.build(
+            report,
+            changed_review,
+            task_id=definition.task_id,
+            production_impact=definition.production_impact,
+            affected_surfaces=tuple(items)
+            if field == "affected_surfaces"
+            else definition.affected_surfaces,
+            prohibited_shortcuts=tuple(items)
+            if field == "prohibited_shortcuts"
+            else definition.prohibited_shortcuts,
+            required_verifier=definition.required_verifier,
+            created_by=definition.created_by,
+            created_at=definition.created_at,
+        )
+
+
+def test_task_json_loader_rejects_a_rehashed_self_verifier() -> None:
+    """Independent assignment is required even for a self-consistent wire record."""
+    encoded = task().to_dict()
+    encoded.pop("definition_digest")
+    encoded["required_verifier"] = encoded["suggested_owner"]
+    encoded["definition_digest"] = canonical_digest(encoded)
+    with pytest.raises(ValueError, match="must differ"):
+        WorkTask.from_dict(json.loads(json.dumps(encoded)))
+
+
+@pytest.mark.parametrize("dependencies", [(), ("upstream:z", "upstream:a")])
+def test_task_json_file_preserves_valid_order_and_digest(
+    tmp_path: Path, dependencies: tuple[str, ...]
+) -> None:
+    """Valid ordered contracts, including no dependencies, retain schema1.0 bytes."""
+    report, review = source_records()
+    definition = WorkTask.build(
+        report,
+        replace(review, dependencies=dependencies, acceptance_gates=("gate:z", "gate:a")),
+        task_id="ordered-contract",
+        production_impact="preserve explicit caller order",
+        affected_surfaces=("src/z.py", "src/a.py"),
+        prohibited_shortcuts=("no masking", "no deletion"),
+        required_verifier="independent-verifier",
+        created_by="planning-agent",
+        created_at="2026-07-15T10:05:00Z",
+    )
+    encoded = definition.to_dict()
+    wire = json.dumps(encoded)
+    path = tmp_path / "work-task.json"
+    path.write_text(wire, encoding="utf-8")
+    loaded = WorkTask.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    assert loaded == definition
+    assert json.dumps(loaded.to_dict()) == wire
+    assert loaded.dependencies == dependencies
+    assert loaded.acceptance_gates == ("gate:z", "gate:a")
+    assert loaded.affected_surfaces == ("src/z.py", "src/a.py")
+    assert loaded.prohibited_shortcuts == ("no masking", "no deletion")
+    assert encoded.pop("definition_digest") == canonical_digest(encoded)
+    assert encoded["schema_version"] == "1.0"
+
+
 def test_only_completed_valid_reviews_can_define_tasks() -> None:
     """Needs-evidence reviews and owner/verifier self-review never promote."""
     report, review = source_records()
@@ -474,6 +572,11 @@ def test_state_specific_event_requirements_cover_every_clearance_boundary() -> N
         ),
         (
             "independently-verified",
+            {"commit_sha": COMMIT, "commit_tree": COMMIT_TREE},
+            "requires verifier and resolving commit identity",
+        ),
+        (
+            "independently-verified",
             {"commit_sha": COMMIT, "commit_tree": COMMIT_TREE, "verifier": "verifier"},
             "reproducible evidence",
         ),
@@ -516,6 +619,8 @@ def test_event_parser_and_record_chain_edges_are_revalidated() -> None:
         WorkRecord.build(definition, ())
     with pytest.raises(ValueError, match="task or sequence"):
         WorkRecord.build(definition, (replace(first, task_id="other-task"),))
+    with pytest.raises(ValueError, match="must begin at proposed-task"):
+        WorkRecord.build(definition, (replace(first, previous_state="claimed"),))
     with pytest.raises(ValueError, match="task baseline"):
         WorkRecord.build(definition, (replace(first, head="9" * 40),))
     second = events[1]

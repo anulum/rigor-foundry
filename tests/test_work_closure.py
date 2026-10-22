@@ -21,6 +21,39 @@ from rigor_foundry.work_closure import WorkClosure
 from rigor_foundry.work_models import WorkEvent, WorkRecord, WorkTask
 
 
+@pytest.mark.parametrize(
+    ("field", "items"),
+    [
+        ("acceptance_gates", ()),
+        ("affected_surfaces", ()),
+        ("prohibited_shortcuts", (" ",)),
+        ("dependencies", ("same", "same")),
+    ],
+)
+def test_closure_rechecks_rehashed_task_boundaries(field: str, items: tuple[str, ...]) -> None:
+    """A completed event chain cannot close a task with an invalid contract."""
+    definition, events = lifecycle()
+    original_record = WorkRecord.build(definition, events)
+    closure = WorkClosure.build(original_record)
+    changed = replace(
+        definition,
+        acceptance_gates=items if field == "acceptance_gates" else definition.acceptance_gates,
+        affected_surfaces=items if field == "affected_surfaces" else definition.affected_surfaces,
+        prohibited_shortcuts=items
+        if field == "prohibited_shortcuts"
+        else definition.prohibited_shortcuts,
+        dependencies=items if field == "dependencies" else definition.dependencies,
+    )
+    encoded = changed.to_dict()
+    encoded.pop("definition_digest")
+    changed = replace(changed, definition_digest=models_module.canonical_digest(encoded))
+    supplied = WorkRecord.build(changed, events)
+    with pytest.raises(ValueError):
+        WorkClosure.build(supplied)
+    assert not closure.valid_for(supplied)
+    assert WorkClosure.build(original_record) == closure
+
+
 def test_closure_identity_round_trips_and_rejects_forged_records() -> None:
     """Closure identity binds the exact task and closed-event chain."""
     definition, events = lifecycle()

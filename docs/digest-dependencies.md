@@ -93,6 +93,15 @@ the earlier closure identity, while substituting a different task definition
 or closed event does. `WorkRecord` also rejects a proposal that differs from
 the task baseline and a revalidation that names another candidate or report.
 
+`WorkTask` schema 1.0 enforces the same task boundaries when building from a
+review and when loading JSON. Acceptance gates, affected surfaces, and prohibited
+shortcuts must each contain at least one non-blank, unique string. Dependencies
+may be empty, but their entries must also be non-blank and unique. The required
+verifier must differ from the suggested owner. Recomputing a definition digest
+does not make an invalid task admissible; closure construction rechecks these
+conditions. Valid lists retain their supplied order, and valid schema 1.0 task
+and closure identities retain their existing digest bytes.
+
 ## Direct dependency graph
 
 | Upstream | Downstream | Canonical binding |
