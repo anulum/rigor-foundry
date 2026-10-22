@@ -373,3 +373,71 @@ def test_real_cli_exports_workflow_candidates_and_explicit_failure_status(tmp_pa
     assert any(item.rule_id.startswith("GA001") for item in report.candidates)
     assert report.report_digest == scan_repository(repository.root).report_digest
     assert repository.git_command("status", "--porcelain").stdout == before
+
+
+def test_composed_checkout_selectors_reach_scan_and_cli_with_exact_source_anchors(
+    tmp_path: Path,
+) -> None:
+    """Composed values require review even when their individual contexts are trusted."""
+    repository = _repository(tmp_path)
+    selectors = (
+        ("ref", "${{ format('refs/{0}/42/merge', 'pull') }}", True),
+        ("ref", "refs/${{ 'pull' }}/42/head", True),
+        ("repository", "${{ format('{0}/fork', github.repository) }}", True),
+        ("ref", "${{ github.sha }}", False),
+        ("ref", "${{ 'main' }}", False),
+        ("repository", "${{ github['repository'] }}", False),
+    )
+    source = _workflow(
+        "".join(
+            f"      - uses: actions/checkout@{_PIN}\n"
+            f"        with:\n          {key}: >-\n            {selector}\n"
+            for key, selector, _expected in selectors
+        )
+    )
+    path = repository.write_text(_WORKFLOW, source)
+    repository.commit()
+    before = (path.read_bytes(), path.stat(), repository.git_command("status", "--porcelain"))
+    report = scan_repository(repository.root)
+    candidates = [item for item in report.candidates if item.rule_id.startswith("GA003")]
+    assert {item.symbol for item in candidates} == {
+        f"job/0/step/{index}/{key}"
+        for index, (key, _selector, expected) in enumerate(selectors)
+        if expected
+    }
+    blob = repository.git_command("rev-parse", f"HEAD:{_WORKFLOW}").stdout.strip()
+    for item in candidates:
+        assert item.anchor.kind == "tracked-blob"
+        assert item.anchor.to_dict()["blob_oid"] == blob
+        assert (
+            item.anchor.to_dict()["content_sha256"] == hashlib.sha256(source.encode()).hexdigest()
+        )
+        assert (item.line, item.anchor.line_end) in {(8, 9), (12, 13), (16, 17)}
+        assert "format(" not in item.evidence
+    assert not any(item.rule_id.startswith("GV006") for item in report.candidates)
+    output = tmp_path / "composed-report.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "rigor_foundry",
+            "scan",
+            "--root",
+            str(repository.root),
+            "--json-out",
+            str(output),
+            "--fail-on-candidates",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    assert result.returncode == 1, result.stderr
+    assert AuditReport.from_path(output) == report
+    assert (
+        path.read_bytes(),
+        path.stat(),
+        repository.git_command("status", "--porcelain"),
+    ) == before

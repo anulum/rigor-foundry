@@ -122,6 +122,34 @@ def _expressions(text: str) -> tuple[str, ...]:
             raise WorkflowFormatError("invalid-actions-expression")
 
 
+def _context_path(tokens: tuple[_Token, ...], index: int) -> tuple[tuple[str, ...], int]:
+    """Read one constant property path and return its first unconsumed token."""
+    path = [tokens[index].value]
+    cursor = index + 1
+    while cursor < len(tokens):
+        if (
+            tokens[cursor].kind == "punctuation"
+            and tokens[cursor].value == "."
+            and cursor + 1 < len(tokens)
+            and tokens[cursor + 1].kind == "identifier"
+        ):
+            path.append(tokens[cursor + 1].value)
+            cursor += 2
+        elif (
+            tokens[cursor].kind == "punctuation"
+            and tokens[cursor].value == "["
+            and cursor + 2 < len(tokens)
+            and tokens[cursor + 1].kind == "string"
+            and tokens[cursor + 2].kind == "punctuation"
+            and tokens[cursor + 2].value == "]"
+        ):
+            path.append(tokens[cursor + 1].value)
+            cursor += 3
+        else:
+            break
+    return tuple(path), cursor
+
+
 def expression_context_paths(text: str) -> tuple[tuple[str, ...], ...]:
     """Return context paths from inline expressions, excluding literal strings.
 
@@ -137,27 +165,8 @@ def expression_context_paths(text: str) -> tuple[tuple[str, ...], ...]:
                 continue
             if index and tokens[index - 1].value == ".":
                 continue
-            path = [token.value]
-            cursor = index + 1
-            while cursor < len(tokens):
-                if (
-                    tokens[cursor].value == "."
-                    and cursor + 1 < len(tokens)
-                    and tokens[cursor + 1].kind == "identifier"
-                ):
-                    path.append(tokens[cursor + 1].value)
-                    cursor += 2
-                elif (
-                    tokens[cursor].value == "["
-                    and cursor + 2 < len(tokens)
-                    and tokens[cursor + 1].kind == "string"
-                    and tokens[cursor + 2].value == "]"
-                ):
-                    path.append(tokens[cursor + 1].value)
-                    cursor += 3
-                else:
-                    break
-            paths.append(tuple(path))
+            path, _cursor = _context_path(tokens, index)
+            paths.append(path)
     return tuple(paths)
 
 
@@ -184,17 +193,33 @@ def has_untrusted_run_interpolation(text: str) -> bool:
 def selects_pull_request_code(text: str) -> bool:
     """Flag PR selectors and dynamic checkout values whose trust is unresolved.
 
-    Known target-event base identities are distinct from PR head, merge and
-    fork selection. Other dynamic contexts require review because this lexical
-    check cannot authenticate their origin.
+    Parameters
+    ----------
+    text
+        Complete checkout ref or repository input, including literal text.
+
+    Returns
+    -------
+    bool
+        Whether the selector names PR code or needs review because its complete
+        value is neither a literal nor one exact trusted context property.
+
+    Notes
+    -----
+    Functions, operators and composed substitutions remain unresolved even
+    when all referenced context properties are trusted. This lexical check
+    neither evaluates expressions nor authenticates a hardcoded revision.
+
     """
-    compact = text.strip().casefold()
-    if compact.startswith("refs/pull/"):
+    expressions = _expressions(text)
+    if not expressions:
+        return text.strip().casefold().startswith("refs/pull/")
+    if len(expressions) != 1 or text.strip() != "${{" + expressions[0] + "}}":
         return True
-    for expression in _expressions(text):
-        if any(
-            token.kind == "string" and token.value.startswith("refs/pull/")
-            for token in _tokens(expression)
-        ):
-            return True
-    return any(path not in _TRUSTED_CHECKOUT_PATHS for path in expression_context_paths(text))
+    tokens = _tokens(expressions[0])
+    if len(tokens) == 1 and tokens[0].kind == "string":
+        return tokens[0].value.startswith("refs/pull/")
+    if not tokens or tokens[0].kind != "identifier":
+        return True
+    path, cursor = _context_path(tokens, 0)
+    return cursor != len(tokens) or path not in _TRUSTED_CHECKOUT_PATHS
