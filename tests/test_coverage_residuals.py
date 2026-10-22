@@ -324,6 +324,34 @@ def test_negative_search_fails_closed_on_unparseable_python(tmp_path: Path) -> N
     )
 
 
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "from rigor_foundry.workflow_expressions import _tokens as lexer",
+        "from rigor_foundry.workflow_yaml import _EventReader as reader",
+        "expressions._tokens('unfinished')",
+        "_EventReader('value')",
+        "monkeypatch.setattr(parser, 'get_event', replacement)",
+        "__import__('rigor_foundry.workflow_yaml')",
+    ],
+)
+def test_workflow_boundary_search_rejects_manufactured_parser_coverage(
+    tmp_path: Path, statement: str
+) -> None:
+    """The public residual validator rejects parser bypasses in real owner files."""
+    root = _copy_contract(tmp_path)
+    owner = root / "tests/test_workflow_yaml.py"
+    owner.write_text(owner.read_text(encoding="utf-8") + f"\n{statement}\n", encoding="utf-8")
+
+    errors = coverage_residual_errors(root)
+
+    assert any(
+        "NS-WORKFLOW-PUBLIC-PARSER-BOUNDARIES: prohibited " in error
+        and "tests/test_workflow_yaml.py" in error
+        for error in errors
+    )
+
+
 def test_negative_search_keeps_regex_support_for_non_python_files(tmp_path: Path) -> None:
     """Structural import checks do not displace generic text searches."""
     root = _copy_contract(tmp_path)

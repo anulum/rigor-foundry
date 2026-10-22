@@ -216,6 +216,49 @@
       ],
       "reviewed_on": "2026-10-15",
       "review_by": "2026-11-14"
+    },
+    {
+      "residual_id": "CR-WORKFLOW-EXPRESSION-QUOTE-INVARIANT",
+      "classification": "runtime-invariant",
+      "source_path": "src/rigor_foundry/workflow_expressions.py",
+      "symbol": "_tokens",
+      "guard": "raise WorkflowFormatError(\"invalid-actions-expression\")",
+      "owner": "workflow-analysis",
+      "rationale": "Both public expression consumers first extract quote-balanced bodies through _expressions; an unterminated quoted body refuses there before tokenisation. No supported public input has demonstrated the retained lexer fallback. Direct private calls or replaced extraction results would manufacture coverage instead of exercising the public analysis boundary.",
+      "public_verification": [
+        "tests/test_workflow_expressions.py::test_constants_and_known_safe_identity_paths_do_not_become_injection_candidates",
+        "tests/test_workflow_expressions.py::test_unterminated_expression_refuses_instead_of_reporting_safe",
+        "tests/test_workflow_expressions.py::test_untrusted_context_interpolation_is_identified_before_shell_parsing"
+      ],
+      "revisit_triggers": [
+        "a supported public expression input reaches the lexer fallback",
+        "expression extraction or tokenisation changes"
+      ],
+      "reviewed_on": "2026-10-22",
+      "review_by": "2026-11-21",
+      "source_digest": "164b6e7d05600dfbc5d4b410a6c602325fa412d385d4d6cae3397655148f948a"
+    },
+    {
+      "residual_id": "CR-WORKFLOW-YAML-EVENT-INVARIANT",
+      "classification": "runtime-invariant",
+      "source_path": "src/rigor_foundry/workflow_yaml.py",
+      "symbol": "_EventReader.value",
+      "guard": "raise WorkflowFormatError(\"expected-yaml-value\", _line(event))",
+      "owner": "workflow-analysis",
+      "rationale": "The supported SafeLoader event parser supplies scalar, mapping-start, sequence-start or alias events at value positions; document and collection terminators are consumed by their owning reader loops. Malformed public YAML refuses before an unexpected value event is supplied. No supported public input has demonstrated this retained fallback; constructed events or a replaced parser would simulate the production boundary.",
+      "public_verification": [
+        "tests/test_workflow_yaml.py::test_literal_on_unicode_crlf_and_alias_definition_locations",
+        "tests/test_workflow_yaml.py::test_native_invalid_or_over_budget_yaml_refuses_without_source_disclosure",
+        "tests/test_workflow_yaml.py::test_representation_accessors_refuse_structural_mismatches"
+      ],
+      "revisit_triggers": [
+        "a supported PyYAML parser changes its value-event contract",
+        "a supported public YAML input reaches the unexpected-event fallback",
+        "workflow document or collection event consumption changes"
+      ],
+      "reviewed_on": "2026-10-22",
+      "review_by": "2026-11-21",
+      "source_digest": "5dee70347ec007d4e01e3365847c927f572ae9f31602eec8c41b438ae79c2933"
     }
   ],
   "negative_searches": [
@@ -259,6 +302,25 @@
         "from tools\\.preflight import [^\\n]*\\b_run\\b"
       ],
       "rationale": "claimed security and protocol coverage must use static public dependencies and real processes, filesystems, or platform CI; private static imports, reserved dynamic-import and code-generation syntax, production-private calls, and monkeypatched internals are prohibited"
+    },
+    {
+      "search_id": "NS-WORKFLOW-PUBLIC-PARSER-BOUNDARIES",
+      "include": [
+        "tests/test_github_actions.py",
+        "tests/test_workflow_expressions.py",
+        "tests/test_workflow_yaml.py"
+      ],
+      "forbidden_import_prefixes": [
+        "rigor_foundry.workflow_expressions._",
+        "rigor_foundry.workflow_yaml._"
+      ],
+      "dynamic_import_policy": "forbid-syntax",
+      "patterns": [
+        "\\b(?:_Token|_tokens|_expressions|_context_path|_EventReader)\\s*\\(",
+        "\\b(?:monkeypatch|patch)\\.setattr\\(",
+        "\\bobject\\.__new__\\("
+      ],
+      "rationale": "Workflow coverage uses real public expression, YAML and Git scanner paths. Private parser imports or direct private calls, reserved dynamic import syntax and manufactured production internals cannot stand in for inputs rejected at the public boundary. This finite syntax policy is not a runtime or security proof."
     }
   ]
 }

@@ -95,6 +95,15 @@ Docker action execution bodies remain separate analysis surfaces. The
 expression check is lexical and does not certify general expression validity.
 An unexplained GV006 prevents claiming that its owner was completely scanned.
 
+The lexer retains an unterminated-string guard behind quote-balanced expression
+extraction. The YAML reader also retains a guard against unexpected native event
+kinds at value positions. Their source-bound, expiring entries in
+`coverage-residuals.json` name the surrounding public regressions and conditions
+for revisiting the classification. The same manifest rejects specified private
+parser access and simulated internals in the workflow tests. These records
+supply no coverage credit and do not waive a coverage threshold or establish
+that every possible public input has been examined.
+
 Rule-pack identity changes to 1.19.0. Existing rule introduction versions and
 serialized record field layouts remain unchanged. Version-bound report and
 maturity readers continue to require their exact scanner rule pack; retain the
