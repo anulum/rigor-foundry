@@ -387,6 +387,12 @@ def test_composed_checkout_selectors_reach_scan_and_cli_with_exact_source_anchor
         ("ref", "${{ github.sha }}", False),
         ("ref", "${{ 'main' }}", False),
         ("repository", "${{ github['repository'] }}", False),
+        ("ref", "${{ ' refs/pull/42/head ' }}", True),
+        ("ref", "${{ '\trefs/pull/42/head\t' }}", True),
+        ("ref", "${{ '\u00a0refs/pull/42/head\u00a0' }}", True),
+        ("ref", "${{ '\ufeffrefs/pull/42/head\ufeff' }}", True),
+        ("ref", "${{ ' main ' }}", False),
+        ("ref", "${{ '\ufeffmain\ufeff' }}", False),
     )
     source = _workflow(
         "".join(
@@ -412,7 +418,8 @@ def test_composed_checkout_selectors_reach_scan_and_cli_with_exact_source_anchor
         assert (
             item.anchor.to_dict()["content_sha256"] == hashlib.sha256(source.encode()).hexdigest()
         )
-        assert (item.line, item.anchor.line_end) in {(8, 9), (12, 13), (16, 17)}
+        index = int(item.symbol.split("/")[3])
+        assert (item.line, item.anchor.line_end) == (8 + 4 * index, 9 + 4 * index)
         assert "format(" not in item.evidence
     assert not any(item.rule_id.startswith("GV006") for item in report.candidates)
     output = tmp_path / "composed-report.json"

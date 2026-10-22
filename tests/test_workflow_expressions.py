@@ -122,6 +122,15 @@ def test_context_paths_preserve_constant_brackets_and_ignore_literal_context_nam
     assert expression_context_paths("${{ github[0] }}") == (("github",),)
 
 
+@pytest.mark.parametrize("padding", [" ", "\t", "\u00a0", "\ufeff", "\ufeff \t\u00a0"])
+def test_checkout_input_padding_cannot_hide_a_literal_pr_ref(padding: str) -> None:
+    """Checkout input trimming preserves PR candidates and benign literal controls."""
+    assert selects_pull_request_code(padding + "refs/pull/42/head" + padding)
+    assert selects_pull_request_code("${{ '" + padding + "refs/pull/42/head" + padding + "' }}")
+    assert not selects_pull_request_code("${{ '" + padding + "main" + padding + "' }}")
+    assert not selects_pull_request_code(padding + "${{ github.sha }}" + padding)
+
+
 @pytest.mark.parametrize("text", ["${{ github.event.title", "${{ 'open }}", "${{ 'open }"])
 def test_unterminated_expression_refuses_instead_of_reporting_safe(text: str) -> None:
     """Incomplete generated-script expressions cannot receive a clean disposition."""

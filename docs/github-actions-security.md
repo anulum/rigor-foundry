@@ -48,15 +48,22 @@ untrusted code ran: modern checkout versions have fork checkout protections,
 including an explicit allow-unsafe-pr-checkout input.
 
 An expression is a trusted base control only when the complete input is one
-exact trusted context property or one literal string outside `refs/pull/`.
-Functions, operators,
-multiple substitutions and mixtures of literal text and substitutions remain
+exact trusted context property or one literal string outside `refs/pull/`
+after input padding is removed. Functions, operators, multiple substitutions
+and mixtures of literal text and substitutions remain
 unresolved and require review. A trusted property inside a larger expression
 does not establish the resulting checkout identity. For example,
 `${{ format('refs/{0}/42/merge', 'pull') }}` and
 `refs/${{ 'pull' }}/42/head` both require review. The scanner does not evaluate
 these expressions; see GitHub's
 [expression reference](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions).
+
+Literal controls follow the checkout input reader's surrounding-whitespace
+normalisation, including no-break spaces and the byte-order mark. Padding a PR
+ref must not turn it into a benign literal. This follows the default
+[`getInput` contract](https://github.com/actions/toolkit/blob/main/packages/core/src/core.ts)
+and ECMAScript's [trim semantics](https://tc39.es/ecma262/multipage/text-processing.html#sec-string.prototype.trim).
+The source spelling and tracked-blob anchor remain unchanged by this analysis.
 
 YAML parsing retains literal on keys and physical inclusive line spans.
 No YAML 1.1 boolean conversion can erase the event declaration. Backward,

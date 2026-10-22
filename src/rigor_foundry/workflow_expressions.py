@@ -51,6 +51,11 @@ _TRUSTED_CHECKOUT_PATHS = frozenset(
         ("github", "event", "pull_request", "base", "repo", "full_name"),
     }
 )
+# ECMAScript WhiteSpace and LineTerminator used by the action input reader.
+_CHECKOUT_INPUT_PADDING = (
+    "\t\n\v\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006"
+    "\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
 
 
 @dataclass(frozen=True)
@@ -209,16 +214,19 @@ def selects_pull_request_code(text: str) -> bool:
     Functions, operators and composed substitutions remain unresolved even
     when all referenced context properties are trusted. This lexical check
     neither evaluates expressions nor authenticates a hardcoded revision.
+    Literal input padding follows the action input reader's ECMAScript trim
+    semantics, including no-break spaces and the byte-order mark.
 
     """
+    text = text.strip(_CHECKOUT_INPUT_PADDING)
     expressions = _expressions(text)
     if not expressions:
-        return text.strip().casefold().startswith("refs/pull/")
-    if len(expressions) != 1 or text.strip() != "${{" + expressions[0] + "}}":
+        return text.casefold().startswith("refs/pull/")
+    if len(expressions) != 1 or text != "${{" + expressions[0] + "}}":
         return True
     tokens = _tokens(expressions[0])
     if len(tokens) == 1 and tokens[0].kind == "string":
-        return tokens[0].value.startswith("refs/pull/")
+        return tokens[0].value.strip(_CHECKOUT_INPUT_PADDING).startswith("refs/pull/")
     if not tokens or tokens[0].kind != "identifier":
         return True
     path, cursor = _context_path(tokens, 0)
