@@ -153,3 +153,28 @@ unclassified exports, classifications for absent names, non-final semantic
 versions, self-replacements, missing replacements, and a too-short same-major
 deprecation window. There are no deprecated stable top-level imports in the
 frozen 1.0 contract.
+
+The module-level policy source APIs documented in [Policy source
+bytes](policy-source-inputs.md) are provisional. Their explicit budget, span and
+region records use schema1.0 with distinct object kinds. They check supplied
+input integrity and byte accounting; semantic acceptance and trusted host
+admission require their separate owning consumers. These imports do not extend
+the frozen package-level API or installed command inventory.
+
+The module-level task-definition, context-producer-contract, repository-state
+and inline repository-inventory APIs described in [Context source
+models](context-source-models.md) are provisional. Their schema1.0 identities
+bind descriptive source data; they do not install producers or extend the
+frozen package-level API or installed command inventory.
+
+The fixed typed-reference/source-parser, retained source-lifetime and owner
+observation/proof APIs documented in [Retained context
+sources](context-source-ownership.md) are provisional module imports. Their
+explicit schema1.0 records and independent preimages preserve source integrity
+without granting installed producer or operation authority.
+
+The host-composed task and registry readers and complete implementation
+observations described in [Task and registry source
+owners](task-registry-source-owners.md) are provisional module imports. They
+verify actual retained source values and do not grant enclosing host or effect
+admission.

@@ -98,6 +98,17 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "typed_object_reference.TYPED_OBJECT_REF_SCHEMA_VERSION": "1.0",
+    "context_owner_proof.OWNER_PROOF_SCHEMA_VERSION": "1.0",
+    "context_owner_observations.CONTEXT_PRODUCER_OBSERVATION_SCHEMA_VERSION": "1.0",
+    "repository_state.REPOSITORY_STATE_SCHEMA_VERSION": "1.0",
+    "task_definition.TASK_DEFINITION_SCHEMA_VERSION": "1.0",
+    "task_definition.TASK_IDENTITY_SCHEMA_VERSION": "1.0",
+    "task_definition.TYPED_OBJECT_REF_SCHEMA_VERSION": "1.0",
+    "context_producer_contract.CONTEXT_PRODUCER_CONTRACT_SCHEMA_VERSION": "1.0",
+    "policy_read_budget.POLICY_READ_BUDGET_SCHEMA_VERSION": "1.0",
+    "policy_source_spans.SOURCE_SPAN_SCHEMA_VERSION": "1.0",
+    "policy_source_regions.SOURCE_REGION_SCHEMA_VERSION": "1.0",
     "condition_evaluation_cli.CONDITION_OBSERVATIONS_SCHEMA_VERSION": "rigor.condition-observations.v1",
     "condition_evaluation_cli.CONDITION_EVALUATION_SCHEMA_VERSION": "rigor.condition-evaluation.v1",
     "instruction_dispatch_permit_v2.PERMIT_V2_SCHEMA_VERSION": "instruction-dispatch-permit.v2.1",
