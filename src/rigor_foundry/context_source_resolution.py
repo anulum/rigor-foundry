@@ -13,6 +13,7 @@ from typing import TypeAlias
 
 from .audit_primitives import require_mapping
 from .context_producer_contract import ContextProducerContract1
+from .inventory_domain import InventoryDomain1
 from .policy_read_budget import PolicyReadBudget1
 from .project_registry_models import ProjectRegistry
 from .repository_state import RepositoryState1
@@ -20,7 +21,11 @@ from .task_definition import TaskDefinition1
 from .typed_object_reference import TypedObjectRef1
 
 ContextSourceTarget: TypeAlias = (
-    TaskDefinition1 | ContextProducerContract1 | RepositoryState1 | ProjectRegistry
+    TaskDefinition1
+    | ContextProducerContract1
+    | RepositoryState1
+    | InventoryDomain1
+    | ProjectRegistry
 )
 
 
@@ -53,6 +58,9 @@ def parse_context_source_target(
     elif ref.kind == "repository-state":
         target = RepositoryState1.from_dict(data)
         identity, digest = target.root_id, target.repository_state_digest
+    elif ref.kind == "inventory-domain":
+        target = InventoryDomain1.from_dict(data, budget=limits)
+        identity, digest = target.domain_id, target.domain_digest
     else:
         count = 0
         for field in ("groups", "projects", "consumers"):

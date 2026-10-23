@@ -26,6 +26,7 @@ SUPPORTED_CONTEXT_SOURCE_FORMATS = frozenset(
         ("task-definition", "1.0"),
         ("context-producer-contract", "1.0"),
         ("repository-state", "1.0"),
+        ("inventory-domain", "1.0"),
         ("project-registry", "gotm-project-registry.v1"),
         ("project-registry", "project-registry.v2"),
     }

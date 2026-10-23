@@ -20,6 +20,12 @@ from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Final
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
+from .trusted_executable import (
+    ExecutableSnapshot,
+    TrustedCommandTimeout,
+    TrustedExecutable,
+    run_trusted_command,
+)
 
 GIT_PROVENANCE_SCHEMA_VERSION: Final = "1.0"
 DEFAULT_MINIMUM_GIT_VERSION: Final = "2.35.2"
@@ -30,6 +36,7 @@ _VERSION = re.compile(
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 _READ_SIZE = 1024 * 1024
 _COMMAND_TIMEOUT_SECONDS = 30
+_COMMAND_OUTPUT_LIMIT = 8 * 1024 * 1024
 _PROTECTED_CONFIG_KEYS: Final = frozenset({"core.fsmonitor", "core.hookspath"})
 
 
@@ -446,7 +453,7 @@ class GitRunner:
         if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
             raise RuntimeError("platform lacks component-safe no-follow file opening")
         directory_flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_DIRECTORY
-        file_flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
+        file_flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK
         directory: int | None = None
         try:
             directory = os.open(path.anchor, directory_flags)
@@ -554,10 +561,13 @@ class GitRunner:
         cwd: Path,
         check: bool,
         timeout_seconds: int,
+        output_limit: int,
     ) -> subprocess.CompletedProcess[bytes]:
         """Execute argv and verify the executable on both sides of the call."""
-        if timeout_seconds <= 0:
+        if type(timeout_seconds) is not int or timeout_seconds <= 0:
             raise ValueError("Git command timeout must be positive")
+        if type(output_limit) is not int or output_limit <= 0:
+            raise ValueError("Git command output limit must be positive")
         self._verify_unchanged()
         descriptor: int | None = None
         try:
@@ -586,32 +596,44 @@ class GitRunner:
             )
             if descriptor_identity != expected_identity:
                 raise RuntimeError("trusted Git executable changed before descriptor pinning")
-            descriptor_root = next(
-                (root for root in (Path("/proc/self/fd"), Path("/dev/fd")) if root.is_dir()),
-                None,
+            executable = TrustedExecutable(
+                self._path,
+                descriptor,
+                ExecutableSnapshot(
+                    device=metadata.st_dev,
+                    inode=metadata.st_ino,
+                    mode=metadata.st_mode,
+                    owner_uid=metadata.st_uid,
+                    group_gid=metadata.st_gid,
+                    link_count=metadata.st_nlink,
+                    size=metadata.st_size,
+                    modified_ns=metadata.st_mtime_ns,
+                    digest=self._snapshot.digest,
+                ),
             )
-            if descriptor_root is None:
-                raise RuntimeError("platform cannot execute a pinned Git descriptor")
-            command_path = str(descriptor_root / str(descriptor))
             try:
-                return subprocess.run(  # nosec B603
-                    [command_path, *arguments],
+                result = run_trusted_command(
+                    executable,
+                    arguments,
                     cwd=cwd,
-                    check=check,
-                    capture_output=True,
-                    env=self._environment(),
-                    pass_fds=(descriptor,),
-                    shell=False,
-                    timeout=timeout_seconds,
+                    environment=self._environment(),
+                    timeout_seconds=timeout_seconds,
+                    output_limit=output_limit,
                 )
-            except subprocess.TimeoutExpired as exc:
+            except TrustedCommandTimeout as exc:
                 raise RuntimeError(
                     f"trusted Git command exceeded the {timeout_seconds}-second limit"
                 ) from exc
-            except subprocess.CalledProcessError as exc:
+            if check and result.returncode != 0:
                 raise RuntimeError(
-                    f"trusted Git command failed with exit status {exc.returncode}"
-                ) from exc
+                    f"trusted Git command failed with exit status {result.returncode}"
+                )
+            return subprocess.CompletedProcess(
+                [executable.execution_path, *arguments],
+                result.returncode,
+                result.stdout,
+                result.stderr,
+            )
         finally:
             if descriptor is not None:
                 os.close(descriptor)
@@ -624,6 +646,7 @@ class GitRunner:
             cwd=self._path.parent,
             check=True,
             timeout_seconds=_COMMAND_TIMEOUT_SECONDS,
+            output_limit=4096,
         )
         try:
             output = completed.stdout.decode("utf-8").strip()
@@ -640,6 +663,7 @@ class GitRunner:
         *arguments: str,
         check: bool = True,
         timeout_seconds: int = _COMMAND_TIMEOUT_SECONDS,
+        output_limit: int = _COMMAND_OUTPUT_LIMIT,
     ) -> subprocess.CompletedProcess[bytes]:
         """Run one fixed Git argv from ``cwd`` without shell or ambient PATH.
 
@@ -653,6 +677,10 @@ class GitRunner:
             Raise when Git returns a non-zero exit status.
         timeout_seconds:
             Positive hard wall-clock deadline for the child process.
+        output_limit:
+            Positive aggregate standard-output/error byte ceiling, checked while
+            reading. Defaults to eight MiB; larger inventories require an explicit
+            caller budget. Exceeding the limit refuses rather than truncates.
         """
         self._reject_protected_config_overrides(arguments)
         hooks = Path(self.provenance.trusted_root) / ".rigor-foundry-disabled-hooks"
@@ -671,6 +699,7 @@ class GitRunner:
             cwd=cwd,
             check=check,
             timeout_seconds=timeout_seconds,
+            output_limit=output_limit,
         )
 
     @staticmethod

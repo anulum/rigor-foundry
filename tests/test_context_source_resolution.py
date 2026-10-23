@@ -14,6 +14,7 @@ from typing import cast
 
 import pytest
 from test_context_producer_contract import contract
+from test_inventory_domain import domain
 from test_project_registry_models import profiled_registry, registry
 from test_repository_state import state
 from test_task_definition import budget, definition
@@ -23,6 +24,7 @@ from rigor_foundry.context_source_resolution import (
     ContextSourceTarget,
     parse_context_source_target,
 )
+from rigor_foundry.inventory_domain import InventoryDomain1
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.project_registry_models import ProjectRegistry
 from rigor_foundry.project_registry_primitives import project_registry_canonical_json
@@ -30,11 +32,18 @@ from rigor_foundry.typed_object_reference import SUPPORTED_CONTEXT_SOURCE_FORMAT
 
 
 def sources() -> tuple[tuple[TypedObjectRef1, ContextSourceTarget], ...]:
-    """Return the actual three new target classes and both original registry formats."""
+    """Return every actual owning target class and both original registry formats."""
     task, producer, repository = definition(), contract(), state()
+    unclassified_domain = InventoryDomain1.build(
+        domain_id="context-source-domain",
+        project_id="PROJECT-A",
+        roots=domain().roots,
+        rules=(),
+        budget=budget(),
+    )
     values: list[tuple[TypedObjectRef1, ContextSourceTarget]] = [
         (TypedObjectRef1.from_dict(item.reference()), item)
-        for item in (task, producer, repository)
+        for item in (task, producer, repository, unclassified_domain)
     ]
     for registered in (registry(), profiled_registry()):
         version = cast(str, registered.to_dict()["schema_version"])

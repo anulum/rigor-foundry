@@ -122,6 +122,25 @@ def test_fixed_contract_round_trip_through_real_bounded_json(
     assert "guard_admissible" not in actual.to_dict()
 
 
+@pytest.mark.parametrize("owner_class", ("task", "registry", "inventory", "fact"))
+def test_inventory_domain_format_is_limited_to_its_fixed_inventory_owner(
+    owner_class: ContextOwnerClass,
+) -> None:
+    """The new actual parser does not expand other producers' declared source domains."""
+    body = contract(owner_class).to_dict()
+    formats = cast(list[dict[str, object]], body["source_formats"])
+    formats.append({"kind": "inventory-domain", "format_version": "1.0"})
+    formats.sort(key=lambda item: cast(str, item["kind"]))
+    body.pop("contract_digest")
+    body["contract_digest"] = canonical_digest(body)
+    if owner_class == "inventory":
+        parsed = ContextProducerContract1.from_dict(body, budget=budget())
+        assert ("inventory-domain", "1.0") in parsed.source_formats
+    else:
+        with pytest.raises(ValueError, match="source formats"):
+            ContextProducerContract1.from_dict(body, budget=budget())
+
+
 @pytest.mark.parametrize(
     "path",
     [

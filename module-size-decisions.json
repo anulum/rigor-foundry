@@ -22,6 +22,13 @@
       "responsibility": "Offline CRA append-only repository owner for bootstrap, registrations, event revisions, prepared payloads, receipts, skips, user notices, fixed-vulnerability advisories, content-addressed evidence replay, and fail-closed record-chain integrity."
     },
     {
+      "dependency_boundary": "Canonical audit and model primitives define digests and validated policy values; trusted_executable owns no-follow executable handles, streaming process limits and process-group cleanup. Git inventory, repository input and adapter callers consume the runner. No file-content inventory, source classification, context authentication, remediation, network or host admission lifecycle is owned here.",
+      "lines": 729,
+      "path": "src/rigor_foundry/git_provenance.py",
+      "reassess_when": "The file exceeds 850 lines, another executable family needs an independent policy or lifecycle, or Git source capture or context admission enters this owner.",
+      "responsibility": "Git executable trust and invocation owner: explicit trust roots, immutable executable identity, semantic version policy, fixed repository-safe environment and descriptor-bound command execution."
+    },
+    {
       "dependency_boundary": "Canonical audit primitives, GitInventory, GitRunner, and descriptor-based stable-read helpers provide identity and Git-ignore checks; scanner, campaign, CRA, and policy owners consume the resulting declarations and evidence. No rule verdict, CRA interpretation, or ignored-content persistence is owned here.",
       "lines": 736,
       "path": "src/rigor_foundry/ignored_inventory.py",

@@ -6,7 +6,7 @@ consumer that checks actual retained sources and installed ownership. Parsing a
 document checks its structure and digest; it does not authenticate a user task,
 install a producer or authorize an operation.
 
-All three records use schema `1.0`, distinct `object_kind` values, closed fields
+These records use schema `1.0`, distinct `object_kind` values, closed fields
 and a digest over every other field, including both headers. Their `reference()`
 methods return a versioned `typed-object-ref` with an independent `ref_digest`.
 An object ID is an identity rather than a filesystem locator. Directly created
@@ -49,7 +49,7 @@ have no callback, executable, import path or enrollment field.
 | --- | --- | --- |
 | `builtin.task-definition.v1` | `task` | Task definition and project registry |
 | `builtin.project-registry.v1` | `registry` | Project registry |
-| `builtin.maintained-inventory.v1` | `inventory` | Repository state and project registry |
+| `builtin.maintained-inventory.v1` | `inventory` | Repository state, project registry and optional configured inventory domain |
 | `builtin.context-facts.v1` | `fact` | Outputs of the task, registry and inventory owners |
 
 The parser restricts descriptions to these domains. A description does not
@@ -94,3 +94,11 @@ stage-zero/unmerged combinations, duplicates and mixed Git formats are refused.
 An inventory consumer still needs the actual complete preimages, selected code,
 source retention and closing validation. Equal self-digests alone cannot prove
 that an observation is current or that its source domain is complete.
+
+## Configured inventory domains
+
+[`inventory_domain.InventoryDomain1`](inventory-domains.md) supplies the original
+configured-root and classification-rule preimage. Its digest is compared with
+each matching `ContextRootBinding.configured_scope_digest` by the actual
+selected-source Git-root observer. Parser acceptance alone does not enrol a
+root or prove completeness; unmatched classifications remain explicit nulls.

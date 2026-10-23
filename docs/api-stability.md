@@ -178,3 +178,25 @@ observations described in [Task and registry source
 owners](task-registry-source-owners.md) are provisional module imports. They
 verify actual retained source values and do not grant enclosing host or effect
 admission.
+
+The module-level [repository Git input](repository-git-inputs.md) observation API
+is provisional. Its complete Git preimages preserve baseline identities and
+unresolved index stages. It does not extend the frozen package exports or
+establish maintained-inventory completeness or an atomic filesystem snapshot.
+
+The module-level [repository file input](repository-file-inputs.md) API is
+provisional. It adds actual baseline/current file-byte identities within the
+observed Git path domain. Unknown types and language/role remain explicit;
+configured-root completeness and authenticated context ownership are separate.
+
+The [configured inventory domain](inventory-domains.md) parser, path classifier
+and retained-source Git-root observer are provisional module imports. The new
+`inventory-domain`/`1.0` source pair has a fixed owning parser; other producer
+classes retain their existing format restrictions. No complete inventory,
+context, root-package export or effect-admission result is added.
+
+The complete declared-root collector, current-directory observer, shared row
+classifier and fixed retained-domain selection described in [Configured
+inventory inputs](configured-inventory-inputs.md) are provisional module imports.
+They preserve all original root observations and explicit namespace ownership,
+without extending frozen exports or authenticating a maintained inventory.

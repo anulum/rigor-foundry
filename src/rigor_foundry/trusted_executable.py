@@ -25,6 +25,10 @@ from typing import Final
 _READ_SIZE: Final = 8192
 
 
+class TrustedCommandTimeout(RuntimeError):
+    """The pinned process group exceeded its single wall-clock deadline."""
+
+
 @dataclass(frozen=True)
 class ExecutableSnapshot:
     """Stable filesystem and content identity for one trusted executable."""
@@ -67,9 +71,12 @@ class TrustedExecutable:
 
     @property
     def execution_path(self) -> str:
-        """Return the Linux descriptor path used for pinned execution."""
-        descriptor_root = Path("/proc/self/fd")
-        if not descriptor_root.is_dir():
+        """Return an available descriptor path used for pinned execution."""
+        descriptor_root = next(
+            (root for root in (Path("/proc/self/fd"), Path("/dev/fd")) if root.is_dir()),
+            None,
+        )
+        if descriptor_root is None:
             raise RuntimeError("descriptor-pinned executable execution is unavailable")
         return f"{descriptor_root}/{self.descriptor}"
 
@@ -174,7 +181,7 @@ def open_trusted_executable(
             raise RuntimeError("component-safe executable inspection is unavailable")
         descriptor = os.open(
             path.name,
-            os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
+            os.O_RDONLY | no_follow | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0),
             dir_fd=parent_descriptor,
         )
     except OSError as exc:
@@ -234,14 +241,32 @@ def run_trusted_command(
     environment: dict[str, str],
     timeout_seconds: int,
     output_limit: int,
+    cwd: Path | None = None,
 ) -> BoundedProcessResult:
-    """Run a pinned descriptor with streaming output and process-tree bounds."""
+    """Run a pinned descriptor with streaming output and process-tree bounds.
+
+    Parameters
+    ----------
+    executable:
+        Live executable handle selected by the owning caller.
+    arguments:
+        Fixed arguments passed without shell interpretation.
+    environment:
+        Complete child environment, without ambient environment inheritance.
+    timeout_seconds:
+        Positive wall-clock bound shared by output reads and process settlement.
+    output_limit:
+        Positive aggregate ceiling for standard output and standard error bytes.
+    cwd:
+        Explicit child working directory, or the caller's directory when omitted.
+    """
     if timeout_seconds < 1 or output_limit < 1:
         raise ValueError("trusted command bounds must be positive")
     try:
         process = subprocess.Popen(  # nosec B603
             (executable.execution_path, *arguments),
             env=environment,
+            cwd=cwd,
             shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -303,7 +328,7 @@ def run_trusted_command(
             with suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGKILL)
     if timed_out:
-        raise RuntimeError("trusted executable metadata query timed out")
+        raise TrustedCommandTimeout("trusted executable metadata query timed out")
     if exceeded:
         raise RuntimeError("trusted executable metadata query exceeded output limit")
     return BoundedProcessResult(

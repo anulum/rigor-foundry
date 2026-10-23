@@ -17,6 +17,7 @@ The current source table is:
 | `task-definition` | `1.0` | `TaskDefinition1` |
 | `context-producer-contract` | `1.0` | `ContextProducerContract1` |
 | `repository-state` | `1.0` | `RepositoryState1` |
+| `inventory-domain` | `1.0` | `InventoryDomain1` |
 | `project-registry` | `gotm-project-registry.v1` | `ProjectRegistry` |
 | `project-registry` | `project-registry.v2` | `ProjectRegistry` with its original embedded profile |
 
@@ -100,3 +101,9 @@ actual retained source, complete code/contract selection, observation domain,
 current snapshot and revocation state. Supplied observations cannot appoint
 that owner, manufacture authoritative absence or establish complete maintained
 scope. These APIs do not emit an authenticated host or effect-admission result.
+
+The [configured inventory Git-root observer](inventory-domains.md#actual-selected-git-root-observations)
+also borrows real domain/registry/contract leases. It compares the complete
+declared project root set and actual package/interpreter identity before
+returning classified bytes for one Git root. Other roots and whole maintained
+inventory/context admission remain separate obligations.

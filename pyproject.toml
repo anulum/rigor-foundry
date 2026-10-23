@@ -186,7 +186,14 @@ patch = ["subprocess"]
 
 [tool.coverage.paths]
 # CI installs this checkout; subprocesses can exercise either identical copy.
-rigor_foundry = ["src/rigor_foundry", "*/site-packages/rigor_foundry"]
+rigor_foundry = [
+    "src/rigor_foundry",
+    "*/site-packages/rigor_foundry",
+    # Real source-lifetime fault tests execute byte-verified complete package
+    # copies; only a comment in __init__.py is mutated after imports finish.
+    "*/test_actual_source_code_and_ho*/code/rigor_foundry",
+    "*/test_actual_configured_source_*/code/rigor_foundry",
+]
 repository_tools = [
     "tools",
     "*/test_actual_guard_cli_accepts_*/tools",

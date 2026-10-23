@@ -420,3 +420,61 @@ def test_windows_provenance_rejects_unapproved_executable_suffix() -> None:
             executable_digest="1" * 64,
             trust_policy=GitTrustPolicy(trusted_roots=("/usr/bin",)),
         )
+
+
+def test_real_git_blob_output_preserves_binary_bytes_and_explicit_cwd(tmp_path: Path) -> None:
+    """Exact-limit blob reads succeed; over-limit reads refuse without truncation."""
+    repository = GitRepository.create(tmp_path / "repository")
+    payload = bytes(range(256)) * 256
+    repository.write_bytes("data.bin", payload)
+    repository.commit()
+    runner = GitRunner()
+    identity = runner.provenance
+
+    result = runner.run(
+        repository.root, "cat-file", "blob", "HEAD:data.bin", output_limit=len(payload)
+    )
+    assert result.returncode == 0
+    assert result.stdout == payload
+    assert result.stderr == b""
+    with pytest.raises(RuntimeError, match="exceeded output limit"):
+        runner.run(
+            repository.root, "cat-file", "blob", "HEAD:data.bin", output_limit=len(payload) - 1
+        )
+    repeated = runner.run(
+        repository.root, "cat-file", "blob", "HEAD:data.bin", output_limit=len(payload)
+    )
+    assert repeated.stdout == payload
+    assert runner.provenance == identity
+
+
+def test_real_git_failure_retains_bounded_stderr_and_check_semantics(tmp_path: Path) -> None:
+    """The actual Git failure result remains available only when check is disabled."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.commit()
+    runner = GitRunner()
+    arguments = ("rev-parse", "--verify", "refs/heads/not-present")
+    failed = runner.run(repository.root, *arguments, check=False, output_limit=4096)
+    assert failed.returncode == 128
+    assert failed.stdout == b""
+    assert failed.stderr
+    assert len(failed.stderr) <= 4096
+    with pytest.raises(RuntimeError, match="exit status 128"):
+        runner.run(repository.root, *arguments, output_limit=4096)
+    with pytest.raises(RuntimeError, match="exceeded output limit"):
+        runner.run(repository.root, *arguments, check=False, output_limit=1)
+
+
+@pytest.mark.parametrize("limit", (0, -1, True))
+def test_runner_requires_positive_integer_output_budget(tmp_path: Path, limit: int) -> None:
+    """A caller cannot disable the output ceiling with zero, negative or boolean data."""
+    runner = GitRunner()
+    with pytest.raises(ValueError, match="output limit must be positive"):
+        runner.run(tmp_path, "--version", output_limit=limit)
+
+
+def test_runner_rejects_boolean_timeout(tmp_path: Path) -> None:
+    """A boolean cannot stand in for an explicit integer command deadline."""
+    runner = GitRunner()
+    with pytest.raises(ValueError, match="timeout must be positive"):
+        runner.run(tmp_path, "--version", timeout_seconds=True)
