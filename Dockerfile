@@ -6,7 +6,7 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Non-root CLI image
 
-FROM python:3.12-slim@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217 AS builder
+FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS builder
 
 WORKDIR /build
 COPY requirements/build.txt requirements/build.txt
@@ -16,7 +16,7 @@ COPY LICENSE NOTICE README.md pyproject.toml ./
 COPY src/ src/
 RUN python -m build --wheel --no-isolation
 
-FROM python:3.12-slim@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217 AS runtime
+FROM python:3.12-slim@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS runtime
 
 LABEL org.opencontainers.image.title="RigorFoundry"
 LABEL org.opencontainers.image.description="Evidence-bound repository auditing and remediation planning"
