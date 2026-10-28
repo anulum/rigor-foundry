@@ -44,6 +44,7 @@ nav:
   - Canonical clause semantics: clause-semantics.md
   - Conditions with partial observations: condition-evaluation.md
   - Policy source bytes: policy-source-inputs.md
+  - Rule declarations: common-policy.md
   - Context source models: context-source-models.md
   - Retained context sources: context-source-ownership.md
   - Task and registry source owners: task-registry-source-owners.md

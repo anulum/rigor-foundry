@@ -23,6 +23,20 @@ from .model_primitives import require_digest, require_identifier
 TYPED_OBJECT_REF_SCHEMA_VERSION = "1.0"
 SUPPORTED_CONTEXT_SOURCE_FORMATS = frozenset(
     {
+        ("evidence-reference", "2.0"),
+        ("evidence-reference", "1.0"),
+        ("review-attestation", "2.0"),
+        ("standard-pack", "2.0"),
+        ("evidence-contract", "2.0"),
+        ("evidence-contract", "1.0"),
+        ("semantic-decision", "1.0"),
+        ("review-policy", "1.0"),
+        ("adapter-lock", "1.0"),
+        ("reviewer-identity-policy", "semantic-reviewer-identity-policy.v1"),
+        ("control-definition", "2.0"),
+        ("control-definition", "1.0"),
+        ("authority-clause", "2.0"),
+        ("freshness-policy", "2.0"),
         ("task-definition", "1.0"),
         ("context-producer-contract", "1.0"),
         ("repository-state", "1.0"),

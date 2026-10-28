@@ -20,6 +20,50 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Source compilation joins complete original retained byte cohorts to exact
+  rule, decision and component targets, preserving full legacy pack membership
+  and closing source checks before returning a source candidate.
+
+- Deterministic complete source documents preserve original source/component
+  arrays, explicit compiler identity and composite legacy binding order under
+  whole-document bounds. Structural parsing does not accept source semantics.
+
+- Complete declared rule dependency and supersession graphs reject unresolved,
+  unrelated or cyclic relations under aggregate allocation limits, while
+  retaining historical rows and separate installed-owner semantic acceptance.
+
+- Selected assessment declarations bind exact control generations and independent
+  signed-review bodies. Fixed readers preserve headerless original evidence and
+  complete original attestations; supporting records cannot become atomic
+  enforcement components through their target registration.
+
+- Complete quality projection rows preserve original numeric and qualitative
+  control obligations separately, with exact owning bindings and bounded
+  complete selected-control enumeration. Standalone original evidence contracts
+  and semantic decisions resolve through their actual fixed owning parsers.
+
+- Shared original evidence and signed-review predicates preserve legacy numeric
+  freshness, exact adapter binding and independent review requirements through
+  the existing per-control assessment API.
+
+- Provisional qualitative freshness proofs and evidence references bind exact
+  artifact, source, configuration, toolchain and cohort identities before their
+  included proofs. Complete invalidator states and original owner metadata
+  remain explicit; structural parsing does not authenticate freshness or results.
+
+- Exact legacy control bindings and a fixed component target resolver retain
+  complete original signed packs, numeric control obligations and source
+  decision identities under aggregate parser limits.
+
+- Provisional qualitative evidence and rule-bound controls retain explicit
+  review roles, source obligations and exact adapter, freshness and reviewer
+  identity-policy references. Original numeric evidence and remediation
+  contracts remain unchanged; structural binding grants no gate approval.
+
+- Provisional explicit rule scopes, source-bound semantic decisions and atomic
+  rules retain exact statement bytes and original component identities under
+  bounded parsing, without inferring semantic acceptance or runtime admission.
+
 - Retained source universes preserve original capture, native-pin and discovery
   receipt identities, every held/excluded source, and complete region/span
   accounting over actual held bytes through a fixed source producer.

@@ -68,6 +68,30 @@ The `source-universe-entry` declaration is also explicitly provisional at
 capture, native pin and discovery receipt formats without changing their
 versions, fields or owning digests.
 
+The [explicit rule declarations and qualitative contracts](common-policy.md)
+are also individually version-pinned provisional schemas. `RuleScope1`,
+`SemanticDecision1`, `AtomicRule1`, `ReviewRoleRequirement1`, `ReviewPolicy1`
+and `EvidenceRequirement1` use `1.0`; `EvidenceContract2` and
+`ControlDefinition2` use `2.0`. They do not change the frozen manifest.
+The new original-component reader retains existing control, numeric evidence, authority, freshness,
+adapter and reviewer identity-policy bytes and owning digests. An adapter's
+reference-only format binding does not add a schema field to the original wire.
+`LegacyControlBinding1` is separately version-pinned provisional at `1.0`.
+Its bounded original-pack reader retains the complete original `StandardPackV2`
+`2.0` wire and signature; the membership relation does not migrate legacy controls.
+`InvalidatorObservation1`, `FreshnessProof1` and the independent evidence-subject
+preimage are separately version-pinned provisional at `1.0`;
+`EvidenceReference2` is provisional at `2.0`. Their actual original owner proofs
+and freshness policies keep their existing wire versions. The original numeric
+evidence reference and assessment consumers remain unchanged.
+`QualityProjectionRowV3` is separately version-pinned provisional at `3.0`.
+Its original and qualitative cases preserve their actual control generations;
+complete row/control binding does not select a lock or authenticate decisions.
+`SelectedControlAssessment2` is separately version-pinned provisional at `2.0`.
+Its original evidence reference binding `1.0` adds no legacy schema header;
+review-attestation references keep schema `2.0`, the original complete owning
+digest and the unchanged `rigor-foundry.reviewer-attestation.v1` domain.
+
 ## Compatibility rules
 
 - A published schema identifier is never reinterpreted. An incompatible wire

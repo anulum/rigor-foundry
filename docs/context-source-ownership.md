@@ -10,7 +10,7 @@ admission require the host's separate checks.
 
 `typed_object_reference.TypedObjectRef1` has closed versioned fields for the
 source kind, format, object ID, object digest and complete reference digest.
-The current source table is:
+The original context resolver supports this subset of the closed reference table:
 
 | Source kind | Exact format | Owning parser |
 | --- | --- | --- |
@@ -35,6 +35,36 @@ pairs refuse before target interpretation. Object IDs are never interpreted
 as paths, URLs, import names or callbacks. Registry children retain their
 original canonical serialization and generation identity. Their collection
 and relationship counts also respect the supplied reference budget.
+
+The closed typed-reference table additionally represents the following
+[rule component owners](common-policy.md). These do not extend
+`parse_context_source_target` or install a source producer:
+
+| Component kind | Exact format | Owning parser |
+| --- | --- | --- |
+| `control-definition` | `1.0` | Original `ControlDefinition` through `PolicyComponent1` |
+| `evidence-contract` | `1.0` | Original numeric `EvidenceContract` through `PolicyComponent1` |
+| `evidence-reference` | `1.0` reference binding | Original eleven-field headerless `EvidenceReference` through `PolicyComponent1` |
+| `review-attestation` | `2.0` | Original thirteen-field `ReviewerAttestation` through `PolicyComponent1` |
+| `semantic-decision` | `1.0` | `SemanticDecision1`, without issuer authentication |
+| `authority-clause` | `2.0` | Original `AuthorityClauseV2` through `PolicyComponent1` |
+| `freshness-policy` | `2.0` | Original `FreshnessPolicyV2` through `PolicyComponent1` |
+| `adapter-lock` | `1.0` reference binding | Original eight-field `AdapterLock` through `PolicyComponent1` |
+| `reviewer-identity-policy` | `semantic-reviewer-identity-policy.v1` | Original `ReviewerIdentityPolicy` through `PolicyComponent1` |
+| `review-policy` | `1.0` | `ReviewPolicy1` |
+| `evidence-contract` | `2.0` | `EvidenceContract2` |
+| `control-definition` | `2.0` | `ControlDefinition2` |
+| `standard-pack` | `2.0` | Original `StandardPackV2` through `StandardPackSource2` |
+| `evidence-reference` | `2.0` | `EvidenceReference2` with its independent subject and included proof metadata |
+
+Original headerless component formats use their fixed component reader, rather
+than a relaxed generic schema-header check. Each consumer validates its own
+supported subset and compares the complete target's actual identity and digest.
+Parsing a reference alone grants neither target resolution nor source authority.
+`component_source_resolution.parse_policy_component_target` resolves this
+component subset through fixed original and new owning parsers, including the
+complete original signed pack and all its bounded children. It does not relax
+the context resolver's format checks or authenticate policy selection.
 
 `policy_source_reads.parse_policy_document_payload(payload, budget=budget)`
 decodes already retained exact bytes with the same strict byte/depth bounds,

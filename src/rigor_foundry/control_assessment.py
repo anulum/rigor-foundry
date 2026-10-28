@@ -312,14 +312,13 @@ class ControlAssessment:
         evidence: tuple[EvidenceReference, ...],
     ) -> None:
         """Require every reference to bind one exact domain-compatible adapter lock."""
-        for item in evidence:
-            matches = tuple(
-                adapter for adapter in lock.adapters if adapter.adapter_id == item.adapter_id
-            )
-            if len(matches) != 1 or matches[0].adapter_digest != item.adapter_digest:
-                raise ValueError("assessment evidence does not bind an exact locked adapter")
-            if control.control.domain not in matches[0].domains:
-                raise ValueError("assessment evidence adapter does not cover the control domain")
+        from .assessment_evidence_validation import validate_original_evidence_bindings
+
+        validate_original_evidence_bindings(
+            domain=control.control.domain,
+            adapters=lock.adapters,
+            evidence=evidence,
+        )
 
     @classmethod
     def build(
@@ -437,22 +436,14 @@ class ControlAssessment:
         review_trust_store: VerificationTrustStore | None,
     ) -> None:
         """Validate evidence and review contracts for a pass."""
-        if control.missing_adapter_ids:
-            raise ValueError("control with missing evidence adapters cannot pass")
-        contract = control.control.evidence
-        fresh = tuple(
-            item for item in evidence if item.fresh_at(instant, contract.freshness_seconds)
+        from .assessment_evidence_validation import validate_original_pass_evidence
+
+        validate_original_pass_evidence(
+            contract=control.control.evidence,
+            missing_adapter_ids=control.missing_adapter_ids,
+            instant=instant,
+            evidence=evidence,
         )
-        if len(fresh) != len(evidence) or not fresh:
-            raise ValueError("pass requires only fresh, non-empty evidence")
-        missing_adapters = set(contract.required_adapters).difference(
-            item.adapter_id for item in fresh
-        )
-        missing_types = set(contract.evidence_types).difference(
-            item.evidence_type for item in fresh
-        )
-        if missing_adapters or missing_types:
-            raise ValueError("pass evidence does not satisfy adapter and type coverage")
         ControlAssessment._validate_reviewers(
             control,
             instant,
@@ -474,28 +465,17 @@ class ControlAssessment:
         review_trust_store: VerificationTrustStore | None,
     ) -> None:
         """Count distinct identities and keys bound to the exact assessment body."""
-        if review_trust_store is None:
-            raise ValueError("verified independent reviewers require an explicit trust store")
-        verified = tuple(
-            item
-            for item in reviews
-            if item.reviewer_id != assessor
-            and item.verified_at(
-                instant,
-                decision,
-                review_body_digest,
-                review_trust_store,
-            )
+        from .assessment_evidence_validation import validate_original_reviewers
+
+        validate_original_reviewers(
+            contract=control.control.evidence,
+            instant=instant,
+            reviews=reviews,
+            assessor=assessor,
+            decision=decision,
+            review_body_digest=review_body_digest,
+            review_trust_store=review_trust_store,
         )
-        key_ids = {item.key_id for item in verified}
-        reviewer_ids = {item.reviewer_id for item in verified}
-        public_key_by_id = {item.key_id: item.public_key_hex for item in review_trust_store.keys}
-        public_keys = {public_key_by_id[item.key_id] for item in verified}
-        required = control.control.evidence.minimum_independent_reviewers
-        if len(key_ids) < required or len(reviewer_ids) < required or len(public_keys) < required:
-            raise ValueError(
-                "assessment lacks enough distinct verified independent reviewers and keys"
-            )
 
     def to_dict(self) -> dict[str, object]:
         """Serialise one per-control assessment."""

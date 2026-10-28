@@ -79,3 +79,8 @@ actual metadata and raw descriptors through use/closure, verifies original
 native pins and complete discovery snapshots, and consumes partitions over
 those same held bytes. Held/excluded sources remain explicit; no locator
 becomes a path and no byte check accepts extraction meaning.
+
+[Rule declarations and original components](common-policy.md) retain these
+original spans and conditions in explicit scope, semantic-decision and atomic-rule
+records. Their parsers preserve declaration integrity; actual source and semantic
+acceptance remain separate.

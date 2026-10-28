@@ -98,6 +98,22 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "rule_source_document.RULE_SOURCE_DOCUMENT_SCHEMA_VERSION": "1.0",
+    "selected_control_assessment_v2.SELECTED_CONTROL_ASSESSMENT_V2_SCHEMA_VERSION": "2.0",
+    "quality_projection_v3.QUALITY_PROJECTION_V3_SCHEMA_VERSION": "3.0",
+    "freshness_proof.INVALIDATOR_OBSERVATION_SCHEMA_VERSION": "1.0",
+    "freshness_proof.FRESHNESS_PROOF_SCHEMA_VERSION": "1.0",
+    "evidence_reference_v2.EVIDENCE_REFERENCE_V2_SCHEMA_VERSION": "2.0",
+    "evidence_reference_v2.EVIDENCE_SUBJECT_SCHEMA_VERSION": "1.0",
+    "legacy_control_binding.LEGACY_CONTROL_BINDING_SCHEMA_VERSION": "1.0",
+    "control_definition_v2.CONTROL_DEFINITION_V2_SCHEMA_VERSION": "2.0",
+    "evidence_contract_v2.EVIDENCE_REQUIREMENT_SCHEMA_VERSION": "1.0",
+    "evidence_contract_v2.EVIDENCE_CONTRACT_V2_SCHEMA_VERSION": "2.0",
+    "review_policy.REVIEW_ROLE_REQUIREMENT_SCHEMA_VERSION": "1.0",
+    "review_policy.REVIEW_POLICY_SCHEMA_VERSION": "1.0",
+    "atomic_rule.ATOMIC_RULE_SCHEMA_VERSION": "1.0",
+    "rule_scope.RULE_SCOPE_SCHEMA_VERSION": "1.0",
+    "semantic_decision.SEMANTIC_DECISION_SCHEMA_VERSION": "1.0",
     "source_universe.SOURCE_UNIVERSE_ENTRY_SCHEMA_VERSION": "1.0",
     "inventory_domain.INVENTORY_DOMAIN_SCHEMA_VERSION": "1.0",
     "inventory_baseline.INVENTORY_BASELINE_SCHEMA_VERSION": "1.0",
