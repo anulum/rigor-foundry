@@ -14,6 +14,7 @@ from typing import cast
 
 import pytest
 from test_context_producer_contract import contract
+from test_inventory_baseline import baseline
 from test_inventory_domain import domain
 from test_project_registry_models import profiled_registry, registry
 from test_repository_state import state
@@ -43,7 +44,7 @@ def sources() -> tuple[tuple[TypedObjectRef1, ContextSourceTarget], ...]:
     )
     values: list[tuple[TypedObjectRef1, ContextSourceTarget]] = [
         (TypedObjectRef1.from_dict(item.reference()), item)
-        for item in (task, producer, repository, unclassified_domain)
+        for item in (task, producer, repository, unclassified_domain, baseline())
     ]
     for registered in (registry(), profiled_registry()):
         version = cast(str, registered.to_dict()["schema_version"])

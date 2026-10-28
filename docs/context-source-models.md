@@ -49,7 +49,7 @@ have no callback, executable, import path or enrollment field.
 | --- | --- | --- |
 | `builtin.task-definition.v1` | `task` | Task definition and project registry |
 | `builtin.project-registry.v1` | `registry` | Project registry |
-| `builtin.maintained-inventory.v1` | `inventory` | Repository state, project registry and optional configured inventory domain |
+| `builtin.maintained-inventory.v1` | `inventory` | Repository state, project registry, configured inventory domain and explicit inventory baseline |
 | `builtin.context-facts.v1` | `fact` | Outputs of the task, registry and inventory owners |
 
 The parser restricts descriptions to these domains. A description does not
@@ -94,6 +94,12 @@ stage-zero/unmerged combinations, duplicates and mixed Git formats are refused.
 An inventory consumer still needs the actual complete preimages, selected code,
 source retention and closing validation. Equal self-digests alone cannot prove
 that an observation is current or that its source domain is complete.
+
+The [baseline and actual-state APIs](inventory-baselines.md) now derive these
+independent state digests from every declared Git/directory root and an actual
+retained earlier baseline. Directory before-images are explicit source records;
+current directory bytes never supply invented history. Their observational
+results remain separate from authenticated inventory/fact/task admission.
 
 ## Configured inventory domains
 

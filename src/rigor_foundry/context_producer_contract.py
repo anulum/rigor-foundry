@@ -21,6 +21,7 @@ from .audit_primitives import (
     require_string,
 )
 from .condition_language import ConditionExpression
+from .inventory_baseline import INVENTORY_BASELINE_SCHEMA_VERSION
 from .inventory_domain import INVENTORY_DOMAIN_SCHEMA_VERSION
 from .model_primitives import require_digest, require_identifier
 from .policy_read_budget import PolicyReadBudget1
@@ -43,6 +44,7 @@ _REGISTRY_FORMATS = frozenset(
 _TASK_FORMAT = ("task-definition", TASK_DEFINITION_SCHEMA_VERSION)
 _INVENTORY_FORMAT = ("repository-state", REPOSITORY_STATE_SCHEMA_VERSION)
 _DOMAIN_FORMAT = ("inventory-domain", INVENTORY_DOMAIN_SCHEMA_VERSION)
+_BASELINE_FORMAT = ("inventory-baseline", INVENTORY_BASELINE_SCHEMA_VERSION)
 _TASK_FACTS = frozenset(
     {
         "task.id",
@@ -90,7 +92,7 @@ _DOMAINS: dict[str, tuple[str, frozenset[SourceFormat], frozenset[str], frozense
     ),
     "builtin.maintained-inventory.v1": (
         "inventory",
-        _REGISTRY_FORMATS | {_INVENTORY_FORMAT, _DOMAIN_FORMAT},
+        _REGISTRY_FORMATS | {_INVENTORY_FORMAT, _DOMAIN_FORMAT, _BASELINE_FORMAT},
         frozenset({"repository-state", "baseline-inventory"}),
         _INVENTORY_FACTS,
     ),
@@ -145,7 +147,12 @@ def _format(value: object) -> SourceFormat:
         require_identifier(data["kind"], "context source kind"),
         require_string(data["format_version"], "context source version"),
     )
-    if pair not in _REGISTRY_FORMATS | {_TASK_FORMAT, _INVENTORY_FORMAT, _DOMAIN_FORMAT}:
+    if pair not in _REGISTRY_FORMATS | {
+        _TASK_FORMAT,
+        _INVENTORY_FORMAT,
+        _DOMAIN_FORMAT,
+        _BASELINE_FORMAT,
+    }:
         raise ValueError("context source kind or version is unsupported")
     return pair
 

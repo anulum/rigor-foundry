@@ -20,6 +20,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Explicit retained inventory baselines and repository-state observations bind
+  every declared Git and directory root, original before-images, current index
+  stages and file/topology changes. Fixed source parsing preserves directory
+  history without inferring generator provenance or runtime admission.
+
 - GitHub Actions workflow and composite-action candidates cover immutable action
   references, direct untrusted run interpolation and target-event PR checkout.
   Bounded event parsing preserves exact source anchors and reports incomplete

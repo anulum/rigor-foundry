@@ -86,6 +86,7 @@ nav:
   - Repository file inputs: repository-file-inputs.md
   - Configured inventory domains: inventory-domains.md
   - Configured inventory inputs: configured-inventory-inputs.md
+  - Inventory baselines and states: inventory-baselines.md
   - Validation: validation.md
   - Security: security.md
   - Fuzzing: fuzzing.md

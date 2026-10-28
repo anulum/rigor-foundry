@@ -18,6 +18,7 @@ The current source table is:
 | `context-producer-contract` | `1.0` | `ContextProducerContract1` |
 | `repository-state` | `1.0` | `RepositoryState1` |
 | `inventory-domain` | `1.0` | `InventoryDomain1` |
+| `inventory-baseline` | `1.0` | `InventoryBaseline1` |
 | `project-registry` | `gotm-project-registry.v1` | `ProjectRegistry` |
 | `project-registry` | `project-registry.v2` | `ProjectRegistry` with its original embedded profile |
 
@@ -107,3 +108,10 @@ also borrows real domain/registry/contract leases. It compares the complete
 declared project root set and actual package/interpreter identity before
 returning classified bytes for one Git root. Other roots and whole maintained
 inventory/context admission remain separate obligations.
+
+The [complete baseline/state observer](inventory-baselines.md) additionally
+borrows an independently selected earlier baseline. It compares actual original
+Git blobs and the complete configured domain before deriving repository-state
+identities. Retained directory history remains explicit; it is not recovered
+from the later current scan. The final baseline check rejects late mutations
+without making the result an authenticated owner-proof token.
