@@ -15,6 +15,53 @@ invalid UTF-8 or incorrect digests refuse. For file input, use
 record's `from_dict` method. That reader also rejects duplicate JSON keys and
 uses bounded stable file reads.
 
+## Typed v3 signatures
+
+`TrustRolesV3` in `rigor_foundry.rule_chain_trust_v3` binds five exact original
+`OfflineTrustPolicy` objects. Original lifecycle validation enforces distinct
+key identifiers and public keys across roles, v1 nonsemantic keys, and v2
+semantic keys with disjoint enrolled author/reviewer identities. Its
+`trust_roles_digest` is the canonical digest of `schema_version="3.0"` and the
+five named original policy digests: `pack_issuers`, `project_selectors`,
+`lock_resolvers`, `semantic_authors`, and `semantic_reviewers`. Any change to
+any selected policy changes this generation identity, including an unrelated
+role's rotation or revocation metadata.
+
+`rule_chain_v3_signature_boundary` resolves the closed kind/body-version/role/
+domain table. `RuleChainV3Signature`, in `rigor_foundry.signed_rule_chain_v3`,
+parses exactly twelve fields and requires an explicit read budget. Its payload
+binds signature schema, kind, body schema, domain, canonical body digest and UTC
+signing time; its signature digest hashes actual Ed25519 bytes.
+
+The factory normalizes accepted UTC timestamp spellings with the original
+timestamp owner before storing them or deriving the signed payload. Serialized
+records use that canonical spelling ending in `Z`. Direct records and wire
+objects carrying a noncanonical alias refuse instead of emitting a record that
+cannot roundtrip. Normalizing a factory input preserves its actual payload and
+signature bytes.
+
+| Signature kind | Body version | Role | Domain |
+|---|---|---|---|
+| `standard-pack` | `3.0` | `pack-issuer` | `rigor-foundry.standard-pack.v3` |
+| `project-profile` | `3.0` | `project-selector` | `rigor-foundry.project-profile-selection.v3` |
+| `effective-profile-lock` | `3.0` | `lock-resolver` | `rigor-foundry.effective-profile-lock.v3` |
+| `rule-corpus-author` | `1.0` | `semantic-author` | `rigor-foundry.rule-corpus-author.v3` |
+| `rule-corpus-acceptance` | `1.0` | `semantic-reviewer` | `rigor-foundry.rule-corpus-acceptance.v3` |
+
+`verify` requires the consuming owner's independently expected kind, body
+version/digest, selected whole-policy digest, current UTC instant and complete
+policies. It reparses metadata and every original policy, then verifies the
+actual signature and key activity both at signing and now. Future timestamps,
+expired/revoked/unknown keys, changed role policies and cross-version replay
+refuse. Both corpus roles sign the same acceptance body under distinct domains.
+
+This is a signature primitive over an already validated body digest. The
+consuming body owner must separately parse its complete actual pack, profile,
+lock or corpus-acceptance body and establish its trusted source. This API does
+not itself parse or admit those bodies, ratify semantics, enroll keys, select a
+host or grant effects. Original v2 signatures retain their original grammar
+and domains; the new provisional modules do not change the stable1.0 surface.
+
 ## Scope and exact statements
 
 A global scope has no condition and explicitly lists every supported task

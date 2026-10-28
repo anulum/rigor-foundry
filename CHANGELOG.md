@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Typed v3 Ed25519 signatures separate five role domains, bind the owning body
+  version and exact selected lifecycle policies, and refuse cross-version replay.
+  Signature authenticity remains separate from body and source-corpus admission.
+
 - Source compilation joins complete original retained byte cohorts to exact
   rule, decision and component targets, preserving full legacy pack membership
   and closing source checks before returning a source candidate.

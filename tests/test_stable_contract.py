@@ -98,6 +98,8 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "rule_chain_trust_v3.TRUST_ROLES_V3_SCHEMA_VERSION": "3.0",
+    "signed_rule_chain_v3.RULE_CHAIN_V3_SCHEMA_VERSION": "3.0",
     "rule_source_document.RULE_SOURCE_DOCUMENT_SCHEMA_VERSION": "1.0",
     "selected_control_assessment_v2.SELECTED_CONTROL_ASSESSMENT_V2_SCHEMA_VERSION": "2.0",
     "quality_projection_v3.QUALITY_PROJECTION_V3_SCHEMA_VERSION": "3.0",
