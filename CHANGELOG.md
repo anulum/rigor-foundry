@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Complete corpus envelopes bind full source/component arrays, separate native
+  statement provenance and both real signature roles. Held verification repeats
+  actual source, issuer-selection, lifecycle and generation checks at closure.
+
 - Typed v3 Ed25519 signatures separate five role domains, bind the owning body
   version and exact selected lifecycle policies, and refuse cross-version replay.
   Signature authenticity remains separate from body and source-corpus admission.

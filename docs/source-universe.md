@@ -152,3 +152,11 @@ grant source access, authenticate an initiating instruction/claim or qualify a
 selected policy/common gate. Relevant held sources and unresolved regions still
 require the enclosing corpus/host decision. These APIs emit no ready or admitted
 status.
+
+`verify_external_native_source(pin)` checks that a separately verified original
+native approval carrier is outside the complete original corpus inputs. It
+rechecks the actual cohort, refuses a shared retained path or declared original
+payload digest, and includes held native metadata without opening protected
+bytes. This method does not authenticate the supplied pin. The enclosing
+[corpus verifier](common-policy.md#held-corpus-verification) first checks it
+through the actual native owner, then applies this source-independence check.

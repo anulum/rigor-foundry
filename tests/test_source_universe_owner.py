@@ -22,6 +22,8 @@ from test_context_owner_implementation import implementation_budget
 from test_context_producer_contract import contract
 from test_policy_source_selection import SelectedPolicy, selection
 from test_project_registry_models import registry
+from test_rule_corpus_native import corpus_budget, corpus_native_selection
+from test_rule_source_document import source_document
 from test_task_definition import definition
 
 import rigor_foundry.source_universe_owner as owner_module
@@ -32,11 +34,14 @@ from rigor_foundry.context_owner_implementation import (
 )
 from rigor_foundry.context_producer_contract import ContextProducerContract1, ContextRootBinding
 from rigor_foundry.context_source_lease import RetainedContextSource
+from rigor_foundry.native_source_pin import NativeSourcePin
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
+from rigor_foundry.policy_source_records import PolicySourceRecord1
 from rigor_foundry.policy_source_regions import SourceRegion1
 from rigor_foundry.policy_source_selection import PolicySourceSelection
 from rigor_foundry.policy_source_spans import SourceSpan1
 from rigor_foundry.retained_policy_source import RetainedPolicySource
+from rigor_foundry.source_capture import SourceCapture
 from rigor_foundry.source_universe import SourceReadState, SourceUniverseEntry1
 from rigor_foundry.source_universe_owner import SourceUniverseOwner
 from rigor_foundry.typed_object_reference import TypedObjectRef1
@@ -499,3 +504,52 @@ def test_actual_closing_failure_closes_owner_and_preserves_host_release_checks(
         actual.close()
         with pytest.raises(ValueError, match="owner is closed"):
             actual.observe()
+
+
+@pytest.mark.parametrize("kind", ["capture", "native", "discovery"])
+def test_external_native_approval_remains_outside_complete_original_source_inputs(
+    tmp_path: Path, kind: str
+) -> None:
+    """A real separately retained native carrier can be checked without copying source inventory."""
+    with (
+        universe_selection(tmp_path / "selected", kind) as selected,
+        owner(selected) as actual,
+        corpus_native_selection(
+            tmp_path / "approval", source_document(), budget=corpus_budget()
+        ) as external,
+    ):
+        actual.verify_external_native_source(external.pin)
+        assert actual.observe()
+        with pytest.raises(ValueError, match="actual original external native pin"):
+            actual.verify_external_native_source(cast(NativeSourcePin, "caller-pin"))
+        original = selected.actual.source.metadata.read()
+        assert type(original) is PolicySourceRecord1
+        if isinstance(original.record, NativeSourcePin):
+            with pytest.raises(ValueError, match="already a retained corpus input"):
+                actual.verify_external_native_source(original.record)
+            payload_digest = original.record.file_digest
+        elif isinstance(original.record, SourceCapture):
+            payload_digest = original.record.payload_digest
+        else:
+            payload_digest = dict(original.record.sources)[selected.sources[0].source_id]
+        wire = external.pin.to_dict()
+        wire.pop("pin_digest")
+        wire["file_digest"] = payload_digest
+        declared_shared = NativeSourcePin.from_dict({**wire, "pin_digest": canonical_digest(wire)})
+        with pytest.raises(ValueError, match="already belong to the corpus inputs"):
+            actual.verify_external_native_source(declared_shared)
+
+
+def test_held_native_input_cannot_approve_its_own_document_by_reusing_the_carrier(
+    tmp_path: Path,
+) -> None:
+    """Even an explicitly unread native source retains its original path and declared bytes."""
+    with (
+        universe_selection(tmp_path / "selected", "native", state="protected") as selected,
+        owner(selected) as actual,
+    ):
+        original = selected.actual.source.metadata.read()
+        assert type(original) is PolicySourceRecord1 and type(original.record) is NativeSourcePin
+        assert selected.sources[0].payload is None
+        with pytest.raises(ValueError, match="already belong to the corpus inputs"):
+            actual.verify_external_native_source(original.record)

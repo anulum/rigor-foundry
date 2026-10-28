@@ -32,6 +32,8 @@ def reference(
 @pytest.mark.parametrize(
     ("kind", "version"),
     [
+        ("rule-corpus-ratification", "1.0"),
+        ("rule-corpus-acceptance", "1.0"),
         ("evidence-reference", "2.0"),
         ("evidence-reference", "1.0"),
         ("review-attestation", "2.0"),

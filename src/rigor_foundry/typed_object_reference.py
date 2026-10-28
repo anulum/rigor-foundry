@@ -23,6 +23,8 @@ from .model_primitives import require_digest, require_identifier
 TYPED_OBJECT_REF_SCHEMA_VERSION = "1.0"
 SUPPORTED_CONTEXT_SOURCE_FORMATS = frozenset(
     {
+        ("rule-corpus-ratification", "1.0"),
+        ("rule-corpus-acceptance", "1.0"),
         ("evidence-reference", "2.0"),
         ("evidence-reference", "1.0"),
         ("review-attestation", "2.0"),

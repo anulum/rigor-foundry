@@ -21,12 +21,14 @@ from .context_owner_proof import OwnerProof1
 from .context_producer_contract import ContextProducerContract1
 from .context_source_lease import RetainedContextSource
 from .discovery_source_receipt import DiscoverySourceReceipt1
+from .native_source_pin import NativeSourcePin
 from .policy_read_budget import PolicyReadBudget1
 from .policy_source_records import PolicySourceRecord1
 from .policy_source_regions import SourceRegion1
 from .policy_source_selection import PolicySourceRead, PolicySourceSelection
 from .policy_source_spans import SourceSpan1
 from .project_registry_models import ProjectRegistry
+from .source_capture import SourceCapture
 from .source_universe import SourceUniverseEntry1
 
 
@@ -366,6 +368,45 @@ class SourceUniverseOwner:
             item_span.verify(payloads[item_span.source_id])
         self.verify(entries)
         return regions
+
+    def verify_external_native_source(self, native: NativeSourcePin) -> None:
+        """Keep a separately verified native approval outside its own source inputs.
+
+        Parameters
+        ----------
+        native : NativeSourcePin
+            Actual original pin already authenticated by its separate native
+            owner. This method checks independence, not native or issuer trust.
+
+        Raises
+        ------
+        ValueError
+            The pin is malformed or its original path/bytes are already an
+            input of this entire cohort, including declared held native inputs.
+        """
+        if type(native) is not NativeSourcePin:
+            raise ValueError("an actual original external native pin is required")
+        external = NativeSourcePin.from_dict(native.to_dict())
+        path = external.root / external.filename
+        _, reads = self._read()
+        for selected, read in zip(self._sources, reads, strict=True):
+            original = read.record.record
+            if selected.payload is not None and selected.payload.path == path:
+                raise ValueError("native approval carrier is already a retained corpus input")
+            if isinstance(original, NativeSourcePin):
+                shared = (
+                    original.root / original.filename == path
+                    or original.file_digest == external.file_digest
+                )
+            elif isinstance(original, SourceCapture):
+                shared = original.payload_digest == external.file_digest
+            else:
+                shared = dict(original.sources)[selected.source_id] == external.file_digest
+            if shared:
+                raise ValueError(
+                    "native approval bytes or carrier already belong to the corpus inputs"
+                )
+        self._read()
 
     def close(self) -> None:
         """Revalidate the complete selection and close only this borrowing owner."""

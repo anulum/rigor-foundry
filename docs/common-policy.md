@@ -515,3 +515,97 @@ prove adequacy of the extracted prose. Competent issuer/effective decision
 verification, independent corpus/native ratification, current root selection,
 evidence authentication, gate evaluation and effect authority remain separate
 required owning boundaries.
+
+## Complete corpus acceptance
+
+`rigor_foundry.rule_corpus_acceptance.rule_corpus_acceptance_body` derives the
+common unsigned body from the entire actual `RuleSourceDocument1` and an exact
+`RuleCorpusRatification1`. Its nine fields include both headers, corpus ID,
+document, universe, decision, component and compiler digests, and the native
+ratification reference. Universe and decision digests hash their complete wire
+arrays. The component digest hashes the complete five-key mapping containing
+`qualitative_controls`, `review_policies`, `legacy_control_bindings`,
+`authority_bindings` and `freshness_policies`, including empty arrays.
+
+`RuleCorpusAcceptance1` adds the full author and reviewer signatures and its
+final digest, giving exactly twelve fields at schema `1.0`. Both signatures
+bind the same unsigned body under their separate v3 domains. Parsing validates
+their complete metadata, kind, body version and body identity. Current crypto,
+key lifecycle and protected policy selection remain consuming checks, so an
+old envelope remains structurally readable without becoming currently valid.
+
+`rigor_foundry.rule_corpus_ratification.RuleCorpusRatification1` retains exactly
+eleven fields at `1.0`: both headers, corpus/document/universe/decision
+identities, issuer ID, original native-pin reference, original statement span,
+statement digest and final ratification digest. Its reference and span must
+name the same original source. The record contains neither a host provider nor
+an issuer-enrollment instruction.
+
+## Exact native corpus statement
+
+`render_rule_corpus_question`, in `rigor_foundry.rule_corpus_native`, renders
+the entire actual document as JSON with sorted keys, compact separators,
+unescaped Unicode and no nonfinite values. Fixed surrounding prose requests
+this exact decoded user text:
+
+```text
+SCHVAĽUJEM rule-corpus <corpus_id> <document_digest> <universe_digest> <decision_set_digest>
+```
+
+The rendered question and expected user text have no terminal LF. Original
+native capture processing appends exactly one LF to each decoded message.
+A user-authored terminal LF therefore produces two capture LFs and refuses the
+exact statement grammar. No stripping, whitespace normalization, NFC conversion
+or abbreviated document is accepted. The complete rendering, including the
+capture owner's LF, must fit the explicit document budget.
+
+`RuleCorpusNativeOwner` borrows actual `RetainedContextSource` pin metadata,
+the entire `RetainedPolicySource` JSONL and an already-held original
+`HostNativeSourceState`. Installed composition separately supplies the
+competent issuer, exact corpus scope and protected expected issuer-binding
+digest. `rule_corpus_native_binding_digest` hashes the fixed
+`rigor-foundry.rule-corpus-native-issuer-binding.v1` contract identifier, those
+two IDs and the complete original native reference. Computing this digest does
+not authenticate its selection; it must match independently installed state.
+
+Verification joins the complete question, exact decoded statement, original
+selected user role/message/line identity, later reply timestamp, full file
+hash/path, captures, current selected pin and revocations. The statement span
+covers the entire original selected user JSONL line, including carrier LF;
+bounded scanning derives its exact offsets from that same retained file.
+Three SHA-256 preimages stay distinct: decoded statement UTF-8; the same text
+plus one capture LF; and the whole original JSONL line. Escaped Unicode in the
+carrier does not change the decoded statement or permit a plaintext span.
+Closing rechecks the whole borrowed snapshot without closing its owning leases.
+
+## Held corpus verification
+
+`rigor_foundry.rule_corpus_verification.RuleCorpusVerifier.verified_context`
+composes the actual source/compiler, native and selected-signature owners.
+It compares the complete accepted unsigned body with the actual document and
+ratification, verifies both real signatures against the whole selected policy
+generation and current installed clock, and runs the complete original source
+compiler and target checks. Included unread, unavailable or protected sources
+prevent acceptance readiness. An unresolved source region also retains its hold
+before consumer use and during closing checks, even when both signatures and
+the complete native approval bind that exact disposition. Structural document
+and envelope parsing and the declaration-only compiler preserve the unresolved
+region; its bytes and rule/decision relations remain present.
+
+The native approval carrier must remain outside the complete corpus inputs.
+The source owner checks original retained paths and declared payload digests,
+including held metadata, rather than trusting a copied universe. Appending an
+approval to a transcript already hashed inside its own document changes that
+input and cannot ratify the unchanged document.
+
+All checks repeat on context closure, including current time, native revocations
+and retained source identities; a changed accepted generation refuses. The
+installed outer host holds the original leases and state through use and close.
+Where original native source selection obtains a context internally, its
+adapter must borrow that already-held state without acquiring another producer
+generation. Caller-created owners, hashes or role markers install no authority.
+
+These provisional module APIs verify an exact source extraction cohort under
+their installed composition. Effective semantic precedence, exception authority,
+current applicability, enclosing pack/profile/lock selection, evidence, common
+gate verdicts and effect permission still require their own actual owners.
