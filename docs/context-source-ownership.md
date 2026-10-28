@@ -115,3 +115,14 @@ Git blobs and the complete configured domain before deriving repository-state
 identities. Retained directory history remains explicit; it is not recovered
 from the later current scan. The final baseline check rejects late mutations
 without making the result an authenticated owner-proof token.
+
+The [fixed inventory owner and source fact composition](maintained-context.md)
+now generate and reverify actual maintained scope, independent inventory proof
+preimages and current task/registry/inventory facts. Their closed result records
+retain separate structural parsing and actual source verification. Initiating
+authority, host-required-root selection and runtime admission remain separate.
+
+`TaskRegistrySourceOwners.root_bindings()` revalidates the original actual
+task/registry sources and returns their complete root selection. Source fact
+composition compares every root's path, project, group and configured-domain
+digest against the actual inventory, rather than joining root labels alone.

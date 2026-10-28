@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Complete maintained surface inventories and source-derived fact contexts
+  retain independent before/current identities and verify actual fixed owners
+  before and after three-valued condition evaluation.
+
 - Explicit retained inventory baselines and repository-state observations bind
   every declared Git and directory root, original before-images, current index
   stages and file/topology changes. Fixed source parsing preserves directory

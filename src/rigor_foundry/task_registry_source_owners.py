@@ -18,7 +18,7 @@ from .audit_primitives import canonical_digest
 from .context_owner_implementation import OwnerImplementationSnapshot, observe_owner_implementation
 from .context_owner_observations import ContextProducerObservation1, OwnerObservation
 from .context_owner_proof import OwnerProof1
-from .context_producer_contract import ContextProducerContract1
+from .context_producer_contract import ContextProducerContract1, ContextRootBinding
 from .context_source_lease import RetainedContextSource
 from .policy_read_budget import PolicyReadBudget1
 from .project_registry_models import ProjectRegistration, ProjectRegistry
@@ -144,6 +144,21 @@ class TaskRegistrySourceOwners:
             if project.project_id == identity:
                 return project
         raise ValueError("source project is absent from the selected registry")
+
+    def root_bindings(self) -> tuple[ContextRootBinding, ...]:
+        """Read the complete root selection from the original actual owner contracts.
+
+        Returns
+        -------
+        tuple of ContextRootBinding
+            All original task/registry contract roots, without request filtering.
+
+        Raises
+        ------
+        ValueError, RuntimeError, OSError
+            If the original sources, implementation or owner lifetime changed.
+        """
+        return self._read()[2].root_bindings
 
     def _snapshot(self, contract: ContextProducerContract1) -> str:
         """Bind the actual owning entry, full source selection and code snapshot."""

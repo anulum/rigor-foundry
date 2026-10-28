@@ -283,8 +283,8 @@ def test_actual_wrong_source_contract_code_and_registry_bindings_refuse(
     tmp_path: Path, fault: str
 ) -> None:
     """Fixed implementations reject mismatched actual identities before emitting any facts."""
-    with pytest.raises(ValueError), selection(tmp_path / "sources", fault=fault):
-        pytest.fail("invalid selected source ownership became usable")
+    with ExitStack() as stack, pytest.raises(ValueError):
+        stack.enter_context(selection(tmp_path / "sources", fault=fault))
 
 
 def test_identity_only_membership_unknown_owner_and_wrong_runtime_objects(tmp_path: Path) -> None:
@@ -322,6 +322,20 @@ def test_actual_closing_mutation_refuses_the_source_owner_context(tmp_path: Path
         chosen.paths[0].write_bytes(chosen.paths[0].read_bytes() + b" ")
         with pytest.raises(ValueError, match="identity changed"):
             chosen.owners.observe(actor_id="actor", root_id="code", owner_class="task")
+
+
+def test_complete_root_bindings_revalidate_the_original_selected_sources(tmp_path: Path) -> None:
+    """Return actual complete paths and refuse the same entry after closing."""
+    with selection(tmp_path / "sources") as chosen:
+        bindings = chosen.owners.root_bindings()
+        assert tuple(item.root_id for item in bindings) == ("code", "tests")
+        assert tuple(item.canonical_path for item in bindings) == (
+            "03_CODE/GROUP-A/repositories/PROJECT-A/src",
+            "03_CODE/GROUP-A/repositories/PROJECT-A/tests",
+        )
+        chosen.owners.close()
+        with pytest.raises(ValueError, match="closed"):
+            chosen.owners.root_bindings()
 
 
 def test_constructor_has_no_budget_source_or_implementation_fallback(tmp_path: Path) -> None:

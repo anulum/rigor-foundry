@@ -87,6 +87,7 @@ nav:
   - Configured inventory domains: inventory-domains.md
   - Configured inventory inputs: configured-inventory-inputs.md
   - Inventory baselines and states: inventory-baselines.md
+  - Maintained inventory and facts: maintained-context.md
   - Validation: validation.md
   - Security: security.md
   - Fuzzing: fuzzing.md

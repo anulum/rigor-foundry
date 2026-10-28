@@ -103,6 +103,12 @@ results remain separate from authenticated inventory/fact/task admission.
 
 ## Configured inventory domains
 
+The [maintained inventory and fact APIs](maintained-context.md) additionally
+generate and reverify complete surface/proof records through actual fixed
+source owners. They retain deleted before-images and explicit unknowns, and
+verify source facts before tri-state evaluation. Parsed metadata alone remains
+insufficient for authentication or runtime permission.
+
 [`inventory_domain.InventoryDomain1`](inventory-domains.md) supplies the original
 configured-root and classification-rule preimage. Its digest is compared with
 each matching `ContextRootBinding.configured_scope_digest` by the actual
