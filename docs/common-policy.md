@@ -154,8 +154,10 @@ verdict.
 ## Original signed-pack bindings
 
 `rigor_foundry.component_source_resolution.parse_policy_component_target`
-resolves the five original component formats and the three new review, evidence
-and control formats above. It also resolves original `StandardPackV2` at `2.0`.
+resolves fourteen closed policy target formats: the eight original component
+formats listed above; new `ControlDefinition2`, `EvidenceContract2`,
+`ReviewPolicy1`, `EvidenceReference2` and `SemanticDecision1`; and original
+`StandardPackV2` at `2.0`.
 Each fixed branch compares the complete actual target reference, including its
 original ID and owning digest. Unsupported pairs refuse before target parsing;
 the context-source resolver keeps its separate supported subset.
