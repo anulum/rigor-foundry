@@ -98,6 +98,9 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "rule_chain_profile_v3.PROFILE_RULE_DISPOSITION_SCHEMA_VERSION": "1.0",
+    "rule_chain_pack_v3.STANDARD_PACK_V3_SCHEMA_VERSION": "3.0",
+    "rule_chain_profile_v3.PROJECT_PROFILE_V3_SCHEMA_VERSION": "3.0",
     "rule_corpus_ratification.RULE_CORPUS_RATIFICATION_SCHEMA_VERSION": "1.0",
     "rule_corpus_acceptance.RULE_CORPUS_ACCEPTANCE_SCHEMA_VERSION": "1.0",
     "rule_chain_trust_v3.TRUST_ROLES_V3_SCHEMA_VERSION": "3.0",

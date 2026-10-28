@@ -609,3 +609,65 @@ These provisional module APIs verify an exact source extraction cohort under
 their installed composition. Effective semantic precedence, exception authority,
 current applicability, enclosing pack/profile/lock selection, evidence, common
 gate verdicts and effect permission still require their own actual owners.
+
+
+## Complete signed pack and profile source bindings
+
+`StandardPackV3`, from `rigor_foundry.rule_chain_pack_v3`, uses an exact
+thirteen-field parent3 envelope. Its controls use `ControlDefinition2` and
+its authority and freshness children keep their unchanged original formats.
+The canonical source-document digest and complete corpus-acceptance digest
+are separate fields. The source URI is nonblank, whitespace-free opaque
+descriptive metadata; parsing preserves it exactly and never fetches it.
+At least one actual component is required, and the
+complete parent and nested references must fit the explicit processing budget.
+Component identities retain their kind and the control's exact version;
+distinct versions or kinds can share an identifier, while duplicate typed
+identities refuse.
+`body` returns the exact unsigned signing preimage. `build` and `from_dict`
+validate complete signature metadata and the enclosing digest; actual crypto
+and source admission require the consuming owner.
+
+`PackSelectionV3`, `ProfileRuleDisposition1` and `ProjectProfileV3`, from
+`rigor_foundry.rule_chain_profile_v3`, retain explicit selected-pack order.
+Pack IDs are unique. An original2 pack selection has an exact transition digest
+and null corpus field. A new3 selection has the exact corpus digest and null
+transition field. The enclosing profile independently binds the complete
+corpus in both cases; original null metadata creates no legacy exemption.
+Every declared mandatory rule has an included disposition. Exclusions carry
+an exact decision identity; parsing does not accept that decision's authority.
+The complete actual source cohort, rather than a caller's signed subset,
+determines which rules and components must be present.
+
+`ProfileSourceVerifierV3.verified_context`, from
+`rigor_foundry.profile_source_verification`, borrows the actual held
+`RuleCorpusVerifier` and already-held original `HostPackSourceState` objects.
+The installed composition independently selects the expected profile digest,
+project and scope. Pure original pack-source verifiers borrow those states;
+this API never enters another legacy selected-chain provider. Original2
+signatures retain their original domain and lifecycle owners. New pack and
+profile signatures use their exact3 domains and the whole selected trust-policy
+generation, with the same installed current clock. The entire selected pack-body
+cohort has aggregate byte and nested-reference limits. Original retained source
+reads also enforce source count, individual payload and complete payload limits.
+
+Within the actual complete corpus context, the owner compares every ordered
+pack selection to the real owning body and verifies all selected source bytes
+and signatures. It independently joins all qualitative and original numeric
+controls, original pack bindings, authority clauses, freshness policies,
+source-rule dispositions and declared mandatory identities. A legacy fact-context
+reference is required exactly when selected original conditions need it; this
+checks the declaration relation, while current fact authentication belongs to
+the effective-root owner. Omitted, replaced,
+duplicated or unrelated components refuse, including coordinated freshly signed
+subsets. Source relations, current signatures and proof generation are checked
+again at closure; the outer corpus repeats original source/native checks too.
+Consumer exceptions propagate.
+
+The yielded `ProfileSourceBindingsV3` is read-only Python source evidence valid
+inside that context. It is not an effective lock or permission. Original
+transition/native semantics, competent exclusion and precedence decisions,
+current fact ownership and applicability, effective root resolution, evidence
+assessment and effect rights still require their separate actual owning checks.
+These APIs remain provisional module surfaces; original pack/profile parsers,
+stable package exports and CLI contracts keep their existing interpretations.

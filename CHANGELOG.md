@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Complete signed pack and profile source bindings retain explicit child formats,
+  original numeric controls and whole-corpus component coverage through held
+  source/native/current-signature checks and closing generation validation.
+
 - Complete corpus envelopes bind full source/component arrays, separate native
   statement provenance and both real signature roles. Held verification repeats
   actual source, issuer-selection, lifecycle and generation checks at closure.
