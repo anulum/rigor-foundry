@@ -62,6 +62,12 @@ They do not extend the frozen manifest. Their source verification and authority
 boundaries remain defined in [maintained contexts](maintained-context.md) and
 [task contexts](task-context.md).
 
+The `source-universe-entry` declaration is also explicitly provisional at
+`1.0`, individually version-pinned outside the frozen manifest. Its
+[actual source owner](source-universe.md) reuses existing original HTTPS
+capture, native pin and discovery receipt formats without changing their
+versions, fields or owning digests.
+
 ## Compatibility rules
 
 - A published schema identifier is never reinterpreted. An incompatible wire

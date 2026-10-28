@@ -72,3 +72,10 @@ the correct meaning, that referenced rules/decisions have been accepted, or
 that protected content may be read. Those checks belong to the corpus and
 installed host owners. Protected and unresolved dispositions remain explicit
 data after byte verification; neither becomes a ready-boot or effect grant.
+
+The [retained source universe](source-universe.md) connects these original span
+and region models to a complete fixed host-selected source cohort. It retains
+actual metadata and raw descriptors through use/closure, verifies original
+native pins and complete discovery snapshots, and consumes partitions over
+those same held bytes. Held/excluded sources remain explicit; no locator
+becomes a path and no byte check accepts extraction meaning.

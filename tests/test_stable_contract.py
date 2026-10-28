@@ -98,6 +98,7 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "source_universe.SOURCE_UNIVERSE_ENTRY_SCHEMA_VERSION": "1.0",
     "inventory_domain.INVENTORY_DOMAIN_SCHEMA_VERSION": "1.0",
     "inventory_baseline.INVENTORY_BASELINE_SCHEMA_VERSION": "1.0",
     "maintained_surface.MAINTAINED_SURFACE_SCHEMA_VERSION": "1.0",

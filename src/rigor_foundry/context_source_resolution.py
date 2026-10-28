@@ -16,6 +16,7 @@ from .context_producer_contract import ContextProducerContract1
 from .inventory_baseline import InventoryBaseline1
 from .inventory_domain import InventoryDomain1
 from .policy_read_budget import PolicyReadBudget1
+from .policy_source_records import PolicySourceRecord1, parse_policy_source_record
 from .project_registry_models import ProjectRegistry
 from .repository_state import RepositoryState1
 from .task_definition import TaskDefinition1
@@ -36,6 +37,7 @@ ContextSourceTarget: TypeAlias = (
     | InventoryBaseline1
     | ProjectRegistry
     | WorkSourceTarget
+    | PolicySourceRecord1
 )
 
 
@@ -74,6 +76,11 @@ def parse_context_source_target(
     elif ref.kind == "inventory-baseline":
         target = InventoryBaseline1.from_dict(data, budget=limits)
         identity, digest = target.baseline_id, target.baseline_digest
+    elif ref.kind in {"source-capture", "native-source-pin", "discovery-source-receipt"}:
+        source = parse_policy_source_record(ref.kind, data, budget=limits)
+        source_ref = TypedObjectRef1.from_dict(source.reference())
+        target = source
+        identity, digest = source_ref.object_id, source_ref.object_digest
     elif ref.kind in {"work-task", "work-record", "work-closure"}:
         work = parse_work_context_source(ref.kind, data, budget=limits)
         work_ref = work_context_source_reference(work, budget=limits)

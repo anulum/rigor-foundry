@@ -10,12 +10,14 @@
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 from typing import cast
 
 import pytest
 from test_context_producer_contract import contract
 from test_inventory_baseline import baseline
 from test_inventory_domain import domain
+from test_policy_source_records import records
 from test_project_registry_models import profiled_registry, registry
 from test_repository_state import state
 from test_task_definition import budget, definition
@@ -79,16 +81,21 @@ def sources() -> tuple[tuple[TypedObjectRef1, ContextSourceTarget], ...]:
     return tuple(values)
 
 
-def test_every_source_uses_its_actual_owning_parser() -> None:
+def test_every_source_uses_its_actual_owning_parser(tmp_path: Path) -> None:
     """Original registry bytes/digests survive parsing without a replacement hash."""
-    selected = sources()
+    selected = (
+        *sources(),
+        *((TypedObjectRef1.from_dict(item.reference()), item) for item in records(tmp_path)),
+    )
     assert (
         frozenset((ref.kind, ref.format_version) for ref, _ in selected)
         == SUPPORTED_CONTEXT_SOURCE_FORMATS
     )
     for ref, target in selected:
         data = target.to_dict()
-        parsed = parse_context_source_target(ref, data, budget=budget(max_references=2048))
+        parsed = parse_context_source_target(
+            ref, data, budget=budget(max_references=2048, max_sources=3)
+        )
         assert type(parsed) is type(target) and parsed == target
         if isinstance(parsed, ProjectRegistry):
             assert isinstance(target, ProjectRegistry)

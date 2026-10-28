@@ -21,19 +21,22 @@ from .audit_primitives import (
     require_string,
 )
 from .condition_language import ConditionExpression
+from .discovery_source_schema import SCHEMA as DISCOVERY_SOURCE_FORMAT
 from .inventory_baseline import INVENTORY_BASELINE_SCHEMA_VERSION
 from .inventory_domain import INVENTORY_DOMAIN_SCHEMA_VERSION
 from .model_primitives import require_digest, require_identifier
+from .native_source_pin import NATIVE_SOURCE_PIN_SCHEMA
 from .policy_read_budget import PolicyReadBudget1
 from .project_registry_models import (
     PROFILED_PROJECT_REGISTRY_SCHEMA_VERSION,
     PROJECT_REGISTRY_SCHEMA_VERSION,
 )
 from .repository_state import REPOSITORY_STATE_SCHEMA_VERSION
+from .source_capture import SOURCE_PROVENANCE_SCHEMA_VERSION
 from .task_definition import TASK_DEFINITION_SCHEMA_VERSION, TYPED_OBJECT_REF_SCHEMA_VERSION
 
 CONTEXT_PRODUCER_CONTRACT_SCHEMA_VERSION = "1.0"
-ContextOwnerClass = Literal["registry", "task", "inventory", "fact"]
+ContextOwnerClass = Literal["registry", "task", "inventory", "fact", "source"]
 SourceFormat = tuple[str, str]
 _REGISTRY_FORMATS = frozenset(
     {
@@ -45,6 +48,13 @@ _TASK_FORMAT = ("task-definition", TASK_DEFINITION_SCHEMA_VERSION)
 _INVENTORY_FORMAT = ("repository-state", REPOSITORY_STATE_SCHEMA_VERSION)
 _DOMAIN_FORMAT = ("inventory-domain", INVENTORY_DOMAIN_SCHEMA_VERSION)
 _BASELINE_FORMAT = ("inventory-baseline", INVENTORY_BASELINE_SCHEMA_VERSION)
+_SOURCE_FORMATS = frozenset(
+    {
+        ("source-capture", SOURCE_PROVENANCE_SCHEMA_VERSION),
+        ("native-source-pin", NATIVE_SOURCE_PIN_SCHEMA),
+        ("discovery-source-receipt", DISCOVERY_SOURCE_FORMAT),
+    }
+)
 _TASK_FACTS = frozenset(
     {
         "task.id",
@@ -78,6 +88,12 @@ _INVENTORY_FACTS = frozenset(
     }
 )
 _DOMAINS: dict[str, tuple[str, frozenset[SourceFormat], frozenset[str], frozenset[str]]] = {
+    "builtin.policy-source-universe.v1": (
+        "source",
+        _REGISTRY_FORMATS | _SOURCE_FORMATS,
+        frozenset({"source-bytes", "source-record"}),
+        frozenset(),
+    ),
     "builtin.task-definition.v1": (
         "task",
         _REGISTRY_FORMATS | {_TASK_FORMAT},
@@ -147,7 +163,7 @@ def _format(value: object) -> SourceFormat:
         require_identifier(data["kind"], "context source kind"),
         require_string(data["format_version"], "context source version"),
     )
-    if pair not in _REGISTRY_FORMATS | {
+    if pair not in _REGISTRY_FORMATS | _SOURCE_FORMATS | {
         _TASK_FORMAT,
         _INVENTORY_FORMAT,
         _DOMAIN_FORMAT,
@@ -281,6 +297,8 @@ class ContextProducerContract1:
             raise ValueError("context source formats must be supported, sorted and unique")
         if not set(formats) & _REGISTRY_FORMATS:
             raise ValueError("context owner requires a registry source format")
+        if self.owner_class == "source" and not set(formats) & _SOURCE_FORMATS:
+            raise ValueError("context source owner requires an original policy source format")
         if self.owner_class in {"task", "fact"} and _TASK_FORMAT not in formats:
             raise ValueError("context owner requires a task definition source format")
         if self.owner_class in {"inventory", "fact"} and _INVENTORY_FORMAT not in formats:

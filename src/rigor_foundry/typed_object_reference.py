@@ -31,6 +31,9 @@ SUPPORTED_CONTEXT_SOURCE_FORMATS = frozenset(
         ("work-task", "1.0"),
         ("work-record", "1.0"),
         ("work-closure", "1.0"),
+        ("source-capture", "1.0"),
+        ("native-source-pin", "native-source-pin.v1"),
+        ("discovery-source-receipt", "discovery-source-closure.v1"),
         ("project-registry", "gotm-project-registry.v1"),
         ("project-registry", "project-registry.v2"),
     }

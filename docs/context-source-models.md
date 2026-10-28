@@ -51,6 +51,7 @@ have no callback, executable, import path or enrollment field.
 | `builtin.project-registry.v1` | `registry` | Project registry |
 | `builtin.maintained-inventory.v1` | `inventory` | Repository state, project registry, configured inventory domain and explicit inventory baseline |
 | `builtin.context-facts.v1` | `fact` | Outputs of the task, registry and inventory owners |
+| `builtin.policy-source-universe.v1` | `source` | Original capture/native/discovery source records and project registry |
 
 The parser restricts descriptions to these domains. A description does not
 establish that an implementation is installed or qualified. Registry sources
@@ -119,3 +120,11 @@ configured-root and classification-rule preimage. Its digest is compared with
 each matching `ContextRootBinding.configured_scope_digest` by the actual
 selected-source Git-root observer. Parser acceptance alone does not enrol a
 root or prove completeness; unmatched classifications remain explicit nulls.
+
+## Original policy sources
+
+The [retained source universe](source-universe.md) adds a fixed source domain
+with independent `source-bytes` and `source-record` subjects and no fact names.
+It retains original capture/native/discovery wire identities, every selected
+source row and the actual held bytes used by regions/spans. Its metadata and
+byte-accounting results do not establish semantic corpus acceptance.

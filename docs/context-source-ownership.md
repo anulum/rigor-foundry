@@ -22,6 +22,9 @@ The current source table is:
 | `work-task` | `1.0` | Original `WorkTask` |
 | `work-record` | `1.0` | `WorkRecordSource1` with the original full task/event chain |
 | `work-closure` | `1.0` | Original `WorkClosure` |
+| `source-capture` | `1.0` | Original `SourceCapture` through `PolicySourceRecord1` |
+| `native-source-pin` | `native-source-pin.v1` | Original `NativeSourcePin` through `PolicySourceRecord1` |
+| `discovery-source-receipt` | `discovery-source-closure.v1` | Original validator receipt through `DiscoverySourceReceipt1` and `PolicySourceRecord1` |
 | `project-registry` | `gotm-project-registry.v1` | `ProjectRegistry` |
 | `project-registry` | `project-registry.v2` | `ProjectRegistry` with its original embedded profile |
 
@@ -134,3 +137,10 @@ The [complete task source context](task-context.md) joins these actual identitie
 and optional original remediation source files before condition use. The new
 work-record source projection binds the complete original task and event chain;
 it does not redefine legacy events or infer initiating authority from metadata.
+
+The [complete source universe owner](source-universe.md) additionally borrows
+these original metadata selections and actual raw/native/discovery owners.
+It retains held and excluded rows, requires every original discovery source
+including unused rows, and verifies complete partitions over the same held
+bytes. Original discovery receipts retain their original limits and digest;
+neither parsing nor byte accounting grants semantic acceptance or source access.

@@ -89,6 +89,7 @@ nav:
   - Inventory baselines and states: inventory-baselines.md
   - Maintained inventory and facts: maintained-context.md
   - Task contexts and remediation sources: task-context.md
+  - Retained source universe: source-universe.md
   - Validation: validation.md
   - Security: security.md
   - Fuzzing: fuzzing.md

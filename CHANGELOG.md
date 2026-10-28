@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Retained source universes preserve original capture, native-pin and discovery
+  receipt identities, every held/excluded source, and complete region/span
+  accounting over actual held bytes through a fixed source producer.
+
 - Source-bound task contexts join original task, registry and complete inventory
   facts with declared events and optional original remediation records, while
   retaining separate initiating and claim authority checks.

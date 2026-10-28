@@ -57,6 +57,17 @@ def contract(
     task: SourceFormat = ("task-definition", "1.0")
     inventory: SourceFormat = ("repository-state", "1.0")
     domains: dict[str, tuple[str, tuple[SourceFormat, ...], tuple[str, ...], tuple[str, ...]]] = {
+        "source": (
+            "builtin.policy-source-universe.v1",
+            (
+                ("discovery-source-receipt", "discovery-source-closure.v1"),
+                ("native-source-pin", "native-source-pin.v1"),
+                registry,
+                ("source-capture", "1.0"),
+            ),
+            ("source-bytes", "source-record"),
+            (),
+        ),
         "task": (
             "builtin.task-definition.v1",
             (registry, task),
@@ -97,7 +108,7 @@ def contract(
     )
 
 
-@pytest.mark.parametrize("owner_class", ["task", "registry", "inventory", "fact"])
+@pytest.mark.parametrize("owner_class", ["task", "registry", "inventory", "fact", "source"])
 def test_fixed_contract_round_trip_through_real_bounded_json(
     tmp_path: Path,
     owner_class: ContextOwnerClass,
@@ -123,7 +134,7 @@ def test_fixed_contract_round_trip_through_real_bounded_json(
 
 
 @pytest.mark.parametrize("source_kind", ("inventory-domain", "inventory-baseline"))
-@pytest.mark.parametrize("owner_class", ("task", "registry", "inventory", "fact"))
+@pytest.mark.parametrize("owner_class", ("task", "registry", "inventory", "fact", "source"))
 def test_inventory_domain_format_is_limited_to_its_fixed_inventory_owner(
     owner_class: ContextOwnerClass,
     source_kind: str,
@@ -258,6 +269,29 @@ def test_identity_only_task_contract_and_profiled_registry_are_explicit() -> Non
         budget=budget(),
     )
     assert actual.fact_references == ()
+
+
+@pytest.mark.parametrize("owner", ("task", "registry", "inventory", "fact"))
+def test_policy_source_formats_cannot_expand_an_unrelated_owner(owner: ContextOwnerClass) -> None:
+    """Real supported source parsers remain restricted to their fixed producer domain."""
+    for kind, version in contract("source").source_formats:
+        if kind == "project-registry":
+            continue
+        body = contract(owner).to_dict()
+        formats = cast(list[dict[str, object]], body["source_formats"])
+        formats.append({"kind": kind, "format_version": version})
+        formats.sort(key=lambda item: cast(str, item["kind"]))
+        body.pop("contract_digest")
+        with pytest.raises(ValueError, match="source formats"):
+            ContextProducerContract1.from_dict(
+                {**body, "contract_digest": canonical_digest(body)}, budget=budget()
+            )
+    body = contract("source").to_dict()
+    body["source_formats"] = [
+        {"kind": "project-registry", "format_version": "project-registry.v2"}
+    ]
+    with pytest.raises(ValueError, match="original policy source"):
+        ContextProducerContract1.from_dict(body, budget=budget())
 
 
 def test_duplicate_reordered_or_alias_root_domains_refuse() -> None:
