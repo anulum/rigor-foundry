@@ -37,6 +37,9 @@ def reference(
         ("repository-state", "1.0"),
         ("inventory-domain", "1.0"),
         ("inventory-baseline", "1.0"),
+        ("work-task", "1.0"),
+        ("work-record", "1.0"),
+        ("work-closure", "1.0"),
         ("project-registry", "gotm-project-registry.v1"),
         ("project-registry", "project-registry.v2"),
     ],
@@ -54,7 +57,7 @@ def test_supported_pairs_round_trip_with_complete_digest(kind: str, version: str
     ("field", "value"),
     [
         ("kind", "unknown"),
-        ("kind", "work-task"),
+        ("kind", "work-record-v2"),
         ("format_version", "2.0"),
         ("format_version", 1),
         ("object_id", "bad identity"),

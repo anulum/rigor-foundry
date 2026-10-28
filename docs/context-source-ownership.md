@@ -19,6 +19,9 @@ The current source table is:
 | `repository-state` | `1.0` | `RepositoryState1` |
 | `inventory-domain` | `1.0` | `InventoryDomain1` |
 | `inventory-baseline` | `1.0` | `InventoryBaseline1` |
+| `work-task` | `1.0` | Original `WorkTask` |
+| `work-record` | `1.0` | `WorkRecordSource1` with the original full task/event chain |
+| `work-closure` | `1.0` | Original `WorkClosure` |
 | `project-registry` | `gotm-project-registry.v1` | `ProjectRegistry` |
 | `project-registry` | `project-registry.v2` | `ProjectRegistry` with its original embedded profile |
 
@@ -126,3 +129,8 @@ authority, host-required-root selection and runtime admission remain separate.
 task/registry sources and returns their complete root selection. Source fact
 composition compares every root's path, project, group and configured-domain
 digest against the actual inventory, rather than joining root labels alone.
+
+The [complete task source context](task-context.md) joins these actual identities
+and optional original remediation source files before condition use. The new
+work-record source projection binds the complete original task and event chain;
+it does not redefine legacy events or infer initiating authority from metadata.

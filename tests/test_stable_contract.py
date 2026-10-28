@@ -98,6 +98,14 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "inventory_domain.INVENTORY_DOMAIN_SCHEMA_VERSION": "1.0",
+    "inventory_baseline.INVENTORY_BASELINE_SCHEMA_VERSION": "1.0",
+    "maintained_surface.MAINTAINED_SURFACE_SCHEMA_VERSION": "1.0",
+    "maintained_inventory.MAINTAINED_INVENTORY_SCHEMA_VERSION": "1.0",
+    "fact_context.FACT_OBSERVATION_SCHEMA_VERSION": "1.0",
+    "fact_context.FACT_CONTEXT_SCHEMA_VERSION": "1.0",
+    "task_context.TASK_CONTEXT_SCHEMA_VERSION": "1.0",
+    "remediation_task_binding.REMEDIATION_TASK_BINDING_SCHEMA_VERSION": "1.0",
     "typed_object_reference.TYPED_OBJECT_REF_SCHEMA_VERSION": "1.0",
     "context_owner_proof.OWNER_PROOF_SCHEMA_VERSION": "1.0",
     "context_owner_observations.CONTEXT_PRODUCER_OBSERVATION_SCHEMA_VERSION": "1.0",
@@ -269,9 +277,8 @@ def _declared_schema_symbols() -> set[str]:
     return discovered
 
 
-def _literal_schema_version_sites() -> tuple[str, ...]:
+def _literal_schema_version_sites(package_root: Path) -> tuple[str, ...]:
     """Find bare string schema identifiers that would evade the named inventory."""
-    package_root = Path(__file__.replace("tests/test_stable_contract.py", "src/rigor_foundry"))
     sites: list[str] = []
     for path in package_root.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -337,7 +344,39 @@ def test_provisional_schema_versions_are_explicit_and_cannot_drift() -> None:
 
 def test_production_serializers_do_not_use_bare_schema_version_literals() -> None:
     """A nested wire format cannot evade discovery by using a bare version string."""
-    assert _literal_schema_version_sites() == ()
+    package_root = Path(__file__.replace("tests/test_stable_contract.py", "src/rigor_foundry"))
+    assert _literal_schema_version_sites(package_root) == ()
+
+
+def test_bare_schema_guard_detects_actual_serializer_and_parser_mutations(
+    tmp_path: Path,
+) -> None:
+    """Detect real copied production wire/version mutations rather than bypass discovery."""
+    package_root = Path(__file__.replace("tests/test_stable_contract.py", "src/rigor_foundry"))
+    original = (package_root / "cra_policy.py").read_text(encoding="utf-8")
+    copied = tmp_path / "cra_policy.py"
+    copied.write_text(original, encoding="utf-8")
+    assert _literal_schema_version_sites(tmp_path) == ()
+    replacements = (
+        ('"schema_version": CRA_POLICY_SCHEMA_VERSION', '"schema_version": "1.0"'),
+        (
+            'data.get("schema_version") != CRA_POLICY_SCHEMA_VERSION',
+            'data.get("schema_version") != "1.0"',
+        ),
+    )
+    detected: set[str] = set()
+    for before, after in replacements:
+        assert before in original
+        copied.write_text(original.replace(before, after), encoding="utf-8")
+        sites = _literal_schema_version_sites(tmp_path)
+        assert len(sites) == original.count(before)
+        assert {site.split(":")[0] for site in sites} == {"cra_policy.py"}
+        detected.update(sites)
+    mutated = original
+    for before, after in replacements:
+        mutated = mutated.replace(before, after)
+    copied.write_text(mutated, encoding="utf-8")
+    assert _literal_schema_version_sites(tmp_path) == tuple(sorted(detected))
 
 
 def test_profiled_serializers_preserve_wire_versions() -> None:

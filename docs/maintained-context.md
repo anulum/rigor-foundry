@@ -110,3 +110,9 @@ claim or audit request. These APIs do not implement enclosing task admission,
 selected rule generation, runtime revocation/effects or native permission.
 Their new result models do not expand the fixed retained-source parser table,
 frozen package-root exports or installed CLI.
+
+The [task-context source composer](task-context.md) now consumes these verified
+facts and complete inventory with the original general task and explicit event.
+It additionally supports optional actual retained remediation sources; the
+separate work-source adapters enrol only their fixed supported source formats.
+The task composer issues no claim proof or operational permission.

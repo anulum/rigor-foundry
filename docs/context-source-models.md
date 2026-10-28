@@ -103,6 +103,11 @@ results remain separate from authenticated inventory/fact/task admission.
 
 ## Configured inventory domains
 
+[Task contexts and original remediation sources](task-context.md) additionally
+bind exact general-task identity, complete inventory/facts and declared events.
+Optional remediation keeps its original definition, full event chain and
+closure relationships. General work needs no invented audit or review.
+
 The [maintained inventory and fact APIs](maintained-context.md) additionally
 generate and reverify complete surface/proof records through actual fixed
 source owners. They retain deleted before-images and explicit unknowns, and

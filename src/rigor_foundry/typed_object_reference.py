@@ -28,6 +28,9 @@ SUPPORTED_CONTEXT_SOURCE_FORMATS = frozenset(
         ("repository-state", "1.0"),
         ("inventory-domain", "1.0"),
         ("inventory-baseline", "1.0"),
+        ("work-task", "1.0"),
+        ("work-record", "1.0"),
+        ("work-closure", "1.0"),
         ("project-registry", "gotm-project-registry.v1"),
         ("project-registry", "project-registry.v2"),
     }

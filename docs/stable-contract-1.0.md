@@ -55,6 +55,13 @@ Supplying an enrolled semantic identity selects the new record and changes
 its digest; this does not change the frozen manifest or enroll a live key.
 See [public API stability](api-stability.md) for the consuming role boundary.
 
+The inventory-domain, inventory-baseline, maintained-surface, maintained-inventory,
+fact-observation, fact-context, task-context and remediation-task-binding
+declarations are explicitly provisional at `1.0` and individually version-pinned.
+They do not extend the frozen manifest. Their source verification and authority
+boundaries remain defined in [maintained contexts](maintained-context.md) and
+[task contexts](task-context.md).
+
 ## Compatibility rules
 
 - A published schema identifier is never reinterpreted. An incompatible wire

@@ -20,6 +20,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Source-bound task contexts join original task, registry and complete inventory
+  facts with declared events and optional original remediation records, while
+  retaining separate initiating and claim authority checks.
+
 - Complete maintained surface inventories and source-derived fact contexts
   retain independent before/current identities and verify actual fixed owners
   before and after three-valued condition evaluation.

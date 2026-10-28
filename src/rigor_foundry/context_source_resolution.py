@@ -20,6 +20,13 @@ from .project_registry_models import ProjectRegistry
 from .repository_state import RepositoryState1
 from .task_definition import TaskDefinition1
 from .typed_object_reference import TypedObjectRef1
+from .work_context_sources import (
+    WorkRecordSource1,
+    WorkSourceTarget,
+    parse_work_context_source,
+    work_context_source_reference,
+)
+from .work_models import WorkRecord
 
 ContextSourceTarget: TypeAlias = (
     TaskDefinition1
@@ -28,6 +35,7 @@ ContextSourceTarget: TypeAlias = (
     | InventoryDomain1
     | InventoryBaseline1
     | ProjectRegistry
+    | WorkSourceTarget
 )
 
 
@@ -66,6 +74,11 @@ def parse_context_source_target(
     elif ref.kind == "inventory-baseline":
         target = InventoryBaseline1.from_dict(data, budget=limits)
         identity, digest = target.baseline_id, target.baseline_digest
+    elif ref.kind in {"work-task", "work-record", "work-closure"}:
+        work = parse_work_context_source(ref.kind, data, budget=limits)
+        work_ref = work_context_source_reference(work, budget=limits)
+        target = WorkRecordSource1(work, limits) if isinstance(work, WorkRecord) else work
+        identity, digest = work_ref.object_id, work_ref.object_digest
     else:
         count = 0
         for field in ("groups", "projects", "consumers"):
