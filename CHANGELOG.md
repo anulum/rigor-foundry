@@ -7,6 +7,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Refresh immutable artifact, Node setup, CodeQL and Scorecard action revisions.
+
 - Refresh the digest-pinned Python image and reproducible Debian package snapshot.
 
 - Partition the complete test collection for every supported interpreter and

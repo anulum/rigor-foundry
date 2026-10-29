@@ -40,11 +40,11 @@ jobs:
         run: >-
           python3 -m tools.install_codeql
           --destination "$RUNNER_TEMP/codeql-bundle-linux64.tar.zst"
-      - uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           languages: python
           build-mode: none
           tools: ${{ runner.temp }}/codeql-bundle-linux64.tar.zst
-      - uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           category: /language:python

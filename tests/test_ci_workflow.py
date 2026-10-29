@@ -104,7 +104,7 @@ def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     coverage_job = Path(".github/workflows/ci-coverage.yml").read_text(encoding="utf-8")
     assert "permissions:\n      contents: read\n      id-token: write" in coverage_job
     assert "persist-credentials: false" in coverage_job
-    assert "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c" in coverage_job
+    assert "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333" in coverage_job
     assert "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5" in coverage_job
     assert "use_oidc: true" in coverage_job
     assert "files: coverage.xml" in coverage_job

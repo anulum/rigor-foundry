@@ -14,6 +14,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -57,12 +58,7 @@ def test_project_writer_rejects_every_alternate_target_before_fetch(
         with pytest.raises(ValueError, match="project metrics"):
             downloads.require_project_csv_target(package, csv_path)
 
-    fetched = False
-
-    def unexpected_fetch(package: str) -> bytes:
-        nonlocal fetched
-        fetched = True
-        return b"{}"
+    fetch = Mock(side_effect=AssertionError("alternate target fetched"))
 
     assert (
         downloads.main(
@@ -73,11 +69,11 @@ def test_project_writer_rejects_every_alternate_target_before_fetch(
                 "downloads/rigor-foundry.csv",
                 "--project-csv-only",
             ],
-            unexpected_fetch,
+            fetch,
         )
         == 1
     )
-    assert not fetched
+    fetch.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -394,7 +390,7 @@ def test_workflow_has_one_bounded_writer_and_hash_pinned_actions() -> None:
     prepare_step = workflow.split("- name: Prepare the bounded metrics snapshot", maxsplit=1)[1]
     prepare_step = prepare_step.split("- name: Upload the exact download series", maxsplit=1)[0]
     assert "GH_TOKEN" not in prepare_step
-    assert "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" in workflow
+    assert "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9" in workflow
     assert "path: ${{ runner.temp }}/rigor-foundry-metrics/downloads/rigor-foundry.csv" in workflow
     assert "if-no-files-found: error" in workflow
     assert "retention-days: 14" in workflow
