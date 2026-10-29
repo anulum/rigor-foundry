@@ -7,6 +7,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Update the editor tooling's locked qs dependency to fix comma-array serialization.
+
 - Enforce the context resolver's own format subset and verify complete retained
   work records under explicit reference budgets.
 
