@@ -1,0 +1,3149 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evidence-bound codebase transformation">
+      
+      
+      
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/common-policy/">
+      
+      
+        <link rel="prev" href="../policy-source-inputs/">
+      
+      
+        <link rel="next" href="../context-source-models/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/anulum_logo_company.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Rule declarations - RigorFoundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rule-declarations-and-original-components" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RigorFoundry" class="md-header__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RigorFoundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Rule declarations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RigorFoundry" class="md-nav__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    RigorFoundry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First repository
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consumer integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vscode-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VS Code integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../jupyter-notebook-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jupyter notebook analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration-evidence-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calibration evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digest-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digest dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report-diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report differences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../offline-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline evidence verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule-chain-candidate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule-chain candidate inspection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clause-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Canonical clause semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../condition-evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditions with partial observations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy-source-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy source bytes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule declarations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule declarations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#typed-v3-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed v3 signatures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-and-exact-statements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope and exact statements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#original-component-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Original component resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-review-and-evidence-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit review and evidence contracts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-bound-qualitative-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule-bound qualitative controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#original-signed-pack-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Original signed-pack bindings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualitative-freshness-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualitative freshness declarations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-evidence-subjects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Independent evidence subjects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-original-assessment-predicates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared original assessment predicates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-quality-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete quality projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selected-assessment-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selected assessment inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-declared-rule-graphs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete declared rule graphs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-source-document-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deterministic source document inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-compilation-with-retained-owners" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source compilation with retained owners
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-corpus-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete corpus acceptance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-native-corpus-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact native corpus statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#held-corpus-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held corpus verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-signed-pack-and-profile-source-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete signed pack and profile source bindings
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-source-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context source models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-source-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retained context sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../task-registry-source-owners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task and registry source owners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../selected-dispatch-applicability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Selected dispatch applicability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dispatch-permit-candidates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dispatch permit candidates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../permit-consumption-ledger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permit consumption ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../permit-anchor-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permit anchor verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/discovery-source-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discovery source validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline CRA reporting preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../application-security-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application-security rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supply-chain-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Container rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-actions-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub Actions security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-privacy-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-and-privacy rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation and licence rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific and numerical rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-observability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations and observability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-reproducibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance and reproducibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-compatibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API and schema compatibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SARIF export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance maps and OSCAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assisted-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assisted-review drafting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claim-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claim isolation and fleet views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross-repository-campaigns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-repository campaigns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../campaign-admission/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Campaign admission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../instruction-dispatch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruction dispatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapter catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remediation-executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remediation execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polyglot-capability-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polyglot capability matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stable-contract-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1.0 stable compatibility contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git command provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-git-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Git inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-file-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository file inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory-domains/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configured inventory domains
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configured-inventory-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configured inventory inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inventory baselines and states
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintained-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maintained inventory and facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../task-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task contexts and remediation sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-universe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retained source universe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fuzzing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#typed-v3-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed v3 signatures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope-and-exact-statements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope and exact statements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#original-component-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Original component resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-review-and-evidence-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit review and evidence contracts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-bound-qualitative-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule-bound qualitative controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#original-signed-pack-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Original signed-pack bindings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qualitative-freshness-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Qualitative freshness declarations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-evidence-subjects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Independent evidence subjects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shared-original-assessment-predicates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared original assessment predicates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-quality-projection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete quality projection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selected-assessment-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selected assessment inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-declared-rule-graphs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete declared rule graphs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-source-document-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deterministic source document inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#source-compilation-with-retained-owners" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source compilation with retained owners
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-corpus-acceptance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete corpus acceptance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-native-corpus-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact native corpus statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#held-corpus-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Held corpus verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-signed-pack-and-profile-source-bindings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete signed pack and profile source bindings
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="rule-declarations-and-original-components">Rule declarations and original components<a class="headerlink" href="#rule-declarations-and-original-components" title="Permanent link">&para;</a></h1>
+<p>The provisional <code>RuleScope1</code>, <code>SemanticDecision1</code> and <code>AtomicRule1</code> records
+represent exact source-bound declarations. They retain the original
+<code>ConditionExpression</code> 1.1, <code>SourceSpan1</code>, <code>OwnerProof1</code> and <code>TypedObjectRef1</code>
+contracts. They do not authenticate an issuer, accept semantic extraction or
+admit a policy for execution.</p>
+<p>Every parser and serializer requires an explicit <code>PolicyReadBudget1</code>.
+Document bytes and container nesting are checked before child parsing;
+collection owners also enforce source and aggregate reference limits. Inputs
+with unknown fields, unsupported versions, reordered sets, duplicate identities,
+invalid UTF-8 or incorrect digests refuse. For file input, use
+<code>read_policy_document</code> from <code>rigor_foundry.policy_source_reads</code> before the
+record's <code>from_dict</code> method. That reader also rejects duplicate JSON keys and
+uses bounded stable file reads.</p>
+<h2 id="typed-v3-signatures">Typed v3 signatures<a class="headerlink" href="#typed-v3-signatures" title="Permanent link">&para;</a></h2>
+<p><code>TrustRolesV3</code> in <code>rigor_foundry.rule_chain_trust_v3</code> binds five exact original
+<code>OfflineTrustPolicy</code> objects. Original lifecycle validation enforces distinct
+key identifiers and public keys across roles, v1 nonsemantic keys, and v2
+semantic keys with disjoint enrolled author/reviewer identities. Its
+<code>trust_roles_digest</code> is the canonical digest of <code>schema_version="3.0"</code> and the
+five named original policy digests: <code>pack_issuers</code>, <code>project_selectors</code>,
+<code>lock_resolvers</code>, <code>semantic_authors</code>, and <code>semantic_reviewers</code>. Any change to
+any selected policy changes this generation identity, including an unrelated
+role's rotation or revocation metadata.</p>
+<p><code>rule_chain_v3_signature_boundary</code> resolves the closed kind/body-version/role/
+domain table. <code>RuleChainV3Signature</code>, in <code>rigor_foundry.signed_rule_chain_v3</code>,
+parses exactly twelve fields and requires an explicit read budget. Its payload
+binds signature schema, kind, body schema, domain, canonical body digest and UTC
+signing time; its signature digest hashes actual Ed25519 bytes.</p>
+<p>The factory normalizes accepted UTC timestamp spellings with the original
+timestamp owner before storing them or deriving the signed payload. Serialized
+records use that canonical spelling ending in <code>Z</code>. Direct records and wire
+objects carrying a noncanonical alias refuse instead of emitting a record that
+cannot roundtrip. Normalizing a factory input preserves its actual payload and
+signature bytes.</p>
+<table>
+<thead>
+<tr>
+<th>Signature kind</th>
+<th>Body version</th>
+<th>Role</th>
+<th>Domain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>standard-pack</code></td>
+<td><code>3.0</code></td>
+<td><code>pack-issuer</code></td>
+<td><code>rigor-foundry.standard-pack.v3</code></td>
+</tr>
+<tr>
+<td><code>project-profile</code></td>
+<td><code>3.0</code></td>
+<td><code>project-selector</code></td>
+<td><code>rigor-foundry.project-profile-selection.v3</code></td>
+</tr>
+<tr>
+<td><code>effective-profile-lock</code></td>
+<td><code>3.0</code></td>
+<td><code>lock-resolver</code></td>
+<td><code>rigor-foundry.effective-profile-lock.v3</code></td>
+</tr>
+<tr>
+<td><code>rule-corpus-author</code></td>
+<td><code>1.0</code></td>
+<td><code>semantic-author</code></td>
+<td><code>rigor-foundry.rule-corpus-author.v3</code></td>
+</tr>
+<tr>
+<td><code>rule-corpus-acceptance</code></td>
+<td><code>1.0</code></td>
+<td><code>semantic-reviewer</code></td>
+<td><code>rigor-foundry.rule-corpus-acceptance.v3</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>verify</code> requires the consuming owner's independently expected kind, body
+version/digest, selected whole-policy digest, current UTC instant and complete
+policies. It reparses metadata and every original policy, then verifies the
+actual signature and key activity both at signing and now. Future timestamps,
+expired/revoked/unknown keys, changed role policies and cross-version replay
+refuse. Both corpus roles sign the same acceptance body under distinct domains.</p>
+<p>This is a signature primitive over an already validated body digest. The
+consuming body owner must separately parse its complete actual pack, profile,
+lock or corpus-acceptance body and establish its trusted source. This API does
+not itself parse or admit those bodies, ratify semantics, enroll keys, select a
+host or grant effects. Original v2 signatures retain their original grammar
+and domains; the new provisional modules do not change the stable1.0 surface.</p>
+<h2 id="scope-and-exact-statements">Scope and exact statements<a class="headerlink" href="#scope-and-exact-statements" title="Permanent link">&para;</a></h2>
+<p>A global scope has no condition and explicitly lists every supported task
+event. A scoped rule has an original condition and a nonempty sorted event
+subset. Missing facts remain unknown under <code>evaluate_condition_state</code>;
+structural scope parsing does not authenticate fact producers or decide a gate.</p>
+<pre><code class="language-python">from rigor_foundry.policy_read_budget import PolicyReadBudget1
+from rigor_foundry.rule_scope import RuleScope1
+from rigor_foundry.task_context import TASK_CONTEXT_EVENTS
+
+limits = PolicyReadBudget1.build(
+    max_document_bytes=65536,
+    max_source_bytes=65536,
+    max_total_source_bytes=131072,
+    max_sources=16,
+    max_rules=64,
+    max_references=1024,
+    max_depth=32,
+)
+scope = RuleScope1.build(
+    scope_kind=&quot;global&quot;,
+    condition=None,
+    events=tuple(sorted(TASK_CONTEXT_EVENTS)),
+    budget=limits,
+)
+assert RuleScope1.from_dict(scope.to_dict(budget=limits), budget=limits) == scope
+</code></pre>
+<p><code>AtomicRule1</code> hashes the statement's exact UTF-8 bytes, including whitespace
+and original newline characters. Source spans retain their declared selection
+order. Dependencies and decision IDs are sorted unique sets; a rule cannot
+depend on itself. Component references sort by
+<code>(kind, format_version, object_id)</code> and cannot give two digests to one identity.
+Proposed, active, held, superseded and retired declarations remain explicit.
+An active lifecycle string is not semantic acceptance.</p>
+<p><code>SemanticDecision1</code> retains the issuer, original spans, rationale, condition,
+affected rules, successors and original owner proof. Its relations are
+<code>supersedes</code>, <code>exception</code>, <code>exclusion</code>, <code>interpretation</code> and <code>adoption</code>.
+Supersession has nonempty distinct directed rule sets. Complete graph resolution,
+competent issuer authentication and exception permission remain required at the
+consuming boundary; dates, filenames and matching hashes establish none of these.</p>
+<h2 id="original-component-resolution">Original component resolution<a class="headerlink" href="#original-component-resolution" title="Permanent link">&para;</a></h2>
+<p><code>PolicyComponent1</code> and <code>resolve_policy_component</code>, from
+<code>rigor_foundry.source_component_reader</code>, resolve these actual original owners:</p>
+<table>
+<thead>
+<tr>
+<th>Reference kind</th>
+<th>Format</th>
+<th>Original model</th>
+<th>Owning digest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>control-definition</code></td>
+<td><code>1.0</code></td>
+<td><code>ControlDefinition</code></td>
+<td><code>control_digest</code></td>
+</tr>
+<tr>
+<td><code>evidence-contract</code></td>
+<td><code>1.0</code></td>
+<td><code>EvidenceContract</code></td>
+<td><code>contract_digest</code></td>
+</tr>
+<tr>
+<td><code>evidence-reference</code></td>
+<td><code>1.0</code> reference binding</td>
+<td><code>EvidenceReference</code></td>
+<td><code>evidence_digest</code></td>
+</tr>
+<tr>
+<td><code>review-attestation</code></td>
+<td><code>2.0</code></td>
+<td><code>ReviewerAttestation</code></td>
+<td><code>attestation_digest</code></td>
+</tr>
+<tr>
+<td><code>authority-clause</code></td>
+<td><code>2.0</code></td>
+<td><code>AuthorityClauseV2</code></td>
+<td><code>clause_digest</code></td>
+</tr>
+<tr>
+<td><code>freshness-policy</code></td>
+<td><code>2.0</code></td>
+<td><code>FreshnessPolicyV2</code></td>
+<td><code>policy_digest</code></td>
+</tr>
+<tr>
+<td><code>adapter-lock</code></td>
+<td><code>1.0</code> reference binding</td>
+<td><code>AdapterLock</code></td>
+<td><code>adapter_digest</code></td>
+</tr>
+<tr>
+<td><code>reviewer-identity-policy</code></td>
+<td><code>semantic-reviewer-identity-policy.v1</code></td>
+<td><code>ReviewerIdentityPolicy</code></td>
+<td><code>policy_digest</code></td>
+</tr>
+</tbody>
+</table>
+<p>The original complete serialized objects are unchanged. The control identity is
+its original <code>versioned_id</code>; the numeric evidence contract uses <code>contract_id</code>.
+Authority and freshness use <code>clause_id</code> and
+<code>policy_id</code>. No <code>object_kind</code> is inserted into these legacy objects.
+The adapter uses its original <code>adapter_id</code> and all eight original fields,
+including its tool version. Its reference format <code>1.0</code> identifies this fixed
+binding; it adds no version header to the adapter itself. Unknown adapter fields
+refuse before the original parser. The identity policy has no original object ID;
+both reference ID and digest use its complete original <code>policy_digest</code>.
+Its trust policy, key lifecycles and reviewer bindings remain unchanged.
+Original evidence references have exactly eleven fields and no schema header.
+Their fixed reader closes those fields before the unchanged original parser;
+reference format <code>1.0</code> does not add a header. Original review attestations retain
+all thirteen fields, schema <code>2.0</code> and the signature domain
+<code>rigor-foundry.reviewer-attestation.v1</code>. Their complete attestation digest is
+their reference ID; the separate signed reviewer identity may contain spaces.
+Original control applicability, numeric freshness, independent reviewer count
+and remediation obligations remain intact. A reference cannot appoint a loader
+or turn a source metadata object into an enforcement component.</p>
+<p>Resolution validates the complete supplied component cohort, including
+unselected members, under count and aggregate byte limits. Missing targets,
+duplicate identities, altered original digests and normalization of legacy input
+refuse. Resolving a component establishes its structural identity, rather than
+its signatures, current selection or accepted relation to an atomic rule.</p>
+<h2 id="explicit-review-and-evidence-contracts">Explicit review and evidence contracts<a class="headerlink" href="#explicit-review-and-evidence-contracts" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.review_policy</code> provides provisional <code>ReviewRoleRequirement1</code>
+and <code>ReviewPolicy1</code> records at version <code>1.0</code>. Each role binds an exact original
+reviewer identity policy and an explicit independence requirement. A review policy
+retains its mode (<code>independent</code>, <code>self-review</code> or <code>conditional-self-review</code>),
+sorted unique roles, source rule IDs and named unavailability fact references.
+Parsing these declarations does not appoint reviewers or establish that a manager
+is unavailable. Empty declarations grant no fallback or approval. A consuming
+assessment must verify actual role eligibility, source permission and authenticated
+unavailability before allowing conditional SelfReview.</p>
+<p><code>rigor_foundry.evidence_contract_v2</code> provides <code>EvidenceRequirement1</code> at <code>1.0</code>
+and <code>EvidenceContract2</code> at <code>2.0</code>. Each requirement retains an evidence type,
+exact adapter reference, subject class and exact original freshness-policy
+reference. A contract requires a nonempty sorted unique requirement set and an
+explicit review-policy reference. Aggregate reference limits apply before child
+parsing. The contract does not invent numeric freshness or reviewer counts;
+legacy <code>EvidenceContract</code> records keep their original positive TTL, adapter and
+evidence sets, and minimum independent reviewer count.</p>
+<p>The new review and evidence records expose <code>build</code>, <code>to_dict</code> and <code>from_dict</code>
+with an explicit read budget. <code>ReviewPolicy1.reference</code> and
+<code>EvidenceContract2.reference</code> bind their complete owning digests. Resolve their
+targets through the corresponding new owning parser; the original context-source
+resolver does not acquire these formats merely because a typed reference parses.</p>
+<h2 id="rule-bound-qualitative-controls">Rule-bound qualitative controls<a class="headerlink" href="#rule-bound-qualitative-controls" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.control_definition_v2.ControlDefinition2</code> is provisional at
+<code>2.0</code>. It binds an explicit rule ID, original scope, require/deny mode, qualitative
+evidence contract and unchanged original remediation contract. Domain, severity
+and target maturity retain their existing vocabularies. It has no implicit
+default applicability or separate legacy condition field.</p>
+<p><code>control.verify_rule_binding(rule, budget=limits)</code> accepts an actual
+<code>AtomicRule1</code> and rechecks both complete records. Rule ID, mode and complete scope
+must agree, and the rule must contain the exact control reference, including its
+owning digest. The new boundary also closes the original remediation's seven
+fields while preserving its exact text, order and obligations. Original
+<code>ControlDefinition</code> <code>1.0</code> serialization remains unchanged.</p>
+<p>Atomic enforcement references allow original control <code>1.0</code>, authority <code>2.0</code>
+and freshness <code>2.0</code>, together with qualitative control <code>2.0</code> and review-policy
+<code>1.0</code>. Bare adapters and reviewer identity policies are support dependencies;
+they cannot become atomic enforcement components. Structural control binding
+does not establish source acceptance, applicability, evidence validity or a gate
+verdict.</p>
+<h2 id="original-signed-pack-bindings">Original signed-pack bindings<a class="headerlink" href="#original-signed-pack-bindings" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.component_source_resolution.parse_policy_component_target</code>
+resolves fourteen closed policy target formats: the eight original component
+formats listed above; new <code>ControlDefinition2</code>, <code>EvidenceContract2</code>,
+<code>ReviewPolicy1</code>, <code>EvidenceReference2</code> and <code>SemanticDecision1</code>; and original
+<code>StandardPackV2</code> at <code>2.0</code>.
+Each fixed branch compares the complete actual target reference, including its
+original ID and owning digest. Unsupported pairs refuse before target parsing;
+the context-source resolver keeps its separate supported subset.</p>
+<p><code>StandardPackSource2</code> bounds the complete original pack before its existing
+recursive serializer/parser runs. It requires actual original child types and
+immutable collections for direct instances, and exact arrays for wire input.
+Control counts and aggregate references include every control, condition,
+authority grantor and freshness invalidator. All original controls, child wires
+and detached signature bytes remain present. Its reference uses original
+<code>pack_id</code> and complete <code>pack_digest</code>; the original pack version remains inside
+that digest. Reading a pack does not verify current trust or semantic acceptance.</p>
+<p><code>rigor_foundry.legacy_control_binding.LegacyControlBinding1</code> is provisional at
+<code>1.0</code>. It binds a source rule to an exact original control <code>1.0</code> within an
+original signed pack <code>2.0</code>, together with sorted unique source decision IDs.
+<code>binding.verify_pack(pack, budget=limits)</code> revalidates the complete actual pack
+and returns its exact matching original control. Empty packs, absent controls,
+different owning digests and qualitative-control casts refuse. Original target
+maturity, applicability condition/default, numeric freshness, reviewer count,
+adapter/evidence requirements and remediation remain intact. This membership
+check does not establish complete selected-control enumeration or permission
+for an exception, waiver or gate approval.</p>
+<h2 id="qualitative-freshness-declarations">Qualitative freshness declarations<a class="headerlink" href="#qualitative-freshness-declarations" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.freshness_proof</code> provides provisional <code>InvalidatorObservation1</code>
+and <code>FreshnessProof1</code> at <code>1.0</code>. An invalidator retains <code>clear</code>, <code>invalid</code> or
+<code>unknown</code> explicitly. <code>clear</code> requires an original <code>OwnerProof1</code>; a parsed proof
+envelope still needs authentication by its installed current owner.</p>
+<p>A freshness proof binds the exact original freshness-policy reference, mode,
+independent subject digest, original subject proof, sorted unique invalidator
+observations and subject snapshot. Its subject proof must match that digest
+and snapshot. Invalidator owners retain their own source snapshots. No duration,
+expiry or observation timestamp is inferred. Explicit legacy expiry and key or
+grant lifecycle rules remain separate.</p>
+<p><code>proof.verify_policy_binding(policy, budget=limits)</code> requires an actual original
+<code>FreshnessPolicyV2</code> and compares its complete identity, mode and invalidator set.
+This checks structural binding. Invalid and unknown observations remain present;
+the method does not authenticate <code>clear</code> or return a freshness verdict.
+For every invalidator, the installed verifier must resolve its actual selected
+owner, source contract and independent current observation, then establish that
+the ID/state governs this outer subject and its relevant state or generation.
+Missing, unrelated, contradictory, stale, revoked or unauthenticated observations
+cannot establish <code>clear</code>; invalid and unknown cannot pass. Held source checks
+remain required through use and closure.</p>
+<p>The invalidator record's <code>observation_digest</code> includes its proof envelope.
+The original owner's <code>observation_digest</code> hashes its independently observed
+<code>ContextProducerObservation1</code> preimage. These digests are distinct; equating them
+would introduce a circular proof.
+<code>freshness_reference_count(value, budget=limits)</code> lets enclosing consumers bound
+the complete nested allocation before parsing children. It counts the policy,
+subject-proof pair, invalidator IDs and optional original proof pairs.</p>
+<h2 id="independent-evidence-subjects">Independent evidence subjects<a class="headerlink" href="#independent-evidence-subjects" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.evidence_reference_v2.evidence_subject_digest</code> derives the closed
+<code>evidence-subject</code> <code>1.0</code> identity before either included proof exists. It hashes
+the exact adapter reference, artifact digest and byte count, configuration,
+toolchain, cohort and complete sorted unique source-object references. No
+producer proof, freshness proof or enclosing evidence digest enters this subject.</p>
+<p>Provisional <code>EvidenceReference2</code> at <code>2.0</code> adds the evidence identity/type,
+classification, opaque reference, validated UTC observation time, declared result,
+original producer proof and qualitative freshness proof. Both included proof
+subjects must match the independently computed evidence subject. Producer and
+freshness owners may retain different source snapshots. Changed artifact, source,
+configuration, toolchain or cohort identities cannot retain the old proof binding.
+All nested reference allocations and source counts respect the explicit budget.</p>
+<p>Results <code>pass</code>, <code>fail</code>, <code>unavailable</code> and <code>refused</code> remain declarations until the
+installed adapter parses the actual retained artifact and current owners verify
+its complete scope and proofs. Neither result text nor structural parsing grants
+approval. The opaque <code>reference</code> field embeds no raw artifact or credentials and
+does not grant permission to read a path or URL. <code>object_reference(budget=limits)</code>
+returns its exact typed evidence identity, separately from that artifact reference.</p>
+<p><code>evidence.verify_requirement_binding(requirement, policy, budget=limits)</code> checks
+the actual <code>EvidenceRequirement1</code>, adapter, evidence type, subject class and
+original freshness policy. It supplies no assessment verdict. The original
+numeric <code>EvidenceReference</code> keeps its exact separate wire and expiry semantics;
+neither parser migrates the other format.</p>
+<h2 id="shared-original-assessment-predicates">Shared original assessment predicates<a class="headerlink" href="#shared-original-assessment-predicates" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.assessment_evidence_validation</code> factors the existing legacy
+predicates into three functions. They consume original validated contract,
+adapter, evidence, attestation and trust-store inputs; they create no profile
+or lock and grant no source selection or operational authority.</p>
+<ul>
+<li><code>validate_original_evidence_bindings</code> requires one exact original adapter
+  identity and owning digest for each reference, covering the control domain.</li>
+<li><code>validate_original_pass_evidence</code> retains the original positive numeric age
+  bound, explicit expiry, nonempty evidence and complete required adapter/type
+  coverage. Every submitted item must be fresh; a fresh member cannot hide
+  another expired or future observation.</li>
+<li><code>validate_original_reviewers</code> retains actual Ed25519 verification of the
+  exact original assessment body and decision, current review interval,
+  explicit trust store and required distinct reviewer IDs, key IDs and public
+  keys. The original case-sensitive identity comparison remains unchanged.</li>
+</ul>
+<p>The existing public <code>ControlAssessment</code> now calls these same predicates. Its
+wire <code>1.1</code>, original review-body identity, status/applicability, waiver and
+limitations rules remain unchanged. New selected consumers must supply their
+own actual selected source/control relations and independently derived review
+body; these functions do not appoint owners or infer SelfReview permission.</p>
+<h2 id="complete-quality-projection">Complete quality projection<a class="headerlink" href="#complete-quality-projection" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.quality_projection_v3.QualityProjectionRowV3</code> retains an exact
+control reference, source rule IDs, scope, evidence contract, reviewer policy,
+target maturity and applicability decision references. Its format is <code>3.0</code>.</p>
+<p>The <code>legacy1</code> case binds the actual original control and numeric evidence
+contract at <code>1.0</code>. It preserves the original Boolean <code>default_applicable</code>,
+nullable original condition and target maturity; <code>review_policy</code> is null
+because the original positive reviewer count remains in the evidence contract.
+The <code>qualitative2</code> case binds the actual qualitative control and evidence
+contract at <code>2.0</code>, with its explicit review-policy reference. Its default and
+condition are null because its <code>RuleScope1</code> owns applicability.</p>
+<p><code>row.verify_control_binding(control, budget=limits)</code> reparses the actual complete
+owning control and compares every projected obligation. Qualitative rows also
+retain the control's exact scope and source rule relation. Rehashing a row cannot
+repair a different control digest, evidence contract, review policy, maturity or
+original applicability field.</p>
+<p><code>validate_quality_projection(rows, controls, budget=limits)</code> requires exactly
+one complete row per supplied selected control, sorted by its exact versioned
+identity. It validates both actual control generations and the complete cohort,
+including aggregate reference counts and encoded array bytes. Missing, extra,
+duplicate or reordered rows refuse. The enclosing owner must derive the supplied
+controls from its actual selected signed generation; this structural check
+does not establish selection or evaluate applicability.</p>
+<p>Applicability decisions use exact <code>SemanticDecision1</code> references at <code>1.0</code>.
+<code>decision.reference(budget=limits)</code> binds the complete declaration's original
+ID and digest; the fixed policy target resolver reparses its actual owner.
+Issuer authentication, source acceptance and permission for exceptions remain
+separate required checks. None of these APIs supplies a gate verdict.</p>
+<h2 id="selected-assessment-inputs">Selected assessment inputs<a class="headerlink" href="#selected-assessment-inputs" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.selected_control_assessment_v2.SelectedControlAssessment2</code> uses
+the exact <code>2.0</code> wire. It binds the selected lock, quality projection, task and
+event request digests; the actual control generation; explicit applicability
+and status; evidence and review references; assessor, timestamp and reason.
+<code>legacy1</code> references original evidence at reference format <code>1.0</code>; <code>qualitative2</code>
+references <code>EvidenceReference2</code>. Both retain the actual original signed review
+attestation format <code>2.0</code>. Reference identities are sorted and unique under
+complete byte and allocation bounds.</p>
+<p>Applicability is the string <code>true</code>, <code>false</code> or <code>unknown</code>, separately from any
+legacy Boolean default. Unknown cannot pass, and false remains explicitly
+unassessed. A declared status, including <code>pass</code> or <code>accepted-risk</code>, supplies no
+authentication or gate result. Current contract, evidence, reviewer and exact
+source exception verification remain the installed consumer's responsibility;
+accepted risk cannot replace a mandatory source floor's pass.</p>
+<p><code>assessment.verify_quality_binding(row, control, budget=limits)</code> verifies the
+actual complete quality row and owning control generation. The enclosing owner
+must independently derive the complete selected cohort and verify the lock,
+projection, task and request identities; coordinated subsets of the row/control
+inputs cannot prove that completeness.</p>
+<p><code>assessment.review_body_digest(budget=limits)</code> hashes every assessment field
+except <code>reviews</code> and the final <code>assessment_digest</code>. Reviews can therefore sign
+the independent complete input before their references are added. Changing a
+lock, projection, task or request changes that body; adding the resulting review
+references changes the final assessment digest without changing its review body.
+Original Ed25519 attestations keep their original signature domain, exact body
+binding and validity checks. A digest or parsed signature alone authenticates
+neither a reviewer nor a selected generation.</p>
+<p><code>validate_selected_legacy_pass</code> consumes the exact selected assessment, quality
+row and original control alongside complete original adapter, evidence and
+attestation cohorts, an explicit original public trust store and an aware
+evaluation instant. It revalidates all complete owners, matches the declared
+evidence/review references and applies the same original numeric freshness,
+adapter/type coverage and positive independent reviewer predicates used by
+<code>ControlAssessment</code>. Actual original Ed25519 signatures bind its independently
+derived review body. Missing trust, self review, insufficient distinct quorum,
+stale/future/expired evidence and changed request bodies refuse. No v1 lock is
+created. Complete selected-root/source custody, artifact/result observation,
+key lifecycle and closing verification still belong to the installed consumer.</p>
+<p>Supporting evidence contracts, evidence references, reviewer identity policies,
+attestations, adapter custody and semantic decisions cannot become atomic
+enforcement components merely because their fixed target readers exist.</p>
+<h2 id="complete-declared-rule-graphs">Complete declared rule graphs<a class="headerlink" href="#complete-declared-rule-graphs" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.source_semantic_graph.source_rule_dependency_order</code> revalidates
+the complete sorted rule and semantic-decision cohorts. It resolves every
+declared dependency, decision and affected/successor target, including held and
+historical rows. A rule's decision reference must actually name that rule in
+the decision's affected or successor set. Endpoints are checked even when the
+rule has no redundant backlink; an empty source-only decision creates no rule.</p>
+<p>The complete declared dependency relation and the complete declared <code>supersedes</code>
+relation must both be acyclic. Conditional decisions and inactive lifecycle
+labels cannot hide a declared supersession cycle. Interpretation, adoption and
+exclusion metadata do not become supersession edges. Directed set expansion
+has an allocation bound before any Cartesian edge set is materialized.</p>
+<p>The returned IDs contain every supplied rule exactly once, after its
+dependencies. Simultaneously available nodes sort by exact ID; this ordering
+does not select semantic precedence. Complete encoded metadata bytes, source
+counts and declared reference allocations are bounded across both cohorts.</p>
+<p>The installed owner must still authenticate the actual complete source cohort,
+issuer competence, scope and current condition facts; independently derive all
+effective decisions; check simultaneous conflicts and prove exception authority.
+Caller-selected omissions or a successful graph traversal establish none of
+those requirements and grant no gate result.</p>
+<p>The <a href="../source-universe/">retained source universe</a> separately verifies the
+complete host-selected original source cohort and byte partitions. Neither that
+byte accounting nor these declaration records establish semantic completeness.
+Source access, issuer decisions, corpus acceptance, current host selection and
+permission for effects remain separate owning checks.</p>
+<h2 id="deterministic-source-document-inputs">Deterministic source document inputs<a class="headerlink" href="#deterministic-source-document-inputs" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.rule_source_document.RuleSourceDocument1</code> retains the complete
+source universe, original byte regions, atomic rules, semantic decisions,
+qualitative controls, review policies, legacy control bindings, original
+freshness policies and authority references. Each collection has a fixed child
+owner; extra fields, duplicate identities, mutable direct collections and changed
+child digests refuse. Original children keep their complete original wire.</p>
+<p>Collections sort by their exact identities. Regions retain <code>(source_id,
+start_byte)</code> order. Legacy bindings use the composite <code>(rule_id, pack.object_id,
+control.object_id)</code>: a rule may bind multiple original controls and an original
+control may have several source rules. Repeated triples refuse even when their
+binding digests differ. Digest ordering never selects a different convention.</p>
+<p>Explicit aggregate reference, byte, collection and nesting limits cover the
+whole document, including its envelope and final digest. Original region links,
+source counts and freshness invalidators are bounded before their original
+child parsers allocate the corresponding records. The separate
+<code>compiler_contract_digest</code> identifies the compiler contract input. Serialization
+adds no timestamp, resulting pack/profile/lock, signature or corpus acceptance.
+The document digest hashes every other complete listed field deterministically.</p>
+<p><code>from_dict</code> checks bounded structural integrity; it does not resolve external
+typed targets, accept source extraction or authenticate semantic decisions.
+The consuming compiler must still verify the complete original source cohort,
+same retained bytes and region/span joins, all component and decision relations,
+original pack membership and actual source/issuer/corpus acceptance. A
+structurally valid document supplies none of those permissions by itself.</p>
+<h2 id="source-compilation-with-retained-owners">Source compilation with retained owners<a class="headerlink" href="#source-compilation-with-retained-owners" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.rule_source_compiler.compile_rule_source_document</code> takes the
+existing <code>SourceUniverseOwner</code> and complete explicit rule, region, decision and
+component cohorts. It obtains the universe from that actual owner. There is no
+caller-supplied replacement universe, filesystem discovery or prose interpreter.
+Repeated compilation of the same complete inputs and held owner state is
+identical; the compiler adds no timestamp or resulting selection.</p>
+<p><code>rule_source_compiler_contract_digest()</code> separately identifies the document
+schema, fixed target table, composite legacy order, complete declared graph,
+component joins and retained source checks. This contract identity is separate
+from the document digest, actual implementation custody and semantic acceptance.</p>
+<p><code>verify_rule_source_document</code> revalidates the complete document and returns all
+rule IDs in dependency-first order. It verifies the actual complete source
+cohort initially, resolves every supplied external component through its fixed
+owning parser, and rejects inconsistent versioned target identities even in
+unused support objects. Whole target bytes and typed-reference counts are
+bounded together with the document. Original pack members and their nested
+numeric evidence contracts keep their actual original identities.</p>
+<p>Every rule component must be declared by the complete emitted cohort, and every
+emitted component has an owning rule. Active rules require enforcement
+components and a declared normative source region. Qualitative controls retain
+exact rule/scope/mode bindings; their evidence references resolve the actual
+inline review/freshness policies, exact adapter and matching subject class.
+Review policy source-rule IDs equal the rules that actually reference it.
+Required reviewer identity policies resolve as complete original objects.</p>
+<p>Legacy bindings verify the exact original pack member. All controls, authority
+clauses and freshness policies of each referenced original pack remain
+accounted for; a valid pack signature cannot excuse a dropped control. Signature
+bytes, old numeric evidence and original conditions are preserved. Parsing
+these records does not authenticate current signing trust or transition scope.</p>
+<p>Source/region/rule/decision links resolve in both directions. Every citation
+has an overlapping declared same-source region, and every region's declared
+rule/decision has a matching citation. Half-open byte intervals do not overlap
+at adjacent endpoints. Lookup uses indexed source relations and sorted interval
+indexes without rewriting the retained citation order. Duplicate span IDs must
+refer to identical complete spans. Rule output classification cannot be less
+restricted than its cited source.</p>
+<p>The same actual source owner finally verifies complete byte partitions and
+original span bytes, including closing source and implementation checks. Held
+or excluded sources cannot supply included citations. A source-only exclusion
+can retain an explicit exclusion decision without inventing a rule endpoint;
+that declaration still needs actual competent issuer and corpus acceptance.</p>
+<p>The result remains a compiled source candidate. Declared byte overlap does not
+prove adequacy of the extracted prose. Competent issuer/effective decision
+verification, independent corpus/native ratification, current root selection,
+evidence authentication, gate evaluation and effect authority remain separate
+required owning boundaries.</p>
+<h2 id="complete-corpus-acceptance">Complete corpus acceptance<a class="headerlink" href="#complete-corpus-acceptance" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.rule_corpus_acceptance.rule_corpus_acceptance_body</code> derives the
+common unsigned body from the entire actual <code>RuleSourceDocument1</code> and an exact
+<code>RuleCorpusRatification1</code>. Its nine fields include both headers, corpus ID,
+document, universe, decision, component and compiler digests, and the native
+ratification reference. Universe and decision digests hash their complete wire
+arrays. The component digest hashes the complete five-key mapping containing
+<code>qualitative_controls</code>, <code>review_policies</code>, <code>legacy_control_bindings</code>,
+<code>authority_bindings</code> and <code>freshness_policies</code>, including empty arrays.</p>
+<p><code>RuleCorpusAcceptance1</code> adds the full author and reviewer signatures and its
+final digest, giving exactly twelve fields at schema <code>1.0</code>. Both signatures
+bind the same unsigned body under their separate v3 domains. Parsing validates
+their complete metadata, kind, body version and body identity. Current crypto,
+key lifecycle and protected policy selection remain consuming checks, so an
+old envelope remains structurally readable without becoming currently valid.</p>
+<p><code>rigor_foundry.rule_corpus_ratification.RuleCorpusRatification1</code> retains exactly
+eleven fields at <code>1.0</code>: both headers, corpus/document/universe/decision
+identities, issuer ID, original native-pin reference, original statement span,
+statement digest and final ratification digest. Its reference and span must
+name the same original source. The record contains neither a host provider nor
+an issuer-enrollment instruction.</p>
+<h2 id="exact-native-corpus-statement">Exact native corpus statement<a class="headerlink" href="#exact-native-corpus-statement" title="Permanent link">&para;</a></h2>
+<p><code>render_rule_corpus_question</code>, in <code>rigor_foundry.rule_corpus_native</code>, renders
+the entire actual document as JSON with sorted keys, compact separators,
+unescaped Unicode and no nonfinite values. Fixed surrounding prose requests
+this exact decoded user text:</p>
+<pre><code class="language-text">SCHVAĽUJEM rule-corpus &lt;corpus_id&gt; &lt;document_digest&gt; &lt;universe_digest&gt; &lt;decision_set_digest&gt;
+</code></pre>
+<p>The rendered question and expected user text have no terminal LF. Original
+native capture processing appends exactly one LF to each decoded message.
+A user-authored terminal LF therefore produces two capture LFs and refuses the
+exact statement grammar. No stripping, whitespace normalization, NFC conversion
+or abbreviated document is accepted. The complete rendering, including the
+capture owner's LF, must fit the explicit document budget.</p>
+<p><code>RuleCorpusNativeOwner</code> borrows actual <code>RetainedContextSource</code> pin metadata,
+the entire <code>RetainedPolicySource</code> JSONL and an already-held original
+<code>HostNativeSourceState</code>. Installed composition separately supplies the
+competent issuer, exact corpus scope and protected expected issuer-binding
+digest. <code>rule_corpus_native_binding_digest</code> hashes the fixed
+<code>rigor-foundry.rule-corpus-native-issuer-binding.v1</code> contract identifier, those
+two IDs and the complete original native reference. Computing this digest does
+not authenticate its selection; it must match independently installed state.</p>
+<p>Verification joins the complete question, exact decoded statement, original
+selected user role/message/line identity, later reply timestamp, full file
+hash/path, captures, current selected pin and revocations. The statement span
+covers the entire original selected user JSONL line, including carrier LF;
+bounded scanning derives its exact offsets from that same retained file.
+Three SHA-256 preimages stay distinct: decoded statement UTF-8; the same text
+plus one capture LF; and the whole original JSONL line. Escaped Unicode in the
+carrier does not change the decoded statement or permit a plaintext span.
+Closing rechecks the whole borrowed snapshot without closing its owning leases.</p>
+<h2 id="held-corpus-verification">Held corpus verification<a class="headerlink" href="#held-corpus-verification" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.rule_corpus_verification.RuleCorpusVerifier.verified_context</code>
+composes the actual source/compiler, native and selected-signature owners.
+It compares the complete accepted unsigned body with the actual document and
+ratification, verifies both real signatures against the whole selected policy
+generation and current installed clock, and runs the complete original source
+compiler and target checks. Included unread, unavailable or protected sources
+prevent acceptance readiness. An unresolved source region also retains its hold
+before consumer use and during closing checks, even when both signatures and
+the complete native approval bind that exact disposition. Structural document
+and envelope parsing and the declaration-only compiler preserve the unresolved
+region; its bytes and rule/decision relations remain present.</p>
+<p>The native approval carrier must remain outside the complete corpus inputs.
+The source owner checks original retained paths and declared payload digests,
+including held metadata, rather than trusting a copied universe. Appending an
+approval to a transcript already hashed inside its own document changes that
+input and cannot ratify the unchanged document.</p>
+<p>All checks repeat on context closure, including current time, native revocations
+and retained source identities; a changed accepted generation refuses. The
+installed outer host holds the original leases and state through use and close.
+Where original native source selection obtains a context internally, its
+adapter must borrow that already-held state without acquiring another producer
+generation. Caller-created owners, hashes or role markers install no authority.</p>
+<p>These provisional module APIs verify an exact source extraction cohort under
+their installed composition. Effective semantic precedence, exception authority,
+current applicability, enclosing pack/profile/lock selection, evidence, common
+gate verdicts and effect permission still require their own actual owners.</p>
+<h2 id="complete-signed-pack-and-profile-source-bindings">Complete signed pack and profile source bindings<a class="headerlink" href="#complete-signed-pack-and-profile-source-bindings" title="Permanent link">&para;</a></h2>
+<p><code>StandardPackV3</code>, from <code>rigor_foundry.rule_chain_pack_v3</code>, uses an exact
+thirteen-field parent3 envelope. Its controls use <code>ControlDefinition2</code> and
+its authority and freshness children keep their unchanged original formats.
+The canonical source-document digest and complete corpus-acceptance digest
+are separate fields. The source URI is nonblank, whitespace-free opaque
+descriptive metadata; parsing preserves it exactly and never fetches it.
+At least one actual component is required, and the
+complete parent and nested references must fit the explicit processing budget.
+Component identities retain their kind and the control's exact version;
+distinct versions or kinds can share an identifier, while duplicate typed
+identities refuse.
+<code>body</code> returns the exact unsigned signing preimage. <code>build</code> and <code>from_dict</code>
+validate complete signature metadata and the enclosing digest; actual crypto
+and source admission require the consuming owner.</p>
+<p><code>PackSelectionV3</code>, <code>ProfileRuleDisposition1</code> and <code>ProjectProfileV3</code>, from
+<code>rigor_foundry.rule_chain_profile_v3</code>, retain explicit selected-pack order.
+Pack IDs are unique. An original2 pack selection has an exact transition digest
+and null corpus field. A new3 selection has the exact corpus digest and null
+transition field. The enclosing profile independently binds the complete
+corpus in both cases; original null metadata creates no legacy exemption.
+Every declared mandatory rule has an included disposition. Exclusions carry
+an exact decision identity; parsing does not accept that decision's authority.
+The complete actual source cohort, rather than a caller's signed subset,
+determines which rules and components must be present.</p>
+<p><code>ProfileSourceVerifierV3.verified_context</code>, from
+<code>rigor_foundry.profile_source_verification</code>, borrows the actual held
+<code>RuleCorpusVerifier</code> and already-held original <code>HostPackSourceState</code> objects.
+The installed composition independently selects the expected profile digest,
+project and scope. Pure original pack-source verifiers borrow those states;
+this API never enters another legacy selected-chain provider. Original2
+signatures retain their original domain and lifecycle owners. New pack and
+profile signatures use their exact3 domains and the whole selected trust-policy
+generation, with the same installed current clock. The entire selected pack-body
+cohort has aggregate byte and nested-reference limits. Original retained source
+reads also enforce source count, individual payload and complete payload limits.</p>
+<p>Within the actual complete corpus context, the owner compares every ordered
+pack selection to the real owning body and verifies all selected source bytes
+and signatures. It independently joins all qualitative and original numeric
+controls, original pack bindings, authority clauses, freshness policies,
+source-rule dispositions and declared mandatory identities. A legacy fact-context
+reference is required exactly when selected original conditions need it; this
+checks the declaration relation, while current fact authentication belongs to
+the effective-root owner. Omitted, replaced,
+duplicated or unrelated components refuse, including coordinated freshly signed
+subsets. Source relations, current signatures and proof generation are checked
+again at closure; the outer corpus repeats original source/native checks too.
+Consumer exceptions propagate.</p>
+<p>The yielded <code>ProfileSourceBindingsV3</code> is read-only Python source evidence valid
+inside that context. It is not an effective lock or permission. Original
+transition/native semantics, competent exclusion and precedence decisions,
+current fact ownership and applicability, effective root resolution, evidence
+assessment and effect rights still require their separate actual owning checks.
+These APIs remain provisional module surfaces; original pack/profile parsers,
+stable package exports and CLI contracts keep their existing interpretations.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
