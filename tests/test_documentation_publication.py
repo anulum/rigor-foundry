@@ -31,8 +31,9 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
         capture_output=True,
         timeout=10,
     )
-    for raw in tracked.stdout.split(b"\0")[:-1]:
-        tracked_path = Path(raw.decode())
+    paths = {Path(raw.decode()) for raw in tracked.stdout.split(b"\0")[:-1]}
+    paths.add(Path("docs/ci-testing.md"))
+    for tracked_path in sorted(paths):
         source = ROOT / tracked_path
         assert source.is_file() and not source.is_symlink()
         target = repository / tracked_path

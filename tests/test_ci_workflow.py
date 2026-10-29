@@ -173,7 +173,7 @@ def test_native_dispatch_cohort_is_enforced_in_ci_and_commit_hook() -> None:
             assert path in command.split()
     exact_coverage = next(
         step["run"]
-        for step in workflow["jobs"]["test"]["steps"]
+        for step in workflow["jobs"]["test-coverage"]["steps"]
         if step.get("name") == "Enforce exact native dispatch coverage"
     )
     assert "--include='*/native_dispatch.py'" in exact_coverage

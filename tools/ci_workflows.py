@@ -24,6 +24,63 @@ CI_WORKFLOWS = {
     "distribution": ".github/workflows/ci-distribution.yml",
     "vscode": ".github/workflows/ci-vscode.yml",
 }
+CI_CATEGORY_JOBS: dict[str, tuple[str, ...]] = {name: (name,) for name in CI_WORKFLOWS}
+CI_CATEGORY_JOBS["test"] = ("test", "test-coverage")
+CI_CALL_NAMES = {
+    "quality": "Repository quality",
+    "test": "Interpreter tests",
+    "coverage": "Coverage publication",
+    "distribution": "Distribution integrations",
+    "vscode": "Editor integration",
+}
+PYTHON_VERSIONS = ["3.11.15", "3.12.13", "3.13.14"]
+SHARD_COUNT = 4
+REQUIRED_CONTEXTS = [
+    {"context": name, "category": name} for name in ("quality", "distribution", "coverage")
+] + [{"context": f"test ({version})", "category": "test"} for version in PYTHON_VERSIONS]
+REQUIRED_JOB = {
+    "name": "${{ matrix.context }}",
+    "if": "${{ always() }}",
+    "needs": list(CI_WORKFLOWS),
+    "runs-on": "ubuntu-24.04",
+    "timeout-minutes": 5,
+    "strategy": {"fail-fast": False, "matrix": {"include": REQUIRED_CONTEXTS}},
+    "env": {"CATEGORY_RESULT": "${{ needs[matrix.category].result }}"},
+    "steps": [
+        {
+            "name": "Require complete category",
+            "shell": "bash",
+            "run": 'set -euo pipefail\ntest "$CATEGORY_RESULT" = success\n',
+        }
+    ],
+}
+SHARD_STEP = {
+    "name": "Run exhaustive CI-owned suite",
+    "env": {"RIGOR_DOCUMENTATION_PYTHON": "${{ runner.temp }}/rigor-docs-venv/bin/python"},
+    "run": "python -m tools.run_test_shard --index ${{ matrix.shard }} --count 4",
+}
+SHARD_UPLOAD = {
+    "uses": "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+    "with": {
+        "name": "test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-${{ matrix.shard }}",
+        "path": ".rigor-test-shard/",
+        "include-hidden-files": True,
+        "if-no-files-found": "error",
+        "retention-days": 14,
+    },
+}
+UNION_DOWNLOAD = {
+    "uses": "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+    "with": {
+        "pattern": "test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-*",
+        "path": "test-shards",
+    },
+}
+UNION_STEP = {
+    "name": "Combine complete interpreter coverage",
+    "shell": "bash",
+    "run": 'set -euo pipefail\nfor index in 0 1 2 3; do\n  mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"\ndone\npython -m tools.combine_test_shards --directory test-shards --count 4\n',
+}
 
 
 def read_workflow(path: Path) -> dict[str, Any]:
@@ -60,7 +117,7 @@ def read_workflow(path: Path) -> dict[str, Any]:
 
 
 def ci_jobs(root: Path = ROOT) -> dict[str, Any]:
-    """Resolve all five actual CI jobs and their caller-level dependencies.
+    """Resolve every actual inner CI job and its effective dependencies.
 
     Parameters
     ----------
@@ -70,7 +127,7 @@ def ci_jobs(root: Path = ROOT) -> dict[str, Any]:
     Returns
     -------
     dict[str, Any]
-        Effective category jobs, in coordinator order. This is a job projection,
+        Effective executable jobs, in category and actual job order. This is a job projection,
         not a substitute for checking the coordinator's aggregate gate.
 
     Raises
@@ -85,19 +142,20 @@ def ci_jobs(root: Path = ROOT) -> dict[str, Any]:
         raise ValueError("missing CI callers")
     result: dict[str, Any] = {}
     for name, relative in CI_WORKFLOWS.items():
-        expected: dict[str, Any] = {"uses": "./" + relative}
+        expected: dict[str, Any] = {"name": CI_CALL_NAMES[name], "uses": "./" + relative}
         if name == "coverage":
             expected.update(needs="test", permissions={"contents": "read", "id-token": "write"})
         if callers.get(name) != expected:
             raise ValueError("unexpected CI call surface")
         document = read_workflow(root / relative)
         jobs = document.get("jobs")
-        if not isinstance(jobs, dict) or set(jobs) != {name}:
+        if not isinstance(jobs, dict) or list(jobs) != list(CI_CATEGORY_JOBS[name]):
             raise ValueError("unexpected CI category jobs")
-        job = jobs[name]
-        if not isinstance(job, dict) or "uses" in job:
-            raise ValueError("CI category must execute its own job")
-        result[name] = dict(job)
-        if "needs" in expected:
-            result[name]["needs"] = expected["needs"]
+        for identifier in CI_CATEGORY_JOBS[name]:
+            job = jobs[identifier]
+            if not isinstance(job, dict) or "uses" in job:
+                raise ValueError("CI category must execute its own job")
+            result[identifier] = dict(job)
+            if name == "coverage":
+                result[identifier]["needs"] = list(CI_CATEGORY_JOBS["test"])
     return result

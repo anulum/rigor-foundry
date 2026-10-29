@@ -28,7 +28,8 @@
       "owner": "@anulum",
       "category": "test",
       "jobs": [
-        "test"
+        "test",
+        "test-coverage"
       ]
     },
     ".github/workflows/ci-vscode.yml": {
@@ -47,6 +48,7 @@
         "coverage",
         "distribution",
         "vscode",
+        "required",
         "ci-gate"
       ]
     },

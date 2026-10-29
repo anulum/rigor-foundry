@@ -16,7 +16,7 @@ import pytest
 import yaml
 
 from tools._repository import ROOT
-from tools.ci_workflows import CI_WORKFLOWS, ci_jobs, read_workflow
+from tools.ci_workflows import CI_CATEGORY_JOBS, CI_WORKFLOWS, ci_jobs, read_workflow
 
 
 def copy_workflow_repository(destination: Path) -> Path:
@@ -59,18 +59,21 @@ def test_category_projection_reads_all_actual_jobs_and_caller_needs(tmp_path: Pa
     """
     root = copy_workflow_repository(tmp_path)
     jobs = ci_jobs(root)
-    assert list(jobs) == list(CI_WORKFLOWS)
+    assert list(jobs) == [job for names in CI_CATEGORY_JOBS.values() for job in names]
     for name, relative in CI_WORKFLOWS.items():
-        actual = read_workflow(root / relative)["jobs"][name]
-        if name == "coverage":
-            assert jobs[name] == {"needs": "test", **actual}
-        else:
-            assert jobs[name] == actual
+        for identifier in CI_CATEGORY_JOBS[name]:
+            actual = read_workflow(root / relative)["jobs"][identifier]
+            if name == "coverage":
+                assert jobs[identifier] == {**actual, "needs": ["test", "test-coverage"]}
+            else:
+                assert jobs[identifier] == actual
     assert jobs["test"]["strategy"]["matrix"]["python-version"] == [
         "3.11.15",
         "3.12.13",
         "3.13.14",
     ]
+    assert jobs["test"]["strategy"]["matrix"]["shard"] == [0, 1, 2, 3]
+    assert jobs["test-coverage"]["needs"] == "test"
 
 
 @pytest.mark.parametrize(

@@ -23,7 +23,7 @@ from packaging.utils import canonicalize_name
 
 from rigor_foundry.version import __version__
 from tools._repository import ROOT
-from tools.ci_workflows import CI_WORKFLOWS
+from tools.ci_workflows import CI_WORKFLOWS, ci_jobs
 
 
 def test_private_memory_has_portable_repository_exclusions() -> None:
@@ -36,7 +36,15 @@ def test_private_memory_has_portable_repository_exclusions() -> None:
 def test_distribution_build_excludes_real_private_memory(
     tmp_path: Path, distribution: str
 ) -> None:
-    """Actual Hatch archives omit a private canary but retain the public CLI."""
+    """Actual Hatch archives omit a private canary but retain the public CLI.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Independent repository and actual archive output directory.
+    distribution : str
+        Actual wheel or source distribution to build.
+    """
     repository = tmp_path / "repository"
     repository.mkdir()
     inventory = subprocess.run(
@@ -86,11 +94,11 @@ def test_distribution_build_excludes_real_private_memory(
         with tarfile.open(archives[0], "r:gz") as sdist:
             contents = {}
             for member in sdist.getmembers():
-                if member.isfile():
-                    stream = sdist.extractfile(member)
-                    assert stream is not None
-                    with stream:
-                        contents[member.name] = stream.read()
+                assert member.isfile()
+                stream = sdist.extractfile(member)
+                assert stream is not None
+                with stream:
+                    contents[member.name] = stream.read()
     assert any(name.endswith("rigor_foundry/cli.py") for name in contents)
     assert all("agentic_project_memory" not in Path(name).parts for name in contents)
     assert all(marker not in payload for payload in contents.values())
@@ -202,7 +210,9 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "Draft4Validator(schema).validate(document)" in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow
-    assert workflow.count("runs-on: ubuntu-24.04") == 5
+    jobs = ci_jobs(ROOT)
+    assert set(jobs) == {"quality", "test", "test-coverage", "coverage", "distribution", "vscode"}
+    assert all(job["runs-on"] == "ubuntu-24.04" for job in jobs.values())
     assert workflow.count("profile bwrap /usr/bin/bwrap flags=(unconfined)") == 2
     assert workflow.count("sudo apparmor_parser --replace /etc/apparmor.d/bwrap") == 2
     profiles = re.findall(
@@ -229,10 +239,10 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
         workflow.count("python -m pip install --require-hashes -r requirements/security.txt") == 1
     )
     assert workflow.index("python -m tools.install_trivy") < workflow.index(
-        "python -m pytest tests -q"
+        "python -m tools.run_test_shard --index"
     )
     assert workflow.index("python -m tools.install_osv_scanner") < workflow.index(
-        "python -m pytest tests -q"
+        "python -m tools.run_test_shard --index"
     )
     assert "apparmor_restrict_unprivileged_userns=0" not in workflow
     assert "sysctl -w" not in workflow

@@ -24,28 +24,69 @@ concurrency:
 
 jobs:
   quality:
+    name: Repository quality
     uses: ./.github/workflows/ci-quality.yml
-
   test:
+    name: Interpreter tests
     uses: ./.github/workflows/ci-tests.yml
-
   coverage:
+    name: Coverage publication
     needs: test
     permissions:
       contents: read
       id-token: write
     uses: ./.github/workflows/ci-coverage.yml
-
   distribution:
+    name: Distribution integrations
     uses: ./.github/workflows/ci-distribution.yml
-
   vscode:
+    name: Editor integration
     uses: ./.github/workflows/ci-vscode.yml
-
+  required:
+    name: ${{ matrix.context }}
+    if: ${{ always() }}
+    needs:
+      - quality
+      - test
+      - coverage
+      - distribution
+      - vscode
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: quality
+            category: quality
+          - context: distribution
+            category: distribution
+          - context: coverage
+            category: coverage
+          - context: test (3.11.15)
+            category: test
+          - context: test (3.12.13)
+            category: test
+          - context: test (3.13.14)
+            category: test
+    env:
+      CATEGORY_RESULT: ${{ needs[matrix.category].result }}
+    steps:
+      - name: Require complete category
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CATEGORY_RESULT" = success
   ci-gate:
     name: CI gate
     if: ${{ always() }}
-    needs: [quality, test, coverage, distribution, vscode]
+    needs:
+      - quality
+      - test
+      - coverage
+      - distribution
+      - vscode
+      - required
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
@@ -54,6 +95,7 @@ jobs:
       COVERAGE_RESULT: ${{ needs.coverage.result }}
       DISTRIBUTION_RESULT: ${{ needs.distribution.result }}
       VSCODE_RESULT: ${{ needs.vscode.result }}
+      REQUIRED_RESULT: ${{ needs.required.result }}
     steps:
       - name: Require every CI category
         shell: bash
@@ -64,3 +106,4 @@ jobs:
           test "$COVERAGE_RESULT" = success
           test "$DISTRIBUTION_RESULT" = success
           test "$VSCODE_RESULT" = success
+          test "$REQUIRED_RESULT" = success

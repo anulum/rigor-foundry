@@ -352,7 +352,7 @@ def test_reusable_job_cannot_introduce_cross_category_or_privilege_drift(
     assert ci_workflow_errors(root)
 
 
-@pytest.mark.parametrize("category", list(CI_WORKFLOWS))
+@pytest.mark.parametrize("category", [*CI_WORKFLOWS, "required"])
 @pytest.mark.parametrize("state", ["failure", "cancelled", "skipped", "", "unknown"])
 def test_actual_aggregate_shell_requires_every_category(
     category: str,
@@ -369,7 +369,10 @@ def test_actual_aggregate_shell_requires_every_category(
     """
     gate = read_workflow(ROOT / ".github/workflows/ci.yml")["jobs"]["ci-gate"]
     command = gate["steps"][0]["run"]
-    environment = {**os.environ, **{name.upper() + "_RESULT": "success" for name in CI_WORKFLOWS}}
+    environment = {
+        **os.environ,
+        **{name.upper() + "_RESULT": "success" for name in (*CI_WORKFLOWS, "required")},
+    }
     valid = subprocess.run(
         ["bash", "-c", command], env=environment, capture_output=True, timeout=10
     )
@@ -505,4 +508,135 @@ def test_real_reusable_count_budget_precedes_provider_limit(tmp_path: Path) -> N
             "jobs": ["quality"],
         }
     policy.write_text(json.dumps(inventory))
+    assert ci_workflow_errors(root)
+
+
+@pytest.mark.parametrize("state", ["failure", "cancelled", "skipped", "", "unknown", "absent"])
+def test_stable_required_contexts_execute_the_actual_strict_shell(state: str) -> None:
+    """Preserve all protected names and reject every incomplete category result.
+
+    Parameters
+    ----------
+    state : str
+        Actual non-success result or an absent environment variable.
+    """
+    jobs = read_workflow(ROOT / ".github/workflows/ci.yml")["jobs"]
+    required = jobs["required"]
+    assert required["if"] == "${{ always() }}"
+    assert required["needs"] == list(CI_WORKFLOWS)
+    assert required["strategy"]["fail-fast"] is False
+    entries = required["strategy"]["matrix"]["include"]
+    assert entries == [
+        {"context": "quality", "category": "quality"},
+        {"context": "distribution", "category": "distribution"},
+        {"context": "coverage", "category": "coverage"},
+        {"context": "test (3.11.15)", "category": "test"},
+        {"context": "test (3.12.13)", "category": "test"},
+        {"context": "test (3.13.14)", "category": "test"},
+    ]
+    assert required["name"] == "${{ matrix.context }}"
+    assert required["env"] == {"CATEGORY_RESULT": "${{ needs[matrix.category].result }}"}
+    command = required["steps"][0]["run"]
+    environment = {**os.environ, "CATEGORY_RESULT": "success"}
+    assert (
+        subprocess.run(
+            ["bash", "-c", command], env=environment, capture_output=True, timeout=10
+        ).returncode
+        == 0
+    )
+    if state == "absent":
+        environment.pop("CATEGORY_RESULT")
+    else:
+        environment["CATEGORY_RESULT"] = state
+    assert (
+        subprocess.run(
+            ["bash", "-c", command], env=environment, capture_output=True, timeout=10
+        ).returncode
+        != 0
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "shard-count",
+        "interpreter",
+        "fail-fast",
+        "conditional-run",
+        "hidden-data",
+        "attempt-upload",
+        "union-needs",
+        "union-if",
+        "union-env",
+        "union-timeout",
+        "union-matrix",
+        "union-download",
+        "union-command",
+        "union-install",
+        "union-python",
+        "union-checkout",
+        "native-threshold",
+        "xml-export",
+        "required-context",
+        "required-if",
+    ],
+)
+def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
+    tmp_path: Path, case: str
+) -> None:
+    """No altered graph, hidden input, attempt mix or lowered gate can qualify.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Independent actual copied workflow repository.
+    case : str
+        Real executable graph mutation.
+    """
+    root = copy_workflow_repository(tmp_path)
+    path = root / CI_WORKFLOWS["test"]
+    document = read_workflow(path)
+    execution = document["jobs"]["test"]
+    union = document["jobs"]["test-coverage"]
+    if case == "shard-count":
+        execution["strategy"]["matrix"]["shard"].pop()
+    elif case == "interpreter":
+        execution["strategy"]["matrix"]["python-version"].pop()
+    elif case == "fail-fast":
+        execution["strategy"]["fail-fast"] = True
+    elif case == "conditional-run":
+        execution["steps"][-2]["if"] = "false"
+    elif case == "hidden-data":
+        execution["steps"][-1]["with"]["include-hidden-files"] = False
+    elif case == "attempt-upload":
+        execution["steps"][-1]["with"]["name"] = "shared-attempt-input"
+    elif case in {"union-needs", "union-if", "union-env", "union-timeout", "union-matrix"}:
+        field, value = {
+            "union-needs": ("needs", []),
+            "union-if": ("if", "false"),
+            "union-env": ("env", {}),
+            "union-timeout": ("timeout-minutes", 1),
+            "union-matrix": ("strategy", {}),
+        }[case]
+        union[field] = value
+    elif case.startswith("required-"):
+        path = root / ".github/workflows/ci.yml"
+        document = read_workflow(path)
+        required = document["jobs"]["required"]
+        if case == "required-context":
+            required["strategy"]["matrix"]["include"].pop()
+        else:
+            required["if"] = "success()"
+    else:
+        index = {
+            "union-checkout": 0,
+            "union-python": 1,
+            "union-install": 2,
+            "union-download": 3,
+            "union-command": 4,
+            "native-threshold": 5,
+            "xml-export": 6,
+        }[case]
+        union["steps"][index] = {"run": "true"}
+    path.write_text(yaml.safe_dump(document))
     assert ci_workflow_errors(root)

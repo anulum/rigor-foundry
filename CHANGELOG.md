@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Partition the complete test collection for every supported interpreter and
+  require a verified same-attempt coverage union before publishing stable CI checks.
+
 - Rebind coverage residual records to their current executable owners and retain
   the nested-symbol drift check.
 - Keep CI subprocess imports anchored to the checkout and combine identical

@@ -15,7 +15,18 @@ from pathlib import Path
 from typing import Any, cast
 
 from tools._repository import ROOT, redacted_guard_exit_code
-from tools.ci_workflows import CI_WORKFLOWS, ci_jobs, read_workflow
+from tools.ci_workflows import (
+    CI_WORKFLOWS,
+    PYTHON_VERSIONS,
+    REQUIRED_JOB,
+    SHARD_COUNT,
+    SHARD_STEP,
+    SHARD_UPLOAD,
+    UNION_DOWNLOAD,
+    UNION_STEP,
+    ci_jobs,
+    read_workflow,
+)
 
 WORKFLOW_VALIDATION_STEP = {
     "name": "Validate distributed CI workflows",
@@ -32,7 +43,8 @@ tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/rigor-actionlint" act
 "$RUNNER_TEMP/rigor-actionlint/actionlint" -version
 "$RUNNER_TEMP/rigor-actionlint/actionlint"
 python -m tools.check_ci_workflows
-python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
+python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py
+python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov-branch --cov-report=term-missing --cov-fail-under=100
 """,
 }
 
@@ -42,15 +54,18 @@ MAX_COORDINATOR_LINES = 200
 MAX_COORDINATOR_BYTES = 32 * 1_024
 MAX_REUSABLE_WORKFLOWS = 16
 GATE_COMMAND = "set -euo pipefail\n" + "".join(
-    'test "$' + name.upper() + '_RESULT" = success\n' for name in CI_WORKFLOWS
+    'test "$' + name.upper() + '_RESULT" = success\n' for name in (*CI_WORKFLOWS, "required")
 )
 GATE_JOB = {
     "name": "CI gate",
     "if": "${{ always() }}",
-    "needs": list(CI_WORKFLOWS),
+    "needs": [*CI_WORKFLOWS, "required"],
     "runs-on": "ubuntu-24.04",
     "timeout-minutes": 5,
-    "env": {name.upper() + "_RESULT": "${{ needs." + name + ".result }}" for name in CI_WORKFLOWS},
+    "env": {
+        name.upper() + "_RESULT": "${{ needs." + name + ".result }}"
+        for name in (*CI_WORKFLOWS, "required")
+    },
     "steps": [{"name": "Require every CI category", "shell": "bash", "run": GATE_COMMAND}],
 }
 CATEGORIES = {
@@ -133,7 +148,8 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
         }
     )
     callers = coordinator["jobs"]
-    _require(set(callers) == {*CI_WORKFLOWS, "ci-gate"})
+    _require(set(callers) == {*CI_WORKFLOWS, "required", "ci-gate"})
+    _require(callers["required"] == REQUIRED_JOB)
     _require(callers["ci-gate"] == GATE_JOB)
     _require(records[".github/workflows/ci.yml"]["category"] == "coordination")
     ci_jobs(root)
@@ -163,6 +179,65 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
         _require(job.get("permissions") == expected)
     quality_steps = documents[CI_WORKFLOWS["quality"]]["jobs"]["quality"]["steps"]
     _require(quality_steps.count(WORKFLOW_VALIDATION_STEP) == 1)
+    test_jobs = documents[CI_WORKFLOWS["test"]]["jobs"]
+    execution = test_jobs["test"]
+    _require(
+        execution["strategy"]
+        == {
+            "fail-fast": False,
+            "matrix": {"python-version": PYTHON_VERSIONS, "shard": list(range(SHARD_COUNT))},
+        }
+    )
+    _require(execution["steps"][-2:] == [SHARD_STEP, SHARD_UPLOAD])
+    union = test_jobs["test-coverage"]
+    _require(set(union) == {"needs", "env", "runs-on", "timeout-minutes", "strategy", "steps"})
+    _require(union["needs"] == "test" and union["runs-on"] == "ubuntu-24.04")
+    _require(union["env"] == {"PYTHONPATH": "${{ github.workspace }}/src"})
+    _require(union["timeout-minutes"] == 10)
+    _require(
+        union["strategy"] == {"fail-fast": False, "matrix": {"python-version": PYTHON_VERSIONS}}
+    )
+    steps = union["steps"]
+    _require(len(steps) == 7 and steps[3:5] == [UNION_DOWNLOAD, UNION_STEP])
+    _require(steps[0] == execution["steps"][0])
+    _require(
+        steps[1]
+        == {
+            "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "with": {
+                "python-version": "${{ matrix.python-version }}",
+                "cache": "pip",
+                "cache-dependency-path": "requirements/ci.txt",
+            },
+        }
+    )
+    _require(
+        steps[2]
+        == {
+            "name": "Install hash-locked coverage environment",
+            "run": "python -m pip install --require-hashes -r requirements/ci.txt",
+        }
+    )
+    _require(
+        steps[5]
+        == {
+            "name": "Enforce exact native dispatch coverage",
+            "run": "python -m coverage report --include='*/native_dispatch.py' --fail-under=100",
+        }
+    )
+    _require(
+        steps[6]
+        == {
+            "uses": SHARD_UPLOAD["uses"],
+            "if": "matrix.python-version == '3.12.13'",
+            "with": {
+                "name": "coverage-python-3.12",
+                "path": "coverage.xml",
+                "if-no-files-found": "error",
+                "retention-days": 14,
+            },
+        }
+    )
     # Only the coordinator may introduce reusable or cross-category calls.
     for relative, document in documents.items():
         if relative == ".github/workflows/ci.yml":

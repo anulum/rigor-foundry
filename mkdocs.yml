@@ -92,5 +92,6 @@ nav:
   - Task contexts and remediation sources: task-context.md
   - Retained source universe: source-universe.md
   - Validation: validation.md
+  - Interpreter CI tests: ci-testing.md
   - Security: security.md
   - Fuzzing: fuzzing.md
