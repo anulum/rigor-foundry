@@ -2138,7 +2138,8 @@ admission require the host's separate checks.</p>
 <h2 id="fixed-source-parsing">Fixed source parsing<a class="headerlink" href="#fixed-source-parsing" title="Permanent link">&para;</a></h2>
 <p><code>typed_object_reference.TypedObjectRef1</code> has closed versioned fields for the
 source kind, format, object ID, object digest and complete reference digest.
-The original context resolver supports this subset of the closed reference table:</p>
+The context resolver's <code>SUPPORTED_CONTEXT_TARGET_FORMATS</code> declares these 13
+pairs as its fixed subset of the closed reference table:</p>
 <table>
 <thead>
 <tr>
@@ -2314,6 +2315,33 @@ Parsing a reference alone grants neither target resolution nor source authority.
 component subset through fixed original and new owning parsers, including the
 complete original signed pack and all its bounded children. It does not relax
 the context resolver's format checks or authenticate policy selection.</p>
+<p>Two additional typed-reference pairs describe corpus metadata:</p>
+<table>
+<thead>
+<tr>
+<th>Metadata kind</th>
+<th>Exact format</th>
+<th>Owning parser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rule-corpus-ratification</code></td>
+<td><code>1.0</code></td>
+<td><code>RuleCorpusRatification1</code></td>
+</tr>
+<tr>
+<td><code>rule-corpus-acceptance</code></td>
+<td><code>1.0</code></td>
+<td><code>RuleCorpusAcceptance1</code></td>
+</tr>
+</tbody>
+</table>
+<p>The complete reference table therefore contains 29 pairs: 13 context targets,
+14 rule components and two corpus metadata records. A valid component or
+corpus reference refuses at the context resolver before target interpretation.
+Its own parser remains responsible for structural identity; parsing alone
+does not verify native ratification, signatures or installed source authority.</p>
 <p><code>policy_source_reads.parse_policy_document_payload(payload, budget=budget)</code>
 decodes already retained exact bytes with the same strict byte/depth bounds,
 duplicate-key, finite-number and UTF8 rules as <code>read_policy_document</code>.
@@ -2343,6 +2371,8 @@ symlink traversal, hardlinked/nonregular sources and oversized or unstable
 reads. Each read checks the selected object identities, exact raw bytes and
 owning parser. Registry files additionally require their original canonical
 bytes. A successful return does not replace source-access authorization.</p>
+<p>The selected read budget also bounds the complete work-record event chain;
+a reference valid under a larger budget does not bypass a smaller reader limit.</p>
 <p>The context manager repeats the complete check at closure and releases owned
 descriptors even when that check refuses. Explicit <code>close()</code> is idempotent;
 later reads, references or snapshot access refuse. Edited, replaced, deleted
