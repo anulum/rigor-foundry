@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Preserve pre-existing installer temporary files when another installation
+  already occupies the temporary path.
+
 - Keep shard coverage tied to the checkout's complete source directory and close
   report data after each coverage gate and XML export.
 
@@ -30,6 +33,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   dependency version in the public-evidence test.
 
 ### Security
+
+- Update the verified Trivy release to 0.76.1 for the Go certificate distrust
+  mitigation for CVE-2026-111943, retaining all three payload digest checks.
 
 - Refresh the hash-locked tooling environment and align shared scanner dependencies.
 - Refresh the pinned Debian package snapshot to include patched PCRE2, Perl,

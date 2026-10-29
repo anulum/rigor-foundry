@@ -178,7 +178,7 @@ campaign contract that the attestation also embeds.
 ## Installation and CI
 
 Semgrep is supplied by the hash-locked Python environment. CI installs Trivy
-`0.72.0` and OSV-Scanner `2.4.0` for Linux x86-64 with:
+`0.76.1` and OSV-Scanner `2.4.0` for Linux x86-64 with:
 
 ```bash
 python -m tools.install_trivy
@@ -188,7 +188,10 @@ python -m tools.install_osv_scanner
 The installer retrieves only the immutable GitHub release assets, bounds both
 downloads, verifies the pinned checksum-list SHA-256, verifies the pinned
 archive SHA-256, requires that the checksum list names that exact archive, and
-extracts only the sole regular `trivy` member. It never calls `extractall`.
+extracts only the sole regular `trivy` member after checking its own pinned
+SHA-256. It never calls `extractall`. A temporary-file collision preserves the
+existing file; failure cleanup removes only a temporary file created by that
+installation attempt.
 The OSV installer applies the same bounded-host, pinned checksum-document,
 exact-asset SHA-256, and atomic mode-`0700` policy to the immutable Linux
 binary. The resulting binaries are atomically installed. These downloaders are
@@ -204,9 +207,13 @@ and [Trivy reporting](https://trivy.dev/docs/latest/configuration/reporting/),
 [OSV offline mode](https://google.github.io/osv-scanner/usage/offline-mode/),
 and [OSV output](https://google.github.io/osv-scanner/output/)
 interfaces. Installer pins refer to the immutable
-[Trivy 0.72.0 release](https://github.com/aquasecurity/trivy/releases/tag/v0.72.0),
+[Trivy 0.76.1 release](https://github.com/aquasecurity/trivy/releases/tag/v0.76.1),
 and [OSV-Scanner 2.4.0 release](https://github.com/google/osv-scanner/releases/tag/v2.4.0),
 not to moving latest-release URLs.
+
+Trivy 0.76.1's official Go 1.27.3 binaries include the certificate distrust
+mitigation for CVE-2026-111943. The measurements below retain the older versions
+that actually produced them.
 
 ## Measured performance
 

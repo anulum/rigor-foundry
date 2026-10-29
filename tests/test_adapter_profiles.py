@@ -30,6 +30,7 @@ from rigor_foundry.adapter_profiles import (
 from rigor_foundry.adapters import AdapterResult, run_adapter
 from rigor_foundry.models import AdapterSpec, canonical_digest
 from rigor_foundry.osv_database import OSVDatabaseArchive, OSVDatabaseManifest
+from tools.install_trivy import TRIVY_VERSION
 
 
 def _profile_spec(name: str, profile: str, configuration: str, target: str) -> AdapterSpec:
@@ -749,7 +750,7 @@ def test_real_trivy_profile_scans_tracked_repository_configuration(tmp_path: Pat
 
     assert result.profile_evidence is not None
     assert result.profile_evidence.profile == "trivy-repository-json-v1"
-    assert result.profile_evidence.tool_version.startswith("Version: 0.72.0")
+    assert result.profile_evidence.tool_version == f"Version: {TRIVY_VERSION}"
     assert result.profile_evidence.status in {"clean", "findings"}
     assert result.profile_evidence.scanned_target_count >= 1
     assert result.complete

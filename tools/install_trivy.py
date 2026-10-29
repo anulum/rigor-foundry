@@ -5,7 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — verified Trivy installer
-"""Install one immutable Trivy release after two pinned digest checks."""
+"""Install one immutable Trivy release after document, archive and binary checks."""
 
 from __future__ import annotations
 
@@ -22,12 +22,12 @@ from pathlib import Path
 from typing import cast
 from urllib.parse import urlparse
 
-TRIVY_VERSION = "0.72.0"
+TRIVY_VERSION = "0.76.1"
 TRIVY_ARCHIVE_NAME = f"trivy_{TRIVY_VERSION}_Linux-64bit.tar.gz"
 TRIVY_CHECKSUM_NAME = f"trivy_{TRIVY_VERSION}_checksums.txt"
-TRIVY_CHECKSUM_DIGEST = "ebe9d19a774b950e240b1017a038e9b5a002ea068e02023369ff6d241c10c580"
-TRIVY_ARCHIVE_DIGEST = "bbb64b9695866ce4a7a8f5c9592002c5961cab378577fa3f8a040df362b9b2ea"
-TRIVY_BINARY_DIGEST = "0e69edd134a3c338baa1a6806920773615d682b18cbc6a0cba2a3b658ef9b63e"
+TRIVY_CHECKSUM_DIGEST = "885debc41b570179e81af560e5f393a66be29b9ff8c52915674f3eb2304c535d"
+TRIVY_ARCHIVE_DIGEST = "c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+TRIVY_BINARY_DIGEST = "d1dfca6ae10a1ad4540bb94e64f0510077c47008920a9b554986b39dca573d83"
 _BASE_URL = f"https://github.com/aquasecurity/trivy/releases/download/v{TRIVY_VERSION}"
 _MAX_CHECKSUM_BYTES = 16 * 1024
 _MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
@@ -86,21 +86,40 @@ def _binary_from_archive(archive: bytes) -> bytes:
             member = members[0]
             if not member.isfile() or member.size <= 0 or member.size > 256 * 1024 * 1024:
                 raise ValueError("Trivy archive binary metadata is invalid")
-            handle = bundle.extractfile(member)
-            if handle is None:
-                raise ValueError("Trivy archive binary cannot be read")
-            binary = handle.read(member.size + 1)
+            # Regular members return BufferedReader; truncated data raises ReadError.
+            # https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
+            handle = cast("io.BufferedReader", bundle.extractfile(member))
+            with handle:
+                binary = handle.read(member.size)
     except (OSError, tarfile.TarError) as exc:
         raise ValueError("Trivy release archive is invalid") from exc
-    if len(binary) != member.size:
-        raise ValueError("Trivy archive binary size does not match metadata")
     if _sha256(binary) != TRIVY_BINARY_DIGEST:
         raise ValueError("Trivy archive binary digest does not match the release pin")
     return binary
 
 
 def install_trivy(destination: Path) -> Path:
-    """Download, verify, and atomically install the pinned Trivy executable."""
+    """Download, verify, and atomically install the pinned Trivy executable.
+
+    Parameters
+    ----------
+    destination : Path
+        Managed executable path; an existing temporary file is preserved.
+
+    Returns
+    -------
+    Path
+        Absolute path to the verified, owner-executable binary.
+
+    Raises
+    ------
+    OSError
+        The temporary file cannot be created, written or atomically installed.
+    RuntimeError
+        The bounded HTTPS download cannot complete at a trusted host.
+    ValueError
+        The release payload, archive member or executable fails verification.
+    """
     checksum_url = f"{_BASE_URL}/{TRIVY_CHECKSUM_NAME}"
     archive_url = f"{_BASE_URL}/{TRIVY_ARCHIVE_NAME}"
     checksums = _download(checksum_url, _MAX_CHECKSUM_BYTES)
@@ -111,12 +130,14 @@ def install_trivy(destination: Path) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.verified-new")
     descriptor: int | None = None
+    created = False
     try:
         descriptor = os.open(
             temporary,
             os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
             0o700,
         )
+        created = True
         with os.fdopen(descriptor, "wb", closefd=False) as handle:
             handle.write(binary)
             handle.flush()
@@ -128,7 +149,8 @@ def install_trivy(destination: Path) -> Path:
     except Exception:
         if descriptor is not None:
             os.close(descriptor)
-        temporary.unlink(missing_ok=True)
+        if created:
+            temporary.unlink(missing_ok=True)
         raise
     return destination
 
