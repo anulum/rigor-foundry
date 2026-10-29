@@ -12,12 +12,25 @@ from __future__ import annotations
 import argparse
 import os
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import coverage
 
 from tools.run_test_shard import pytest_command
 from tools.test_shard_evidence import digest, require, source_identity, validate_receipt
+
+
+@contextmanager
+def _reporting_coverage() -> Iterator[coverage.Coverage]:
+    """Close each report's mapped in-memory data without reusing a closed report."""
+    measured = coverage.Coverage(config_file="pyproject.toml", data_file=".coverage")
+    try:
+        measured.load()
+        yield measured
+    finally:
+        measured.get_data().close(force=True)
 
 
 def combine_shards(directory: Path, count: int) -> None:
@@ -52,15 +65,21 @@ def combine_shards(directory: Path, count: int) -> None:
         inputs.append(str((shard / ".coverage").resolve()))
     measured = coverage.Coverage(config_file="pyproject.toml", data_file=".coverage")
     hashes = [digest(Path(path)) for path in inputs]
-    with warnings.catch_warnings(record=True) as emitted:
-        warnings.simplefilter("always")
-        measured.combine(data_paths=inputs, strict=True, keep=True)
-    require(not emitted)
-    require([digest(Path(path)) for path in inputs] == hashes)
-    measured.save()
-    require(measured.report() >= 98)
-    require(measured.report(include=["*/native_dispatch.py"]) == 100)
-    measured.xml_report(outfile="coverage.xml")
+    try:
+        with warnings.catch_warnings(record=True) as emitted:
+            warnings.simplefilter("always")
+            measured.combine(data_paths=inputs, strict=True, keep=True)
+        require(not emitted)
+        require([digest(Path(path)) for path in inputs] == hashes)
+        measured.save()
+    finally:
+        measured.get_data().close(force=True)
+    with _reporting_coverage() as report:
+        require(report.report() >= 98)
+    with _reporting_coverage() as report:
+        require(report.report(include=["*/native_dispatch.py"]) == 100)
+    with _reporting_coverage() as report:
+        report.xml_report(outfile="coverage.xml")
     require(source_identity(Path.cwd(), dict(os.environ)) == identity)
 
 

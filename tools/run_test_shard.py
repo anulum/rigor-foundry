@@ -60,7 +60,7 @@ def pytest_command(index: int, count: int) -> list[str]:
         str(SHARD_DIRECTORY / "observations.json"),
         "--junitxml",
         str(SHARD_DIRECTORY / "junit.xml"),
-        "--cov=rigor_foundry",
+        "--cov=src/rigor_foundry",
         "--cov-branch",
         "--cov-report=",
         "--cov-fail-under=0",

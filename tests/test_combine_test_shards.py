@@ -9,10 +9,12 @@
 
 from __future__ import annotations
 
+import gc
 import json
 import shutil
 import subprocess
 import sys
+import warnings
 from pathlib import Path
 
 import coverage
@@ -74,12 +76,19 @@ def test_actual_complete_union_keeps_every_input_and_exports_exact_xml(
     monkeypatch.setattr(
         sys, "argv", ["combine-test-shards", "--directory", str(directory), "--count", "4"]
     )
-    assert main() == 0
+    with warnings.catch_warnings(record=True) as emitted:
+        warnings.simplefilter("always", ResourceWarning)
+        assert main() == 0
+        gc.collect()
+    assert not emitted
     assert (root / "coverage.xml").is_file()
-    measured = coverage.Coverage(config_file="pyproject.toml", data_file=".coverage")
-    measured.load()
-    assert measured.report() == 100
-    assert measured.report(include=["*/native_dispatch.py"]) == 100
+    for include in (None, ["*/native_dispatch.py"]):
+        measured = coverage.Coverage(config_file="pyproject.toml", data_file=".coverage")
+        try:
+            measured.load()
+            assert measured.report(include=include) == 100
+        finally:
+            measured.get_data().close(force=True)
     assert {
         str(path.relative_to(directory)): digest(path)
         for path in directory.rglob("*")

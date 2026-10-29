@@ -67,7 +67,9 @@ def shard_repository(destination: Path) -> Path:
         '[tool.pytest.ini_options]\naddopts = "--strict-config --strict-markers"\n'
         "xfail_strict = true\n"
         '[tool.coverage.run]\nbranch = true\nsource = ["rigor_foundry"]\n'
-        'patch = ["subprocess"]\n[tool.coverage.report]\nfail_under = 98\n'
+        'patch = ["subprocess"]\n[tool.coverage.paths]\n'
+        'rigor_foundry = ["src/rigor_foundry", "*/site-packages/rigor_foundry"]\n'
+        "[tool.coverage.report]\nfail_under = 98\n"
     )
     return destination
 
@@ -235,7 +237,7 @@ def test_launcher_refuses_invalid_partition_identity(index: int, count: int) -> 
 def test_launcher_measures_actual_public_cli_from_complete_source_copy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Exercise the real product CLI in a measured child, with no inherited filters.
+    """Measure every product source, excluding transient same-package imports.
 
     Parameters
     ----------
@@ -255,9 +257,20 @@ def test_launcher_measures_actual_public_cli_from_complete_source_copy(
             target / original.relative_to(ROOT / "src/rigor_foundry")
         ).read_bytes() == original.read_bytes()
     (root / "tests/test_dispatch.py").write_text(
-        "import subprocess\nimport sys\nfrom rigor_foundry.version import __version__\n"
+        "import importlib.util\nimport subprocess\nimport sys\nfrom pathlib import Path\n"
+        "from rigor_foundry.version import __version__\n"
         "def test_public_cli():\n"
-        '    result = subprocess.run([sys.executable, "-m", "rigor_foundry", "--version"], check=True, capture_output=True, text=True)\n'
+        '    foreign = Path("transient/src/rigor_foundry/version.py")\n'
+        "    foreign.parent.mkdir(parents=True)\n"
+        '    foreign.write_bytes(Path("src/rigor_foundry/version.py").read_bytes())\n'
+        '    spec = importlib.util.spec_from_file_location("rigor_foundry.foreign_version", foreign)\n'
+        "    module = importlib.util.module_from_spec(spec)\n"
+        "    spec.loader.exec_module(module)\n"
+        "    assert module.__version__ == __version__\n"
+        "    foreign.unlink()\n"
+        '    child = Path("different-working-directory")\n'
+        "    child.mkdir()\n"
+        '    result = subprocess.run([sys.executable, "-m", "rigor_foundry", "--version"], cwd=child, check=True, capture_output=True, text=True)\n'
         '    assert result.stdout == f"rigor {__version__}\\n"\n'
     )
     monkeypatch.setenv("PYTEST_ADDOPTS", "--not-a-real-option")
@@ -265,6 +278,10 @@ def test_launcher_measures_actual_public_cli_from_complete_source_copy(
     assert result.returncode == 0, result.stdout + result.stderr
     data = coverage.CoverageData(basename=str(root / ".rigor-test-shard/.coverage"))
     data.read()
-    cli = [name for name in data.measured_files() if name.endswith("/rigor_foundry/cli.py")]
-    assert len(cli) == 1 and data.arcs(cli[0])
-    assert str(target) in cli[0]
+    try:
+        assert set(data.measured_files()) == {str(path) for path in target.rglob("*.py")}
+        cli = [name for name in data.measured_files() if name.endswith("/rigor_foundry/cli.py")]
+        assert len(cli) == 1 and data.arcs(cli[0])
+        assert str(target) in cli[0]
+    finally:
+        data.close(force=True)
