@@ -6,7 +6,7 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Non-root CLI image
 
-FROM python:3.12-slim@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217 AS builder
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 AS builder
 
 WORKDIR /build
 COPY requirements/build.txt requirements/build.txt
@@ -16,7 +16,7 @@ COPY LICENSE NOTICE README.md pyproject.toml ./
 COPY src/ src/
 RUN python -m build --wheel --no-isolation
 
-FROM python:3.12-slim@sha256:09f7da3bc104798d0afb40bc08d23ab2da20a76130cec1f2ef170848f5d85217 AS runtime
+FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 AS runtime
 
 LABEL org.opencontainers.image.title="RigorFoundry"
 LABEL org.opencontainers.image.description="Evidence-bound repository auditing and remediation planning"
@@ -26,8 +26,8 @@ LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 
 # Freeze security upgrades independently of the older digest-pinned base image.
 RUN sed -i \
-        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20261011T000000Z|g' \
-        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20261011T000000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20261029T000000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20261029T000000Z|g' \
         /etc/apt/sources.list.d/debian.sources \
     && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
     && apt-get update \
