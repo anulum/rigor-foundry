@@ -21,6 +21,7 @@ import pytest
 
 from tools._repository import ROOT
 from tools.run_test_shard import pytest_command, run_shard
+from tools.test_shard_schedule import COLD_STRATEGY
 
 FIXTURE_TESTS = """import subprocess
 import sys
@@ -74,13 +75,15 @@ def shard_repository(destination: Path) -> Path:
     return destination
 
 
-def shard_environment(root: Path) -> dict[str, str]:
+def shard_environment(root: Path, strategy: str = COLD_STRATEGY) -> dict[str, str]:
     """Supply deterministic explicit run identity and the fixture source import.
 
     Parameters
     ----------
     root : Path
         Actual fixture repository.
+    strategy : str
+        Explicit versioned scheduling cohort.
 
     Returns
     -------
@@ -91,6 +94,7 @@ def shard_environment(root: Path) -> dict[str, str]:
         **os.environ,
         "PYTHONPATH": os.pathsep.join((str(root / "src"), str(ROOT))),
         "PYTHONDONTWRITEBYTECODE": "1",
+        "RIGOR_TEST_SHARD_STRATEGY": strategy,
         "GITHUB_REPOSITORY": "qualification/shards",
         "GITHUB_RUN_ID": "12345",
         "GITHUB_RUN_ATTEMPT": "2",
@@ -98,7 +102,9 @@ def shard_environment(root: Path) -> dict[str, str]:
     }
 
 
-def execute_shard(root: Path, index: int = 0, count: int = 4) -> subprocess.CompletedProcess[str]:
+def execute_shard(
+    root: Path, index: int = 0, count: int = 4, strategy: str = COLD_STRATEGY
+) -> subprocess.CompletedProcess[str]:
     """Execute the actual current launcher in an independent fixture repository.
 
     Parameters
@@ -109,6 +115,8 @@ def execute_shard(root: Path, index: int = 0, count: int = 4) -> subprocess.Comp
         Selected zero-based partition.
     count : int
         Complete partition count.
+    strategy : str
+        Explicit versioned scheduling cohort.
 
     Returns
     -------
@@ -126,7 +134,7 @@ def execute_shard(root: Path, index: int = 0, count: int = 4) -> subprocess.Comp
             str(count),
         ],
         cwd=root,
-        env=shard_environment(root),
+        env=shard_environment(root, strategy),
         capture_output=True,
         text=True,
         timeout=30,

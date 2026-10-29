@@ -34,7 +34,7 @@ CI_CALL_NAMES = {
     "vscode": "Editor integration",
 }
 PYTHON_VERSIONS = ["3.11.15", "3.12.13", "3.13.14"]
-SHARD_COUNT = 4
+SHARD_COUNT = 8
 REQUIRED_CONTEXTS = [
     {"context": name, "category": name} for name in ("quality", "distribution", "coverage")
 ] + [{"context": f"test ({version})", "category": "test"} for version in PYTHON_VERSIONS]
@@ -57,7 +57,7 @@ REQUIRED_JOB = {
 SHARD_STEP = {
     "name": "Run exhaustive CI-owned suite",
     "env": {"RIGOR_DOCUMENTATION_PYTHON": "${{ runner.temp }}/rigor-docs-venv/bin/python"},
-    "run": "python -m tools.run_test_shard --index ${{ matrix.shard }} --count 4",
+    "run": "python -m tools.run_test_shard --index ${{ matrix.shard }} --count 8",
 }
 SHARD_UPLOAD = {
     "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
@@ -79,7 +79,7 @@ UNION_DOWNLOAD = {
 UNION_STEP = {
     "name": "Combine complete interpreter coverage",
     "shell": "bash",
-    "run": 'set -euo pipefail\nfor index in 0 1 2 3; do\n  mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"\ndone\npython -m tools.combine_test_shards --directory test-shards --count 4\n',
+    "run": 'set -euo pipefail\nfor index in 0 1 2 3 4 5 6 7; do\n  mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"\ndone\npython -m tools.combine_test_shards --directory test-shards --count 8\n',
 }
 
 

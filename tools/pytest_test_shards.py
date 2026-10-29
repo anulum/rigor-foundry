@@ -10,10 +10,13 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+from tools.test_shard_schedule import WARM_STRATEGY, partition, read_timings
 
 
 class ShardObserver:
@@ -32,6 +35,8 @@ class ShardObserver:
         self.collected: list[str] = []
         self.selected: list[str] = []
         self.phases: dict[str, list[list[str]]] = {}
+        self.strategy = os.environ.get("RIGOR_TEST_SHARD_STRATEGY", WARM_STRATEGY)
+        self.timings = read_timings(Path.cwd(), self.strategy)
 
     @pytest.hookimpl(wrapper=True, tryfirst=True)
     def pytest_runtestloop(self, session: pytest.Session) -> Generator[None, object, object]:
@@ -60,7 +65,10 @@ class ShardObserver:
         self.collected = [item.nodeid for item in session.items]
         if len(set(self.collected)) != len(self.collected):
             raise pytest.UsageError("duplicate collected test identity")
-        session.items[:] = session.items[self.index :: self.count]
+        selected = set(
+            partition(self.collected, self.count, self.timings, self.strategy)[self.index]
+        )
+        session.items[:] = [item for item in session.items if item.nodeid in selected]
         self.selected = [item.nodeid for item in session.items]
         session.testscollected = len(session.items)
         if not self.selected:
@@ -89,11 +97,14 @@ class ShardObserver:
         self.output.write_text(
             json.dumps(
                 {
+                    "schema_version": 2,
+                    "strategy": self.strategy,
                     "index": self.index,
                     "count": self.count,
                     "collected": self.collected,
                     "selected": self.selected,
                     "phases": self.phases,
+                    "timings": self.timings,
                     "exitstatus": int(exitstatus),
                 },
                 sort_keys=True,

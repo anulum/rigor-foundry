@@ -43,8 +43,8 @@ tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/rigor-actionlint" act
 "$RUNNER_TEMP/rigor-actionlint/actionlint" -version
 "$RUNNER_TEMP/rigor-actionlint/actionlint"
 python -m tools.check_ci_workflows
-python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py
-python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov-branch --cov-report=term-missing --cov-fail-under=100
+python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/test_shard_schedule.py tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py
+python -m pytest tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py --cov=tools.test_shard_schedule --cov=test_test_shard_schedule --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov-branch --cov-report=term-missing --cov-fail-under=100
 """,
 }
 
@@ -191,6 +191,13 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
     test_jobs = documents[CI_WORKFLOWS["test"]]["jobs"]
     execution = test_jobs["test"]
     _require(
+        execution["env"]
+        == {
+            "PYTHONPATH": "${{ github.workspace }}/src",
+            "RIGOR_TEST_SHARD_STRATEGY": "module-lpt-v1",
+        }
+    )
+    _require(
         execution["strategy"]
         == {
             "fail-fast": False,
@@ -201,7 +208,13 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
     union = test_jobs["test-coverage"]
     _require(set(union) == {"needs", "env", "runs-on", "timeout-minutes", "strategy", "steps"})
     _require(union["needs"] == "test" and union["runs-on"] == "ubuntu-24.04")
-    _require(union["env"] == {"PYTHONPATH": "${{ github.workspace }}/src"})
+    _require(
+        union["env"]
+        == {
+            "PYTHONPATH": "${{ github.workspace }}/src",
+            "RIGOR_TEST_SHARD_STRATEGY": "module-lpt-v1",
+        }
+    )
     _require(union["timeout-minutes"] == 10)
     _require(
         union["strategy"] == {"fail-fast": False, "matrix": {"python-version": PYTHON_VERSIONS}}

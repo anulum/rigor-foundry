@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Balance eight complete test partitions per interpreter from a shared,
+  checkout-owned module timing snapshot while retaining every coverage gate.
+
 - Preserve pre-existing installer temporary files when another installation
   already occupies the temporary path.
 

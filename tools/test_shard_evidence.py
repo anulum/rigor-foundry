@@ -18,9 +18,31 @@ from xml.parsers import expat
 
 import coverage
 
+from tools.test_shard_schedule import WARM_STRATEGY, partition, read_timings
+
 MAX_ARTIFACT_BYTES = 64 * 1024 * 1024
-IDENTITY_FIELDS = {"repository", "run_id", "run_attempt", "head", "python", "source", "config"}
-OBSERVATION_FIELDS = {"index", "count", "collected", "selected", "phases", "exitstatus"}
+IDENTITY_FIELDS = {
+    "repository",
+    "run_id",
+    "run_attempt",
+    "head",
+    "python",
+    "source",
+    "config",
+    "schedule",
+    "strategy",
+}
+OBSERVATION_FIELDS = {
+    "schema_version",
+    "strategy",
+    "index",
+    "count",
+    "collected",
+    "selected",
+    "phases",
+    "exitstatus",
+    "timings",
+}
 ARTIFACT_NAMES = ("observations.json", "junit.xml", ".coverage")
 
 
@@ -132,10 +154,13 @@ def source_identity(root: Path, environment: dict[str, str]) -> dict[str, str]:
         "test_shard_evidence",
         "run_test_shard",
         "combine_test_shards",
+        "test_shard_schedule",
     ):
         source.update(name.encode() + b"\0")
         source.update(bytes.fromhex(digest(Path(__file__).with_name(name + ".py"))))
+    strategy = environment.get("RIGOR_TEST_SHARD_STRATEGY", WARM_STRATEGY)
     result = {
+        "strategy": strategy,
         "repository": environment.get("GITHUB_REPOSITORY", ""),
         "run_id": environment.get("GITHUB_RUN_ID", ""),
         "run_attempt": environment.get("GITHUB_RUN_ATTEMPT", ""),
@@ -143,6 +168,9 @@ def source_identity(root: Path, environment: dict[str, str]) -> dict[str, str]:
         "python": platform.python_version(),
         "source": source.hexdigest(),
         "config": digest(root / "pyproject.toml"),
+        "schedule": json.dumps(
+            read_timings(root, strategy), sort_keys=True, separators=(",", ":")
+        ),
     }
     require(all(result.values()))
     return result
@@ -166,6 +194,7 @@ def validate_observations(record: dict[str, Any], index: int, count: int) -> lis
         Complete ordered collection, identical across all partitions.
     """
     require(set(record) == OBSERVATION_FIELDS)
+    require(type(record["schema_version"]) is int and record["schema_version"] == 2)
     require(type(record["index"]) is int and record["index"] == index)
     require(type(record["count"]) is int and record["count"] == count)
     require(type(record["exitstatus"]) is int and record["exitstatus"] == 0)
@@ -173,7 +202,7 @@ def validate_observations(record: dict[str, Any], index: int, count: int) -> lis
     require(isinstance(collected, list) and bool(collected))
     require(all(isinstance(item, str) and bool(item) for item in collected))
     require(len(set(collected)) == len(collected))
-    selected = collected[index::count]
+    selected = partition(collected, count, record["timings"], record["strategy"])[index]
     require(bool(selected) and record["selected"] == selected)
     phases = record["phases"]
     require(isinstance(phases, dict) and set(phases) == set(selected))
@@ -290,9 +319,11 @@ def validate_receipt(
     require(set(identity) == IDENTITY_FIELDS and all(identity.values()))
     receipt = read_record(directory / "receipt.json")
     require(set(receipt) == {"schema_version", "identity", "command", "artifacts"})
-    require(type(receipt["schema_version"]) is int and receipt["schema_version"] == 1)
+    require(type(receipt["schema_version"]) is int and receipt["schema_version"] == 2)
     require(receipt["identity"] == identity and receipt["command"] == command)
     observed = read_record(directory / "observations.json")
+    require(observed["strategy"] == identity["strategy"])
+    require(observed["timings"] == json.loads(identity["schedule"]))
     collected = validate_observations(observed, index, count)
     require(receipt["artifacts"] == validate_artifacts(directory, len(observed["selected"])))
     return collected

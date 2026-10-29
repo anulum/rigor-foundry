@@ -224,6 +224,7 @@ def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
             "def pytest_collection_finish(session):\n    session.items.append(session.items[0])\n"
         )
     monkeypatch.chdir(root)
+    monkeypatch.setenv("RIGOR_TEST_SHARD_STRATEGY", "item-round-robin-v1")
     index = 9 if case == "empty" else 0
     count = 10 if case == "empty" else 1
     result = pytest.main(

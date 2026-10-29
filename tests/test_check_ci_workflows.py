@@ -596,6 +596,7 @@ def test_stable_required_contexts_execute_the_actual_strict_shell(state: str) ->
     "case",
     [
         "shard-count",
+        "execution-env",
         "interpreter",
         "fail-fast",
         "conditional-run",
@@ -636,6 +637,8 @@ def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
     union = document["jobs"]["test-coverage"]
     if case == "shard-count":
         execution["strategy"]["matrix"]["shard"].pop()
+    elif case == "execution-env":
+        execution["env"].pop("RIGOR_TEST_SHARD_STRATEGY")
     elif case == "interpreter":
         execution["strategy"]["matrix"]["python-version"].pop()
     elif case == "fail-fast":

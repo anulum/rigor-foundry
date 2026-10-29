@@ -98,13 +98,15 @@ def run_shard(index: int, count: int) -> int:
         return result.returncode
     require(source_identity(root, dict(os.environ)) == identity)
     observations = read_record(SHARD_DIRECTORY / "observations.json")
+    require(observations["strategy"] == identity["strategy"])
+    require(observations["timings"] == json.loads(identity["schedule"]))
     validate_observations(observations, index, count)
     artifacts = validate_artifacts(SHARD_DIRECTORY, len(observations["selected"]))
     temporary = SHARD_DIRECTORY / "receipt.pending"
     temporary.write_text(
         json.dumps(
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "identity": identity,
                 "command": command,
                 "artifacts": artifacts,

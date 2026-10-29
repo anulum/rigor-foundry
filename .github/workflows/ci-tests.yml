@@ -22,13 +22,14 @@ jobs:
   test:
     env:
       PYTHONPATH: ${{ github.workspace }}/src
+      RIGOR_TEST_SHARD_STRATEGY: module-lpt-v1
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11.15", "3.12.13", "3.13.14"]
-        shard: [0, 1, 2, 3]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
@@ -103,7 +104,7 @@ jobs:
       - name: Run exhaustive CI-owned suite
         env:
           RIGOR_DOCUMENTATION_PYTHON: ${{ runner.temp }}/rigor-docs-venv/bin/python
-        run: python -m tools.run_test_shard --index ${{ matrix.shard }} --count 4
+        run: python -m tools.run_test_shard --index ${{ matrix.shard }} --count 8
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-${{ matrix.shard }}
@@ -117,6 +118,7 @@ jobs:
     needs: test
     env:
       PYTHONPATH: ${{ github.workspace }}/src
+      RIGOR_TEST_SHARD_STRATEGY: module-lpt-v1
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -145,10 +147,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for index in 0 1 2 3; do
+          for index in 0 1 2 3 4 5 6 7; do
             mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"
           done
-          python -m tools.combine_test_shards --directory test-shards --count 4
+          python -m tools.combine_test_shards --directory test-shards --count 8
       - name: Enforce exact native dispatch coverage
         run: python -m coverage report --include='*/native_dispatch.py' --fail-under=100
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

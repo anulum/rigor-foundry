@@ -72,7 +72,7 @@ def test_category_projection_reads_all_actual_jobs_and_caller_needs(tmp_path: Pa
         "3.12.13",
         "3.13.14",
     ]
-    assert jobs["test"]["strategy"]["matrix"]["shard"] == [0, 1, 2, 3]
+    assert jobs["test"]["strategy"]["matrix"]["shard"] == [0, 1, 2, 3, 4, 5, 6, 7]
     assert jobs["test-coverage"]["needs"] == "test"
 
 

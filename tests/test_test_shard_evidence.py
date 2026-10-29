@@ -127,6 +127,10 @@ def test_bounded_records_refuse_ambiguous_or_nonregular_artifacts(
     ("field", "value"),
     [
         ("extra", 1),
+        ("schema_version", 1),
+        ("strategy", "unknown-v1"),
+        ("timings", []),
+        ("timings", {"tests/test_dispatch.py": 1}),
         ("index", True),
         ("index", 1),
         ("count", True),
@@ -261,7 +265,7 @@ def test_actual_junit_and_raw_database_must_be_readable_and_complete(
     [
         ("extra", True),
         ("schema_version", True),
-        ("schema_version", 2),
+        ("schema_version", 1),
         ("identity", {}),
         ("command", ["true"]),
         ("artifacts", {}),
