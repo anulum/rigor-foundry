@@ -169,7 +169,7 @@ jobs:
         run: |
           python -m rigor_foundry scan --root . --policy rigor-foundry-policy.json --json-out self-audit-report.json --markdown-out self-audit-report.md
           python -m rigor_foundry gate --root . --policy rigor-foundry-policy.json --mode observe --scope full --allow-native-audits --output self-audit-gate.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: repository-self-audit
           path: |
