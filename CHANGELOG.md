@@ -7,6 +7,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Enforce the context resolver's own format subset and verify complete retained
+  work records under explicit reference budgets.
+
 - Refresh immutable artifact, Node setup, CodeQL and Scorecard action revisions.
 
 - Refresh the digest-pinned Python image and reproducible Debian package snapshot.

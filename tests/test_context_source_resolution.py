@@ -14,17 +14,26 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+from test_component_source_resolution import target_records
 from test_context_producer_contract import contract
 from test_inventory_baseline import baseline
 from test_inventory_domain import domain
 from test_policy_source_records import records
 from test_project_registry_models import profiled_registry, registry
 from test_repository_state import state
+from test_rule_corpus_acceptance import signed_corpus_acceptance
+from test_rule_corpus_native import corpus_budget, corpus_native_selection
+from test_rule_source_document import source_document
 from test_task_definition import budget, definition
 from test_typed_object_reference import reference
 from test_work_context_sources import sources as work_sources
 
+from rigor_foundry.component_source_resolution import (
+    SUPPORTED_POLICY_TARGET_FORMATS,
+    parse_policy_component_target,
+)
 from rigor_foundry.context_source_resolution import (
+    SUPPORTED_CONTEXT_TARGET_FORMATS,
     ContextSourceTarget,
     parse_context_source_target,
 )
@@ -32,6 +41,8 @@ from rigor_foundry.inventory_domain import InventoryDomain1
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.project_registry_models import ProjectRegistry
 from rigor_foundry.project_registry_primitives import project_registry_canonical_json
+from rigor_foundry.rule_corpus_acceptance import RuleCorpusAcceptance1
+from rigor_foundry.rule_corpus_ratification import RuleCorpusRatification1
 from rigor_foundry.task_definition import TaskDefinition1
 from rigor_foundry.typed_object_reference import SUPPORTED_CONTEXT_SOURCE_FORMATS, TypedObjectRef1
 from rigor_foundry.work_closure import WorkClosure
@@ -89,7 +100,7 @@ def test_every_source_uses_its_actual_owning_parser(tmp_path: Path) -> None:
     )
     assert (
         frozenset((ref.kind, ref.format_version) for ref, _ in selected)
-        == SUPPORTED_CONTEXT_SOURCE_FORMATS
+        == SUPPORTED_CONTEXT_TARGET_FORMATS
     )
     for ref, target in selected:
         data = target.to_dict()
@@ -110,6 +121,53 @@ def test_every_source_uses_its_actual_owning_parser(tmp_path: Path) -> None:
             assert work_context_source_reference(parsed, budget=budget(max_references=2048)) == ref
         else:
             assert parsed.reference() == ref.to_dict()
+
+
+def test_reference_inventory_preserves_each_actual_parser_domain(tmp_path: Path) -> None:
+    """All declared formats have real owners; component/corpus identities cannot select context."""
+    limits = corpus_budget()
+    components = target_records()
+    component_pairs = frozenset((ref.kind, ref.format_version) for ref, _, _ in components)
+    assert component_pairs == SUPPORTED_POLICY_TARGET_FORMATS
+    noncontext: list[TypedObjectRef1] = []
+    for ref, wire, target in components:
+        parsed = parse_policy_component_target(ref, wire, budget=limits)
+        assert type(parsed) is type(target) and parsed == target
+        noncontext.append(ref)
+
+    document = source_document()
+    with corpus_native_selection(tmp_path / "native", document, budget=limits) as selected:
+        ratification = selected.ratification
+        acceptance = signed_corpus_acceptance(document, ratification, budget=limits)
+        assert (
+            RuleCorpusRatification1.from_dict(ratification.to_dict(budget=limits), budget=limits)
+            == ratification
+        )
+        assert (
+            RuleCorpusAcceptance1.from_dict(acceptance.to_dict(budget=limits), budget=limits)
+            == acceptance
+        )
+        corpus_refs = (
+            ratification.reference(budget=limits),
+            acceptance.reference(budget=limits),
+        )
+        corpus_pairs = frozenset((ref.kind, ref.format_version) for ref in corpus_refs)
+        assert corpus_pairs == frozenset(
+            {("rule-corpus-ratification", "1.0"), ("rule-corpus-acceptance", "1.0")}
+        )
+        noncontext.extend(corpus_refs)
+
+    assert len(SUPPORTED_CONTEXT_TARGET_FORMATS) == 13 and len(component_pairs) == 14
+    assert not SUPPORTED_CONTEXT_TARGET_FORMATS.intersection(component_pairs | corpus_pairs)
+    assert not component_pairs.intersection(corpus_pairs)
+    assert (
+        SUPPORTED_CONTEXT_TARGET_FORMATS | component_pairs | corpus_pairs
+        == SUPPORTED_CONTEXT_SOURCE_FORMATS
+    )
+    for ref in noncontext:
+        assert TypedObjectRef1.from_dict(ref.to_dict()) == ref
+        with pytest.raises(ValueError, match="unsupported context target"):
+            parse_context_source_target(ref, None, budget=limits)
 
 
 @pytest.mark.parametrize(

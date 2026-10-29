@@ -39,6 +39,23 @@ ContextSourceTarget: TypeAlias = (
     | WorkSourceTarget
     | PolicySourceRecord1
 )
+SUPPORTED_CONTEXT_TARGET_FORMATS = frozenset(
+    {
+        ("task-definition", "1.0"),
+        ("context-producer-contract", "1.0"),
+        ("repository-state", "1.0"),
+        ("inventory-domain", "1.0"),
+        ("inventory-baseline", "1.0"),
+        ("work-task", "1.0"),
+        ("work-record", "1.0"),
+        ("work-closure", "1.0"),
+        ("source-capture", "1.0"),
+        ("native-source-pin", "native-source-pin.v1"),
+        ("discovery-source-receipt", "discovery-source-closure.v1"),
+        ("project-registry", "gotm-project-registry.v1"),
+        ("project-registry", "project-registry.v2"),
+    }
+)
 
 
 def parse_context_source_target(
@@ -57,6 +74,8 @@ def parse_context_source_target(
     if type(reference) is not TypedObjectRef1:
         raise ValueError("typed context source reference is required")
     ref = TypedObjectRef1.from_dict(reference.to_dict())
+    if (ref.kind, ref.format_version) not in SUPPORTED_CONTEXT_TARGET_FORMATS:
+        raise ValueError("unsupported context target kind or version")
     data = require_mapping(value, "context source target")
     if data.get("schema_version") != ref.format_version:
         raise ValueError("context source target version differs from reference")

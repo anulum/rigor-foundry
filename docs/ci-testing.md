@@ -54,3 +54,11 @@ the aggregate. The final CI gate additionally requires every aggregate. The
 versioned workflow inventory and source guard check both execution jobs and the
 complete caller graph. The quality workflow tests the partition infrastructure
 and its owning tests with whole-file statement and branch coverage of 100%.
+
+An independent quality step exercises the fixed context resolver and retained
+source lifetimes. It measures the complete resolver and both owning test files
+at 100% statement and branch coverage, including all supported context formats,
+the separate component/corpus parser domains and reference-budget refusal.
+Keeping its coverage process separate preserves the documentation renderer's
+native dependency initialization. The source guard rejects removal, duplication,
+conditional execution, a lower threshold or a reduced measured owner set.

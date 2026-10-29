@@ -10,7 +10,8 @@ admission require the host's separate checks.
 
 `typed_object_reference.TypedObjectRef1` has closed versioned fields for the
 source kind, format, object ID, object digest and complete reference digest.
-The original context resolver supports this subset of the closed reference table:
+The context resolver's `SUPPORTED_CONTEXT_TARGET_FORMATS` declares these 13
+pairs as its fixed subset of the closed reference table:
 
 | Source kind | Exact format | Owning parser |
 | --- | --- | --- |
@@ -66,6 +67,19 @@ component subset through fixed original and new owning parsers, including the
 complete original signed pack and all its bounded children. It does not relax
 the context resolver's format checks or authenticate policy selection.
 
+Two additional typed-reference pairs describe corpus metadata:
+
+| Metadata kind | Exact format | Owning parser |
+| --- | --- | --- |
+| `rule-corpus-ratification` | `1.0` | `RuleCorpusRatification1` |
+| `rule-corpus-acceptance` | `1.0` | `RuleCorpusAcceptance1` |
+
+The complete reference table therefore contains 29 pairs: 13 context targets,
+14 rule components and two corpus metadata records. A valid component or
+corpus reference refuses at the context resolver before target interpretation.
+Its own parser remains responsible for structural identity; parsing alone
+does not verify native ratification, signatures or installed source authority.
+
 `policy_source_reads.parse_policy_document_payload(payload, budget=budget)`
 decodes already retained exact bytes with the same strict byte/depth bounds,
 duplicate-key, finite-number and UTF8 rules as `read_policy_document`.
@@ -100,6 +114,9 @@ symlink traversal, hardlinked/nonregular sources and oversized or unstable
 reads. Each read checks the selected object identities, exact raw bytes and
 owning parser. Registry files additionally require their original canonical
 bytes. A successful return does not replace source-access authorization.
+
+The selected read budget also bounds the complete work-record event chain;
+a reference valid under a larger budget does not bypass a smaller reader limit.
 
 The context manager repeats the complete check at closure and releases owned
 descriptors even when that check refuses. Explicit `close()` is idempotent;

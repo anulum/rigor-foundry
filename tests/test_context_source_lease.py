@@ -17,10 +17,12 @@ from typing import cast
 
 import pytest
 from test_context_source_resolution import sources
+from test_policy_source_records import records
 from test_task_definition import budget, definition
 from test_typed_object_reference import reference
 
 from rigor_foundry.context_source_lease import RetainedContextSource
+from rigor_foundry.context_source_resolution import SUPPORTED_CONTEXT_TARGET_FORMATS
 from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.project_registry_models import ProjectRegistry
@@ -52,7 +54,15 @@ def source_handles(directory: Path) -> int:
 
 def test_actual_owning_source_parsers_with_held_lifetimes(tmp_path: Path) -> None:
     """Every implemented source format uses retained original bytes and a fixed parser."""
-    for index, (ref, target) in enumerate(sources()):
+    selected = (
+        *sources(),
+        *((TypedObjectRef1.from_dict(item.reference()), item) for item in records(tmp_path)),
+    )
+    assert (
+        frozenset((ref.kind, ref.format_version) for ref, _ in selected)
+        == SUPPORTED_CONTEXT_TARGET_FORMATS
+    )
+    for index, (ref, target) in enumerate(selected):
         directory = tmp_path / str(index)
         directory.mkdir()
         payload = (
@@ -67,7 +77,7 @@ def test_actual_owning_source_parsers_with_held_lifetimes(tmp_path: Path) -> Non
             path,
             reference=ref,
             raw_digest=hashlib.sha256(payload).hexdigest(),
-            budget=budget(max_references=64),
+            budget=budget(max_references=2048, max_sources=3),
         ) as lease:
             assert source_handles(directory) == before + 2
             assert lease.reference == ref
@@ -83,6 +93,26 @@ def test_actual_owning_source_parsers_with_held_lifetimes(tmp_path: Path) -> Non
         ):
             with pytest.raises(ValueError, match="closed"):
                 operation()
+
+
+def test_complete_work_record_refuses_small_budget_and_releases(tmp_path: Path) -> None:
+    """The same complete event chain succeeds within its budget and releases handles on refusal."""
+    ref, target = next((ref, target) for ref, target in sources() if ref.kind == "work-record")
+    path = tmp_path / "work.json"
+    payload = json.dumps(target.to_dict()).encode()
+    path.write_bytes(payload)
+    digest = hashlib.sha256(payload).hexdigest()
+    with pytest.raises(ValueError, match="reference or depth budget"):
+        RetainedContextSource(
+            path, reference=ref, raw_digest=digest, budget=budget(max_references=64)
+        )
+    assert source_handles(tmp_path) == 0
+    with RetainedContextSource(
+        path, reference=ref, raw_digest=digest, budget=budget(max_references=2048)
+    ) as lease:
+        assert lease.read() == target
+        assert source_handles(tmp_path) == 2
+    assert source_handles(tmp_path) == 0
 
 
 def test_same_source_cannot_reconstruct_another_retained_selection(tmp_path: Path) -> None:

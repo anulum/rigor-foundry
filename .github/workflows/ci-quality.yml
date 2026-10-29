@@ -106,6 +106,11 @@ jobs:
           python -m tools.check_ci_workflows
           python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py
           python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov-branch --cov-report=term-missing --cov-fail-under=100
+      - name: Context source ownership and lifetime coverage
+        shell: bash
+        run: |
+          python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' src/rigor_foundry/context_source_resolution.py tests/test_context_source_resolution.py tests/test_context_source_lease.py
+          python -m pytest tests/test_context_source_resolution.py tests/test_context_source_lease.py --cov=rigor_foundry.context_source_resolution --cov=test_context_source_resolution --cov=test_context_source_lease --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Dependency audit guard coverage
         shell: bash
         run: >-

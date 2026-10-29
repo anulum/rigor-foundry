@@ -48,6 +48,14 @@ python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py tes
 """,
 }
 
+CONTEXT_SOURCE_VALIDATION_STEP = {
+    "name": "Context source ownership and lifetime coverage",
+    "shell": "bash",
+    "run": """python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' src/rigor_foundry/context_source_resolution.py tests/test_context_source_resolution.py tests/test_context_source_lease.py
+python -m pytest tests/test_context_source_resolution.py tests/test_context_source_lease.py --cov=rigor_foundry.context_source_resolution --cov=test_context_source_resolution --cov=test_context_source_lease --cov-branch --cov-report=term-missing --cov-fail-under=100
+""",
+}
+
 MAX_WORKFLOW_LINES = 1_000
 MAX_WORKFLOW_BYTES = 100 * 1_024
 MAX_COORDINATOR_LINES = 200
@@ -179,6 +187,7 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
         _require(job.get("permissions") == expected)
     quality_steps = documents[CI_WORKFLOWS["quality"]]["jobs"]["quality"]["steps"]
     _require(quality_steps.count(WORKFLOW_VALIDATION_STEP) == 1)
+    _require(quality_steps.count(CONTEXT_SOURCE_VALIDATION_STEP) == 1)
     test_jobs = documents[CI_WORKFLOWS["test"]]["jobs"]
     execution = test_jobs["test"]
     _require(

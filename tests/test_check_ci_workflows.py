@@ -230,6 +230,42 @@ def test_actual_inventory_refuses_missing_sources_and_budget_or_graph_drift(
     assert ci_workflow_errors(root)
 
 
+@pytest.mark.parametrize("change", ["missing", "duplicate", "conditional", "coverage", "scope"])
+def test_context_source_coverage_cannot_be_removed_or_weakened(
+    tmp_path: Path, change: str
+) -> None:
+    """The actual quality workflow must retain the complete unconditional context gate.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Copied actual workflow repository.
+    change : str
+        Removal, duplication or weakening of the required owning-surface check.
+    """
+    root = copy_workflow_repository(tmp_path)
+    path = root / CI_WORKFLOWS["quality"]
+    document = read_workflow(path)
+    steps = document["jobs"]["quality"]["steps"]
+    step = next(
+        step
+        for step in steps
+        if step.get("name") == "Context source ownership and lifetime coverage"
+    )
+    if change == "missing":
+        steps.remove(step)
+    elif change == "duplicate":
+        steps.append(dict(step))
+    elif change == "conditional":
+        step["if"] = "${{ success() }}"
+    elif change == "coverage":
+        step["run"] = step["run"].replace("--cov-fail-under=100", "--cov-fail-under=99")
+    else:
+        step["run"] = step["run"].replace(" --cov=test_context_source_lease", "")
+    path.write_text(yaml.safe_dump(document))
+    assert ci_workflow_errors(root)
+
+
 @pytest.mark.parametrize(
     ("workflow", "field", "value"),
     [
