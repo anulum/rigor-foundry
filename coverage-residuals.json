@@ -122,31 +122,12 @@
       "review_by": "2026-11-14"
     },
     {
-      "residual_id": "CR-GIT-DESCRIPTOR-ROOT",
-      "classification": "platform-primitive",
-      "source_path": "src/rigor_foundry/git_provenance.py",
-      "symbol": "GitRunner._execute",
-      "guard": "platform cannot execute a pinned Git descriptor",
-      "source_digest": "55e6e709c5f97ba8472c573616970d3881d8bec9a7e3e156d2bcfa7b4202c5e5",
-      "owner": "supply-chain-security",
-      "rationale": "supported Linux runners expose procfs or devfs descriptor execution; hiding both roots through a patched pathlib method would bypass the platform rather than verify the public Git runner",
-      "public_verification": [
-        "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap"
-      ],
-      "revisit_triggers": [
-        "a supported runner lacks both descriptor roots",
-        "portable descriptor execution support is added"
-      ],
-      "reviewed_on": "2026-10-15",
-      "review_by": "2026-11-14"
-    },
-    {
       "residual_id": "CR-GIT-NOFOLLOW-PLATFORM",
       "classification": "platform-primitive",
       "source_path": "src/rigor_foundry/git_provenance.py",
       "symbol": "GitRunner._open_no_follow",
       "guard": "platform lacks component-safe no-follow file opening",
-      "source_digest": "f5938805812703eb15846b8532f7cb93bd1dace4dc0fdc3d44b0b6c530c39e55",
+      "source_digest": "7f14ebd4062b6e817529d74a4f049e126481b4741ae20b1a18212c943244666e",
       "owner": "supply-chain-security",
       "rationale": "the supported POSIX runtime provides O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would not represent a real supported platform and would conceal the need for native platform CI",
       "public_verification": [
@@ -156,8 +137,8 @@
         "non-POSIX Git execution becomes supported",
         "the minimum Python or operating-system contract changes"
       ],
-      "reviewed_on": "2026-10-15",
-      "review_by": "2026-11-14"
+      "reviewed_on": "2026-10-29",
+      "review_by": "2026-11-28"
     },
     {
       "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
@@ -165,18 +146,19 @@
       "source_path": "src/rigor_foundry/trusted_executable.py",
       "symbol": "TrustedExecutable.execution_path",
       "guard": "descriptor-pinned executable execution is unavailable",
-      "source_digest": "fca3629957448f2ce97af64d79e84ca4e8bc037336d65d948b254b0026d9b85e",
+      "source_digest": "089c2456dbe70256f0a547d3d8231cfa8e6ea72a84e1e2e94eae2520a2ea6491",
       "owner": "runtime-security",
-      "rationale": "the supported Linux runtime mounts procfs for descriptor execution; patching Path.is_dir would simulate an unsupported host rather than exercise descriptor-pinned process creation",
+      "rationale": "supported Linux hosts expose /proc/self/fd or /dev/fd for descriptor execution; real replacement tests retain inspected bytes through the public trusted-command and Git boundaries, while no supported host without both roots has been qualified; replacing Path.is_dir would simulate the platform rather than exercise it",
       "public_verification": [
+        "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap",
         "tests/test_trusted_executable.py::test_trusted_command_executes_open_descriptor_after_path_replacement"
       ],
       "revisit_triggers": [
-        "a supported Linux runner omits procfs",
-        "trusted execution gains a second native descriptor path"
+        "a supported runner lacks both descriptor roots",
+        "descriptor execution support or its operating-system contract changes"
       ],
-      "reviewed_on": "2026-10-15",
-      "review_by": "2026-11-14"
+      "reviewed_on": "2026-10-29",
+      "review_by": "2026-11-28"
     },
     {
       "residual_id": "CR-TRUSTED-NOFOLLOW-PLATFORM",
@@ -203,7 +185,7 @@
       "source_path": "src/rigor_foundry/trusted_executable.py",
       "symbol": "run_trusted_command",
       "guard": "trusted executable output pipes were not created",
-      "source_digest": "e27f6338aedfbed6cab34cb6dc7906a68f514999316b5fe75029fb916fe0f5b3",
+      "source_digest": "963409cb2ade937715c54acc73b7e15e1649f7cdf1f86128b7200f363a97bde9",
       "owner": "runtime-security",
       "rationale": "subprocess.PIPE makes both streams non-null under the supported Python contract; monkeypatching Popen to return an invalid process shape would not exercise the real descriptor-pinned command boundary",
       "public_verification": [
@@ -214,8 +196,8 @@
         "a supported Python runtime permits null PIPE streams",
         "trusted command process transport changes"
       ],
-      "reviewed_on": "2026-10-15",
-      "review_by": "2026-11-14"
+      "reviewed_on": "2026-10-29",
+      "review_by": "2026-11-28"
     },
     {
       "residual_id": "CR-WORKFLOW-EXPRESSION-QUOTE-INVARIANT",

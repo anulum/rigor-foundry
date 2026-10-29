@@ -7,6 +7,8 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Rebind coverage residual records to their current executable owners and retain
+  the nested-symbol drift check.
 - Keep CI subprocess imports anchored to the checkout and combine identical
   installed/source coverage paths without lowering the coverage threshold.
 - Validate immutable Scorecard action references without freezing an obsolete

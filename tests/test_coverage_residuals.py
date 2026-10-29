@@ -440,7 +440,7 @@ def test_nested_symbol_drift_fails_closed(tmp_path: Path) -> None:
     )
     residuals = cast(list[dict[str, Any]], document["residuals"])
     git_residual = next(
-        residual for residual in residuals if residual["residual_id"] == "CR-GIT-DESCRIPTOR-ROOT"
+        residual for residual in residuals if residual["residual_id"] == "CR-GIT-NOFOLLOW-PLATFORM"
     )
     git_residual["symbol"] = "GitRunner.removed_guard"
     _write_document(root, document)
