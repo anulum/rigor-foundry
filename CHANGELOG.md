@@ -44,6 +44,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Closed candidate operation and extractor catalogues bind the exact atomic
+  and seven-part native descriptors under complete v3 headers and read budgets.
+  Metadata parsing remains separate from installed extraction and execution.
+
 - Bounded policy hold declarations retain exact typed subjects, affected rules
   and evidence identities without granting clearance or policy admission.
 

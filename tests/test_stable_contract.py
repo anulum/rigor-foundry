@@ -98,6 +98,8 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "extractor_registry_v3.EXTRACTOR_REGISTRY_V3_SCHEMA_VERSION": "3.0",
+    "effect_operations_v3.EFFECT_OPERATIONS_V3_SCHEMA_VERSION": "3.0",
     "policy_hold.POLICY_HOLD_SCHEMA_VERSION": "1.0",
     "rule_chain_profile_v3.PROFILE_RULE_DISPOSITION_SCHEMA_VERSION": "1.0",
     "rule_chain_pack_v3.STANDARD_PACK_V3_SCHEMA_VERSION": "3.0",

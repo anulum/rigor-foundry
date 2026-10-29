@@ -89,6 +89,10 @@ evidence reference and assessment consumers remain unchanged.
 seven-field declaration preserves bounded hold provenance; parsing does not
 authenticate applicability, clear a hold or admit a selected policy.
 
+`ExtractorRegistryV3` and `EffectOperationsV3` are separately version-pinned
+provisional at `3.0`. Their complete candidate metadata does not add a supported
+effect handler or change original v2 catalogues, digests or selected consumers.
+
 `QualityProjectionRowV3` is separately version-pinned provisional at `3.0`.
 Its original and qualitative cases preserve their actual control generations;
 complete row/control binding does not select a lock or authenticate decisions.

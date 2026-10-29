@@ -6,6 +6,52 @@ represent exact source-bound declarations. They retain the original
 contracts. They do not authenticate an issuer, accept semantic extraction or
 admit a policy for execution.
 
+## Closed candidate effect catalogues
+
+`ExtractorRegistryV3` in `rigor_foundry.extractor_registry_v3` declares exactly
+two fixed extractor contracts: atomic replacement and native profile audit.
+Its four exact fields are `schema_version="3.0"`,
+`object_kind="extractor-registry"`, `extractors` and `registry_digest`.
+`EffectOperationsV3` in `rigor_foundry.effect_operations_v3` binds those
+descriptors to the actual unchanged `EffectVocabularyV2` and
+`EffectTargetTableV2` owners. Its seven fields are `schema_version="3.0"`,
+`object_kind="effect-operations"`, `vocabulary_digest`, `target_table_digest`,
+`extractor_registry_digest`, `operations` and `operations_digest`.
+Each owning digest covers every other field, including both common headers.
+
+The public `build`, `from_dict` and `to_dict` boundaries require an explicit
+`PolicyReadBudget1`. Use the original bounded policy reader for retained file
+or byte input. Parsing closes the complete fixed body, descriptor order, nested
+field types and all dependency identities. Rehashing a changed descriptor does
+not admit it. Registry allocation counts its two descriptors. Operation allocation
+counts its three catalogue dependencies, handler/invocation/cancellation contract
+references, eight total parts and all non-null per-part extractor references
+(48 references in this fixed version). Final encoded bytes and nesting remain
+separate limits. Serializers revalidate direct instances and return fresh maps.
+
+Inline `input_contract` and `output_contract` values are closed mappings of
+owning type names and required checks. They are digest-covered payloads without
+separate identity or typed-reference formats. The invocation contract digest
+hashes the corresponding complete input mapping. Cancellation contract preimages
+name the exact operation and its required authority/cancellation boundaries;
+the native requirement includes durable stage journaling, separately authorised
+owned-child cleanup, retained custody on denied cleanup and no automatic replay.
+These are candidate requirements for an installed consumer to implement and
+qualify. Metadata parsing neither provides that consumer nor implements the
+declared `NativeOperationBindingV3` or `ExtractedPartV3` owners.
+
+The atomic descriptor retains its original immutable invocation and one
+filesystem part. Native templates retain all seven parts in fixed order:
+repository read, workspace-parent write, owned-child cleanup, Git execution,
+version execution, sandbox execution and audit execution. Shared original
+execute actions do not remove template parts. Compute parts use the original
+`compute-job`/`compute-host` classification; an installed extractor must still
+bind separate actual executable and allocation rights. A descriptor never
+authorises deleting its parent or sibling, enrolling a host, importing an
+arbitrary module or launching a command. Full selected source/semantic acceptance,
+actual extraction, held root/gate leases and durable effect dispatch remain
+required before execution. Original v2 parsing and consumers remain separate.
+
 Every parser and serializer requires an explicit `PolicyReadBudget1`.
 Document bytes and container nesting are checked before child parsing;
 collection owners also enforce source and aggregate reference limits. Inputs
