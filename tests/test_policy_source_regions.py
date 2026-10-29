@@ -132,7 +132,7 @@ def test_unrepresented_source_changed_bytes_and_changed_length_refuse(tmp_path: 
     row = region(b"abc", 0, 3)
     with pytest.raises(ValueError, match="omits"):
         verify_policy_source_regions({"source": path}, (), budget=budget())
-    path.write_bytes(b"abd")
+    path.write_bytes(b"ab0")
     with pytest.raises(ValueError, match="byte digest"):
         verify_policy_source_regions({"source": path}, (row,), budget=budget())
     path.write_bytes(b"ab")
