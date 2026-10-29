@@ -611,6 +611,31 @@ current applicability, enclosing pack/profile/lock selection, evidence, common
 gate verdicts and effect permission still require their own actual owners.
 
 
+## Explicit policy hold declarations
+
+`rigor_foundry.policy_hold.PolicyHold1` retains exactly seven fields at `1.0`:
+the common schema and kind, an authored reason `code`, an exact typed `subject`,
+`affected_rule_ids`, `evidence` and `hold_digest`. The digest covers every other
+field, including both headers and complete child-reference digests.
+
+Rule IDs form a sorted unique set; supporting references sort uniquely by
+`(kind, format_version, object_id)`. Two references to the same typed identity
+with different digests refuse. Empty rule or evidence arrays remain explicit.
+The subject, every rule and every evidence reference share one aggregate
+reference budget. Separate rule, complete encoded byte and nesting bounds
+apply before wire children are parsed. Direct records also require immutable
+collections and actual revalidated original reference objects.
+
+For a file, use `read_policy_document` before `PolicyHold1.from_dict`, with the
+same explicit `PolicyReadBudget1`. The original bounded reader rejects duplicate
+keys; the record rejects missing, additional, wrong-version and malformed fields.
+References retain their existing closed target formats and never select loaders.
+
+This provisional declaration neither resolves its referenced targets nor
+authenticates the reason, affected rules or evidence. The enclosing selected
+policy owner must derive and verify the complete current hold cohort. Parsing,
+omitting or editing a record cannot clear a hold, admit a policy or grant effects.
+
 ## Complete signed pack and profile source bindings
 
 `StandardPackV3`, from `rigor_foundry.rule_chain_pack_v3`, uses an exact

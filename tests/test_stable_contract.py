@@ -98,6 +98,7 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "policy_hold.POLICY_HOLD_SCHEMA_VERSION": "1.0",
     "rule_chain_profile_v3.PROFILE_RULE_DISPOSITION_SCHEMA_VERSION": "1.0",
     "rule_chain_pack_v3.STANDARD_PACK_V3_SCHEMA_VERSION": "3.0",
     "rule_chain_profile_v3.PROJECT_PROFILE_V3_SCHEMA_VERSION": "3.0",

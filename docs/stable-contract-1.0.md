@@ -84,6 +84,11 @@ preimage are separately version-pinned provisional at `1.0`;
 `EvidenceReference2` is provisional at `2.0`. Their actual original owner proofs
 and freshness policies keep their existing wire versions. The original numeric
 evidence reference and assessment consumers remain unchanged.
+
+`PolicyHold1` is separately version-pinned provisional at `1.0`. Its exact
+seven-field declaration preserves bounded hold provenance; parsing does not
+authenticate applicability, clear a hold or admit a selected policy.
+
 `QualityProjectionRowV3` is separately version-pinned provisional at `3.0`.
 Its original and qualitative cases preserve their actual control generations;
 complete row/control binding does not select a lock or authenticate decisions.

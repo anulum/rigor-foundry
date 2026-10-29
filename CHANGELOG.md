@@ -44,6 +44,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Bounded policy hold declarations retain exact typed subjects, affected rules
+  and evidence identities without granting clearance or policy admission.
+
 - Complete signed pack and profile source bindings retain explicit child formats,
   original numeric controls and whole-corpus component coverage through held
   source/native/current-signature checks and closing generation validation.
