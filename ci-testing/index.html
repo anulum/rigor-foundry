@@ -2029,14 +2029,20 @@ RigorFoundry — Interpreter test partitions and coverage
 -->
 
 <h1 id="interpreter-tests-and-coverage">Interpreter tests and coverage<a class="headerlink" href="#interpreter-tests-and-coverage" title="Permanent link">&para;</a></h1>
-<p>Each advertised Python interpreter runs the complete pytest collection in four
-deterministic partitions. Partition <code>i</code> executes items at positions <code>i, i+4, …</code>
-in the final ordered collection, after ordinary collection hooks. Class,
-parameter and fixture behavior stays with the original pytest items. Every
+<p>Each advertised Python interpreter runs the complete pytest collection in eight
+deterministic partitions. The final collection, after ordinary collection hooks,
+is the sole membership source. A longest-first schedule assigns whole modules
+to the least loaded partition using <code>.github/test-timings.json</code>. Item order,
+parameters and fixture context stay with the original pytest items. New modules
+receive the median across all valid historical module durations; removed modules are never collected
+from timing hints. The explicit
+<code>item-round-robin-v1</code> strategy permits a no-profile cold start; the CI-declared
+<code>module-lpt-v1</code> strategy requires its profile. Missing, empty, malformed, linked
+or unreadable expected profiles fail the run. Every
 partition installs the original hash-locked test, native and security tools and
 the separate documentation renderer.</p>
-<p>The workflow invokes <code>python -m tools.run_test_shard --index 0 --count 4</code> for
-each index from zero through three. This launcher requires the GitHub repository,
+<p>The workflow invokes <code>python -m tools.run_test_shard --index 0 --count 8</code> for
+each index from zero through seven. This launcher requires the GitHub repository,
 run, attempt and head identity. It refuses existing output at <code>.rigor-test-shard</code>
 and activates the partition plugin only on its actual pytest command. Child
 pytest invocations retain their own arguments. Filters, collect-only and early
@@ -2048,9 +2054,24 @@ semantics remain valid. The receipt binds the exact command, full Python
 version, source/configuration bytes, ordered collection, index/count and hashes
 of retained observations, JUnit and the raw <code>.coverage</code> database. A provisional
 observation file alone is never success evidence.</p>
+<p>All partitions and consumers use the same versioned timing snapshot from their
+checkout. Its normalized content is bound into the source identity and retained
+observations in schema version 2; the launcher and union reject a different
+profile, strategy, algorithm version or legacy receipt. Costs use positive
+integer microseconds (nearest-even rounding, minimum one), doubled internally
+to represent even-sized medians exactly. Duration ties use module path order;
+load ties use the lowest shard index. Timing hints
+cannot remove tests or become coverage evidence. The initial snapshot aggregates
+all four Python 3.12 JUnit shards from workflow run <code>40844337454</code> at revision
+<code>1ba6c7893ef43102ca391aa7f621f7f19895c620</code>, containing 6,473 tests across
+374 modules. Durations are advisory seconds including setup and teardown.
+Refresh the snapshot from a complete successful collection and review the diff;
+independently restored mutable caches must never choose partition membership.
+Eight partitions reduce predicted per-job test work, but hosted runtime, queue
+delay and runner-minute changes require measurement after publication.</p>
 <p>Each interpreter's union job downloads only artifacts from the same run attempt.
-<code>python -m tools.combine_test_shards --directory test-shards --count 4</code> requires
-exactly <code>shard-0</code> through <code>shard-3</code>, validates every input and refuses missing,
+<code>python -m tools.combine_test_shards --directory test-shards --count 8</code> requires
+exactly <code>shard-0</code> through <code>shard-7</code>, validates every input and refuses missing,
 corrupt, incomplete or mismatched evidence. Failed-job-only reruns cannot reuse
 successful partitions from an earlier attempt; rerun the complete workflow.
 The raw databases remain available after combining. Existing subprocess

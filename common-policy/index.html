@@ -660,6 +660,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#closed-candidate-effect-catalogues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Closed candidate effect catalogues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#typed-v3-signatures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -840,6 +851,17 @@
     <span class="md-ellipsis">
       
         Held corpus verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-policy-hold-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit policy hold declarations
       
     </span>
   </a>
@@ -2242,6 +2264,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#closed-candidate-effect-catalogues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Closed candidate effect catalogues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#typed-v3-signatures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2429,6 +2462,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#explicit-policy-hold-declarations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit policy hold declarations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#complete-signed-pack-and-profile-source-bindings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2465,6 +2509,47 @@ represent exact source-bound declarations. They retain the original
 <code>ConditionExpression</code> 1.1, <code>SourceSpan1</code>, <code>OwnerProof1</code> and <code>TypedObjectRef1</code>
 contracts. They do not authenticate an issuer, accept semantic extraction or
 admit a policy for execution.</p>
+<h2 id="closed-candidate-effect-catalogues">Closed candidate effect catalogues<a class="headerlink" href="#closed-candidate-effect-catalogues" title="Permanent link">&para;</a></h2>
+<p><code>ExtractorRegistryV3</code> in <code>rigor_foundry.extractor_registry_v3</code> declares exactly
+two fixed extractor contracts: atomic replacement and native profile audit.
+Its four exact fields are <code>schema_version="3.0"</code>,
+<code>object_kind="extractor-registry"</code>, <code>extractors</code> and <code>registry_digest</code>.
+<code>EffectOperationsV3</code> in <code>rigor_foundry.effect_operations_v3</code> binds those
+descriptors to the actual unchanged <code>EffectVocabularyV2</code> and
+<code>EffectTargetTableV2</code> owners. Its seven fields are <code>schema_version="3.0"</code>,
+<code>object_kind="effect-operations"</code>, <code>vocabulary_digest</code>, <code>target_table_digest</code>,
+<code>extractor_registry_digest</code>, <code>operations</code> and <code>operations_digest</code>.
+Each owning digest covers every other field, including both common headers.</p>
+<p>The public <code>build</code>, <code>from_dict</code> and <code>to_dict</code> boundaries require an explicit
+<code>PolicyReadBudget1</code>. Use the original bounded policy reader for retained file
+or byte input. Parsing closes the complete fixed body, descriptor order, nested
+field types and all dependency identities. Rehashing a changed descriptor does
+not admit it. Registry allocation counts its two descriptors. Operation allocation
+counts its three catalogue dependencies, handler/invocation/cancellation contract
+references, eight total parts and all non-null per-part extractor references
+(48 references in this fixed version). Final encoded bytes and nesting remain
+separate limits. Serializers revalidate direct instances and return fresh maps.</p>
+<p>Inline <code>input_contract</code> and <code>output_contract</code> values are closed mappings of
+owning type names and required checks. They are digest-covered payloads without
+separate identity or typed-reference formats. The invocation contract digest
+hashes the corresponding complete input mapping. Cancellation contract preimages
+name the exact operation and its required authority/cancellation boundaries;
+the native requirement includes durable stage journaling, separately authorised
+owned-child cleanup, retained custody on denied cleanup and no automatic replay.
+These are candidate requirements for an installed consumer to implement and
+qualify. Metadata parsing neither provides that consumer nor implements the
+declared <code>NativeOperationBindingV3</code> or <code>ExtractedPartV3</code> owners.</p>
+<p>The atomic descriptor retains its original immutable invocation and one
+filesystem part. Native templates retain all seven parts in fixed order:
+repository read, workspace-parent write, owned-child cleanup, Git execution,
+version execution, sandbox execution and audit execution. Shared original
+execute actions do not remove template parts. Compute parts use the original
+<code>compute-job</code>/<code>compute-host</code> classification; an installed extractor must still
+bind separate actual executable and allocation rights. A descriptor never
+authorises deleting its parent or sibling, enrolling a host, importing an
+arbitrary module or launching a command. Full selected source/semantic acceptance,
+actual extraction, held root/gate leases and durable effect dispatch remain
+required before execution. Original v2 parsing and consumers remain separate.</p>
 <p>Every parser and serializer requires an explicit <code>PolicyReadBudget1</code>.
 Document bytes and container nesting are checked before child parsing;
 collection owners also enforce source and aggregate reference limits. Inputs
@@ -3062,6 +3147,26 @@ generation. Caller-created owners, hashes or role markers install no authority.<
 their installed composition. Effective semantic precedence, exception authority,
 current applicability, enclosing pack/profile/lock selection, evidence, common
 gate verdicts and effect permission still require their own actual owners.</p>
+<h2 id="explicit-policy-hold-declarations">Explicit policy hold declarations<a class="headerlink" href="#explicit-policy-hold-declarations" title="Permanent link">&para;</a></h2>
+<p><code>rigor_foundry.policy_hold.PolicyHold1</code> retains exactly seven fields at <code>1.0</code>:
+the common schema and kind, an authored reason <code>code</code>, an exact typed <code>subject</code>,
+<code>affected_rule_ids</code>, <code>evidence</code> and <code>hold_digest</code>. The digest covers every other
+field, including both headers and complete child-reference digests.</p>
+<p>Rule IDs form a sorted unique set; supporting references sort uniquely by
+<code>(kind, format_version, object_id)</code>. Two references to the same typed identity
+with different digests refuse. Empty rule or evidence arrays remain explicit.
+The subject, every rule and every evidence reference share one aggregate
+reference budget. Separate rule, complete encoded byte and nesting bounds
+apply before wire children are parsed. Direct records also require immutable
+collections and actual revalidated original reference objects.</p>
+<p>For a file, use <code>read_policy_document</code> before <code>PolicyHold1.from_dict</code>, with the
+same explicit <code>PolicyReadBudget1</code>. The original bounded reader rejects duplicate
+keys; the record rejects missing, additional, wrong-version and malformed fields.
+References retain their existing closed target formats and never select loaders.</p>
+<p>This provisional declaration neither resolves its referenced targets nor
+authenticates the reason, affected rules or evidence. The enclosing selected
+policy owner must derive and verify the complete current hold cohort. Parsing,
+omitting or editing a record cannot clear a hold, admit a policy or grant effects.</p>
 <h2 id="complete-signed-pack-and-profile-source-bindings">Complete signed pack and profile source bindings<a class="headerlink" href="#complete-signed-pack-and-profile-source-bindings" title="Permanent link">&para;</a></h2>
 <p><code>StandardPackV3</code>, from <code>rigor_foundry.rule_chain_pack_v3</code>, uses an exact
 thirteen-field parent3 envelope. Its controls use <code>ControlDefinition2</code> and

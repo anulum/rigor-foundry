@@ -2395,14 +2395,17 @@ evidence into the run attestation; policy remains bound through the separate
 campaign contract that the attestation also embeds.</p>
 <h2 id="installation-and-ci">Installation and CI<a class="headerlink" href="#installation-and-ci" title="Permanent link">&para;</a></h2>
 <p>Semgrep is supplied by the hash-locked Python environment. CI installs Trivy
-<code>0.72.0</code> and OSV-Scanner <code>2.4.0</code> for Linux x86-64 with:</p>
+<code>0.76.1</code> and OSV-Scanner <code>2.4.0</code> for Linux x86-64 with:</p>
 <pre><code class="language-bash">python -m tools.install_trivy
 python -m tools.install_osv_scanner
 </code></pre>
 <p>The installer retrieves only the immutable GitHub release assets, bounds both
 downloads, verifies the pinned checksum-list SHA-256, verifies the pinned
 archive SHA-256, requires that the checksum list names that exact archive, and
-extracts only the sole regular <code>trivy</code> member. It never calls <code>extractall</code>.
+extracts only the sole regular <code>trivy</code> member after checking its own pinned
+SHA-256. It never calls <code>extractall</code>. A temporary-file collision preserves the
+existing file; failure cleanup removes only a temporary file created by that
+installation attempt.
 The OSV installer applies the same bounded-host, pinned checksum-document,
 exact-asset SHA-256, and atomic mode-<code>0700</code> policy to the immutable Linux
 binary. The resulting binaries are atomically installed. These downloaders are
@@ -2417,9 +2420,12 @@ and <a href="https://trivy.dev/docs/latest/configuration/reporting/">Trivy repor
 <a href="https://google.github.io/osv-scanner/usage/offline-mode/">OSV offline mode</a>,
 and <a href="https://google.github.io/osv-scanner/output/">OSV output</a>
 interfaces. Installer pins refer to the immutable
-<a href="https://github.com/aquasecurity/trivy/releases/tag/v0.72.0">Trivy 0.72.0 release</a>,
+<a href="https://github.com/aquasecurity/trivy/releases/tag/v0.76.1">Trivy 0.76.1 release</a>,
 and <a href="https://github.com/google/osv-scanner/releases/tag/v2.4.0">OSV-Scanner 2.4.0 release</a>,
 not to moving latest-release URLs.</p>
+<p>Trivy 0.76.1's official Go 1.27.3 binaries include the certificate distrust
+mitigation for CVE-2026-111943. The measurements below retain the older versions
+that actually produced them.</p>
 <h2 id="measured-performance">Measured performance<a class="headerlink" href="#measured-performance" title="Permanent link">&para;</a></h2>
 <p><code>benchmarks/adapter_profiles.py</code> measures all three real tools through the same
 descriptor-bound Bubblewrap execution path against a committed seven-file

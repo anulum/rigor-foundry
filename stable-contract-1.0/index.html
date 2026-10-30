@@ -2201,8 +2201,14 @@ Its bounded original-pack reader retains the complete original <code>StandardPac
 preimage are separately version-pinned provisional at <code>1.0</code>;
 <code>EvidenceReference2</code> is provisional at <code>2.0</code>. Their actual original owner proofs
 and freshness policies keep their existing wire versions. The original numeric
-evidence reference and assessment consumers remain unchanged.
-<code>QualityProjectionRowV3</code> is separately version-pinned provisional at <code>3.0</code>.
+evidence reference and assessment consumers remain unchanged.</p>
+<p><code>PolicyHold1</code> is separately version-pinned provisional at <code>1.0</code>. Its exact
+seven-field declaration preserves bounded hold provenance; parsing does not
+authenticate applicability, clear a hold or admit a selected policy.</p>
+<p><code>ExtractorRegistryV3</code> and <code>EffectOperationsV3</code> are separately version-pinned
+provisional at <code>3.0</code>. Their complete candidate metadata does not add a supported
+effect handler or change original v2 catalogues, digests or selected consumers.</p>
+<p><code>QualityProjectionRowV3</code> is separately version-pinned provisional at <code>3.0</code>.
 Its original and qualitative cases preserve their actual control generations;
 complete row/control binding does not select a lock or authenticate decisions.
 <code>SelectedControlAssessment2</code> is separately version-pinned provisional at <code>2.0</code>.
