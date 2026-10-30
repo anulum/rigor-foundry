@@ -207,6 +207,6 @@ show_missing = true
 skip_covered = false
 
 [tool.bandit]
-exclude_dirs = ["tests"]
+exclude_dirs = ["tests", "tools/.internal"]
 # Direct subprocess use is intentional; Semgrep separately forbids shell=True.
 skips = ["B404", "B603"]
