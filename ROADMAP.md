@@ -1,62 +1,65 @@
 # Roadmap
 
-Roadmap items are acceptance-gated; dates and versions are not release promises.
+RigorFoundry has a published [1.0.0 release](https://github.com/anulum/rigor-foundry/releases/tag/v1.0.0).
+The released compatibility manifest bounds the stable CLI, Python API and
+schema contract. Release numbering does not certify audit findings, every
+rule, an adopter environment or fleet-wide authority.
 
-## 0.1 — Repository foundation
+The work below is acceptance-gated. Dates and versions are not delivery promises.
 
-- Validate the completed local Apache-2.0 repository governance, reproducible
-  dependencies, CI, security, documentation, packaging, and container surfaces
-  through remote gates.
-- Complete independent review of the internal-storage and work-lifecycle
-  modules at an exact commit.
-- Establish the first independently audited local commit.
+## Delivered baseline
 
-## 0.2 — Desired-state profiles
+- Reproducible repository governance, packages, containers, documentation and
+  independently reviewed release and provenance mechanisms.
+- Git-bound audit candidates with exact source anchors, bounded excerpts,
+  typed evidence and explicit incomplete or unavailable states.
+- JSON, Markdown and SARIF reports, review and promotion workflows, offline
+  verification, and declared native-tool adapters.
+- Typed profiles, source locking, declarative remediation and campaign
+  contracts. A plan or report does not grant execution authority.
+- Offline, prepare-only Cyber Resilience Act evidence and reporting records.
+  These do not contact an authority or establish legal conformity.
+- Published calibration evidence with a frozen policy and explicit limits.
+  New or unqualified rules retain probationary status.
 
-- Integrate the implemented `StandardPack`, `ProjectProfile`,
-  `EffectiveProfileLock`, `ControlAssessment`, `TargetGap`, and
-  `RemediationPlan` records with stable CLI import/export commands.
-- Publish adopter examples for typed project variables, secret-provider
-  references, namespaced custom controls, bounded conditions, and
-  contradiction reports.
-- Independently verify exact pack source, licence, signature policy, adapter,
-  and content-digest locking against adversarial fixtures.
-- Add a policy-declared ignored-inventory evidence extension. Rules whose
-  semantics depend on ignored or untracked reality must remain
-  `needs-evidence` when that extension is absent; tracked-only absence must
-  never become a failure verdict.
-- Completed: replace prose-only candidate evidence with machine-verifiable
-  tracked-blob or repository-tree anchors that bind repository path, inclusive
-  line span, exact object identity, and content digest while retaining a
-  bounded human-readable excerpt.
-- Represent classified coverage residuals explicitly: structurally unreachable
-  branches, retained fail-closed guards, and preregistered negative searches
-  require different evidence and must not incentivise guard deletion.
-- Generalise verified-at-source provenance beyond action pins for externally
-  sourced CVEs, versions, standards, and content digests.
+## Work in progress
 
-## 0.3 — Controlled remediation
+- Complete the shared policy source, semantic decision, authenticated context,
+  projection and gate-consumer chain. Preserve exact source, issuer, scope,
+  freshness, dependency and exception evidence throughout.
+- Qualify the complete native effect lifecycle and durable request journal,
+  including interruption, concurrency, restart, refused cleanup and recovery.
+- Complete editor quality and supported-host acceptance, including exact
+  source selection, real command journeys and native platform behaviour.
+- Close remaining whole-surface coverage and independent acceptance gaps.
+  Passing an aggregate threshold does not qualify every owning module.
+- Qualify current external campaigns, degraded operation, adoption and
+  rollback under explicit operator and owner authority.
 
-- Connect the implemented declarative procedure DAG and conflict-safe batch
-  model to an explicit-authority executor with enforced time/resource budgets,
-  idempotency, rollback, and evidence capture.
-- Add worktree/claim isolation for the model's non-conflicting write sets,
-  semantic dependencies, and serialization keys.
-- Prove stale-plan, cross-repository, symlink, cancellation, and partial-failure
-  behaviour without granting implicit remediation authority.
-- Validate cross-model promotion campaigns against representative external
-  repositories and publish adjudicated evidence for the two-model-family,
-  exact-model-alias collapse, and two-operator threshold.
+## Next capabilities
 
-## 1.0 — Promotion candidate
+- Extend verified source provenance to declared attestation producers and
+  dependency evidence.
+- Improve SARIF interoperability and import supported third-party results as
+  anchored candidates, preserving unknown fields and partial results.
+- Package the existing cross-model protocol as bounded AI-code assurance
+  examples with measured independence, correlation and reviewer effort.
+- Add qualified adopter diagnostics, policy diagnostics and exact-revision
+  scanning. Extend incremental scanning only with complete invalidation and
+  cached-versus-fresh equivalence evidence.
+- Expand portable rules only with safe and unsafe fixtures, held-out
+  calibration, reviewer-cost evidence and explicit probation safeguards.
+- Complete read-only operator views and separately authorised editor,
+  Marketplace, GitLab and code-scanning distribution surfaces.
 
-- Run independently reviewed audit campaigns against representative external
-  and related repositories.
-- Publish measured precision/recall and reviewer-effort evidence with corpus and
-  methodology limits.
-- Introduce a per-rule maturity lifecycle. New rules remain in probation until
-  enough adjudicated reviews establish bounded false-positive and reviewer-cost
-  evidence; only calibrated active rules may enter ratchet or zero enforcement.
-- Complete release quorum, documentation, package, container, SBOM, signing,
-  provenance, and rollback evidence.
-- Activate fleet authority only with explicit owner authorisation.
+## Later extensions
+
+- Read-only MCP access, signed external rule-pack authoring and organisation
+  policy inheritance.
+- Digest-bound report redaction, report transparency and authorship provenance.
+- Declared CSAF/VEX exchange and pinned offline exploitation-awareness context.
+
+Each extension needs its own source, compatibility, runtime, documentation and
+review evidence. Distribution, native execution, external reporting and fleet
+activation require their separately admitted authority. Software evidence
+alone does not establish certification, conformity or universal safety.

@@ -27,15 +27,18 @@ RigorFoundry inventories Git-tracked repository content, emits reproducible
 audit candidates, binds review decisions to exact evidence, and prepares
 remediation inputs without treating static heuristics as defect verdicts.
 
-> **Source status:** package version `1.0.0`, detection rules in maturity probation.
+> **Source status:** package version `1.0.0`; rule activation is evidence-bound.
+> The [released calibration cohort](docs/calibration-evidence-1.0.md) qualifies
+> `AS001-dynamic-code-execution` under its frozen policy. Other rules in that
+> cohort remain in probation; this is not an activation grant for every adopter.
 > The 1.0 compatibility manifest freezes a digest-bound contract over the installed
 > CLI commands and their option and positional spellings, the package-level Python
 > API, and the inventoried schema versions: a wire-incompatible change requires a new
 > schema identifier and an explicit migration, never a silent reinterpretation. That
 > contract is the whole of the stability commitment — it does not extend to the audit
-> findings. Every detection rule stays an anchored review candidate in explicit
-> maturity probation until an adopter policy is met by source-bound completed reviews,
-> so a rule match is input for human evidence review, not an automatic defect verdict.
+> findings. Every rule match remains an anchored review candidate. Promotion
+> and enforcement require the adopter's applicable maturity policy and source-bound
+> completed reviews; a match is not an automatic defect verdict.
 > Versioned [GitHub Releases](https://github.com/anulum/rigor-foundry/releases) and
 > [GHCR images](https://github.com/anulum/rigor-foundry/pkgs/container/rigor-foundry)
 > are published through the repository; PyPI availability is established from the
