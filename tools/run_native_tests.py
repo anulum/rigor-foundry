@@ -147,7 +147,7 @@ def run_native_tests(files: Sequence[str] | None = None, *, role: NativeRole = "
     package_root = native_package_root(root)
     output = root / NATIVE_DIRECTORIES[role]
     output.mkdir()
-    (output / "coverage.ini").write_text(native_coverage_config(role), encoding="utf-8")
+    (output / "coverage.ini").write_bytes(native_coverage_config(role).encode("utf-8"))
     command = native_pytest_command(sys.executable, output, selected)
     environment = {
         key: value
