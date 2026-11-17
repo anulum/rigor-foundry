@@ -6,6 +6,12 @@
 // Contact: www.anulum.li | protoscience@anulum.li
 // RigorFoundry — extension build cleanup
 
-import {rm} from "node:fs/promises";
+/**
+ * Remove the generated editor build output before native verification.
+ * Resolve the output relative to this development script and preserve source and installed dependencies.
+ * @module
+ */
 
-await rm(new URL("../out", import.meta.url), {recursive: true, force: true});
+import { rm } from "node:fs/promises";
+
+await rm(new URL("../out", import.meta.url), { recursive: true, force: true });

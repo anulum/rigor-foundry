@@ -19,7 +19,17 @@ from tools.ci_workflows import ci_jobs
 
 PYTHON_LOCKS = tuple(
     f"requirements/{name}.txt"
-    for name in ("build", "ci", "fuzz", "native", "runtime", "security", "test")
+    for name in (
+        "bootstrap",
+        "build",
+        "ci",
+        "fuzz",
+        "native",
+        "runtime",
+        "security",
+        "test",
+        "test-windows",
+    )
 )
 NODE_LOCK = "editors/vscode/package-lock.json"
 AUDIT_FLAGS = "--require-hashes --disable-pip --strict"

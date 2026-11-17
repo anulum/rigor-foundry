@@ -1,0 +1,29 @@
+{
+  "entryPoints": ["src", "scripts", "test"],
+  "entryPointStrategy": "expand",
+  "tsconfig": "tsconfig.json",
+  "out": "out/api",
+  "readme": "README.md",
+  "excludePrivate": false,
+  "excludeInternal": false,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "invalidPath": true,
+    "rewrittenLink": true,
+    "notDocumented": true
+  },
+  "requiredToBeDocumented": [
+    "Class",
+    "Interface",
+    "Function",
+    "TypeAlias",
+    "Property",
+    "Method",
+    "Accessor",
+    "Enum",
+    "EnumMember"
+  ],
+  "treatWarningsAsErrors": true,
+  "disableSources": true
+}

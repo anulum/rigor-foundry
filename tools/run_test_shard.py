@@ -16,6 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tools.ordinary_coverage import require_ordinary_coverage
 from tools.test_shard_evidence import (
     read_record,
     require,
@@ -101,6 +102,7 @@ def run_shard(index: int, count: int) -> int:
     require(observations["strategy"] == identity["strategy"])
     require(observations["timings"] == json.loads(identity["schedule"]))
     validate_observations(observations, index, count)
+    require_ordinary_coverage(SHARD_DIRECTORY / ".coverage")
     artifacts = validate_artifacts(SHARD_DIRECTORY, len(observations["selected"]))
     temporary = SHARD_DIRECTORY / "receipt.pending"
     temporary.write_text(

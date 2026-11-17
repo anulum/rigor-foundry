@@ -28,6 +28,9 @@
       "owner": "@anulum",
       "category": "test",
       "jobs": [
+        "native",
+        "native-primary",
+        "native-quality",
         "test",
         "test-coverage"
       ]
@@ -36,6 +39,8 @@
       "owner": "@anulum",
       "category": "vscode",
       "jobs": [
+        "vscode-native",
+        "vscode-host",
         "vscode"
       ]
     },

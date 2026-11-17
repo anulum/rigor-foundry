@@ -27,11 +27,16 @@ exception propagates so the fuzzer records it as a genuine robustness finding.
 
 ## Running locally
 
-Install the hash-locked fuzzing environment (Atheris ships wheels for CPython
-3.12 and newer) and run a target for a bounded time:
+Use Python 3.14.10 for the hash-locked fuzzing environment. Atheris 3.1.0
+supports Python 3.11–3.14; the fuzzing toolchain is separate from the primary
+application interpreter. Install its build backends and runtime dependencies
+before running a target for a bounded time:
 
 ```bash
-python -m pip install --require-hashes -r requirements/fuzz.txt
+python3.14 -m venv .fuzz-venv
+source .fuzz-venv/bin/activate
+python -m pip install --require-hashes -r requirements/bootstrap.txt
+python -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt -r requirements/fuzz.txt
 python -m pip install --no-build-isolation --no-deps .
 python fuzz/fuzz_audit_report.py -max_total_time=60
 ```
@@ -42,7 +47,7 @@ the file as an argument.
 ## Continuous integration
 
 The `Fuzz` workflow (`.github/workflows/fuzz.yml`) runs every target for a
-bounded interval on each pull request, on `main`, and on a weekly schedule,
+bounded interval on Python 3.14.10 on each pull request, on `main`, and on a weekly schedule,
 failing the job on any crash. The targets are not `pytest` tests and are not
 collected by the suite; they exercise the parsers as adversarial input handlers
 rather than as behavioural unit tests.

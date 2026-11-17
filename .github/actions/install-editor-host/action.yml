@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — exact supported editor host installation
+
+name: Install verified editor host
+description: Verify the declared official archive before installing the actual supported VS Code host.
+inputs:
+  archive-url:
+    description: Official immutable archive URL from the versioned host profile.
+    required: true
+  archive-sha256:
+    description: Exact archive SHA-256 from the versioned host profile.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install exact Linux archive
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RF_ARCHIVE_URL: ${{ inputs.archive-url }}
+        RF_ARCHIVE_SHA256: ${{ inputs.archive-sha256 }}
+      run: |
+        set -euo pipefail
+        curl --proto '=https' --tlsv1.2 --fail --location --connect-timeout 10 --max-time 300 \
+          --output "$RUNNER_TEMP/editor-host.tar.gz" "$RF_ARCHIVE_URL"
+        printf '%s  %s\n' "$RF_ARCHIVE_SHA256" "$RUNNER_TEMP/editor-host.tar.gz" | sha256sum --check --strict
+        mkdir "$RUNNER_TEMP/editor-host"
+        tar -xzf "$RUNNER_TEMP/editor-host.tar.gz" -C "$RUNNER_TEMP/editor-host" --strip-components=1
+        printf 'VSCODE_EXECUTABLE=%s\n' "$RUNNER_TEMP/editor-host/code" >> "$GITHUB_ENV"
+    - name: Install exact Windows archive
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        RF_ARCHIVE_URL: ${{ inputs.archive-url }}
+        RF_ARCHIVE_SHA256: ${{ inputs.archive-sha256 }}
+      run: |
+        $archive = Join-Path $env:RUNNER_TEMP "editor-host.zip"
+        Invoke-WebRequest -Uri $env:RF_ARCHIVE_URL -OutFile $archive -TimeoutSec 300
+        if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:RF_ARCHIVE_SHA256) {
+          throw "Editor host archive digest differs"
+        }
+        $destination = Join-Path $env:RUNNER_TEMP "editor-host"
+        Expand-Archive -LiteralPath $archive -DestinationPath $destination
+        "VSCODE_EXECUTABLE=$destination/Code.exe" | Out-File -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Append
+        $gitDirectory = Join-Path $env:ProgramFiles "Git/bin"
+        if (-not (Test-Path -LiteralPath (Join-Path $gitDirectory "git.exe") -PathType Leaf)) {
+          throw "Native editor profiles require the installed Git executable"
+        }
+        $gitDirectory | Out-File -LiteralPath $env:GITHUB_PATH -Encoding utf8 -Append

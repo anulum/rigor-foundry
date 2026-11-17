@@ -20,7 +20,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from project_registry_syscall_scheduler import SyscallStop, run_traced, write_trace
+from project_registry_syscall_scheduler import (
+    PATH_STAT_SYSCALLS,
+    SyscallStop,
+    run_traced,
+    write_trace,
+)
 
 from rigor_foundry.git_provenance import GitExecutableProvenance, GitRunner, GitTrustPolicy
 
@@ -188,7 +193,9 @@ def test_actual_metadata_change_during_hashing_refuses(git_fixture: Path, phase:
         if stop.number == 0 and not stop.entering and stop.path == str(executable):
             finished_read |= stop.result == 0
         descriptor_sample = phase == "descriptor-samples" and stop.number == 0
-        pathname_sample = phase == "pathname-sample" and finished_read and stop.number == 262
+        pathname_sample = (
+            phase == "pathname-sample" and finished_read and stop.number in PATH_STAT_SYSCALLS
+        )
         if (
             not changed
             and stop.entering
@@ -269,7 +276,9 @@ def test_native_constructor_filesystem_changes_refuse(
         nonlocal samples, finished_read, changed
         if stop.number == 0 and not stop.entering and stop.path == str(executable):
             finished_read |= stop.result == 0
-        target_sample = stop.number == 262 and stop.entering and stop.path == str(executable)
+        target_sample = (
+            stop.number in PATH_STAT_SYSCALLS and stop.entering and stop.path == str(executable)
+        )
         if target_sample:
             samples += 1
         selected = (

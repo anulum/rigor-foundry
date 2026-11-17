@@ -11,11 +11,14 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
 import io
+import json
 import re
 import tokenize
 from collections.abc import Sequence
 from pathlib import Path
+from typing import cast
 
 from tools._repository import ROOT, read_text, redacted_guard_exit_code, visible_files
 
@@ -27,6 +30,7 @@ _SEVERITY_CODE = re.compile(r"(?<![A-Za-z0-9_.-])P[0-9](?![A-Za-z0-9_.-])")
 _SVG_PATH_DATA = re.compile(r"\s+d=(?P<quote>[\"']).*?(?P=quote)", re.DOTALL)
 _TASK_HEADING = re.compile(r"\*\*(?P<code>[^*\n]+?)\s+—")
 _TASK_CODE = re.compile(r"[A-Z0-9][A-Z0-9 /_-]{0,63}")
+_JSON_WHITESPACE = re.compile(r"[ \t\n\r]*")
 
 _PLANNING_PATTERNS = (
     (
@@ -157,6 +161,8 @@ def _content_errors(
 ) -> list[str]:
     """Return deterministic content failures for one project-authored text file."""
     errors: list[str] = []
+    if path.suffix == ".json":
+        text = _without_integrity_digest(text)
     if path.suffix == ".svg":
         text = _SVG_PATH_DATA.sub(' d=""', text)
     for line_number, line in enumerate(text.splitlines(), start=1):
@@ -178,6 +184,49 @@ def _content_errors(
     if path.suffix == ".py":
         errors.extend(_python_prose_errors(path, text))
     return errors
+
+
+def _without_integrity_digest(text: str) -> str:
+    """Exclude a canonical SHA-512 integrity value while retaining authored JSON text."""
+    try:
+        document = json.loads(text)
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(document, dict):
+        return text
+    value = document.get("integrity")
+    if not isinstance(value, str) or not value.startswith("sha512-"):
+        return text
+    encoded = value.removeprefix("sha512-")
+    try:
+        digest = base64.b64decode(encoded, validate=True)
+    except ValueError:
+        return text
+    if len(digest) != 64 or base64.b64encode(digest).decode("ascii") != encoded:
+        return text
+    decoder = json.JSONDecoder()
+    cursor = text.index("{") + 1
+    spans: list[tuple[int, int]] = []
+    while True:
+        key, cursor = decoder.raw_decode(text, _json_token_start(text, cursor))
+        colon = _json_token_start(text, cursor)
+        start = _json_token_start(text, colon + 1)
+        _, end = decoder.raw_decode(text, start)
+        if key == "integrity":
+            spans.append((start, end))
+        cursor = _json_token_start(text, end)
+        if text[cursor] == "}":
+            break
+        cursor += 1
+    if len(spans) != 1:
+        return text
+    start, end = spans[0]
+    return text[:start] + '""' + text[end:]
+
+
+def _json_token_start(text: str, position: int) -> int:
+    """Skip whitespace at a token position in an already validated nonempty JSON object."""
+    return cast("re.Match[str]", _JSON_WHITESPACE.match(text, position)).end()
 
 
 def descriptive_naming_errors(root: Path = ROOT) -> list[str]:

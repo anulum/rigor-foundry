@@ -11,12 +11,22 @@
 
 ## Environment
 
+Use Node.js 22.23.3 for the editor toolchain alongside the Python environment.
+The extension runs inside VS Code's own runtime; the Node pin applies to its
+development tools.
+
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
-.venv/bin/python -m pip install --no-build-isolation --no-deps -e .
+make install
 make install-hooks
 ```
+
+The installer first installs the hash-locked source-build backends from
+`requirements/bootstrap.txt`, then installs the development lock without
+build isolation. Source distributions therefore use the admitted backends
+rather than downloading a separate build environment. Native source builds
+require a C/C++ compiler and the interpreter's development headers; PyYAML's
+LibYAML extension also requires the LibYAML development headers and library.
 
 ## Dependency maintenance
 
@@ -25,17 +35,37 @@ updates use an owner-controlled batch because the automated updater removes
 lock-generation provenance. Regenerate affected hash locks with the pinned
 `pip-tools` on Python 3.11, retain their generation commands and mandatory
 metadata, and align shared versions across build, CI, runtime, security and test
-inputs. The security lock follows the same Python 3.11 generation contract;
+inputs. The source-build bootstrap also constrains shared versions to the CI
+lock; regenerate it after a CI lock update with `make lock-bootstrap`.
+The security lock follows the same Python 3.11 generation contract;
 its exact command is in [Security-tool lock maintenance](docs/security.md#security-tool-lock-maintenance).
 Record upstream compatibility bounds when a newer release cannot be installed.
 Verify the complete dependency diff and scoped checks before review;
 remote CI validates the published commit. Dependency detection and alerts remain
 enabled. CodeQL action steps are updated together to keep their versions equal.
 
+Windows native tests use `requirements/test-windows.txt`, which includes the
+Windows dependencies of the test environment and the complete runtime lock.
+Generate it on Windows with Python 3.11 and the pinned `pip-tools` version:
+
+```powershell
+python -m piptools compile --allow-unsafe --constraint=requirements/runtime.txt --constraint=requirements/test.txt --generate-hashes --output-file=requirements/test-windows.txt --strip-extras requirements/runtime.in requirements/test.in
+```
+
+The two constraint locks retain the reviewed shared versions. Install the result
+after the bootstrap using
+`python -m pip install --require-hashes --no-build-isolation -r requirements/test-windows.txt`
+and verify it on each supported Python version before updating the native CI
+profiles.
+
 ## Quality contract
 
 - Public Python symbols use complete typing and NumPy-convention docstrings.
 - Strict MyPy and Ruff must report zero errors on touched scope.
+- Editor TypeScript and JavaScript use typed ESLint, both strict TypeScript
+  compiler projects, Prettier and validated TypeDoc. Every maintained editor
+  runtime, test, support, launcher and tool-configuration owner has a 100%
+  coverage requirement.
 - Tests exercise real package, CLI, Git, filesystem, serialisation, and process
   boundaries. Mock-only claims, import-only tests, assertion-free smoke tests,
   generic coverage files, and private-helper-only tests are not accepted.
@@ -94,6 +124,18 @@ Run focused tests locally:
 make preflight-fast
 ```
 
+`make editor-check` runs the editor's complete lint, format, strict typing,
+documentation and unit checks. The commit hook runs that same target; the
+pre-push hook uses `make preflight-fast`, which combines Python checks with
+the editor checks. These commands require the locked editor dependencies.
+
+The full `make preflight` additionally runs native editor coverage, including
+the actual single-folder and multi-root Extension Development Hosts. On a Linux machine without a display,
+run `xvfb-run -a make preflight`. The direct `python -m tools.preflight` command
+checks Python and repository policies; it does not execute the native editor
+toolchain. See [editor verification](docs/vscode-integration.md#development-and-verification)
+for the standalone commands and host requirements.
+
 Authoring sessions reserve the exhaustive matrix for CI under fleet
 resource policy. External contributors may run it locally with
 `ALLOW_LOCAL_FULL_TESTS=1 make test`; the same matrix remains a required remote
@@ -138,13 +180,42 @@ distribution integrations and the VS Code host. Update the versioned
 [workflow inventory](.github/ci-workflows.json) whenever jobs or ownership change.
 Every executable job has exactly one declared category and owner.
 
+Each supported Python interpreter keeps eight Linux shards. Windows and macOS
+producers provide native data for the same exact interpreter version. The union
+requires all eight shards and both native platforms with matching source,
+Git revision, run ID and attempt. Parent calls, subtests, JUnit and the original
+branch databases are validated before reporting. The package-wide 98% gate and
+exact native-dispatch gate remain separate from the Python 3.12 whole-file 100%
+gate for the native backend and its maintained tests.
+
+Ordinary native profiles always exclude the two separately required primary
+acceptance owners. The Windows Python 3.12 `native-primary` job runs those two
+unchanged owners, requires all twelve successful controls and enforces their
+complete test-owner coverage. Its artifact is separate from ordinary native
+artifacts and never enters the ordinary coverage union. Both roles are required
+by the test category and the aggregate CI gate.
+
+Native receipts use schema version 2 and explicitly bind `ordinary` or `primary`.
+Old mixed or unannotated receipts are refused. Before any ordinary branch data
+is read, the consumer checks database file and context metadata for reserved
+owners. Linux ordinary shards exclude those modules before collection imports;
+they remain mandatory in the separate primary acceptance job.
+
+Native tooling qualification consumes two distinct Windows Python 3.12 artifacts:
+`RIGOR_NATIVE_PRIMARY_EVIDENCE_DIR` names the primary artifact and
+`RIGOR_NATIVE_WINDOWS_EVIDENCE_DIR` names the ordinary artifact. They must never
+point at the same producer. A retained older ordinary artifact also needs its
+exact source checkout through `RIGOR_NATIVE_WINDOWS_SOURCE_ROOT`, and must meet
+the current versioned receipt contract. Local ordinary receipts retain their
+local venue; hosted admission requires the GitHub venue and current run identity.
+
 After workflow edits, run Actionlint and focused policy tests, then the normal
 action-pin guard; it also checks the complete inventory and graph:
 
 ```bash
 actionlint
 python -m tools.check_ci_workflows
-python -m pytest tests/test_ci_workflows.py tests/test_check_ci_workflows.py --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
+python -m pytest tests/test_ci_workflows.py tests/test_ci_native_workflows.py tests/test_check_ci_workflows.py --cov=tools.ci_workflows --cov=tools.ci_native_workflows --cov=tools.check_ci_workflows --cov=test_ci_workflows --cov=test_ci_native_workflows --cov=test_check_ci_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
 python -m tools.check_action_pins
 ```
 
@@ -155,3 +226,21 @@ failed, cancelled or skipped categories fail the aggregate.
 Before publishing a workflow migration, verify the emitted category and
 aggregate check names against actual required contexts and bind the stable
 aggregate accordingly. Local validation does not activate hosted protection.
+
+Native observation admission also requires the emitted scheduling strategy and
+advisory duration snapshot to match the source-bound receipt identity. The
+producer refuses publication after mismatched finalisation output, and the
+consumer refuses changed observations even if their artifact digest was updated.
+
+Editor native artifacts have a separate Windows producer. It runs the locked
+MSVC build once and binds the payload to the complete editor source inventory
+and current GitHub revision, repository, run and attempt. Its downstream editor
+jobs admit that exact artifact before executing tests. Four actual profiles cover
+both supported OS families at the minimum and pinned current host versions.
+The required consumer validates all original producers and the complete
+source/compiled-map identity before the whole-owner 100% union and both VSIX
+packages. Keep producer, admission, matrix, union and packaging order aligned
+with `tools.ci_editor_workflows` and its
+dedicated `tests/test_ci_editor_workflows.py` contract cases. The local
+`native-artifact.mjs pack` command retains genuine existing bytes with a local
+receipt; it cannot substitute for the required hosted build.

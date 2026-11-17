@@ -100,8 +100,9 @@ runs:
         trap 'rm -rf "$environment_root"' EXIT
         python -m venv "$environment_root/venv"
         runtime_python="$environment_root/venv/bin/python"
+        "$runtime_python" -m pip install --require-hashes -r "$RF_ACTION_PATH/requirements/bootstrap.txt"
         "$runtime_python" -m pip install --disable-pip-version-check \
-          --require-hashes \
+          --require-hashes --no-build-isolation \
           -r "$RF_ACTION_PATH/requirements/build.txt" \
           -r "$RF_ACTION_PATH/requirements/runtime.txt"
         "$runtime_python" -m pip install --disable-pip-version-check \

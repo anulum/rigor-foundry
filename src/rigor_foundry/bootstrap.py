@@ -221,6 +221,20 @@ def bootstrap_repository(
     components, a non-root worktree path, or a concurrent replacement aborts
     before a successful result is returned.
     """
+    if os.name == "nt":
+        from .windows_bootstrap import bootstrap_windows_repository
+
+        return bootstrap_windows_repository(
+            repository_root,
+            policy_path=policy_path,
+            todo_path=todo_path,
+            review_ledger_path=review_ledger_path,
+            source_roots=source_roots,
+            test_roots=test_roots,
+            source_line_threshold=source_line_threshold,
+            test_line_threshold=test_line_threshold,
+            git_trust_policy=git_trust_policy,
+        )
     if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
         raise RuntimeError("platform lacks descriptor-bound bootstrap support")
     lexical_root = repository_root.absolute()

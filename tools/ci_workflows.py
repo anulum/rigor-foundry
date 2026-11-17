@@ -16,6 +16,8 @@ import yaml
 
 from rigor_foundry.workflow_yaml import parse_workflow_yaml
 from tools._repository import ROOT
+from tools.ci_native_workflows import NATIVE_METADATA_ENV
+from tools.ci_native_workflows import PYTHON_VERSIONS as PYTHON_VERSIONS
 
 CI_WORKFLOWS = {
     "quality": ".github/workflows/ci-quality.yml",
@@ -25,7 +27,8 @@ CI_WORKFLOWS = {
     "vscode": ".github/workflows/ci-vscode.yml",
 }
 CI_CATEGORY_JOBS: dict[str, tuple[str, ...]] = {name: (name,) for name in CI_WORKFLOWS}
-CI_CATEGORY_JOBS["test"] = ("test", "test-coverage")
+CI_CATEGORY_JOBS["test"] = ("native", "native-primary", "native-quality", "test", "test-coverage")
+CI_CATEGORY_JOBS["vscode"] = ("vscode-native", "vscode-host", "vscode")
 CI_CALL_NAMES = {
     "quality": "Repository quality",
     "test": "Interpreter tests",
@@ -33,7 +36,6 @@ CI_CALL_NAMES = {
     "distribution": "Distribution integrations",
     "vscode": "Editor integration",
 }
-PYTHON_VERSIONS = ["3.11.15", "3.12.13", "3.13.14"]
 SHARD_COUNT = 8
 REQUIRED_CONTEXTS = [
     {"context": name, "category": name} for name in ("quality", "distribution", "coverage")
@@ -56,7 +58,10 @@ REQUIRED_JOB = {
 }
 SHARD_STEP = {
     "name": "Run exhaustive CI-owned suite",
-    "env": {"RIGOR_DOCUMENTATION_PYTHON": "${{ runner.temp }}/rigor-docs-venv/bin/python"},
+    "env": {
+        "RIGOR_DOCUMENTATION_PYTHON": "${{ runner.temp }}/rigor-docs-venv/bin/python",
+        **NATIVE_METADATA_ENV,
+    },
     "run": "python -m tools.run_test_shard --index ${{ matrix.shard }} --count 8",
 }
 SHARD_UPLOAD = {
@@ -79,7 +84,15 @@ UNION_DOWNLOAD = {
 UNION_STEP = {
     "name": "Combine complete interpreter coverage",
     "shell": "bash",
-    "run": 'set -euo pipefail\nfor index in 0 1 2 3 4 5 6 7; do\n  mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"\ndone\npython -m tools.combine_test_shards --directory test-shards --count 8\n',
+    "run": """set -euo pipefail
+for index in 0 1 2 3 4 5 6 7; do
+  mv "test-shards/test-shard-${{ matrix.python-version }}-${{ github.run_attempt }}-$index" "test-shards/shard-$index"
+done
+for platform in win32 darwin; do
+  mv "native-data/native-python-ordinary-$platform-${{ matrix.python-version }}-${{ github.run_attempt }}" "native-data/$platform"
+done
+python -m tools.combine_test_shards --directory test-shards --count 8 --native-directory native-data
+""",
 }
 
 

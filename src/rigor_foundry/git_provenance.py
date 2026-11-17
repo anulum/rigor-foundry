@@ -84,8 +84,8 @@ def _portable_roots() -> tuple[str, ...]:
     """Return fixed platform roots without consulting the ambient ``PATH``."""
     if os.name == "nt":
         return (
-            "C:/Program Files/Git/cmd",
             "C:/Program Files/Git/bin",
+            "C:/Program Files/Git/cmd",
         )
     if sys.platform == "darwin":
         return ("/usr/bin", "/opt/homebrew/bin", "/usr/local/bin")
@@ -379,7 +379,7 @@ class GitRunner:
                 raise RuntimeError("configured Git executable is outside trusted roots")
             root = max(containing, key=lambda item: len(item.parts))
             return self._validate_path(executable, root)
-        executable_names = (executable,)
+        executable_names: tuple[Path, ...] = (executable,)
         if sys.platform == "win32" and not executable.suffix:
             executable_names = (executable.with_suffix(".exe"), executable)
         for value in self.policy.trusted_roots:
@@ -471,6 +471,10 @@ class GitRunner:
     @staticmethod
     def _snapshot_file(path: Path) -> _FileSnapshot:
         """Hash one no-follow descriptor and bind it back to its pathname."""
+        if os.name == "nt":
+            from .windows_git import snapshot_windows_git
+
+            return _FileSnapshot(*snapshot_windows_git(path))
         try:
             descriptor = GitRunner._open_no_follow(path)
         except RuntimeError as exc:
@@ -568,6 +572,37 @@ class GitRunner:
             raise ValueError("Git command timeout must be positive")
         if type(output_limit) is not int or output_limit <= 0:
             raise ValueError("Git command output limit must be positive")
+        if os.name == "nt":
+            from .windows_git import run_windows_git
+
+            try:
+                completed = run_windows_git(
+                    self._path,
+                    arguments,
+                    expected_snapshot=(
+                        self._snapshot.device,
+                        self._snapshot.inode,
+                        self._snapshot.mode,
+                        self._snapshot.links,
+                        self._snapshot.size,
+                        self._snapshot.modified_ns,
+                        self._snapshot.changed_ns,
+                        self._snapshot.digest,
+                    ),
+                    environment=self._environment(),
+                    cwd=cwd,
+                    timeout_seconds=timeout_seconds,
+                    output_limit=output_limit,
+                )
+            except TimeoutError as exc:
+                raise RuntimeError(
+                    f"trusted Git command exceeded the {timeout_seconds}-second limit"
+                ) from exc
+            if check and completed.returncode != 0:
+                raise RuntimeError(
+                    f"trusted Git command failed with exit status {completed.returncode}"
+                )
+            return completed
         self._verify_unchanged()
         descriptor: int | None = None
         try:

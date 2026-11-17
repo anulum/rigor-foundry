@@ -128,7 +128,8 @@ python -m pip install "rigor-foundry==1.0.0"
 git clone https://github.com/anulum/rigor-foundry.git RIGOR-FOUNDRY
 cd RIGOR-FOUNDRY
 python3 -m venv .venv
-.venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
+.venv/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
+.venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/rigor --version
 ```

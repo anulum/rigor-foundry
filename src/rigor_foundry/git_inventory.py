@@ -410,6 +410,15 @@ def _read_regular_bytes(
     object_format: str,
 ) -> tuple[int, bytes | None, str, str]:
     """Read one tracked regular file through the shared stable-read primitive."""
+    if os.name == "nt":
+        from .windows_file_io import read_regular_file
+
+        result = read_regular_file(
+            root / relative, object_format=object_format, require_single_link=False
+        )
+        if result.git_blob_id is None:
+            raise RuntimeError(f"tracked path has no Git blob identity: {relative}")
+        return result.byte_size, result.payload, result.content_digest, result.git_blob_id
     parent_descriptor, name = _open_tracked_parent(root, relative)
     try:
         result = read_stable_regular_file_at(

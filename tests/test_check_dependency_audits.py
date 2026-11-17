@@ -54,6 +54,7 @@ def audit_root(tmp_path: Path) -> Path:
         "tools/_repository.py",
         "tools/check_dependency_audits.py",
         "tools/ci_workflows.py",
+        "tools/ci_native_workflows.py",
         "tools/check_dependency_waivers.py",
     ):
         target = tmp_path / relative
@@ -151,12 +152,8 @@ def test_each_python_audit_propagates_findings(
     """
     path = audit_root / ".github/workflows/security.yml"
     document = yaml.safe_load(path.read_text())
-    for step in document["jobs"]["scan"]["steps"]:
-        if step.get("run") == command:
-            step["run"] += suffix
-            break
-    else:
-        pytest.fail("actual workflow does not contain the enrolled audit")
+    step = next(step for step in document["jobs"]["scan"]["steps"] if step.get("run") == command)
+    step["run"] += suffix
     path.write_text(yaml.safe_dump(document))
     assert any(command in e for e in dependency_audit_errors(audit_root))
 

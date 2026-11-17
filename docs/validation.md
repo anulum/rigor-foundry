@@ -23,11 +23,32 @@ make audit
 make test-file TEST=tests/test_name.py
 ```
 
+The editor has a separate native owner boundary. `make editor-check` executes
+typed ESLint, Prettier, both strict TypeScript projects including SDK types,
+validated TypeDoc and complete unit tests. The commit hook runs the same
+target. Full `make preflight` also runs `make editor-coverage`, which measures
+the full check and the actual single-folder and multi-root Extension Development Hosts with a per-file 100%
+statement, branch, function and line requirement for all production editor
+modules, scripts and tool configurations. Use `xvfb-run -a make preflight` on
+headless Linux. Fast Make preflight includes native checks and unit tests;
+direct Python preflight does not run Node or VS Code. See
+[editor verification](vscode-integration.md#development-and-verification) for
+the locked setup, host executable and retained failure evidence.
+
 The exhaustive suite, aggregate branch-coverage threshold, Python 3.11–3.13
 matrix, CodeQL, and OpenSSF Scorecard remain remote gates. A release-candidate
 local closeout may additionally run the hash-locked dependency audit, Semgrep,
 package installation smoke, hardened container smoke, and strict documentation
 build; those local results do not replace the corresponding remote evidence.
+
+Each exact supported Python version has eight Linux test shards plus Windows
+and macOS native profiles. The complete interpreter union validates source,
+Git revision, run ID, attempt, parent/subtest outcomes, JUnit and raw branch
+databases before applying the package-wide 98% and native-dispatch 100% gates.
+Python 3.12 also requires every complete native backend and maintained-test
+owner to reach 100% statements and branches. Native tooling has its own whole
+source/test-file gate. Local qualification retains its actual local venue;
+hosted admission requires the matching GitHub run.
 
 Offline CRA reporting has dedicated model, timeline, payload, storage, and CLI owners. The
 focused set covers all vulnerability/incident stage partitions, exact UTC and
@@ -260,3 +281,15 @@ coverage floor remains 98%.
 
 Hosted required checks need actual emitted check names and separate publication
 validation. Local policy results establish source correctness, not a remote run.
+
+Native Python evidence has separate ordinary and primary roles. Ordinary profiles
+retain every product and constructor-owned test; the two reserved primary test
+owners belong to the separately required Windows Python 3.12 acceptance job.
+The ordinary union refuses primary-labelled receipts and databases naming
+reserved owners or contexts before reading branch data. Schema-version-1 native
+receipts are obsolete; no old mixed evidence is relabelled or clipped.
+
+Native observation admission also requires the emitted scheduling strategy and
+advisory duration snapshot to match the source-bound receipt identity. The
+producer refuses publication after mismatched finalisation output, and the
+consumer refuses changed observations even if their artifact digest was updated.

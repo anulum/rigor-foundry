@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "architecture": "x64",
+  "profiles": [
+    {
+      "id": "linux-1.125.0",
+      "platform": "linux",
+      "runner": "ubuntu-24.04",
+      "version": "1.125.0",
+      "commit": "93cfdd489c3b228840d0f86ec77c3636277c93ea",
+      "archiveUrl": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/93cfdd489c3b228840d0f86ec77c3636277c93ea/code-stable-x64-1781601447.tar.gz",
+      "archiveSha256": "4d3ba51e90a24f679acb6b5beded6e6f5eb8ae0b6d067077e82738255a317f4f"
+    },
+    {
+      "id": "linux-1.145.2",
+      "platform": "linux",
+      "runner": "ubuntu-24.04",
+      "version": "1.145.2",
+      "commit": "c4453f8ea430795f941c1b2ff6c9321135a74a02",
+      "archiveUrl": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/c4453f8ea430795f941c1b2ff6c9321135a74a02/code-stable-x64-1793945155.tar.gz",
+      "archiveSha256": "3b01286639fa026fd860944b811d418f7b93bc5dc447d9e607b0cd1377cfbaa2"
+    },
+    {
+      "id": "win32-1.125.0",
+      "platform": "win32",
+      "runner": "windows-2025",
+      "version": "1.125.0",
+      "commit": "93cfdd489c3b228840d0f86ec77c3636277c93ea",
+      "cliRelativePath": "93cfdd489c/resources/app/out/cli.js",
+      "archiveUrl": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/93cfdd489c3b228840d0f86ec77c3636277c93ea/VSCode-win32-x64-1.125.0.zip",
+      "archiveSha256": "3cbc452631642464819840d1666face0787f3b6eef60ab1fa80f3cd87fef177a"
+    },
+    {
+      "id": "win32-1.145.2",
+      "platform": "win32",
+      "runner": "windows-2025",
+      "version": "1.145.2",
+      "commit": "c4453f8ea430795f941c1b2ff6c9321135a74a02",
+      "cliRelativePath": "c4453f8ea4/resources/app/out/cli.js",
+      "archiveUrl": "https://vscode.download.prss.microsoft.com/dbazure/download/stable/c4453f8ea430795f941c1b2ff6c9321135a74a02/VSCode-win32-x64-1.145.2.zip",
+      "archiveSha256": "33cf166a751090fe7d244bf0e594e3c69c832d5ae2af1769140ad82a35ea1e0b"
+    }
+  ]
+}

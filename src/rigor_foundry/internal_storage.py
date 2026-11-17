@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import errno
-import fcntl
 import os
 import stat
 import tempfile
@@ -21,6 +20,21 @@ from typing import TextIO
 
 from .git_inventory import is_git_ignored
 from .git_provenance import GitRunner, GitTrustPolicy
+
+
+def _require_posix_storage() -> None:
+    """Refuse unsupported record mutations before opening or creating any object."""
+    if os.name == "nt":
+        raise RuntimeError("internal record mutations require POSIX no-follow directory locking")
+
+
+def _flock(descriptor: int, *, unlock: bool = False) -> None:
+    """Use the real POSIX lock implementation only on a supported platform."""
+    _require_posix_storage()
+    import fcntl
+
+    operation = fcntl.LOCK_UN if unlock else fcntl.LOCK_EX | fcntl.LOCK_NB
+    fcntl.flock(descriptor, operation)
 
 
 def _is_git_tracked(repository: Path, relative: Path, runner: GitRunner) -> bool:
@@ -100,6 +114,7 @@ def resolve_ignored_path(
 
 def fsync_directory(directory: Path) -> None:
     """Synchronise directory metadata after an atomic record operation."""
+    _require_posix_storage()
     descriptor = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
     try:
         os.fsync(descriptor)
@@ -109,6 +124,7 @@ def fsync_directory(directory: Path) -> None:
 
 def write_new_text(path: Path, text: str) -> None:
     """Create and synchronise one immutable UTF-8 record without overwrite."""
+    _require_posix_storage()
     descriptor: int | None = None
     try:
         flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
@@ -128,6 +144,7 @@ def write_new_text(path: Path, text: str) -> None:
 
 def atomic_replace_text(path: Path, text: str) -> None:
     """Replace one derived UTF-8 view atomically after synchronising its bytes."""
+    _require_posix_storage()
     if path.is_symlink():
         raise ValueError(f"derived internal record must not be a symbolic link: {path}")
     descriptor, temporary_name = tempfile.mkstemp(
@@ -170,7 +187,7 @@ def regular_file_identity(path: Path, *, label: str) -> tuple[int, int]:
 def _acquire_flock(descriptor: int, path: Path) -> None:
     """Acquire one non-blocking exclusive advisory lock or fail closed."""
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _flock(descriptor)
     except OSError as exc:
         if exc.errno in {errno.EACCES, errno.EAGAIN}:
             raise RuntimeError(f"another process holds the internal record lock: {path}") from exc
@@ -185,6 +202,7 @@ def open_verified_text_for_append(
     label: str,
 ) -> Iterator[TextIO]:
     """Open an inode-bound UTF-8 append stream and synchronise successful writes."""
+    _require_posix_storage()
     descriptor: int | None = None
     try:
         flags = os.O_RDWR | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
@@ -225,6 +243,7 @@ def open_verified_text_for_append(
 @contextmanager
 def exclusive_lock(path: Path) -> Iterator[None]:
     """Hold a path-stable lock without mutating pre-existing file metadata."""
+    _require_posix_storage()
     parent_descriptor: int | None = None
     parent_locked = False
     descriptor: int | None = None
@@ -276,9 +295,9 @@ def exclusive_lock(path: Path) -> Iterator[None]:
     finally:
         if descriptor is not None:
             if locked:
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
+                _flock(descriptor, unlock=True)
             os.close(descriptor)
         if parent_descriptor is not None:
             if parent_locked:
-                fcntl.flock(parent_descriptor, fcntl.LOCK_UN)
+                _flock(parent_descriptor, unlock=True)
             os.close(parent_descriptor)

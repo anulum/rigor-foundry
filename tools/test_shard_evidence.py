@@ -18,6 +18,7 @@ from xml.parsers import expat
 
 import coverage
 
+from tools.ordinary_coverage import require_ordinary_coverage
 from tools.test_shard_schedule import WARM_STRATEGY, partition, read_timings
 
 MAX_ARTIFACT_BYTES = 64 * 1024 * 1024
@@ -40,6 +41,7 @@ OBSERVATION_FIELDS = {
     "collected",
     "selected",
     "phases",
+    "subtests",
     "exitstatus",
     "timings",
 }
@@ -194,7 +196,7 @@ def validate_observations(record: dict[str, Any], index: int, count: int) -> lis
         Complete ordered collection, identical across all partitions.
     """
     require(set(record) == OBSERVATION_FIELDS)
-    require(type(record["schema_version"]) is int and record["schema_version"] == 2)
+    require(type(record["schema_version"]) is int and record["schema_version"] == 3)
     require(type(record["index"]) is int and record["index"] == index)
     require(type(record["count"]) is int and record["count"] == count)
     require(type(record["exitstatus"]) is int and record["exitstatus"] == 0)
@@ -213,10 +215,16 @@ def validate_observations(record: dict[str, Any], index: int, count: int) -> lis
         skipped_call = [["setup", "passed"], ["call", "skipped"], ["teardown", "passed"]]
         skipped_setup = [["setup", "skipped"], ["teardown", "passed"]]
         require(actual in (normal, skipped_call, skipped_setup))
+    subtests = record["subtests"]
+    require(isinstance(subtests, dict) and set(subtests).issubset(selected))
+    for node, events in subtests.items():
+        require(phases[node] in (normal, skipped_call))
+        require(isinstance(events, list) and bool(events))
+        require(all(event in (["call", "passed"], ["call", "skipped"]) for event in events))
     return list(collected)
 
 
-def validate_junit(raw: bytes, selected_count: int) -> None:
+def validate_junit(raw: bytes, selected_count: int, subtest_count: int = 0) -> None:
     """Count actual JUnit events without accepting document types or failures.
 
     Parameters
@@ -225,6 +233,9 @@ def validate_junit(raw: bytes, selected_count: int) -> None:
         Complete bounded actual JUnit XML artifact.
     selected_count : int
         Expected number of completed selected cases.
+    subtest_count : int
+        Actual separately observed subtest calls. Pytest includes these in the
+        suite total while retaining one XML testcase element for each parent.
 
     Raises
     ------
@@ -265,7 +276,7 @@ def validate_junit(raw: bytes, selected_count: int) -> None:
     parser.Parse(raw, True)
     require(len(suites) == 1)
     suite = suites[0]
-    require(int(suite["tests"]) == selected_count and cases == selected_count)
+    require(int(suite["tests"]) == selected_count + subtest_count and cases == selected_count)
     require(int(suite["errors"]) == 0 and int(suite["failures"]) == 0)
 
 
@@ -285,11 +296,29 @@ def validate_artifacts(directory: Path, selected_count: int) -> dict[str, str]:
         Exact three artifact hashes, including the complete raw database.
     """
     hashes = {name: digest(directory / name) for name in ARTIFACT_NAMES}
-    validate_junit(artifact_bytes(directory / "junit.xml"), selected_count)
+    observed = read_record(directory / "observations.json")
+    subtests = observed.get("subtests")
+    if not isinstance(subtests, dict):
+        raise ValueError("incomplete test shard subtest evidence")
+    require(all(isinstance(events, list) for events in subtests.values()))
+    validate_junit(
+        artifact_bytes(directory / "junit.xml"),
+        selected_count,
+        sum(len(events) for events in subtests.values()),
+    )
     data = coverage.CoverageData(basename=str(directory / ".coverage"))
-    data.read()
-    require(data.has_arcs())
-    require(any(data.arcs(name) for name in data.measured_files() if "/rigor_foundry/" in name))
+    try:
+        data.read()
+        require(data.has_arcs())
+        require(
+            any(
+                data.arcs(name)
+                for name in data.measured_files()
+                if "/rigor_foundry/" in name.replace("\\", "/")
+            )
+        )
+    finally:
+        data.close(force=True)
     return hashes
 
 
@@ -325,5 +354,6 @@ def validate_receipt(
     require(observed["strategy"] == identity["strategy"])
     require(observed["timings"] == json.loads(identity["schedule"]))
     collected = validate_observations(observed, index, count)
+    require_ordinary_coverage(directory / ".coverage")
     require(receipt["artifacts"] == validate_artifacts(directory, len(observed["selected"])))
     return collected

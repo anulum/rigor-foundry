@@ -6,17 +6,23 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — VS Code package exclusions
 
+.gitignore
 .github/**
 .vscode/**
 node_modules/**
 scripts/**
 src/**
 test/**
-tsconfig.json
-tsconfig.json.license
+tsconfig*.json
+tsconfig*.json.license
+typedoc.json
+*.config.*
 package-lock.json.license
 package.json.license
+native/editor-hosts.json
+native/editor-hosts.json.license
 *.license
 **/*.map
-out/test/**
+out/**
+!out/src/*.js
 *.vsix

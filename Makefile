@@ -9,12 +9,30 @@
 PYTHON ?= .venv/bin/python
 LOCK_PYTHON ?= $(PYTHON)
 TYPOS ?= typos
+NPM ?= npm
+EDITOR_DIR ?= editors/vscode
 
-.PHONY: install lock lint fmt typecheck bandit typos audit audit-authoring residuals test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean
+.PHONY: bootstrap install lock lock-bootstrap lint fmt typecheck bandit typos audit audit-authoring residuals test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean editor-install editor-check editor-coverage editor-package
 
-install:
-	$(PYTHON) -m pip install --require-hashes -r requirements/ci.txt
+install: bootstrap
+	$(PYTHON) -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
 	$(PYTHON) -m pip install --no-build-isolation --no-deps -e .
+	$(MAKE) editor-install
+
+bootstrap:
+	$(PYTHON) -m pip install --require-hashes -r requirements/bootstrap.txt
+
+editor-install:
+	$(NPM) ci --ignore-scripts --engine-strict --prefix "$(EDITOR_DIR)"
+
+editor-check:
+	$(NPM) run check --prefix "$(EDITOR_DIR)"
+
+editor-coverage:
+	$(NPM) run test:coverage --prefix "$(EDITOR_DIR)"
+
+editor-package:
+	$(NPM) run package --prefix "$(EDITOR_DIR)"
 
 lock:
 	@$(LOCK_PYTHON) -c 'import sys; sys.exit(0 if sys.version_info[:2] == (3, 11) else "Lock generation requires Python 3.11; set LOCK_PYTHON to a verified 3.11 environment")'
@@ -24,6 +42,11 @@ lock:
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/security.txt requirements/security.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/test.txt requirements/test.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/native.txt requirements/native.in
+	$(MAKE) lock-bootstrap
+
+lock-bootstrap:
+	@$(LOCK_PYTHON) -c 'import sys; sys.exit(0 if sys.version_info[:2] == (3, 11) else "Lock generation requires Python 3.11; set LOCK_PYTHON to a verified 3.11 environment")'
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/bootstrap.txt requirements/bootstrap.in
 
 lint:
 	$(PYTHON) -m ruff check src tools tests fuzz benchmarks
@@ -61,9 +84,11 @@ test-file:
 
 preflight:
 	$(PYTHON) -m tools.preflight
+	$(MAKE) editor-coverage
 
 preflight-fast:
 	$(PYTHON) -m tools.preflight --fast
+	$(MAKE) editor-check
 
 build:
 	$(PYTHON) -m build --no-isolation

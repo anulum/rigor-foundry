@@ -6,44 +6,83 @@
 // Contact: www.anulum.li | protoscience@anulum.li
 // RigorFoundry — VS Code evidence-review integration
 
-import {mkdir} from "node:fs/promises";
+/**
+ * Register explicit evidence commands, file watchers, and the VS Code tree.
+ * Share bounded loading state between commands and the programmatic activation API.
+ * @module
+ */
+
+import { mkdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import * as vscode from "vscode";
-import {runCli} from "./cli.js";
+import { runCli } from "./cli.js";
+import { EvidenceRefusal } from "./contracts.js";
+import type { AuditCandidate } from "./contracts.js";
 import {
   resolveWorkspacePath,
   verifyExistingRegularWorkspacePath,
   verifyExistingWorkspacePath,
 } from "./fileAccess.js";
-import {EvidenceSnapshot, EvidenceStore} from "./store.js";
-import {CandidateNode, EvidenceTreeProvider} from "./treeView.js";
+import { EvidenceStore } from "./store.js";
+import type { EvidenceSnapshot } from "./store.js";
+import { EvidenceTreeProvider } from "./treeView.js";
 
-/** Testable read/load surface returned by extension activation. */
+/** Programmatic evidence snapshot and bounded loading surface returned by activation. */
 export interface RigorFoundryApi {
+  /** Read the current loaded pair without executing a scan or changing any review. */
   readonly getSnapshot: () => EvidenceSnapshot;
-  readonly loadReport: (workspaceRoot: string, reportPath: string, maximumBytes?: number) => Promise<void>;
-  readonly loadReviews: (workspaceRoot: string, reviewPath: string, maximumBytes?: number) => Promise<void>;
+  /** Load a contained report for the supplied workspace and clear the previous ledger. */
+  readonly loadReport: (
+    workspaceRoot: string,
+    reportPath: string,
+    maximumBytes?: number,
+  ) => Promise<void>;
+  /** Load a contained ledger cross-bound to the currently accepted report. */
+  readonly loadReviews: (
+    workspaceRoot: string,
+    reviewPath: string,
+    maximumBytes?: number,
+  ) => Promise<void>;
 }
 
+/** Workspace-scoped settings consumed by explicit evidence commands. */
 interface ExtensionConfiguration {
+  /** Executable passed directly to process creation, without shell interpretation. */
   readonly executable: string;
+  /** Workspace-relative path used for loading and generating audit evidence. */
   readonly reportPath: string;
+  /** Workspace-relative path used to locate the review ledger. */
   readonly reviewPath: string;
+  /** Workspace-relative path of the scan policy. */
   readonly policyPath: string;
+  /** Maximum bytes accepted by a bounded evidence read. */
   readonly maximumEvidenceBytes: number;
+  /** Deadline passed to bounded CLI execution after converting the configured seconds. */
   readonly cliTimeoutMilliseconds: number;
 }
 
 const DEFAULT_MAXIMUM_BYTES = 16_777_216;
 
+/**
+ * Select an authored refusal or a fixed explanation for unexpected native failures.
+ * @param error - Failure caught at an explicit command boundary.
+ * @returns Display-safe text without raw process diagnostics, parser details, or file paths.
+ */
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return error instanceof EvidenceRefusal
+    ? error.message
+    : "operation failed; verify the workspace, evidence files, and configured executable";
 }
 
+/**
+ * Select the single workspace or the folder containing the active editor in a multi-root window.
+ * @returns The workspace whose evidence the explicit command should operate on.
+ * @throws {EvidenceRefusal} When no workspace or unambiguous active folder is selected.
+ */
 function workspaceFolder(): vscode.WorkspaceFolder {
   const folders = vscode.workspace.workspaceFolders;
   if (folders === undefined || folders.length === 0) {
-    throw new Error("open a local RigorFoundry repository workspace first");
+    throw new EvidenceRefusal("open a local RigorFoundry repository workspace first");
   }
   if (folders.length === 1 && folders[0] !== undefined) {
     return folders[0];
@@ -51,11 +90,44 @@ function workspaceFolder(): vscode.WorkspaceFolder {
   const active = vscode.window.activeTextEditor?.document.uri;
   const selected = active === undefined ? undefined : vscode.workspace.getWorkspaceFolder(active);
   if (selected === undefined) {
-    throw new Error("select a file in the workspace whose evidence should be inspected");
+    throw new EvidenceRefusal("select a file in the workspace whose evidence should be inspected");
   }
   return selected;
 }
 
+/**
+ * Find the open folder whose canonical directory owns the accepted report.
+ * @param snapshot - Evidence state retaining the report's canonical repository.
+ * @returns The current open owner folder, without consulting the active editor.
+ * @throws {EvidenceRefusal} When no report or matching open local folder exists.
+ */
+async function reportWorkspace(snapshot: EvidenceSnapshot): Promise<vscode.WorkspaceFolder> {
+  if (snapshot.workspaceRoot === undefined) {
+    throw new EvidenceRefusal("load an audit report before inspecting its workspace");
+  }
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  const resolved = await Promise.allSettled(
+    folders
+      .filter((folder) => folder.uri.scheme === "file")
+      .map(async (folder) => ({
+        folder,
+        root: await realpath(folder.uri.fsPath),
+      })),
+  );
+  const owner = resolved.find(
+    (result) => result.status === "fulfilled" && result.value.root === snapshot.workspaceRoot,
+  );
+  if (owner?.status !== "fulfilled") {
+    throw new EvidenceRefusal("loaded report repository is no longer an open workspace folder");
+  }
+  return owner.value.folder;
+}
+
+/**
+ * Read settings at the selected folder's scope, preserving supported defaults.
+ * @param folder - Workspace selected by the current explicit command.
+ * @returns Command settings; path and numeric bounds are checked by their owning operations.
+ */
 function configuration(folder: vscode.WorkspaceFolder): ExtensionConfiguration {
   const config = vscode.workspace.getConfiguration("rigorFoundry", folder.uri);
   const timeoutSeconds = config.get<number>("cliTimeoutSeconds", 120);
@@ -69,15 +141,40 @@ function configuration(folder: vscode.WorkspaceFolder): ExtensionConfiguration {
   };
 }
 
-function isCandidateNode(value: unknown): value is CandidateNode {
-  if (typeof value !== "object" || value === null) {
-    return false;
+/**
+ * Resolve a tree-row identity against the current report instead of trusting supplied anchors.
+ * @param value - Command argument, normally a row supplied by the evidence tree.
+ * @param snapshot - Currently loaded report used as the source of candidate fields.
+ * @returns The current report's candidate with the selected identity.
+ * @throws {EvidenceRefusal} For missing, malformed, stale, or unknown candidate rows.
+ */
+function candidateFromNode(value: unknown, snapshot: EvidenceSnapshot): AuditCandidate {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("kind" in value) ||
+    value.kind !== "candidate" ||
+    !("candidate" in value)
+  ) {
+    throw new EvidenceRefusal("select a candidate evidence item first");
   }
-  const node = value as {readonly kind?: unknown};
-  return node.kind === "candidate";
+  const supplied = value.candidate;
+  if (typeof supplied !== "object" || supplied === null || !("candidate_id" in supplied)) {
+    throw new EvidenceRefusal("select a candidate evidence item first");
+  }
+  const identity = supplied.candidate_id;
+  const candidate = snapshot.report?.candidates.find((item) => item.candidate_id === identity);
+  if (candidate === undefined) {
+    throw new EvidenceRefusal("select a candidate from the currently loaded report");
+  }
+  return candidate;
 }
 
-/** Register evidence-only commands and return the integration-test API. */
+/**
+ * Register evidence commands, watchers, and the category tree for this extension host.
+ * @param context - VS Code context that owns registered command and watcher lifetimes.
+ * @returns A bounded evidence-loading API sharing the same state as the registered commands.
+ */
 export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
   const store = new EvidenceStore();
   const tree = new EvidenceTreeProvider();
@@ -93,7 +190,9 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     }),
   );
 
-  const refresh = (): void => tree.update(store.snapshot());
+  const refresh = (): void => {
+    tree.update(store.snapshot());
+  };
   const watchEvidenceFile = (file: string, label: string): vscode.FileSystemWatcher => {
     const watcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(path.dirname(file), path.basename(file)),
@@ -108,7 +207,9 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     watcher.onDidDelete(invalidate);
     return watcher;
   };
-  const runCommand = (task: (argument?: unknown) => Promise<void>): ((argument?: unknown) => Promise<void>) => {
+  const runCommand = (
+    task: (argument?: unknown) => Promise<void>,
+  ): ((argument?: unknown) => Promise<void>) => {
     return async (argument?: unknown): Promise<void> => {
       try {
         await task(argument);
@@ -132,7 +233,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     reportWatcher = watchEvidenceFile(reportPath, "Audit report");
     refresh();
     output.appendLine(
-      `Loaded report ${report.report_digest} with ${report.candidates.length} candidates. Structural display checks are not canonical CLI validation.`,
+      `Loaded report ${report.report_digest} with ${String(report.candidates.length)} candidates. Structural display checks are not canonical CLI validation.`,
     );
   };
 
@@ -141,12 +242,13 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     reviewPath: string,
     maximumBytes = DEFAULT_MAXIMUM_BYTES,
   ): Promise<void> => {
+    await reportWorkspace(store.snapshot());
     const document = await store.loadReviews(root, reviewPath, maximumBytes);
     reviewWatcher?.dispose();
     reviewWatcher = watchEvidenceFile(reviewPath, "Review ledger");
     refresh();
     output.appendLine(
-      `Loaded ${document.reviews.length} review records. Run Validate Review Ledger for canonical CLI validation.`,
+      `Loaded ${String(document.reviews.length)} review records. Run Validate Review Ledger for canonical CLI validation.`,
     );
   };
 
@@ -162,7 +264,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
           canSelectFiles: true,
           canSelectFolders: false,
           defaultUri: vscode.Uri.file(resolveWorkspacePath(folder.uri.fsPath, config.reportPath)),
-          filters: {JSON: ["json"]},
+          filters: { JSON: ["json"] },
         });
         const uri = selected?.[0];
         if (uri === undefined) {
@@ -175,7 +277,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     vscode.commands.registerCommand(
       "rigorFoundry.loadReviews",
       runCommand(async () => {
-        const folder = workspaceFolder();
+        const folder = await reportWorkspace(store.snapshot());
         const config = configuration(folder);
         const selected = await vscode.window.showOpenDialog({
           title: "Load RigorFoundry review ledger",
@@ -183,7 +285,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
           canSelectFiles: true,
           canSelectFolders: false,
           defaultUri: vscode.Uri.file(resolveWorkspacePath(folder.uri.fsPath, config.reviewPath)),
-          filters: {JSON: ["json"]},
+          filters: { JSON: ["json"] },
         });
         const uri = selected?.[0];
         if (uri === undefined) {
@@ -203,14 +305,14 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
         await verifyExistingRegularWorkspacePath(root, configuredPolicy);
         const policy = path.relative(root, configuredPolicy);
         const report = resolveWorkspacePath(root, config.reportPath);
-        await mkdir(path.dirname(report), {recursive: true});
+        await mkdir(path.dirname(report), { recursive: true });
         const reportParent = await verifyExistingWorkspacePath(root, path.dirname(report));
         const reportTarget = path.join(reportParent, path.basename(report));
         output.appendLine(`Running ${config.executable} scan (explicit user command).`);
         const result = await runCli(
           config.executable,
           ["scan", "--root", root, "--policy", policy, "--json-out", reportTarget],
-          {cwd: root, timeoutMilliseconds: config.cliTimeoutMilliseconds},
+          { cwd: root, timeoutMilliseconds: config.cliTimeoutMilliseconds },
         );
         if (result.stdout.length > 0) {
           output.append(result.stdout);
@@ -219,25 +321,25 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
           output.append(result.stderr);
         }
         await loadReport(root, reportTarget, config.maximumEvidenceBytes);
-        void vscode.window.showInformationMessage("RigorFoundry scan completed; evidence report loaded.");
+        void vscode.window.showInformationMessage(
+          "RigorFoundry scan completed; evidence report loaded.",
+        );
       }),
     ),
     vscode.commands.registerCommand(
       "rigorFoundry.validateReviews",
       runCommand(async () => {
-        const folder = workspaceFolder();
-        const root = folder.uri.fsPath;
-        const config = configuration(folder);
         const snapshot = store.snapshot();
         if (snapshot.reportPath === undefined || snapshot.reviewPath === undefined) {
-          throw new Error("load both the report and review ledger before validation");
+          throw new EvidenceRefusal("load both the report and review ledger before validation");
         }
-        await verifyExistingWorkspacePath(root, snapshot.reportPath);
-        await verifyExistingWorkspacePath(root, snapshot.reviewPath);
-        const result = await runCli(
+        const folder = await reportWorkspace(snapshot);
+        const config = configuration(folder);
+        const result = await store.validateReviews(
+          snapshot,
           config.executable,
-          ["validate-review", "--report", snapshot.reportPath, "--review", snapshot.reviewPath],
-          {cwd: root, timeoutMilliseconds: config.cliTimeoutMilliseconds},
+          config.maximumEvidenceBytes,
+          config.cliTimeoutMilliseconds,
         );
         if (result.stdout.length > 0) {
           output.append(result.stdout);
@@ -245,25 +347,21 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
         if (result.stderr.length > 0) {
           output.append(result.stderr);
         }
-        await loadReport(root, snapshot.reportPath, config.maximumEvidenceBytes);
-        await loadReviews(root, snapshot.reviewPath, config.maximumEvidenceBytes);
-        store.markCanonicallyValidated();
         refresh();
-        void vscode.window.showInformationMessage("Review ledger passed canonical RigorFoundry CLI validation.");
+        void vscode.window.showInformationMessage(
+          "Review ledger passed canonical RigorFoundry CLI validation.",
+        );
       }),
     ),
     vscode.commands.registerCommand("rigorFoundry.refresh", refresh),
     vscode.commands.registerCommand(
       "rigorFoundry.openEvidence",
       runCommand(async (rawNode) => {
-        if (!isCandidateNode(rawNode)) {
-          throw new Error("select a candidate evidence item first");
-        }
-        const candidate = rawNode.candidate;
+        const candidate = candidateFromNode(rawNode, store.snapshot());
         if (candidate.anchor.kind !== "tracked-blob") {
-          throw new Error("repository-tree evidence has no single source file to open");
+          throw new EvidenceRefusal("repository-tree evidence has no single source file to open");
         }
-        const folder = workspaceFolder();
+        const folder = await reportWorkspace(store.snapshot());
         const target = resolveWorkspacePath(folder.uri.fsPath, candidate.anchor.path);
         const verified = await verifyExistingRegularWorkspacePath(folder.uri.fsPath, target);
         const document = await vscode.workspace.openTextDocument(vscode.Uri.file(verified));
@@ -271,7 +369,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
           candidate.anchor.line_start > document.lineCount ||
           candidate.anchor.line_end > document.lineCount
         ) {
-          throw new Error("candidate anchor line span exceeds the current source file");
+          throw new EvidenceRefusal("candidate anchor line span exceeds the current source file");
         }
         const editor = await vscode.window.showTextDocument(document);
         const start = new vscode.Position(candidate.anchor.line_start - 1, 0);
@@ -284,15 +382,14 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     vscode.commands.registerCommand(
       "rigorFoundry.copyCandidateIdentity",
       runCommand(async (rawNode) => {
-        if (!isCandidateNode(rawNode)) {
-          throw new Error("select a candidate evidence item first");
-        }
         const snapshot = store.snapshot();
-        const anchor = rawNode.candidate.anchor;
+        const candidate = candidateFromNode(rawNode, snapshot);
+        await reportWorkspace(snapshot);
+        const anchor = candidate.anchor;
         const identity = [
           `report=${snapshot.report?.report_digest ?? "unknown"}`,
-          `candidate=${rawNode.candidate.candidate_id}`,
-          `anchor=${anchor.path}:${anchor.line_start}-${anchor.line_end}`,
+          `candidate=${candidate.candidate_id}`,
+          `anchor=${anchor.path}:${String(anchor.line_start)}-${String(anchor.line_end)}`,
           anchor.kind === "tracked-blob"
             ? `blob=${anchor.blob_oid}\ncontent_sha256=${anchor.content_sha256}`
             : `tree=${anchor.tree_oid}\ntracked_content_sha256=${anchor.tracked_content_sha256}`,

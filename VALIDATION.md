@@ -16,13 +16,15 @@ execution, or production promotion.
 | --- | --- | --- |
 | Ruff lint and format | Entire touched source/test/tool scope | Entire repository |
 | Strict MyPy | All maintained Python in `src`, `tools`, `tests`, `fuzz`, and `benchmarks` | Same scope on Python 3.12 |
+| Native editor | Typed ESLint, Prettier, both strict compiler projects including SDK declarations, validated TypeDoc and complete unit tests; real host for editor behavior | Same checks plus real Extension Development Host and per-file 100% statements, branches, functions and lines across production TypeScript, scripts and tool configurations, before VSIX packaging |
 | Bandit | Source and security-sensitive tools | Source and tools |
 | SPDX / REUSE | Pure-Python header audit and REUSE lint | Required |
 | Action pins | Every `uses:` value must be a full commit SHA | Required |
 | Secrets | Worktree scan with redacted findings | Required |
 | Metadata | Version, licence, Python, package, citation, and archive consistency | Required |
-| Tests | Focused single test files only | Full matrix on 3.11, 3.12, 3.13 |
-| Coverage | Per-module when reliable | Aggregate branch-aware gate, minimum 98% |
+| Tests | Focused owning test files | Eight Linux shards per supported 3.11, 3.12, 3.13 interpreter, with matching Windows and macOS native profiles |
+| Coverage | Whole changed source/test owners, 100% statements and branches | Complete package branch-aware minimum 98%; native dispatch 100%; complete native backend and maintained-test owners 100% on Python 3.12 |
+| Native Python observations | Actual source-bound platform evidence with the local venue | Complete same-source, revision, interpreter, run and attempt inputs; original parent/subtest, JUnit and branch data |
 | Packaging | Wheel and sdist build; metadata-truth guard; wheel smoke outside checkout | Build, metadata-truth guard, Twine check, wheel smoke |
 | Consumer integrations | External Git fixture; exact-source Action shell; exact-revision system hook with hash-locked executable | Local composite Action plus cloned hook at `${GITHUB_SHA}`; three retained JSON artifacts |
 | Release tag | Isolated `python -S` CLI proves exact-version validation without site packages | Exact tag validation runs before build, container publication, and package publication |
@@ -51,6 +53,14 @@ symlink-parent rejection, existing source/test roots, a real outside-checkout
 version command, exact `__all__` classification and runtime identities,
 deterministic manifest serialization, and deprecation-window failures. Mocked
 Git results or fabricated filesystem metadata are not accepted as evidence.
+
+`make editor-check` runs the native editor checks and unit tests. The commit
+hook uses that same target. `make preflight-fast` combines Python preflight
+with native checks; full `make preflight` additionally executes
+`make editor-coverage`, including the real single-folder and multi-root hosts. Headless Linux callers wrap
+the full command in `xvfb-run -a`. Direct `python -m tools.preflight` remains
+the Python and repository-policy command; it does not qualify Node tooling or
+VS Code. The editor's 100% gate is separate from the Python aggregate minimum.
 
 ## Local integration evidence
 
@@ -363,3 +373,15 @@ contracts, including real documentation and distribution privacy fixture builds.
 Hosted check-name compatibility and binding the stable aggregate in branch
 protection remain publication gates. Local validation establishes source
 correctness, not a hosted run or a change to existing required contexts.
+
+Native Python evidence has separate ordinary and primary roles. Ordinary profiles
+retain every product and constructor-owned test; the two reserved primary test
+owners belong to the separately required Windows Python 3.12 acceptance job.
+The ordinary union refuses primary-labelled receipts and databases naming
+reserved owners or contexts before reading branch data. Schema-version-1 native
+receipts are obsolete; no old mixed evidence is relabelled or clipped.
+
+Native observation admission also requires the emitted scheduling strategy and
+advisory duration snapshot to match the source-bound receipt identity. The
+producer refuses publication after mismatched finalisation output, and the
+consumer refuses changed observations even if their artifact digest was updated.

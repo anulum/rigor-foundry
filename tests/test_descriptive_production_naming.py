@@ -9,9 +9,12 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from tools._repository import ROOT
 from tools.check_descriptive_production_naming import descriptive_naming_errors
@@ -187,3 +190,73 @@ def test_local_private_task_registry_rejects_an_unrecognised_future_code(
 def test_repository_has_no_public_internal_planning_identifier() -> None:
     """The complete current Git-visible owner surface passes its production guard."""
     assert descriptive_naming_errors() == []
+
+
+def test_real_guard_accepts_the_exact_native_dependency_integrity(tmp_path: Path) -> None:
+    """The real pinned dependency digest is opaque data rather than a planning name."""
+    root = _repository(tmp_path)
+    source = ROOT / "editors/vscode/native/koffi-source.json"
+    _write(root, "native-source.json", source.read_text(encoding="utf-8"))
+    assert descriptive_naming_errors(root) == []
+    completed = _run_guard(root)
+    assert completed.returncode == 0
+    assert completed.stdout == "Descriptive naming guard passed\n"
+    assert completed.stderr == ""
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "invalid-json",
+        "array",
+        "other-field",
+        "wrong-algorithm",
+        "invalid-base64",
+        "wrong-length",
+        "noncanonical-padding",
+        "authored-sibling",
+        "repeated-sibling",
+        "duplicate-integrity",
+    ],
+)
+def test_real_guard_retains_naming_checks_around_integrity_values(
+    tmp_path: Path, change: str
+) -> None:
+    """Malformed digests and public planning prose still fail the API and CLI guards."""
+    root = _repository(tmp_path)
+    source = json.loads((ROOT / "editors/vscode/native/koffi-source.json").read_text())
+    integrity = source["integrity"]
+    document: object = {"integrity": integrity}
+    if change == "array":
+        document = [document]
+    elif change == "other-field":
+        document = {"message": integrity}
+    elif change == "wrong-algorithm":
+        document = {"integrity": integrity.replace("sha512-", "sha256-")}
+    elif change == "invalid-base64":
+        document = {"integrity": integrity + "!"}
+    elif change == "wrong-length":
+        document = {"integrity": integrity[:-6] + "=="}
+    elif change == "noncanonical-padding":
+        document = {"integrity": integrity[:-3] + "x=="}
+    elif change == "authored-sibling":
+        document = {"integrity": integrity, "description": "Public " + "G" + "4"}
+    elif change == "repeated-sibling":
+        document = {"integrity": integrity, "message": integrity}
+    text = json.dumps(document)
+    if change == "invalid-json":
+        text += " trailing"
+    elif change == "duplicate-integrity":
+        text = (
+            '{"integrity": '
+            + json.dumps(integrity)
+            + ', "integrity": '
+            + json.dumps(integrity)
+            + "}"
+        )
+    _write(root, "native-source.json", text)
+    assert descriptive_naming_errors(root)
+    completed = _run_guard(root)
+    assert completed.returncode == 1
+    assert "finding details are redacted" in completed.stdout
+    assert completed.stderr == ""

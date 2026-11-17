@@ -23,6 +23,7 @@ from pathlib import Path
 _LIBC = ctypes.CDLL(None, use_errno=True)
 _LIBC.ptrace.argtypes = [ctypes.c_uint, ctypes.c_uint, ctypes.c_void_p, ctypes.c_void_p]
 _LIBC.ptrace.restype = ctypes.c_long
+PATH_STAT_SYSCALLS = frozenset({4, 6, 262})
 
 
 class _Registers(ctypes.Structure):
@@ -75,7 +76,11 @@ def arm_native_trace() -> None:
     OSError
         If the kernel refuses tracing of this owned child.
     """
-    if platform.system() != "Linux" or platform.machine() != "x86_64":
+    if (
+        platform.system() != "Linux"
+        or platform.machine() != "x86_64"
+        or ctypes.sizeof(ctypes.c_void_p) != 8
+    ):
         raise RuntimeError("registry syscall scheduler requires Linux x86-64")
     _ptrace(0, 0)
     os.kill(os.getpid(), signal.SIGSTOP)
@@ -179,8 +184,10 @@ def _observe(pid: int, entering: bool) -> SyscallStop:
     _ptrace(12, pid, ctypes.addressof(registers))
     number = int(registers.orig_rax)
     path = ""
-    if number in {0, 217}:
+    if number in {0, 3, 5, 217}:
         path = _descriptor_path(pid, int(registers.rdi))
+    elif number in {4, 6}:
+        path = _pathname(pid, int(registers.rdi), -100)
     elif number in {257, 262}:
         path = _pathname(pid, int(registers.rsi), int(registers.rdi))
     elif number == 82:
@@ -191,11 +198,32 @@ def _observe(pid: int, entering: bool) -> SyscallStop:
 
 
 def _wait(pid: int, deadline: float) -> int:
+    """Await original child status with brief polls that back off during inactivity.
+
+    Parameters
+    ----------
+    pid : int
+        Exact owned child whose native status is awaited.
+    deadline : float
+        Absolute monotonic deadline shared by the whole worker lifecycle.
+
+    Returns
+    -------
+    int
+        Original waitpid status, without interpreting or changing its signal.
+
+    Raises
+    ------
+    TimeoutError
+        If no child status arrives before the absolute deadline.
+    """
+    pause = 0.00001
     while time.monotonic() < deadline:
         observed, status = os.waitpid(pid, os.WNOHANG)
         if observed:
             return status
-        time.sleep(0.001)
+        time.sleep(pause)
+        pause = min(pause * 2, 0.001)
     raise TimeoutError("owned registry process exceeded its absolute deadline")
 
 
@@ -233,42 +261,38 @@ def run_traced(
         If actual tracing, observation or wait operations fail.
     """
     deadline = time.monotonic() + timeout
-    process = subprocess.Popen(
+    with subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True
-    )
-    stops: list[SyscallStop] = []
-    entering = True
-    try:
-        status = _wait(process.pid, deadline)
-        if not os.WIFSTOPPED(status) or os.WSTOPSIG(status) != signal.SIGSTOP:
-            if os.WIFEXITED(status) or os.WIFSIGNALED(status):
-                process.returncode = os.waitstatus_to_exitcode(status)
-            raise RuntimeError("worker did not enter its native trace stop")
-        _ptrace(0x4200, process.pid, 0x100001)
-        _ptrace(24, process.pid)
-        while True:
+    ) as process:
+        stops: list[SyscallStop] = []
+        entering = True
+        try:
             status = _wait(process.pid, deadline)
-            if os.WIFEXITED(status) or os.WIFSIGNALED(status):
-                process.returncode = os.waitstatus_to_exitcode(status)
-                break
-            stop_signal = os.WSTOPSIG(status)
-            if stop_signal == signal.SIGTRAP | 0x80:
-                stop = _observe(process.pid, entering)
-                stops.append(stop)
-                if on_stop(stop):
-                    os.kill(process.pid, signal.SIGKILL)
+            if not os.WIFSTOPPED(status) or os.WSTOPSIG(status) != signal.SIGSTOP:
+                if os.WIFEXITED(status) or os.WIFSIGNALED(status):
+                    process.returncode = os.waitstatus_to_exitcode(status)
+                raise RuntimeError("worker did not enter its native trace stop")
+            _ptrace(0x4200, process.pid, 0x100001)
+            _ptrace(24, process.pid)
+            while True:
+                status = _wait(process.pid, deadline)
+                if os.WIFEXITED(status) or os.WIFSIGNALED(status):
+                    process.returncode = os.waitstatus_to_exitcode(status)
+                    break
+                stop_signal = os.WSTOPSIG(status)
+                if stop_signal == signal.SIGTRAP | 0x80:
+                    stop = _observe(process.pid, entering)
+                    stops.append(stop)
+                    if on_stop(stop):
+                        os.kill(process.pid, signal.SIGKILL)
+                    else:
+                        _ptrace(24, process.pid)
+                    entering = not entering
                 else:
-                    _ptrace(24, process.pid)
-                entering = not entering
-            else:
-                _ptrace(24, process.pid, stop_signal)
-        stdout, stderr = process.communicate(timeout=max(0.001, deadline - time.monotonic()))
-        return TracedResult(process.returncode, stdout, stderr, tuple(stops), process.pid)
-    finally:
-        if process.returncode is None:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait(timeout=5)
-        if process.stdout is not None:
-            process.stdout.close()
-        if process.stderr is not None:
-            process.stderr.close()
+                    _ptrace(24, process.pid, stop_signal)
+            stdout, stderr = process.communicate(timeout=max(0.001, deadline - time.monotonic()))
+            return TracedResult(process.returncode, stdout, stderr, tuple(stops), process.pid)
+        finally:
+            if process.returncode is None:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=5)

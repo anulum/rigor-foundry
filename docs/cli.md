@@ -18,7 +18,8 @@ Install from a verified source checkout during the migration:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
+.venv/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
+.venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/rigor --help
 .venv/bin/rigor --version
@@ -30,6 +31,19 @@ python3 -m venv .venv
 The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
 do not expose `promote --apply`; see [Consumer integrations](integrations.md).
+
+## Explicit output files
+
+Explicit output paths must be new files below existing directories. Existing
+files and symbolic links are refused without overwriting their contents.
+Invalid UTF-8 is refused before creating an output file.
+
+On POSIX, an interrupted or failed write can leave an empty or partial file.
+The command still fails; file existence alone does not prove that a report is
+complete. Inspect retained files before removing them, and use a new filename
+for a retry. Failure cleanup preserves directory entries because another
+process may have replaced the original output. On Windows, the native writer
+can discard its own created object through the retained file handle.
 
 ## Conditions with partial observations
 

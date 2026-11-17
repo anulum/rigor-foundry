@@ -37,10 +37,13 @@ jobs:
         with:
           python-version: "3.12.13"
           cache: pip
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/bootstrap.txt
+            requirements/ci.txt
       - name: Build release artifacts
         run: |
-          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --require-hashes -r requirements/bootstrap.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
           python -m tools.check_release_tag "$GITHUB_REF_NAME"
           python -m build --no-isolation
           python -m tools.check_distribution_metadata dist/*.whl

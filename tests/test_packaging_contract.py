@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
+import json
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -23,7 +25,7 @@ from packaging.utils import canonicalize_name
 
 from rigor_foundry.version import __version__
 from tools._repository import ROOT
-from tools.ci_workflows import CI_WORKFLOWS, ci_jobs
+from tools.ci_workflows import ci_jobs, read_workflow
 
 
 def test_private_memory_has_portable_repository_exclusions() -> None:
@@ -132,11 +134,23 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     assert "snapshot.debian.org/archive/debian/20261029T000000Z" in dockerfile
     assert "snapshot.debian.org/archive/debian-security/20261029T000000Z" in dockerfile
     assert "USER rigor" in dockerfile
+    assert "COPY requirements/bootstrap.txt requirements/bootstrap.txt" in dockerfile
+    assert (
+        "--require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt"
+        in dockerfile
+    )
 
 
 def test_hash_locks_cover_each_resolved_distribution() -> None:
     """Every non-comment lock entry carries at least one SHA-256 hash."""
-    for name in ("build.txt", "ci.txt", "runtime.txt", "security.txt", "test.txt"):
+    for name in (
+        "bootstrap.txt",
+        "build.txt",
+        "ci.txt",
+        "runtime.txt",
+        "security.txt",
+        "test.txt",
+    ):
         text = (ROOT / "requirements" / name).read_text(encoding="utf-8")
         entries = re.split(r"\n(?=[a-zA-Z0-9])", text)
         resolved = [entry for entry in entries if "==" in entry]
@@ -156,6 +170,7 @@ def test_hash_locks_share_one_version_per_distribution() -> None:
     """Combined CI, test, runtime, security and native installs cannot disagree."""
     versions: dict[str, tuple[str, str]] = {}
     for lock_name in (
+        "bootstrap.txt",
         "build.txt",
         "ci.txt",
         "test.txt",
@@ -186,8 +201,9 @@ def test_container_scan_uses_repository_verified_trivy() -> None:
 
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
+    jobs = ci_jobs(ROOT)
     workflow = "\n".join(
-        (ROOT / path).read_text(encoding="utf-8") for path in CI_WORKFLOWS.values()
+        step.get("run", "") for job in jobs.values() for step in job.get("steps", [])
     )
     assert "/tmp/rigor-wheel/bin/rigor --version" in workflow
     assert "public_api_contract_errors(package.__all__, vars(package)) == ()" in workflow
@@ -210,17 +226,41 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "Draft4Validator(schema).validate(document)" in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow
-    jobs = ci_jobs(ROOT)
-    assert set(jobs) == {"quality", "test", "test-coverage", "coverage", "distribution", "vscode"}
-    assert all(job["runs-on"] == "ubuntu-24.04" for job in jobs.values())
+    assert set(jobs) == {
+        "quality",
+        "native",
+        "native-primary",
+        "native-quality",
+        "test",
+        "test-coverage",
+        "coverage",
+        "distribution",
+        "vscode",
+        "vscode-native",
+        "vscode-host",
+    }
+    assert all(
+        job["runs-on"] == "ubuntu-24.04"
+        for name, job in jobs.items()
+        if name not in {"native", "native-primary", "vscode-native", "vscode-host"}
+    )
+    assert jobs["native-primary"]["runs-on"] == "windows-latest"
+    assert jobs["native"]["runs-on"] == "${{ matrix.runner }}"
+    assert jobs["vscode-native"]["runs-on"] == "windows-2025"
+    assert jobs["vscode-host"]["runs-on"] == "${{ matrix.runner }}"
+    host_profiles = json.loads((ROOT / "editors/vscode/native/editor-hosts.json").read_text())
+    assert jobs["vscode-host"]["strategy"]["matrix"]["include"] == host_profiles["profiles"]
     assert workflow.count("profile bwrap /usr/bin/bwrap flags=(unconfined)") == 2
     assert workflow.count("sudo apparmor_parser --replace /etc/apparmor.d/bwrap") == 2
-    profiles = re.findall(
-        r"profile bwrap /usr/bin/bwrap flags=\(unconfined\) \{\n(?P<body>.*?)\n          \}",
-        workflow,
-        re.DOTALL,
-    )
-    assert profiles == ["            userns,", "            userns,"]
+    profiles = [
+        body.strip()
+        for body in re.findall(
+            r"profile bwrap /usr/bin/bwrap flags=\(unconfined\) \{\n(?P<body>.*?)\n[ \t]*\}",
+            workflow,
+            re.DOTALL,
+        )
+    ]
+    assert profiles == ["userns,", "userns,"]
     assert workflow.count('apparmor_restrict_unprivileged_userns)" = 1') == 2
     assert workflow.count("/usr/bin/bwrap --version") == 2
     assert workflow.count("/usr/bin/dpkg-query --show") == 4
@@ -236,7 +276,10 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert workflow.count("python -m tools.install_trivy") == 1
     assert workflow.count("python -m tools.install_osv_scanner") == 1
     assert (
-        workflow.count("python -m pip install --require-hashes -r requirements/security.txt") == 1
+        workflow.count(
+            "python -m pip install --require-hashes --no-build-isolation -r requirements/security.txt"
+        )
+        == 1
     )
     assert workflow.index("python -m tools.install_trivy") < workflow.index(
         "python -m tools.run_test_shard --index"
@@ -247,3 +290,60 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "apparmor_restrict_unprivileged_userns=0" not in workflow
     assert "sysctl -w" not in workflow
     assert "apparmor_parser --remove" not in workflow
+    assert "--no-sandbox" not in workflow
+    assert "--disable-setuid-sandbox" not in workflow
+
+
+@pytest.mark.parametrize(
+    "workflow",
+    [
+        ".github/workflows/ci-quality.yml",
+        ".github/workflows/ci-tests.yml",
+        ".github/workflows/ci-vscode.yml",
+        ".github/workflows/ci-distribution.yml",
+        ".github/workflows/docs.yml",
+        ".github/workflows/pre-commit.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/publish.yml",
+        ".github/workflows/fuzz.yml",
+        "action.yml",
+    ],
+)
+def test_actual_install_environments_prime_locked_build_backends(workflow: str) -> None:
+    """Every real Python lock consumer first installs its bootstrap in that interpreter.
+
+    Parameters
+    ----------
+    workflow : str
+        Actual maintained workflow or distributable consumer Action definition.
+    """
+    document = read_workflow(ROOT / workflow)
+    jobs = document["jobs"].values() if "jobs" in document else [document["runs"]]
+    for job in jobs:
+        primed: set[str] = set()
+        cached_python = False
+        for step in job.get("steps", []):
+            settings = step.get("with", {})
+            if (
+                step.get("uses", "").startswith("actions/setup-python@")
+                and settings.get("cache") == "pip"
+            ):
+                cached_python = True
+                assert (
+                    "requirements/bootstrap.txt" in settings["cache-dependency-path"].splitlines()
+                )
+            script = step.get("run", "").replace("\\\n", "")
+            for line in script.splitlines():
+                if not re.match(r'\s*(?:"[^"]+"|\S+) -m pip install\b', line):
+                    continue
+                command = shlex.split(line, comments=True)
+                if "--require-hashes" not in command:
+                    continue
+                if any(token.endswith("requirements/bootstrap.txt") for token in command):
+                    primed.add(command[0])
+                else:
+                    assert command[0] in primed, (workflow, line)
+                    assert "--no-build-isolation" in command, (workflow, line)
+        if cached_python or workflow == "action.yml":
+            assert primed, workflow

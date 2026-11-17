@@ -17,7 +17,12 @@ import sys
 from pathlib import Path
 
 import pytest
-from project_registry_syscall_scheduler import SyscallStop, run_traced, write_trace
+from project_registry_syscall_scheduler import (
+    PATH_STAT_SYSCALLS,
+    SyscallStop,
+    run_traced,
+    write_trace,
+)
 
 
 @pytest.mark.parametrize(
@@ -65,16 +70,24 @@ def test_constructor_observes_actual_executable_lifetime(
         nonlocal pathname_stats, read_seen
         if stop.path != str(executable) or not stop.entering:
             return False
-        if stop.number == 262:
+        if stop.number in PATH_STAT_SYSCALLS:
             pathname_stats += 1
         if stop.number == 0:
             read_seen = True
         reached = (
-            (boundary == "validate-lstat" and stop.number == 262 and pathname_stats == 1)
-            or (boundary == "validate-resolve" and stop.number == 262 and pathname_stats == 2)
+            (
+                boundary == "validate-lstat"
+                and stop.number in PATH_STAT_SYSCALLS
+                and pathname_stats == 1
+            )
+            or (
+                boundary == "validate-resolve"
+                and stop.number in PATH_STAT_SYSCALLS
+                and pathname_stats == 2
+            )
             or (boundary == "snapshot-open" and stop.number == 257)
             or (boundary == "hash-read" and stop.number == 0)
-            or (boundary == "snapshot-path" and stop.number == 262 and read_seen)
+            or (boundary == "snapshot-path" and stop.number in PATH_STAT_SYSCALLS and read_seen)
         )
         if scheduled or not reached:
             return False

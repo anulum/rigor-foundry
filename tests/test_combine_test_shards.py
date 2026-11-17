@@ -96,6 +96,45 @@ def test_actual_complete_union_keeps_every_input_and_exports_exact_xml(
     } == before
 
 
+def test_complete_linux_shards_cannot_replace_missing_required_native_platforms(
+    complete_union: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse incomplete native slots before publishing any combined result.
+
+    Parameters
+    ----------
+    complete_union : Path
+        Actual completed original shard fixture.
+    tmp_path : Path
+        Owned copy and incomplete native artifact allocation.
+    monkeypatch : pytest.MonkeyPatch
+        Supply actual cwd, existing shard metadata and public CLI arguments.
+    """
+    root = shutil.copytree(complete_union, tmp_path / "repository")
+    monkeypatch.chdir(root)
+    for name, value in shard_environment(root).items():
+        monkeypatch.setenv(name, value)
+    native = root / "native"
+    (native / "win32").mkdir(parents=True)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "combine-test-shards",
+            "--directory",
+            str(root / "test-shards"),
+            "--count",
+            "4",
+            "--native-directory",
+            str(native),
+        ],
+    )
+    with pytest.raises(ValueError):
+        main()
+    assert not (root / ".coverage").exists()
+    assert not (root / "coverage.xml").exists()
+
+
 @pytest.mark.parametrize(
     "case",
     [

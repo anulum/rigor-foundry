@@ -94,9 +94,10 @@ def test_missing_document_fails_closed(tmp_path: Path) -> None:
     "fragment",
     (
         "python -m tools.check_dependency_waivers",
+        "python -m pytest tests/test_semgrep_runtime.py --cov=test_semgrep_runtime --cov-branch --cov-report=term-missing --cov-fail-under=100",
         "python -m pip_audit -r requirements/ci.txt",
         "python -m pip_audit -r requirements/security.txt",
-        "semgrep scan --error --config .semgrep.yml src tools",
+        "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools",
     ),
 )
 def test_workflow_keeps_all_guarded_commands(tmp_path: Path, fragment: str) -> None:
@@ -122,7 +123,7 @@ def test_workflow_rejects_nonexecuting_command_text(tmp_path: Path, replacement:
     """Comments and echo output cannot stand in for the scanner step."""
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "semgrep scan --error --config .semgrep.yml src tools"
+    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: {replacement.format(command=command)}"
@@ -142,7 +143,7 @@ def test_workflow_rejects_command_in_unrelated_job(tmp_path: Path) -> None:
     """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "semgrep scan --error --config .semgrep.yml src tools"
+    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: true\n  decoy:\n    steps:\n      - run: {command}"
@@ -165,7 +166,7 @@ def test_workflow_rejects_disabled_scanner_step(tmp_path: Path, condition: str) 
     """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "semgrep scan --error --config .semgrep.yml src tools"
+    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: {command}\n        {condition}"
@@ -238,7 +239,7 @@ def test_invalid_scanner_shell_quoting_refuses(tmp_path: Path) -> None:
     path = root / ".github/workflows/security.yml"
     path.write_text(
         path.read_text()
-        .replace("run: semgrep scan", 'run: "\\"semgrep scan')
+        .replace("run: bash tools/run_semgrep.sh scan", 'run: "\\"semgrep scan')
         .replace(".semgrep.yml src tools", '.semgrep.yml src tools"')
     )
     assert any(

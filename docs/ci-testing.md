@@ -38,6 +38,14 @@ version, source/configuration bytes, ordered collection, index/count and hashes
 of retained observations, JUnit and the raw `.coverage` database. A provisional
 observation file alone is never success evidence.
 
+Native profiles select the C tracer explicitly so that per-test dynamic
+contexts remain available on newer Python interpreters. Coverage.py's
+sys.monitoring core does not support those contexts; its
+[context warning](https://coverage.readthedocs.io/en/7.17.2/messages.html#warning-no-sysmon-context)
+means that attribution may be incomplete. Keep subprocess branch measurement
+and separate ordinary/primary databases enabled. A successful test process
+with incomplete context attribution does not qualify that attribution.
+
 All partitions and consumers use the same versioned timing snapshot from their
 checkout. Its normalized content is bound into the source identity and retained
 observations in schema version 2; the launcher and union reject a different

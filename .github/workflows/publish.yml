@@ -79,13 +79,16 @@ jobs:
         with:
           python-version: "3.12.13"
           cache: pip
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/bootstrap.txt
+            requirements/ci.txt
       - name: Build and validate distributions
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: |
           set -euo pipefail
-          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --require-hashes -r requirements/bootstrap.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
           python -m tools.check_release_tag "$RELEASE_TAG"
           python -m build --no-isolation
           python -m tools.check_distribution_metadata dist/*.whl
@@ -93,8 +96,9 @@ jobs:
           test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 1
           test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l)" -eq 1
           python -m venv --clear /tmp/rigor-foundry-package-smoke
+          /tmp/rigor-foundry-package-smoke/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
           /tmp/rigor-foundry-package-smoke/bin/python -m pip install \
-            --require-hashes -r requirements/runtime.txt
+            --require-hashes --no-build-isolation -r requirements/runtime.txt
           /tmp/rigor-foundry-package-smoke/bin/python -m pip install --no-deps dist/*.whl
           /tmp/rigor-foundry-package-smoke/bin/python -m pip check
           /tmp/rigor-foundry-package-smoke/bin/rigor --help >/dev/null

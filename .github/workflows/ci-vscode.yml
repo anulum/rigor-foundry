@@ -7,65 +7,248 @@
 # RigorFoundry — Deterministic quality and test gates
 
 name: CI vscode
-
-on:
-  workflow_call:
-
 permissions:
   contents: read
-
 concurrency:
   group: ci-vscode-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
+  vscode-native:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: 'false'
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version: 22.23.3
+        cache: npm
+        cache-dependency-path: editors/vscode/package-lock.json
+    - name: Install locked native compiler sources
+      run: npm ci --ignore-scripts --engine-strict --prefix editors/vscode
+    - name: Audit locked extension dependencies
+      run: npm audit --prefix editors/vscode
+    - name: Build and bind fresh Windows native artifact
+      env:
+        TEMP: ${{ runner.temp }}
+        TMP: ${{ runner.temp }}
+        NODE_V8_COVERAGE: ${{ runner.temp }}/rigor-native-profile/v8
+      run: node editors/vscode/scripts/native-artifact.mjs build "$env:RUNNER_TEMP/rigor-editor-native" --github
+    - name: Record actual native producer source and coverage identity
+      env:
+        NODE_V8_COVERAGE: ${{ runner.temp }}/rigor-native-profile/v8
+      run: node --input-type=module -e "import {recordNativeBuild} from './editors/vscode/scripts/editor-profile-inputs.mjs'; await recordNativeBuild(process.argv[1], process.argv[2], process.argv[3]);" "$env:GITHUB_WORKSPACE/editors/vscode" "$env:RUNNER_TEMP/rigor-native-profile" "$env:RUNNER_TEMP/rigor-editor-native"
+    - name: Seal closed native producer files
+      run: node --input-type=module -e "import {sealProfileFiles} from './editors/vscode/scripts/editor-profile-inputs.mjs'; await sealProfileFiles(process.argv[1]);" "$env:RUNNER_TEMP/rigor-native-profile"
+      if: ${{ always() }}
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: vscode-native-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/rigor-editor-native/
+        if-no-files-found: error
+        retention-days: 14
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: vscode-profile-native-build-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/rigor-native-profile/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 14
+      if: ${{ always() }}
+    - name: Retain original native build diagnostics
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: vscode-native-diagnostics-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: '${{ runner.temp }}/rigor-native-*/*.json
+
+          ${{ runner.temp }}/rigor-native-*/*.stdout
+
+          ${{ runner.temp }}/rigor-native-*/*.stderr
+
+          ${{ runner.temp }}/rigor-native-*/*.cmd
+
+          '
+        if-no-files-found: error
+        retention-days: 14
+  vscode-host:
+    needs:
+    - vscode-native
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - id: linux-1.125.0
+          platform: linux
+          runner: ubuntu-24.04
+          version: 1.125.0
+          commit: 93cfdd489c3b228840d0f86ec77c3636277c93ea
+          archiveUrl: https://vscode.download.prss.microsoft.com/dbazure/download/stable/93cfdd489c3b228840d0f86ec77c3636277c93ea/code-stable-x64-1781601447.tar.gz
+          archiveSha256: 4d3ba51e90a24f679acb6b5beded6e6f5eb8ae0b6d067077e82738255a317f4f
+        - id: linux-1.145.2
+          platform: linux
+          runner: ubuntu-24.04
+          version: 1.145.2
+          commit: c4453f8ea430795f941c1b2ff6c9321135a74a02
+          archiveUrl: https://vscode.download.prss.microsoft.com/dbazure/download/stable/c4453f8ea430795f941c1b2ff6c9321135a74a02/code-stable-x64-1793945155.tar.gz
+          archiveSha256: 3b01286639fa026fd860944b811d418f7b93bc5dc447d9e607b0cd1377cfbaa2
+        - id: win32-1.125.0
+          platform: win32
+          runner: windows-2025
+          version: 1.125.0
+          commit: 93cfdd489c3b228840d0f86ec77c3636277c93ea
+          cliRelativePath: 93cfdd489c/resources/app/out/cli.js
+          archiveUrl: https://vscode.download.prss.microsoft.com/dbazure/download/stable/93cfdd489c3b228840d0f86ec77c3636277c93ea/VSCode-win32-x64-1.125.0.zip
+          archiveSha256: 3cbc452631642464819840d1666face0787f3b6eef60ab1fa80f3cd87fef177a
+        - id: win32-1.145.2
+          platform: win32
+          runner: windows-2025
+          version: 1.145.2
+          commit: c4453f8ea430795f941c1b2ff6c9321135a74a02
+          cliRelativePath: c4453f8ea4/resources/app/out/cli.js
+          archiveUrl: https://vscode.download.prss.microsoft.com/dbazure/download/stable/c4453f8ea430795f941c1b2ff6c9321135a74a02/VSCode-win32-x64-1.145.2.zip
+          archiveSha256: 33cf166a751090fe7d244bf0e594e3c69c832d5ae2af1769140ad82a35ea1e0b
+    env:
+      GIT_CONFIG_COUNT: '1'
+      GIT_CONFIG_KEY_0: core.autocrlf
+      GIT_CONFIG_VALUE_0: 'false'
+      RIGOR_FOUNDRY_SOURCE_ROOT: ${{ github.workspace }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      with:
+        python-version: 3.12.13
+        cache: pip
+        cache-dependency-path: |
+          requirements/bootstrap.txt
+          requirements/ci.txt
+          requirements/test-windows.txt
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version: 22.23.3
+        cache: npm
+        cache-dependency-path: editors/vscode/package-lock.json
+    - name: Install canonical CLI and exact locked editor dependencies
+      shell: bash
+      env:
+        RF_REQUIREMENTS: ${{ runner.os == 'Windows' && 'requirements/test-windows.txt' || 'requirements/ci.txt' }}
+      run: |
+        python -m pip install --require-hashes -r requirements/bootstrap.txt
+        python -m pip install --require-hashes --no-build-isolation -r "$RF_REQUIREMENTS"
+        python -m pip install --no-build-isolation --no-deps .
+        npm ci --ignore-scripts --engine-strict --prefix editors/vscode
+    - name: Bind actual installed CLI
+      shell: python
+      run: "import os\nfrom pathlib import Path\nimport sysconfig\ncli = Path(sysconfig.get_path(\"scripts\")) / (\"rigor.exe\" if os.name == \"nt\" else \"rigor\")\nwith Path(os.environ[\"GITHUB_ENV\"]).open(\"a\", encoding=\"utf-8\") as stream:\n    stream.write(\"RIGOR_FOUNDRY_CLI=\" + str(cli) + \"\\n\")\n"
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: vscode-native-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/rigor-editor-native
+    - name: Admit exact source and run native artifact
+      shell: bash
+      run: node editors/vscode/scripts/native-artifact.mjs verify "$RUNNER_TEMP/rigor-editor-native" --github
+    - uses: ./.github/actions/install-editor-host
+      with:
+        archive-url: ${{ matrix.archiveUrl }}
+        archive-sha256: ${{ matrix.archiveSha256 }}
+    - name: Compile native process runner
+      run: npm run compile --prefix editors/vscode
+    - name: Execute complete real supported host profile
+      shell: bash
+      env:
+        RF_HOST_VERSION: ${{ matrix.version }}
+        NODE_V8_COVERAGE: ${{ runner.temp }}/rigor-editor-profile/v8
+      run: "set -euo pipefail\nif [ \"$RUNNER_OS\" = Linux ]; then\n  xvfb-run -a node editors/vscode/scripts/run-editor-profile.mjs \"$RF_HOST_VERSION\" \"$RUNNER_TEMP/rigor-editor-profile\"\nelse\n  node editors/vscode/scripts/run-editor-profile.mjs \"$RF_HOST_VERSION\" \"$RUNNER_TEMP/rigor-editor-profile\"\nfi\n"
+    - name: Seal closed supported host evidence
+      shell: bash
+      run: node --input-type=module -e "import {sealProfileFiles} from './editors/vscode/scripts/editor-profile-inputs.mjs'; await sealProfileFiles(process.argv[1]);" "$RUNNER_TEMP/rigor-editor-profile"
+      if: ${{ always() }}
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: vscode-profile-${{ matrix.id }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/rigor-editor-profile/
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 14
+      if: ${{ always() }}
   vscode:
+    needs:
+    - vscode-native
+    - vscode-host
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12.13"
-          cache: pip
-          cache-dependency-path: requirements/ci.txt
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "22.23.1"
-          cache: npm
-          cache-dependency-path: editors/vscode/package-lock.json
-      - name: Install exact VS Code host
-        run: |
-          set -euo pipefail
-          curl --proto '=https' --tlsv1.2 --fail --location \
-            --output "$RUNNER_TEMP/code.deb" \
-            https://update.code.visualstudio.com/1.125.0/linux-deb-x64/stable
-          printf '%s  %s\n' \
-            7538e2b63e3a32927f7874f4790bbddb60088c80db5c737f907fce5ae56f0462 \
-            "$RUNNER_TEMP/code.deb" | sha256sum --check --strict
-          sudo dpkg -i "$RUNNER_TEMP/code.deb"
-          test "$(code --version | sed -n '1p')" = 1.125.0
-          test "$(code --version | sed -n '2p')" = 93cfdd489c3b228840d0f86ec77c3636277c93ea
-      - name: Install canonical CLI and locked extension dependencies
-        run: |
-          python -m pip install --require-hashes -r requirements/ci.txt
-          python -m pip install --no-build-isolation --no-deps .
-          npm ci --ignore-scripts --prefix editors/vscode
-      - name: Audit, type-check, test, and package extension
-        run: |
-          npm audit --prefix editors/vscode
-          npm run check --prefix editors/vscode
-          npm run package --prefix editors/vscode
-      - name: Exercise real Extension Development Host
-        env:
-          RIGOR_FOUNDRY_CLI: ${{ env.pythonLocation }}/bin/rigor
-          VSCODE_EXECUTABLE: /usr/share/code/code
-        run: xvfb-run -a npm run test:integration --prefix editors/vscode
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: rigor-foundry-vscode-vsix
-          path: editors/vscode/rigor-foundry-vscode.vsix
-          if-no-files-found: error
-          retention-days: 14
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version: 22.23.3
+        cache: npm
+        cache-dependency-path: editors/vscode/package-lock.json
+    - name: Install locked editor analysis environment
+      run: npm ci --ignore-scripts --engine-strict --prefix editors/vscode
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: vscode-native-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/rigor-editor-native
+    - name: Admit exact source and run native artifact
+      shell: bash
+      run: node editors/vscode/scripts/native-artifact.mjs verify "$RUNNER_TEMP/rigor-editor-native" --github
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        pattern: vscode-profile-*-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/editor-producers
+    - name: Compile exact source for coverage admission
+      run: npm run compile --prefix editors/vscode
+    - name: Admit every original supported editor producer
+      env:
+        NODE_V8_COVERAGE: ${{ runner.temp }}/editor-consumer-v8
+      run: node editors/vscode/scripts/combine-editor-profiles.mjs "$RUNNER_TEMP/editor-producers" "$RUNNER_TEMP/editor-union"
+    - name: Require complete whole-owner editor coverage
+      shell: bash
+      run: 'set -euo pipefail
+
+        node --input-type=module -e "import {sealProfileFiles,admitProfileFiles} from ''./scripts/editor-profile-inputs.mjs''; await sealProfileFiles(process.argv[1]); await admitProfileFiles(process.argv[1]);" "$RUNNER_TEMP/editor-consumer-v8"
+
+        cp "$RUNNER_TEMP/editor-consumer-v8"/coverage-*.json "$RUNNER_TEMP/editor-union/v8/"
+
+        node node_modules/c8/bin/c8.js report --config c8.config.json --temp-directory "$RUNNER_TEMP/editor-union/v8" --reports-dir "$RUNNER_TEMP/editor-union/report"
+
+        node --input-type=module -e "import {editorInputs} from ''./scripts/editor-profile-inputs.mjs''; import {requireEditorOwnerCoverage} from ''./scripts/editor-coverage.mjs''; await requireEditorOwnerCoverage(process.argv[1], process.argv[2], (await editorInputs(process.argv[1])).owners);" "$GITHUB_WORKSPACE/editors/vscode" "$RUNNER_TEMP/editor-union/report/coverage-summary.json"
+
+        '
+      working-directory: editors/vscode
+    - name: Package both qualified platform extensions
+      run: 'npm run package --prefix editors/vscode
+
+        npm run package:windows --prefix editors/vscode
+
+        '
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: rigor-foundry-vscode-vsix
+        path: editors/vscode/rigor-foundry-vscode*.vsix
+        if-no-files-found: error
+        retention-days: 14
+    - name: Retain original consumer coverage and union report
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: vscode-union-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: '${{ runner.temp }}/editor-union/
+
+          ${{ runner.temp }}/editor-consumer-v8/'
+        if-no-files-found: error
+        retention-days: 14
+'on':
+  workflow_call:

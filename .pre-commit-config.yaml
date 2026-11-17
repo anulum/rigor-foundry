@@ -151,10 +151,17 @@ repos:
         always_run: true
       - id: preflight-fast
         name: bounded pre-push preflight
-        entry: .venv/bin/python -m tools.preflight --fast
+        entry: make preflight-fast
         language: system
         pass_filenames: false
         stages: [pre-push]
+      - id: vscode-native-check
+        name: native editor lint, typing, documentation and unit tests
+        entry: make editor-check
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: commit-message
         name: commit attribution policy
         entry: .venv/bin/python -m tools.check_commit_message

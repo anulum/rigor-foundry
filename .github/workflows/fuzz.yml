@@ -34,18 +34,19 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          # Atheris publishes wheels for CPython 3.12 and newer only.
-          python-version: "3.12.13"
+          python-version: "3.14.10"
           cache: pip
           cache-dependency-path: |
+            requirements/bootstrap.txt
             requirements/build.txt
             requirements/runtime.txt
             requirements/fuzz.txt
       - name: Install hash-locked fuzzing environment
         run: |
-          python -m pip install --require-hashes -r requirements/build.txt
-          python -m pip install --require-hashes -r requirements/runtime.txt
-          python -m pip install --require-hashes -r requirements/fuzz.txt
+          python -m pip install --require-hashes -r requirements/bootstrap.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/build.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/fuzz.txt
           python -m pip install --no-build-isolation --no-deps .
       - name: Run bounded Atheris fuzzing over the record parsers
         run: |

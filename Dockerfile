@@ -9,8 +9,8 @@
 FROM python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159 AS builder
 
 WORKDIR /build
-COPY requirements/build.txt requirements/build.txt
-RUN python -m pip install --no-cache-dir --require-hashes -r requirements/build.txt
+COPY requirements/bootstrap.txt requirements/bootstrap.txt
+RUN python -m pip install --no-cache-dir --require-hashes -r requirements/bootstrap.txt
 
 COPY LICENSE NOTICE README.md pyproject.toml ./
 COPY src/ src/
@@ -38,7 +38,7 @@ RUN sed -i \
 
 COPY --from=builder /build/dist/*.whl /tmp/
 COPY requirements/runtime.txt /tmp/runtime.txt
-RUN python -m pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt \
     && python -m pip install --no-cache-dir --no-deps /tmp/*.whl \
     && rm -f /tmp/runtime.txt \
     && rm -f /tmp/*.whl

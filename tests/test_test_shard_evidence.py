@@ -128,6 +128,7 @@ def test_bounded_records_refuse_ambiguous_or_nonregular_artifacts(
     [
         ("extra", 1),
         ("schema_version", 1),
+        ("schema_version", 2),
         ("strategy", "unknown-v1"),
         ("timings", []),
         ("timings", {"tests/test_dispatch.py": 1}),
@@ -145,6 +146,8 @@ def test_bounded_records_refuse_ambiguous_or_nonregular_artifacts(
         ("selected", []),
         ("phases", []),
         ("phases", {}),
+        ("subtests", []),
+        ("subtests", {"not-collected": [["call", "passed"]]}),
     ],
 )
 def test_real_observations_refuse_wrong_identity_collection_or_phase_set(
@@ -193,6 +196,74 @@ def test_missing_reordered_and_failing_real_phase_observations_refuse(
     observed["phases"][observed["selected"][0]] = phases
     with pytest.raises(ValueError):
         validate_observations(observed, 0, 1)
+
+
+@pytest.mark.parametrize(
+    "events",
+    [None, [], [["setup", "passed"]], [["call", "failed"]], [["call", "unknown"]]],
+)
+def test_actual_subtest_accounting_refuses_missing_or_nonpassing_call_events(
+    successful_shard: Path, events: Any
+) -> None:
+    """Corrupt only a retained record and reject incomplete or failed subtest calls.
+
+    Parameters
+    ----------
+    successful_shard : Path
+        Original real completed test artifacts.
+    events : Any
+        Deliberately invalid subtest call sequence, never accepted as evidence.
+    """
+    observed = read_record(successful_shard / ".rigor-test-shard/observations.json")
+    observed["subtests"] = {observed["selected"][0]: events}
+    with pytest.raises(ValueError):
+        validate_observations(observed, 0, 1)
+
+
+def test_subtest_events_cannot_belong_to_a_parent_skipped_during_setup(
+    successful_shard: Path,
+) -> None:
+    """Refuse mutually inconsistent parent/subtest history without changing originals.
+
+    Parameters
+    ----------
+    successful_shard : Path
+        Immutable original record supplying actual selected parent identities.
+    """
+    observed = read_record(successful_shard / ".rigor-test-shard/observations.json")
+    node = observed["selected"][0]
+    observed["phases"][node] = [["setup", "skipped"], ["teardown", "passed"]]
+    observed["subtests"] = {node: [["call", "passed"]]}
+    with pytest.raises(ValueError):
+        validate_observations(observed, 0, 1)
+
+
+@pytest.mark.parametrize("case", ["missing", "sequence", "non-list-events"])
+def test_artifact_validation_requires_the_actual_subtest_event_mapping(
+    successful_shard: Path, tmp_path: Path, case: str
+) -> None:
+    """Refuse damaged subtest metadata before interpreting real JUnit and branch data.
+
+    Parameters
+    ----------
+    successful_shard : Path
+        Immutable actual completed process artifacts.
+    tmp_path : Path
+        Owned copy of those artifacts; the original remains unchanged.
+    case : str
+        Missing mapping, wrong mapping shape or invalid per-parent event container.
+    """
+    directory = shutil.copytree(successful_shard / ".rigor-test-shard", tmp_path / "shard")
+    observed = read_record(directory / "observations.json")
+    if case == "missing":
+        observed.pop("subtests")
+    elif case == "sequence":
+        observed["subtests"] = []
+    else:
+        observed["subtests"] = {observed["selected"][0]: None}
+    (directory / "observations.json").write_text(json.dumps(observed))
+    with pytest.raises(ValueError):
+        validate_artifacts(directory, len(observed["selected"]))
 
 
 @pytest.mark.parametrize(

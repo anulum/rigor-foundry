@@ -667,15 +667,26 @@ def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
         else:
             required["if"] = "success()"
     else:
-        index = {
-            "union-checkout": 0,
-            "union-python": 1,
-            "union-install": 2,
-            "union-download": 3,
-            "union-command": 4,
-            "native-threshold": 5,
-            "xml-export": 6,
+        label = {
+            "union-checkout": "actions/checkout",
+            "union-python": "actions/setup-python",
+            "union-install": "Install hash-locked coverage environment",
+            "union-download": "test-shards",
+            "union-command": "Combine complete interpreter coverage",
+            "native-threshold": "Enforce exact native dispatch coverage",
+            "xml-export": "coverage.xml",
         }[case]
-        union["steps"][index] = {"run": "true"}
+        indices = [
+            index
+            for index, step in enumerate(union["steps"])
+            if (
+                step.get("name")
+                or step.get("with", {}).get("path")
+                or step.get("uses", "").partition("@")[0]
+            )
+            == label
+        ]
+        assert len(indices) == 1
+        union["steps"][indices[0]] = {"run": "true"}
     path.write_text(yaml.safe_dump(document))
     assert ci_workflow_errors(root)

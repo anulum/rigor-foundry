@@ -18,7 +18,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from project_registry_syscall_scheduler import SyscallStop, run_traced, write_trace
+from project_registry_syscall_scheduler import (
+    PATH_STAT_SYSCALLS,
+    SyscallStop,
+    run_traced,
+    write_trace,
+)
 from test_inventory_domain import domain_budget
 
 from rigor_foundry.directory_file_inputs import observe_directory_file_inputs
@@ -185,7 +190,7 @@ def test_actual_native_directory_mutations_refuse_at_their_owning_boundaries(
         nonlocal changed, root_opens, source_stats, directory_reads
         if stop.entering and stop.number == 257 and stop.path == str(root):
             root_opens += 1
-        if stop.entering and stop.number == 262 and stop.path == str(source):
+        if stop.entering and stop.number in PATH_STAT_SYSCALLS and stop.path == str(source):
             source_stats += 1
         if stop.entering and stop.number == 217 and stop.path == str(root):
             directory_reads += 1
@@ -199,7 +204,7 @@ def test_actual_native_directory_mutations_refuse_at_their_owning_boundaries(
             or (
                 phase == "entry-after"
                 and stop.entering
-                and stop.number == 262
+                and stop.number in PATH_STAT_SYSCALLS
                 and stop.path == str(source)
                 and source_stats == 4
             )

@@ -17,7 +17,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from project_registry_syscall_scheduler import SyscallStop, run_traced, write_trace
+from project_registry_syscall_scheduler import (
+    PATH_STAT_SYSCALLS,
+    SyscallStop,
+    run_traced,
+    write_trace,
+)
 from repository_audit_git_repository import GitRepository
 
 _POLICY = Path("config/policy.json")
@@ -130,7 +135,7 @@ def test_root_replacement_refuses_at_both_identity_checks(
             and opened_todo == after_creation
             # Version, worktree root, three ls-files and three two-call ignore checks.
             and (after_creation or completed_git_commands == 11)
-            and stop.number == 262
+            and stop.number in PATH_STAT_SYSCALLS
             and stop.entering
             and stop.path == str(adopter)
         ):
@@ -253,7 +258,7 @@ def test_final_ledger_absence_is_a_sample_not_a_reservation(
         if (
             not changed
             and opened_todo
-            and stop.number == 262
+            and stop.number in PATH_STAT_SYSCALLS
             and stop.path == str(target)
             and stop.entering != after_sample
         ):
@@ -286,7 +291,7 @@ def test_final_git_ownership_changes_refuse(adopter: Path, owner: str, mutation:
         if (
             not changed
             and opened_todo
-            and stop.number == 262
+            and stop.number in PATH_STAT_SYSCALLS
             and not stop.entering
             and stop.path == str(adopter / _LEDGER)
             and stop.result == -2

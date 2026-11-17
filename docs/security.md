@@ -100,9 +100,9 @@ and archive members as adversarial input.
 
 ## Dependency advisory audits
 
-The Security workflow audits all seven hash-locked Python profiles (build,
-CI, fuzz, native, runtime, security and test) and the VS Code extension's
-committed npm lock on every push and pull request to `main`. Python audits
+The Security workflow audits all nine hash-locked Python profiles (bootstrap,
+build, CI, fuzz, native, runtime, security, test and test-windows) and the VS Code
+extension's committed npm lock on every push and pull request to `main`. Python audits
 require hashes, avoid installation and fail when dependency collection fails.
 The npm audit includes development dependencies and uses the default failure
 threshold. Advisory findings and registry errors block the jobs.
@@ -147,7 +147,7 @@ use private vulnerability reporting.
 
 ## Security-tool lock maintenance
 
-The current security lock pins Semgrep `1.180.0` and Click `8.4.2`. Its retained
+The current security lock pins Semgrep `1.184.0` and Click `8.4.2`. Its retained
 generation header names `pip-compile` on Python 3.11, matching the repository
 lock target. Use a Python 3.11 environment with the `pip-tools` version pinned
 in `requirements/ci.txt` and retain the complete CI constraints and SHA-256
@@ -162,5 +162,24 @@ python3.11 -m piptools compile --allow-unsafe --generate-hashes --strip-extras \
 Keep the canonical seven-line licence header above the generated header.
 After regeneration, run the strict audit and install the entire hash-locked
 profile in a fresh environment; run pip check, Bandit and the installed
-semgrep console entry point with the repository policy. The local lock
-qualification does not establish hosted CI or runtime admission.
+Semgrep console entry point with the repository policy through the maintained
+Unix process profile:
+
+```sh
+bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools
+```
+
+The security job uses Python `3.15.2` and installs the hash-locked scanner and
+test profiles. Before dependency audits, it exercises the actual clean scan,
+both repository-rule refusals and a missing scanner through
+`tests/test_semgrep_runtime.py`, requiring 100% coverage of that complete test
+owner. The dependency-waiver guard requires this unconditional step.
+
+The launcher requires a finite host soft
+stack limit and lowers its own hard stack to that same value before replacing
+itself with the installed scanner. This bounds Semgrep's native child-process
+stack on Python 3.15 without changing the caller's limits or system settings.
+An unlimited soft stack or missing scanner fails before scanning; findings and
+scanner errors retain their original nonzero exit status. The arguments and
+repository rules are unchanged. The local lock qualification does not establish
+hosted CI or runtime admission.

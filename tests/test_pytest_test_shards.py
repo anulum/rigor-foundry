@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -17,7 +18,8 @@ from pathlib import Path
 import pytest
 from test_run_test_shard import execute_shard, shard_environment, shard_repository
 
-from tools.test_shard_evidence import read_record, validate_observations
+from tools._repository import ROOT
+from tools.test_shard_evidence import read_record, validate_junit, validate_observations
 
 
 @pytest.mark.parametrize("hook", ["finish", "late-registered-wrapper"])
@@ -244,3 +246,74 @@ def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
         assert len(validate_observations(read_record(root / "observations.json"), 0, 1)) == 4
     else:
         assert result != 0
+
+
+def test_real_job_argument_subtests_preserve_parent_phases_and_junit_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Observe the unchanged real job API tests with their actual unittest subtests.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned fixture with the complete current production package and original
+        whole public job-observation test file.
+    monkeypatch : pytest.MonkeyPatch
+        Set the current directory for the actual nested public pytest invocation.
+    """
+    root = tmp_path / "native-job-observations"
+    shutil.copytree(ROOT / "src", root / "src", ignore=shutil.ignore_patterns("__pycache__"))
+    (root / "tests").mkdir()
+    name = "tests/test_windows_job_observation.py"
+    shutil.copy2(ROOT / name, root / name)
+    shutil.copy2(ROOT / "pyproject.toml", root / "pyproject.toml")
+    (root / ".github").mkdir()
+    shutil.copy2(ROOT / ".github/test-timings.json", root / ".github/test-timings.json")
+    assert (root / name).read_bytes() == (ROOT / name).read_bytes()
+    monkeypatch.chdir(root)
+    result = pytest.main(
+        [
+            name,
+            "-q",
+            "--import-mode=importlib",
+            "-p",
+            "tools.pytest_native_tests",
+            "--test-shard-index=0",
+            "--test-shard-count=1",
+            "--test-shard-observations=observations.json",
+            "--junitxml=junit.xml",
+        ]
+    )
+    assert result == 0
+    observed = read_record(root / "observations.json")
+    assert observed["schema_version"] == 3
+    selected = validate_observations(observed, 0, 1)
+    assert len(selected) == 6
+    assert sum(len(events) for events in observed["subtests"].values()) == 11
+    assert all(
+        events == [["call", "passed"]] * len(events) for events in observed["subtests"].values()
+    )
+    assert all(len(events) <= 3 for events in observed["phases"].values())
+    validate_junit((root / "junit.xml").read_bytes(), len(selected), 11)
+    assert (root / name).read_bytes() == (ROOT / name).read_bytes()
+
+
+def test_ordinary_collection_never_imports_reserved_owner_aliases(tmp_path: Path) -> None:
+    """Keep separately required names out before actual pytest module imports.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real shard repository. Aliases contain an ordinary maintained test,
+        never a reserved control body or a primary execution fixture.
+    """
+    from tools.native_test_profiles import PRIMARY_TEST_NAMES
+
+    root = shard_repository(tmp_path)
+    for name in PRIMARY_TEST_NAMES:
+        shutil.copyfile(ROOT / "tests/test_windows_job_observation.py", root / "tests" / name)
+    result = execute_shard(root, 0, 1)
+    assert result.returncode == 0, result.stdout + result.stderr
+    observed = read_record(root / ".rigor-test-shard/observations.json")
+    assert len(observed["collected"]) == 4
+    assert all(node.startswith("tests/test_dispatch.py::") for node in observed["collected"])

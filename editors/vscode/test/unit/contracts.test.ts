@@ -1,122 +1,274 @@
 // SPDX-License-Identifier: Apache-2.0
-// Apache License 2.0; see ../../../LICENSE.
+// Apache License 2.0; see ../../../../LICENSE.
 // © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
 // © Code 2020–2026 Miroslav Šotek. All rights reserved.
 // ORCID: 0009-0009-3560-0851
 // Contact: www.anulum.li | protoscience@anulum.li
-// RigorFoundry — evidence contract tests
+// RigorFoundry — CLI-produced evidence contracts and explicit invalid-input controls
+
+/**
+ * Exercise structural evidence parsers using actual CLI-produced reports and draft ledgers.
+ * Transform those documents into explicit invalid inputs and keep display-shape checks separate from review approval.
+ * @module
+ */
 
 import assert from "node:assert/strict";
+import { rm } from "node:fs/promises";
 import test from "node:test";
-import {parseAuditReport, parseReviewDocument} from "../../src/contracts.js";
+import {
+  assertRepositoryPath,
+  parseAuditReport,
+  parseReviewDocument,
+} from "../../src/contracts.js";
+import { createEvidenceRepository } from "../support/repository.js";
 
-const digest = "a".repeat(64);
-const candidateId = "b".repeat(64);
+/**
+ * Check public structural parsers against real evidence and explicit transformations of it.
+ *
+ * Modified documents below are parser inputs, never canonical scanner output or review approval.
+ * The unmodified reports, identities, and draft ledgers come from real CLI invocations.
+ * @returns Completion after original contracts and malformed-input controls have executed.
+ */
+async function run(): Promise<void> {
+  const repository = await createEvidenceRepository();
+  const { report, reviews, treeReport } = repository;
+  const first = report.candidates[0];
+  const review = reviews.reviews[0];
+  const tracked = report.candidates.find((candidate) => candidate.anchor.kind === "tracked-blob");
+  const tree = treeReport.candidates.find(
+    (candidate) => candidate.anchor.kind === "repository-tree",
+  );
+  assert.ok(first);
+  assert.ok(review);
+  assert.ok(tracked?.anchor.kind === "tracked-blob");
+  assert.ok(tree?.anchor.kind === "repository-tree");
+  const treeAnchor = tree.anchor;
+  try {
+    await test("parses one structurally bound report and review", () => {
+      const parsedReport = parseAuditReport(report);
+      const parsedReviews = parseReviewDocument(reviews, parsedReport);
+      assert.equal(parsedReport.candidates[0]?.candidate_id, first.candidate_id);
+      assert.equal(parsedReviews.reviews[0]?.decision, "needs-evidence");
+      assert.equal(parsedReviews.reviews.length, report.candidates.length);
+    });
 
-function report(): unknown {
-  return {
-    schema_version: "1.3",
-    scanner_version: "0.3.0",
-    rule_pack_version: "rigor-foundry/1.11.0",
-    rule_pack_digest: "c".repeat(64),
-    report_digest: digest,
-    repository_root: "/work/repository",
-    head: "d".repeat(40),
-    branch: "main",
-    candidates: [{
-      candidate_id: candidateId,
-      category: "application-security",
-      rule_id: "AS001",
-      anchor: {
-        schema_version: "1.0",
-        kind: "tracked-blob",
-        path: "src/app.py",
-        line_start: 3,
-        line_end: 4,
-        blob_oid: "e".repeat(40),
-        content_sha256: "f".repeat(64),
-      },
-      symbol: "unsafe",
-      evidence: "eval(user_input)",
-      confidence: "high",
-      rationale: "dynamic evaluation requires review",
-      verification: "inspect the call boundary",
-    }],
-  };
-}
+    await test("rejects traversal anchors", () => {
+      const value = {
+        ...report,
+        candidates: [
+          {
+            ...tracked,
+            anchor: { ...tracked.anchor, path: "../outside.py" },
+          },
+        ],
+      };
+      assert.throws(() => parseAuditReport(value), /dot segments/u);
+    });
 
-function reviews(): unknown {
-  return {
-    schema_version: "1.0",
-    reviews: [{
-      report_digest: digest,
-      candidate_id: candidateId,
-      decision: "needs-evidence",
-      reviewer: "",
-      reviewed_at: "",
-      rationale: "",
-      evidence: [],
-      severity: null,
-      owner: "",
-      dependencies: [],
-      acceptance_gates: [],
-      title: "",
-      boundary_justification: "",
-      expires_at: "",
-      reopen_triggers: [],
-    }],
-  };
-}
+    await test("rejects reviews bound to another report", () => {
+      const value = { ...reviews, reviews: [{ ...review, report_digest: "0".repeat(64) }] };
+      assert.throws(() => parseReviewDocument(value, report), /does not bind/u);
+    });
 
-test("parses one structurally bound report and review", () => {
-  const parsedReport = parseAuditReport(report());
-  const parsedReviews = parseReviewDocument(reviews(), parsedReport);
-  assert.equal(parsedReport.candidates[0]?.candidate_id, candidateId);
-  assert.equal(parsedReviews.reviews[0]?.decision, "needs-evidence");
-});
+    await test("parses the fixed repository-tree locus and retains its content identities", () => {
+      const parsed = parseAuditReport(treeReport);
+      const anchor = parsed.candidates.find(
+        (candidate) => candidate.candidate_id === tree.candidate_id,
+      )?.anchor;
+      assert.ok(anchor?.kind === "repository-tree");
+      assert.equal(anchor.tree_oid, treeAnchor.tree_oid);
+      assert.equal(anchor.tracked_content_sha256, treeAnchor.tracked_content_sha256);
+      const invalid = {
+        ...treeReport,
+        candidates: [
+          {
+            ...tree,
+            anchor: { ...tree.anchor, line_end: 2 },
+          },
+        ],
+      };
+      assert.throws(() => parseAuditReport(invalid), /fixed 1:1/u);
+    });
 
-test("rejects traversal anchors", () => {
-  const value = report() as {candidates: Array<{anchor: {path: string}}>};
-  value.candidates[0]!.anchor.path = "../outside.py";
-  assert.throws(() => parseAuditReport(value), /dot segments/u);
-});
+    for (const value of [null, [], "report", 1, false]) {
+      await test("refuses a non-object report envelope: " + String(value), () => {
+        assert.throws(() => parseAuditReport(value), /must be an object/u);
+      });
+    }
 
-test("rejects reviews bound to another report", () => {
-  const parsedReport = parseAuditReport(report());
-  const value = reviews() as {reviews: Array<{report_digest: string}>};
-  value.reviews[0]!.report_digest = "0".repeat(64);
-  assert.throws(() => parseReviewDocument(value, parsedReport), /does not bind/u);
-});
+    for (const [name, value, expected] of [
+      [
+        "unsupported schema",
+        { ...report, schema_version: "2.0" },
+        /schema_version is unsupported/u,
+      ],
+      ["missing candidate array", { ...report, candidates: null }, /candidates must be an array/u],
+      [
+        "duplicate identities",
+        { ...report, candidates: [first, first] },
+        /identities must be unique/u,
+      ],
+      ["empty scanner version", { ...report, scanner_version: "" }, /non-empty string/u],
+      ["non-string scanner version", { ...report, scanner_version: 1 }, /non-empty string/u],
+      ["invalid report digest", { ...report, report_digest: "not-a-digest" }, /SHA-256 digest/u],
+    ] as const) {
+      await test("refuses report " + name, () => {
+        assert.throws(() => parseAuditReport(value), expected);
+      });
+    }
 
-test("parses the fixed repository-tree locus and retains its content identities", () => {
-  const value = report() as {candidates: Array<Record<string, unknown>>};
-  value.candidates[0] = {
-    candidate_id: candidateId,
-    category: "governance",
-    rule_id: "GV001",
-    anchor: {
-      schema_version: "1.0",
-      kind: "repository-tree",
-      path: ".",
-      line_start: 1,
-      line_end: 1,
-      tree_oid: "e".repeat(40),
-      tracked_content_sha256: "f".repeat(64),
-    },
-    symbol: "repository",
-    evidence: "repository-wide evidence",
-    confidence: "medium",
-    rationale: "repository state requires review",
-    verification: "inspect the exact tree",
-  };
-  const parsed = parseAuditReport(value);
-  const anchor = parsed.candidates[0]?.anchor;
-  assert.equal(anchor?.kind, "repository-tree");
-  if (anchor?.kind === "repository-tree") {
-    assert.equal(anchor.tree_oid, "e".repeat(40));
-    assert.equal(anchor.tracked_content_sha256, "f".repeat(64));
+    for (const [name, candidate, expected] of [
+      ["non-object", null, /must be an object/u],
+      ["invalid confidence", { ...tracked, confidence: "certain" }, /confidence is unsupported/u],
+      ["invalid identity", { ...tracked, candidate_id: 1 }, /non-empty string/u],
+      [
+        "unsupported anchor schema",
+        { ...tracked, anchor: { ...tracked.anchor, schema_version: "2.0" } },
+        /schema_version is unsupported/u,
+      ],
+      [
+        "unsupported anchor kind",
+        { ...tracked, anchor: { ...tracked.anchor, kind: "directory" } },
+        /kind is unsupported/u,
+      ],
+      [
+        "zero source coordinate",
+        { ...tracked, anchor: { ...tracked.anchor, line_start: 0 } },
+        /positive integer/u,
+      ],
+      [
+        "fractional source coordinate",
+        { ...tracked, anchor: { ...tracked.anchor, line_start: 1.5 } },
+        /positive integer/u,
+      ],
+      [
+        "unsafe source coordinate",
+        { ...tracked, anchor: { ...tracked.anchor, line_start: Number.MAX_SAFE_INTEGER + 1 } },
+        /positive integer/u,
+      ],
+      [
+        "inverted span",
+        { ...tracked, anchor: { ...tracked.anchor, line_start: 2, line_end: 1 } },
+        /inverted line span/u,
+      ],
+      [
+        "invalid Git identity",
+        { ...tracked, anchor: { ...tracked.anchor, blob_oid: "invalid" } },
+        /Git object identifier/u,
+      ],
+      [
+        "invalid content identity",
+        { ...tracked, anchor: { ...tracked.anchor, content_sha256: "INVALID" } },
+        /SHA-256 digest/u,
+      ],
+    ] as const) {
+      await test("refuses candidate " + name, () => {
+        assert.throws(() => parseAuditReport({ ...report, candidates: [candidate] }), expected);
+      });
+    }
+
+    await test("accepts empty optional display text without claiming canonical validity", () => {
+      const parsed = parseAuditReport({
+        ...report,
+        branch: "",
+        candidates: [{ ...tracked, symbol: "", confidence: "low" }],
+      });
+      const candidate = parsed.candidates[0];
+      assert.ok(candidate);
+      assert.equal(parsed.branch, "");
+      assert.equal(candidate.symbol, "");
+      assert.equal(candidate.confidence, "low");
+    });
+
+    await test("accepts the repository root only for an explicitly permitted tree locus", () => {
+      assert.equal(assertRepositoryPath(".", true), ".");
+      assert.equal(assertRepositoryPath(tracked.anchor.path), tracked.anchor.path);
+      for (const value of ["", ".", "..", "../source.py", "src//file.py", "src/./file.py"]) {
+        assert.throws(() => assertRepositoryPath(value), /dot segments/u);
+      }
+      for (const value of ["/absolute.py", "src\\file.py", "src/\0file.py"]) {
+        assert.throws(() => assertRepositoryPath(value), /portable repository-relative/u);
+      }
+    });
+
+    for (const [name, value, expected] of [
+      [
+        "unsupported envelope",
+        { ...reviews, schema_version: "2.0" },
+        /schema_version is unsupported/u,
+      ],
+      ["non-array records", { ...reviews, reviews: null }, /reviews must be an array/u],
+      ["non-object record", { ...reviews, reviews: [null] }, /must be an object/u],
+      [
+        "unknown decision",
+        { ...reviews, reviews: [{ ...review, decision: "approved" }] },
+        /decision is unsupported/u,
+      ],
+      [
+        "invalid severity type",
+        { ...reviews, reviews: [{ ...review, severity: 2 }] },
+        /severity is unsupported/u,
+      ],
+      [
+        "invalid severity value",
+        { ...reviews, reviews: [{ ...review, severity: "P5" }] },
+        /severity is unsupported/u,
+      ],
+      [
+        "severity on draft",
+        { ...reviews, reviews: [{ ...review, severity: "P1" }] },
+        /allowed only for valid/u,
+      ],
+      [
+        "non-array evidence",
+        { ...reviews, reviews: [{ ...review, evidence: null }] },
+        /must be an array/u,
+      ],
+      [
+        "non-string evidence",
+        { ...reviews, reviews: [{ ...review, evidence: [null] }] },
+        /must be a string/u,
+      ],
+      [
+        "unknown candidate",
+        { ...reviews, reviews: [{ ...review, candidate_id: "0".repeat(64) }] },
+        /unknown candidate/u,
+      ],
+      ["duplicate candidate", { ...reviews, reviews: [review, review] }, /duplicate review/u],
+    ] as const) {
+      await test("refuses ledger " + name, () => {
+        assert.throws(() => parseReviewDocument(value, report), expected);
+      });
+    }
+
+    await test("checks display decision and string-array shapes without asserting review approval", () => {
+      for (const decision of ["valid", "invalid", "accepted-boundary", "needs-evidence"]) {
+        const parsed = parseReviewDocument(
+          {
+            ...reviews,
+            reviews: [
+              {
+                ...review,
+                decision,
+                severity: decision === "valid" ? "P1" : null,
+                evidence: ["", repository.artifactRoot],
+              },
+            ],
+          },
+          report,
+        );
+        const record = parsed.reviews[0];
+        assert.ok(record);
+        assert.equal(record.decision, decision);
+        assert.deepEqual(record.evidence, ["", repository.artifactRoot]);
+      }
+    });
+  } finally {
+    await rm(repository.root, { recursive: true, force: true });
   }
-  const invalid = structuredClone(value) as {candidates: Array<{anchor: {line_end: number}}>};
-  invalid.candidates[0]!.anchor.line_end = 2;
-  assert.throws(() => parseAuditReport(invalid), /fixed 1:1/u);
+}
+
+run().catch((error: unknown): void => {
+  process.stderr.write("Evidence contract test setup failed: " + String(error) + "\n");
+  process.exitCode = 1;
 });

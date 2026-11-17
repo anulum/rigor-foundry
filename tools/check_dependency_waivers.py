@@ -23,9 +23,10 @@ WAIVER_PATH = Path(".github/dependency-waivers.json")
 SECURITY_WORKFLOW = Path(".github/workflows/security.yml")
 REQUIRED_COMMANDS = (
     "python -m tools.check_dependency_waivers",
+    "python -m pytest tests/test_semgrep_runtime.py --cov=test_semgrep_runtime --cov-branch --cov-report=term-missing --cov-fail-under=100",
     "python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip --strict",
     "python -m pip_audit -r requirements/security.txt --require-hashes --disable-pip --strict",
-    "semgrep scan --error --config .semgrep.yml src tools",
+    "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools",
 )
 
 

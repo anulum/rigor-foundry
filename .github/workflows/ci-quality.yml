@@ -7,17 +7,11 @@
 # RigorFoundry — Deterministic quality and test gates
 
 name: CI quality
-
-on:
-  workflow_call:
-
 permissions:
   contents: read
-
 concurrency:
   group: ci-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   quality:
     runs-on: ubuntu-24.04
@@ -80,12 +74,15 @@ jobs:
           "$RUNNER_TEMP/typos"
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: "3.12.13"
+          python-version: 3.12.13
           cache: pip
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/bootstrap.txt
+            requirements/ci.txt
       - name: Install hash-locked quality environment
         run: |
-          python -m pip install --require-hashes -r requirements/ci.txt
+          python -m pip install --require-hashes -r requirements/bootstrap.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
           python -m pip install --no-build-isolation --no-deps .
       - name: Audit repository contracts
         run: python -m tools.audit
@@ -104,8 +101,8 @@ jobs:
           "$RUNNER_TEMP/rigor-actionlint/actionlint" -version
           "$RUNNER_TEMP/rigor-actionlint/actionlint"
           python -m tools.check_ci_workflows
-          python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/test_shard_schedule.py tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py
-          python -m pytest tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py --cov=tools.test_shard_schedule --cov=test_test_shard_schedule --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov-branch --cov-report=term-missing --cov-fail-under=100
+          python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/test_shard_schedule.py tools/ci_workflows.py tools/ci_native_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_ci_native_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py tools/check_full_file_coverage.py tests/test_check_full_file_coverage.py tools/native_test_evidence.py tools/run_native_tests.py tools/pytest_native_tests.py tools/native_coverage.py tests/test_native_test_evidence.py tests/test_run_native_tests.py tests/test_pytest_native_tests.py tests/test_native_coverage.py tools/native_test_profiles.py tools/ordinary_coverage.py tests/test_native_test_profiles.py tests/test_ordinary_coverage.py tests/test_native_coverage_ownership.py tests/test_native_observation_identity.py tools/ci_editor_workflows.py tests/test_ci_editor_workflows.py
+          python -m pytest tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_ci_native_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py tests/test_check_full_file_coverage.py --cov=tools.test_shard_schedule --cov=test_test_shard_schedule --cov=tools.ci_workflows --cov=tools.ci_native_workflows --cov=test_ci_native_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov=tools.check_full_file_coverage --cov=test_check_full_file_coverage tests/test_ci_editor_workflows.py --cov=tools.ci_editor_workflows --cov=test_ci_editor_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Context source ownership and lifetime coverage
         shell: bash
         run: |
@@ -113,11 +110,7 @@ jobs:
           python -m pytest tests/test_context_source_resolution.py tests/test_context_source_lease.py --cov=rigor_foundry.context_source_resolution --cov=test_context_source_resolution --cov=test_context_source_lease --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Dependency audit guard coverage
         shell: bash
-        run: >-
-          python -m pytest tests/test_check_dependency_audits.py
-          tests/test_check_dependency_waivers.py
-          --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers
-          --cov-branch --cov-report=term-missing --cov-fail-under=100
+        run: python -m pytest tests/test_check_dependency_audits.py tests/test_check_dependency_waivers.py --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Validate classified coverage residuals
         run: python -m rigor_foundry residuals-check --root .
       - name: Lint and format
@@ -125,20 +118,7 @@ jobs:
           python -m ruff check src tools tests fuzz benchmarks
           python -m ruff format --check src tools tests fuzz benchmarks
       - name: Memory preparation test documentation
-        run: >-
-          python -m ruff check --config 'lint.per-file-ignores={}'
-          tests/test_project_memory_activation_artifact.py
-          tests/test_project_memory_activation_plan.py
-          tests/project_memory_store_support.py
-          tests/test_project_memory_store.py
-          tests/test_project_memory_reader.py
-          tests/test_project_memory_history.py
-          tests/test_project_memory_filesystem_safety.py
-          tests/test_project_registry_cutover.py
-          tests/test_project_memory_activation_content.py
-          tests/test_project_memory_activation_publication.py
-          tests/test_project_memory_sources.py
-          tests/test_protected_file_publication.py
+        run: python -m ruff check --config 'lint.per-file-ignores={}' tests/test_project_memory_activation_artifact.py tests/test_project_memory_activation_plan.py tests/project_memory_store_support.py tests/test_project_memory_store.py tests/test_project_memory_reader.py tests/test_project_memory_history.py tests/test_project_memory_filesystem_safety.py tests/test_project_registry_cutover.py tests/test_project_memory_activation_content.py tests/test_project_memory_activation_publication.py tests/test_project_memory_sources.py tests/test_protected_file_publication.py
       - name: Strict typing
         run: python -m mypy --strict src tools tests fuzz benchmarks
       - name: Discovery source documentation and typing
@@ -146,15 +126,7 @@ jobs:
           python -m ruff check --config 'lint.per-file-ignores={}' tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
           python -m mypy --strict src/rigor_foundry/discovery_source_*.py src/rigor_foundry/discovery_progress.py tests/discovery_source_support.py tests/test_discovery_source_*.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
       - name: Discovery source closure coverage
-        run: >-
-          python -m pytest tests/test_discovery_source_validation.py
-          tests/test_discovery_source_boundaries.py tests/test_discovery_source_cli.py
-          tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py
-          --cov=rigor_foundry.discovery_source_schema
-          --cov=rigor_foundry.discovery_source_validation
-          --cov=rigor_foundry.discovery_source_cli
-          --cov=rigor_foundry.discovery_progress
-          --cov-branch --cov-report=term-missing --cov-fail-under=100
+        run: python -m pytest tests/test_discovery_source_validation.py tests/test_discovery_source_boundaries.py tests/test_discovery_source_cli.py tests/test_discovery_progress.py tests/test_discovery_inventory_intake.py --cov=rigor_foundry.discovery_source_schema --cov=rigor_foundry.discovery_source_validation --cov=rigor_foundry.discovery_source_cli --cov=rigor_foundry.discovery_progress --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Campaign admission documentation, typing and coverage
         run: |
           python -m ruff check --config 'lint.per-file-ignores={}' tests/test_campaign_admission.py tests/test_signed_campaign_admission.py
@@ -183,3 +155,5 @@ jobs:
             self-audit-gate.json
           if-no-files-found: error
           retention-days: 30
+'on':
+  workflow_call:

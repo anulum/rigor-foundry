@@ -81,36 +81,42 @@
         "rigorFoundry.executable": {
           "type": "string",
           "default": "rigor",
-          "description": "Absolute path or command name for the RigorFoundry CLI. It is executed without a shell."
+          "description": "Absolute path or command name for the RigorFoundry CLI. It is executed without a shell.",
+          "scope": "resource"
         },
         "rigorFoundry.reportPath": {
           "type": "string",
           "default": ".rigor/report.json",
-          "description": "Workspace-relative path for the audit report."
+          "description": "Workspace-relative path for the audit report.",
+          "scope": "resource"
         },
         "rigorFoundry.reviewPath": {
           "type": "string",
           "default": ".rigor/reviews.json",
-          "description": "Workspace-relative path for the review ledger."
+          "description": "Workspace-relative path for the review ledger.",
+          "scope": "resource"
         },
         "rigorFoundry.policyPath": {
           "type": "string",
           "default": "rigor-foundry-policy.json",
-          "description": "Workspace-relative policy used by Scan Workspace."
+          "description": "Workspace-relative policy used by Scan Workspace.",
+          "scope": "resource"
         },
         "rigorFoundry.maximumEvidenceBytes": {
           "type": "integer",
           "default": 16777216,
           "minimum": 1024,
           "maximum": 67108864,
-          "description": "Maximum UTF-8 bytes accepted for one report or review file."
+          "description": "Maximum UTF-8 bytes accepted for one report or review file.",
+          "scope": "resource"
         },
         "rigorFoundry.cliTimeoutSeconds": {
           "type": "integer",
           "default": 120,
           "minimum": 1,
           "maximum": 900,
-          "description": "Timeout for an explicitly invoked RigorFoundry CLI command."
+          "description": "Timeout for an explicitly invoked RigorFoundry CLI command.",
+          "scope": "resource"
         }
       }
     },
@@ -156,15 +162,52 @@
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "compile": "tsc -p tsconfig.json",
-    "check": "npm run clean && npm run compile && npm run test:unit",
+    "check": "npm run clean && npm run lint && npm run format:check && npm run typecheck && npm run compile && npm run docs && npm run test:unit",
     "test:unit": "node --test out/test/unit/*.test.js",
     "test:integration": "npm run compile && node scripts/run-integration-tests.mjs",
-    "package": "vsce package --no-dependencies --out rigor-foundry-vscode.vsix"
+    "package": "vsce package --no-dependencies --target linux-x64 --out rigor-foundry-vscode.vsix",
+    "lint": "eslint . --max-warnings=0",
+    "format:check": "prettier --check \"{src,test,scripts}/**/*.{ts,mjs}\" \"*.mjs\" package.json tsconfig.json tsconfig.tools.json typedoc.json c8.config.json README.md",
+    "format": "prettier --write \"{src,test,scripts}/**/*.{ts,mjs}\" \"*.mjs\" package.json tsconfig.json tsconfig.tools.json typedoc.json c8.config.json README.md",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+    "docs": "typedoc --options typedoc.json",
+    "test:coverage": "c8 --config c8.config.json npm run verify",
+    "verify": "npm run check && npm run test:linux-filesystem && node scripts/run-workspace-tests.mjs && node scripts/run-integration-tests.mjs && node --test out/test/integration/*.test.js",
+    "test:linux-filesystem": "node --test out/test/linux/*.test.js",
+    "test:workspace": "npm run compile && node scripts/run-workspace-tests.mjs",
+    "build:windows-native": "node scripts/build-windows-native.mjs",
+    "package:windows": "node scripts/stage-windows-binding.mjs && vsce package --no-dependencies --target win32-x64 --out rigor-foundry-vscode-win32-x64.vsix",
+    "stage:windows-native": "node scripts/stage-windows-binding.mjs",
+    "test:workbench": "npm run compile && node --test out/test/integration/*.test.js"
   },
   "devDependencies": {
-    "@types/node": "22.20.1",
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
     "@types/vscode": "1.125.0",
     "@vscode/vsce": "4.0.0",
-    "typescript": "5.9.3"
+    "c8": "12.0.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-jsdoc": "65.3.6",
+    "prettier": "3.9.10",
+    "typedoc": "0.28.20",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  },
+  "imports": {
+    "#cli": {
+      "types": "./src/cli.ts",
+      "default": "./out/src/cli.js"
+    },
+    "#test-repository": {
+      "types": "./test/support/repository.ts",
+      "default": "./out/test/support/repository.js"
+    },
+    "#koffi-runtime": {
+      "types": "koffi",
+      "default": "./native/koffi/src/koffi/index.cjs"
+    }
+  },
+  "dependencies": {
+    "koffi": "3.3.5"
   }
 }

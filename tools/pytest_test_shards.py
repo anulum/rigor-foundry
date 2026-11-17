@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from tools.native_test_profiles import PRIMARY_TEST_NAMES
 from tools.test_shard_schedule import WARM_STRATEGY, partition, read_timings
 
 
@@ -29,12 +30,14 @@ class ShardObserver:
     """
 
     def __init__(self, config: pytest.Config) -> None:
+        self.config = config
         self.index = int(config.getoption("test_shard_index"))
         self.count = int(config.getoption("test_shard_count"))
         self.output = Path(config.getoption("test_shard_observations"))
         self.collected: list[str] = []
         self.selected: list[str] = []
         self.phases: dict[str, list[list[str]]] = {}
+        self.subtests: dict[str, list[list[str]]] = {}
         self.strategy = os.environ.get("RIGOR_TEST_SHARD_STRATEGY", WARM_STRATEGY)
         self.timings = read_timings(Path.cwd(), self.strategy)
 
@@ -84,7 +87,13 @@ class ShardObserver:
         report : pytest.TestReport
             Actual pytest phase report, including existing skip/xfail outcomes.
         """
-        self.phases.setdefault(report.nodeid, []).append([report.when, report.outcome])
+        serialized = self.config.hook.pytest_report_to_serializable(
+            config=self.config, report=report
+        )
+        if serialized.get("_report_type") == "SubTestReport":
+            self.subtests.setdefault(report.nodeid, []).append([report.when, report.outcome])
+        else:
+            self.phases.setdefault(report.nodeid, []).append([report.when, report.outcome])
 
     def pytest_sessionfinish(self, exitstatus: int) -> None:
         """Save provisional observations; the external launcher owns success.
@@ -97,13 +106,14 @@ class ShardObserver:
         self.output.write_text(
             json.dumps(
                 {
-                    "schema_version": 2,
+                    "schema_version": 3,
                     "strategy": self.strategy,
                     "index": self.index,
                     "count": self.count,
                     "collected": self.collected,
                     "selected": self.selected,
                     "phases": self.phases,
+                    "subtests": self.subtests,
                     "timings": self.timings,
                     "exitstatus": int(exitstatus),
                 },
@@ -168,3 +178,21 @@ def pytest_configure(config: pytest.Config) -> None:
     ):
         raise pytest.UsageError("complete test shard invocation required")
     config.pluginmanager.register(ShardObserver(config), "complete-test-shard-observer")
+
+
+def pytest_ignore_collect(collection_path: Path) -> bool | None:
+    """Keep separately required primary modules out of ordinary collection.
+
+    Parameters
+    ----------
+    collection_path : Path
+        Actual candidate path, inspected before pytest imports the module.
+
+    Returns
+    -------
+    bool or None
+        Ignore a reserved primary owner; otherwise retain normal discovery.
+    """
+    if collection_path.name in PRIMARY_TEST_NAMES:
+        return True
+    return None

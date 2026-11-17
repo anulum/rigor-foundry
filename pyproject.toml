@@ -199,6 +199,7 @@ repository_tools = [
     "*/test_actual_guard_cli_accepts_*/tools",
     "*/test_metadata_cli_validates_*/repository/tools",
     "*/test_repository_guard_clis_*/repository/tools",
+    "*/test_real_editor_workflow_chan*/tools",
 ]
 
 [tool.coverage.report]

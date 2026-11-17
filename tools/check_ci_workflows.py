@@ -15,6 +15,13 @@ from pathlib import Path
 from typing import Any, cast
 
 from tools._repository import ROOT, redacted_guard_exit_code
+from tools.ci_editor_workflows import check_editor_jobs
+from tools.ci_native_workflows import (
+    NATIVE_COVERAGE_DOWNLOAD,
+    NATIVE_WHOLE_FILE_STEP,
+    UNION_PREREQUISITE_STEP,
+    check_native_jobs,
+)
 from tools.ci_workflows import (
     CI_WORKFLOWS,
     PYTHON_VERSIONS,
@@ -43,8 +50,8 @@ tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/rigor-actionlint" act
 "$RUNNER_TEMP/rigor-actionlint/actionlint" -version
 "$RUNNER_TEMP/rigor-actionlint/actionlint"
 python -m tools.check_ci_workflows
-python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/test_shard_schedule.py tools/ci_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py
-python -m pytest tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py --cov=tools.test_shard_schedule --cov=test_test_shard_schedule --cov=tools.ci_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov-branch --cov-report=term-missing --cov-fail-under=100
+python -m ruff check --config 'lint.per-file-ignores={}' --config 'lint.ignore=[]' tools/test_shard_schedule.py tools/ci_workflows.py tools/ci_native_workflows.py tools/check_ci_workflows.py tools/pytest_test_shards.py tools/test_shard_evidence.py tools/run_test_shard.py tools/combine_test_shards.py tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_ci_native_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py tools/check_full_file_coverage.py tests/test_check_full_file_coverage.py tools/native_test_evidence.py tools/run_native_tests.py tools/pytest_native_tests.py tools/native_coverage.py tests/test_native_test_evidence.py tests/test_run_native_tests.py tests/test_pytest_native_tests.py tests/test_native_coverage.py tools/native_test_profiles.py tools/ordinary_coverage.py tests/test_native_test_profiles.py tests/test_ordinary_coverage.py tests/test_native_coverage_ownership.py tests/test_native_observation_identity.py tools/ci_editor_workflows.py tests/test_ci_editor_workflows.py
+python -m pytest tests/test_test_shard_schedule.py tests/test_ci_workflows.py tests/test_ci_native_workflows.py tests/test_check_ci_workflows.py tests/test_pytest_test_shards.py tests/test_test_shard_evidence.py tests/test_run_test_shard.py tests/test_combine_test_shards.py tests/test_ci_workflow.py tests/test_documentation_publication.py tests/test_packaging_contract.py tests/test_pypi_downloads.py tests/test_check_full_file_coverage.py --cov=tools.test_shard_schedule --cov=test_test_shard_schedule --cov=tools.ci_workflows --cov=tools.ci_native_workflows --cov=test_ci_native_workflows --cov=tools.check_ci_workflows --cov=tools.pytest_test_shards --cov=tools.test_shard_evidence --cov=tools.run_test_shard --cov=tools.combine_test_shards --cov=test_ci_workflows --cov=test_check_ci_workflows --cov=test_pytest_test_shards --cov=test_test_shard_evidence --cov=test_run_test_shard --cov=test_combine_test_shards --cov=test_ci_workflow --cov=test_documentation_publication --cov=test_packaging_contract --cov=test_pypi_downloads --cov=tools.check_full_file_coverage --cov=test_check_full_file_coverage tests/test_ci_editor_workflows.py --cov=tools.ci_editor_workflows --cov=test_ci_editor_workflows --cov-branch --cov-report=term-missing --cov-fail-under=100
 """,
 }
 
@@ -182,13 +189,24 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
         )
         _require(records[relative]["category"] == name)
         job = document["jobs"][name]
-        _require(not set(job).intersection({"needs", "if", "continue-on-error", "defaults"}))
+        _require(not set(job).intersection({"if", "continue-on-error", "defaults"}))
+        prerequisites = {
+            "test": ["native", "native-primary"],
+            "vscode": ["vscode-native", "vscode-host"],
+        }
+        _require(
+            job.get("needs") == prerequisites[name]
+            if name in prerequisites
+            else "needs" not in job
+        )
         expected = {"contents": "read", "id-token": "write"} if name == "coverage" else None
         _require(job.get("permissions") == expected)
     quality_steps = documents[CI_WORKFLOWS["quality"]]["jobs"]["quality"]["steps"]
     _require(quality_steps.count(WORKFLOW_VALIDATION_STEP) == 1)
     _require(quality_steps.count(CONTEXT_SOURCE_VALIDATION_STEP) == 1)
     test_jobs = documents[CI_WORKFLOWS["test"]]["jobs"]
+    check_editor_jobs(documents[CI_WORKFLOWS["vscode"]]["jobs"], root)
+    check_native_jobs(test_jobs)
     execution = test_jobs["test"]
     _require(
         execution["env"]
@@ -206,13 +224,23 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
     )
     _require(execution["steps"][-2:] == [SHARD_STEP, SHARD_UPLOAD])
     union = test_jobs["test-coverage"]
-    _require(set(union) == {"needs", "env", "runs-on", "timeout-minutes", "strategy", "steps"})
-    _require(union["needs"] == "test" and union["runs-on"] == "ubuntu-24.04")
+    _require(
+        set(union) == {"needs", "if", "env", "runs-on", "timeout-minutes", "strategy", "steps"}
+    )
+    _require(
+        union["needs"] == ["native", "native-primary", "native-quality", "test"]
+        and union["runs-on"] == "ubuntu-24.04"
+        and union["if"] == "${{ always() }}"
+    )
     _require(
         union["env"]
         == {
             "PYTHONPATH": "${{ github.workspace }}/src",
             "RIGOR_TEST_SHARD_STRATEGY": "module-lpt-v1",
+            "TEST_RESULT": "${{ needs.test.result }}",
+            "NATIVE_RESULT": "${{ needs.native.result }}",
+            "NATIVE_QUALITY_RESULT": "${{ needs['native-quality'].result }}",
+            "PRIMARY_RESULT": "${{ needs['native-primary'].result }}",
         }
     )
     _require(union["timeout-minutes"] == 10)
@@ -220,35 +248,40 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
         union["strategy"] == {"fail-fast": False, "matrix": {"python-version": PYTHON_VERSIONS}}
     )
     steps = union["steps"]
-    _require(len(steps) == 7 and steps[3:5] == [UNION_DOWNLOAD, UNION_STEP])
-    _require(steps[0] == execution["steps"][0])
     _require(
-        steps[1]
+        len(steps) == 10
+        and steps[0] == UNION_PREREQUISITE_STEP
+        and steps[4:7] == [UNION_DOWNLOAD, NATIVE_COVERAGE_DOWNLOAD, UNION_STEP]
+        and steps[8] == NATIVE_WHOLE_FILE_STEP
+    )
+    _require(steps[1] == execution["steps"][0])
+    _require(
+        steps[2]
         == {
             "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
             "with": {
                 "python-version": "${{ matrix.python-version }}",
                 "cache": "pip",
-                "cache-dependency-path": "requirements/ci.txt",
+                "cache-dependency-path": "requirements/bootstrap.txt\nrequirements/ci.txt\n",
             },
         }
     )
     _require(
-        steps[2]
+        steps[3]
         == {
             "name": "Install hash-locked coverage environment",
-            "run": "python -m pip install --require-hashes -r requirements/ci.txt",
+            "run": "python -m pip install --require-hashes -r requirements/bootstrap.txt\npython -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt\n",
         }
     )
     _require(
-        steps[5]
+        steps[7]
         == {
             "name": "Enforce exact native dispatch coverage",
             "run": "python -m coverage report --include='*/native_dispatch.py' --fail-under=100",
         }
     )
     _require(
-        steps[6]
+        steps[9]
         == {
             "uses": SHARD_UPLOAD["uses"],
             "if": "matrix.python-version == '3.12.13'",

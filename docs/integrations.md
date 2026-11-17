@@ -54,6 +54,11 @@ PEP 517 backend and all four of its build dependencies are exact requirements
 as well. Nested `setup-python` is itself pinned to a full commit. Inputs enter
 Bash only through quoted environment variables.
 
+The current-source Action first installs the hash-locked source-build bootstrap
+in its new interpreter, then installs the build/runtime locks without build
+isolation. The immutable example above identifies its published source revision;
+it does not acquire later source changes.
+
 `repository-root`, repository-relative tracked `policy-path`, `report-path`, and `gate-report-path` are
 mandatory. `mode` accepts only `observe`, `ratchet`, or `zero`; `scope` accepts
 only `staged` or `full`. Ratchet and zero require an explicit `maturity-path`
@@ -98,14 +103,20 @@ repos:
 Create and ignore `.rigor/reports` before running the hook. The hook uses
 `language: system` deliberately: pre-commit's Python environment installer does
 not expose pip's `--require-hashes` contract. Install the pinned RigorFoundry
-checkout into `.rigor/rigor-venv` with its `requirements/build.txt` and
-`requirements/runtime.txt` hash locks, followed by `pip install
+checkout into `.rigor/rigor-venv` with the `requirements/build.txt` and
+`requirements/runtime.txt` hash locks from that same immutable revision, followed
+by `pip install
 --no-build-isolation --no-deps CHECKOUT`; then retain the explicit `entry`
 shown above. The manifest runs once serially without filenames and does not
 consent to native adapters. For ratchet or zero, replace the complete `args`
 list, select the stronger mode, and add `--maturity PATH`. Add `--review PATH`
 only when the review ledger is explicitly owned. Add `--allow-native-audits`
 only after reviewing the declared adapter commands and sandbox prerequisites.
+
+For a current-source checkout, install `requirements/bootstrap.txt` into that
+interpreter before the build/runtime locks and pass `--no-build-isolation` for
+subsequent lock installation. Keep the current-source setup separate from the
+older immutable example: its files and dependency pins come from its own revision.
 
 ## Verification boundary
 

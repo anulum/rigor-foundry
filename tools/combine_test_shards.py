@@ -15,9 +15,11 @@ import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import cast
 
 import coverage
 
+from tools.native_coverage import native_coverage_inputs
 from tools.run_test_shard import pytest_command
 from tools.test_shard_evidence import digest, require, source_identity, validate_receipt
 
@@ -33,7 +35,7 @@ def _reporting_coverage() -> Iterator[coverage.Coverage]:
         measured.get_data().close(force=True)
 
 
-def combine_shards(directory: Path, count: int) -> None:
+def combine_shards(directory: Path, count: int, native_directory: Path | None = None) -> None:
     """Validate every partition before combining its real retained branch data.
 
     Parameters
@@ -42,6 +44,10 @@ def combine_shards(directory: Path, count: int) -> None:
         Downloaded artifact root containing exactly shard-0 through shard-N.
     count : int
         Required partition count shared by every producer.
+    native_directory : Path or None
+        Complete hosted Windows/Darwin platform inputs for the same interpreter
+        and run attempt. CI requires these inputs; standalone Linux qualification
+        retains the original scope when this argument is absent.
 
     Raises
     ------
@@ -52,7 +58,8 @@ def combine_shards(directory: Path, count: int) -> None:
     require(not Path(".coverage").exists() and not Path("coverage.xml").exists())
     expected = {f"shard-{index}" for index in range(count)}
     require({path.name for path in directory.iterdir()} == expected)
-    identity = source_identity(Path.cwd(), dict(os.environ))
+    root = Path.cwd()
+    identity = source_identity(root, dict(os.environ))
     collected: list[str] | None = None
     inputs: list[str] = []
     for index in range(count):
@@ -63,7 +70,18 @@ def combine_shards(directory: Path, count: int) -> None:
             collected = actual
         require(actual == collected)
         inputs.append(str((shard / ".coverage").resolve()))
+    native_inputs, packages, tests = native_coverage_inputs(root, native_directory, identity)
+    inputs.extend(native_inputs)
     measured = coverage.Coverage(config_file="pyproject.toml", data_file=".coverage")
+    # Coverage's paths section returns a mapping; scalar options share its getter type.
+    paths = cast(dict[str, list[str]], measured.get_option("paths"))
+    paths["rigor_foundry"] = [
+        str(root / "src/rigor_foundry"),
+        *paths.get("rigor_foundry", []),
+        *packages,
+    ]
+    paths["native_tests"] = [str(root / "tests"), *tests]
+    measured.set_option("paths", paths)
     hashes = [digest(Path(path)) for path in inputs]
     try:
         with warnings.catch_warnings(record=True) as emitted:
@@ -75,11 +93,11 @@ def combine_shards(directory: Path, count: int) -> None:
     finally:
         measured.get_data().close(force=True)
     with _reporting_coverage() as report:
-        require(report.report() >= 98)
+        require(report.report(include=["*/rigor_foundry/*"]) >= 98)
     with _reporting_coverage() as report:
         require(report.report(include=["*/native_dispatch.py"]) == 100)
     with _reporting_coverage() as report:
-        report.xml_report(outfile="coverage.xml")
+        report.xml_report(include=["*/rigor_foundry/*"], outfile="coverage.xml")
     require(source_identity(Path.cwd(), dict(os.environ)) == identity)
 
 
@@ -94,8 +112,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--count", type=int, required=True)
+    parser.add_argument("--native-directory", type=Path)
     args = parser.parse_args()
-    combine_shards(args.directory, args.count)
+    combine_shards(args.directory, args.count, args.native_directory)
     return 0
 
 

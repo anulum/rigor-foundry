@@ -21,7 +21,12 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from project_registry_syscall_scheduler import SyscallStop, run_traced, write_trace
+from project_registry_syscall_scheduler import (
+    PATH_STAT_SYSCALLS,
+    SyscallStop,
+    run_traced,
+    write_trace,
+)
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.git_inventory import StableReadError
@@ -404,7 +409,12 @@ else:
                 changed = True
         if stop.number == 0 and not stop.entering and stop.path == str(source):
             finished_read |= stop.result == 0
-        if stop.entering and stop.number == 262 and stop.path == str(source) and finished_read:
+        if (
+            stop.entering
+            and stop.number in PATH_STAT_SYSCALLS
+            and stop.path == str(source)
+            and finished_read
+        ):
             post_read_samples += 1
             selected = 3 if phase == "byte-disagreement" else 2
             if not changed and phase != "root-object" and post_read_samples == selected:

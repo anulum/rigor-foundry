@@ -39,8 +39,12 @@ def copy_workflow_repository(destination: Path) -> Path:
         "tools/__init__.py",
         "tools/_repository.py",
         "tools/ci_workflows.py",
+        "tools/ci_native_workflows.py",
+        "tools/ci_editor_workflows.py",
         "tools/check_ci_workflows.py",
         "tools/check_action_pins.py",
+        "editors/vscode/native/editor-hosts.json",
+        ".github/actions/install-editor-host/action.yml",
         *[str(path.relative_to(ROOT)) for path in (ROOT / ".github/workflows").glob("*.yml")],
     ):
         target = destination / relative
@@ -64,7 +68,16 @@ def test_category_projection_reads_all_actual_jobs_and_caller_needs(tmp_path: Pa
         for identifier in CI_CATEGORY_JOBS[name]:
             actual = read_workflow(root / relative)["jobs"][identifier]
             if name == "coverage":
-                assert jobs[identifier] == {**actual, "needs": ["test", "test-coverage"]}
+                assert jobs[identifier] == {
+                    **actual,
+                    "needs": [
+                        "native",
+                        "native-primary",
+                        "native-quality",
+                        "test",
+                        "test-coverage",
+                    ],
+                }
             else:
                 assert jobs[identifier] == actual
     assert jobs["test"]["strategy"]["matrix"]["python-version"] == [
@@ -73,7 +86,7 @@ def test_category_projection_reads_all_actual_jobs_and_caller_needs(tmp_path: Pa
         "3.13.14",
     ]
     assert jobs["test"]["strategy"]["matrix"]["shard"] == [0, 1, 2, 3, 4, 5, 6, 7]
-    assert jobs["test-coverage"]["needs"] == "test"
+    assert jobs["test-coverage"]["needs"] == ["native", "native-primary", "native-quality", "test"]
 
 
 @pytest.mark.parametrize(

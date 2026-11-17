@@ -28,6 +28,9 @@ editors/vscode/node_modules/
 editors/vscode/out/
 editors/vscode/.vscode-test/
 editors/vscode/*.vsix
+editors/vscode/native/koffi/
+editors/vscode/LICENSE.txt
+.rigor-native-coverage/
 
 .coordination/
 .rigor/
@@ -39,3 +42,5 @@ docs/internal/
 
 docs/internal/**
 /agentic_project_memory/
+
+.rigor-native-primary/
