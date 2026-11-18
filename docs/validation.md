@@ -226,6 +226,8 @@ same digest-pinned BuildKit image as the container workflow. The commit time
 sets the OCI image timestamp. The OCI exporter normalizes layer timestamps.
 The Dockerfile omits local install logs and caches, clears the locked service
 account's password aging date and compiles Python modules with checked hashes.
+The runtime lock is copied with mode `0644` so checkout and archive
+permissions produce the same image layer.
 
 From a clean checkout with a Docker daemon, create a dedicated builder and
 export one image layout. Choose a writable location for the archive.

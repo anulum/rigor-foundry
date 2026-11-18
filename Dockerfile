@@ -40,7 +40,7 @@ RUN sed -i \
         /var/log/apt/history.log /var/log/apt/term.log /var/log/dpkg.log
 
 COPY --from=builder /build/dist/*.whl /tmp/
-COPY requirements/runtime.txt /tmp/runtime.txt
+COPY --chmod=0644 requirements/runtime.txt /tmp/runtime.txt
 RUN python -m pip install --no-cache-dir --no-compile --require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt \
     && python -m pip install --no-cache-dir --no-compile --no-deps /tmp/*.whl \
     && python -m compileall -q --invalidation-mode checked-hash /usr/local/lib/python3.12/site-packages \

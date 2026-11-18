@@ -135,6 +135,7 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     assert "snapshot.debian.org/archive/debian-security/20261118T000000Z" in dockerfile
     assert "USER rigor" in dockerfile
     assert "COPY requirements/bootstrap.txt requirements/bootstrap.txt" in dockerfile
+    assert "COPY --chmod=0644 requirements/runtime.txt /tmp/runtime.txt" in dockerfile
     assert (
         "--require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt"
         in dockerfile
