@@ -36,6 +36,14 @@ def _command(*options: str, positionals: tuple[str, ...] = ()) -> CliCommandCont
 # New commands remain explicitly checked outside the frozen 1.0 manifest.
 PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
     {
+        "doctor": _command(
+            "--git-executable",
+            "--git-max-version-exclusive",
+            "--git-min-version",
+            "--git-trust-root",
+            "--policy",
+            "--root",
+        ),
         "policy-check": _command("--policy", "--root"),
         "scan-provenance": _command(
             "--output", "--policy", "--profile", "--profile-sha256", "--root"

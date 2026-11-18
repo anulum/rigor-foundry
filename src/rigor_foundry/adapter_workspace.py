@@ -145,6 +145,46 @@ class AdapterWorkspace:
         self.close()
 
 
+def _select_profile_inputs(
+    inventory: GitInventory, configuration: str, targets: tuple[str, ...]
+) -> tuple[tuple[TrackedFile, ...], TrackedFile, int]:
+    """Select the bounded tracked input set shared by preflight and execution."""
+    selected = tuple(
+        item
+        for item in inventory.files
+        if item.path == configuration or any(_contains(target, item.path) for target in targets)
+    )
+    by_path = {item.path: item for item in selected}
+    if configuration not in by_path:
+        raise RuntimeError("profile configuration must be a tracked regular file")
+    for target in targets:
+        if not any(_contains(target, item.path) for item in selected):
+            raise RuntimeError(f"profile target contains no tracked files: {target}")
+    total_bytes = sum(item.byte_size for item in selected)
+    if total_bytes > MAX_PROFILE_INPUT_BYTES:
+        raise RuntimeError("profile input exceeds the aggregate byte bound")
+    return selected, by_path[configuration], total_bytes
+
+
+def verify_profile_inputs(
+    inventory: GitInventory, configuration: str, targets: tuple[str, ...]
+) -> None:
+    """Verify the bounded tracked adapter input without creating a snapshot.
+
+    Parameters
+    ----------
+    inventory
+        Git inventory supplying the exact expected file and blob identities.
+    configuration
+        Canonical repository-relative configuration path.
+    targets
+        Canonical repository-relative target paths.
+    """
+    selected, _, _ = _select_profile_inputs(inventory, configuration, targets)
+    for item in selected:
+        _read_exact(inventory, item)
+
+
 def create_adapter_workspace(
     repository: Path,
     *,
@@ -184,20 +224,9 @@ def create_adapter_workspace(
         and inventory.tracked_content_digest != expected_tracked_content_digest
     ):
         raise RuntimeError("profile inventory does not match the audited tracked input")
-    selected = tuple(
-        item
-        for item in inventory.files
-        if item.path == configuration or any(_contains(target, item.path) for target in targets)
+    selected, tracked_configuration, total_bytes = _select_profile_inputs(
+        inventory, configuration, targets
     )
-    by_path = {item.path: item for item in selected}
-    if configuration not in by_path:
-        raise RuntimeError("profile configuration must be a tracked regular file")
-    for target in targets:
-        if not any(_contains(target, item.path) for item in selected):
-            raise RuntimeError(f"profile target contains no tracked files: {target}")
-    total_bytes = sum(item.byte_size for item in selected)
-    if total_bytes > MAX_PROFILE_INPUT_BYTES:
-        raise RuntimeError("profile input exceeds the aggregate byte bound")
     allocation = inventory.root.parent if workspace_parent is None else workspace_parent
     temporary = Path(tempfile.mkdtemp(prefix=".rigor-profile-", dir=allocation))
     # The sandbox UID must traverse the read-only bind source; no write bit is shared.
@@ -233,7 +262,7 @@ def create_adapter_workspace(
             root=temporary,
             configuration_path=configuration,
             target_paths=targets,
-            configuration_digest=by_path[configuration].content_digest,
+            configuration_digest=tracked_configuration.content_digest,
             input_digest=canonical_digest(input_body),
             input_bytes=total_bytes,
             input_files=len(selected),

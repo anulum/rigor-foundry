@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .adapters import run_native_audits
+from .adopter_doctor_cli import add_doctor_command
 from .bootstrap import bootstrap_repository
 from .campaign_identity import InferenceIdentity
 from .campaign_promotion import validate_promotion_campaign
@@ -664,6 +665,7 @@ def _parser() -> argparse.ArgumentParser:
     add_report_diff_command(subparsers)
     add_offline_verify_command(subparsers)
     add_cra_commands(subparsers)
+    add_doctor_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
     return parser
 
 

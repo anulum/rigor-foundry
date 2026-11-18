@@ -474,6 +474,7 @@ def test_drift_validator_rejects_every_surface_class() -> None:
     commands.pop("scan")
     commands["unknown"] = CliCommandContract(())
     commands["verify"] = CliCommandContract(("--bundle",), ("unexpected",))
+    commands["doctor"] = CliCommandContract(("--root",), ("unexpected",))
     schemas = dict(_observed_schemas())
     schemas.pop("audit-report")
     schemas["review-record"] = "9.0"
@@ -487,6 +488,8 @@ def test_drift_validator_rejects_every_surface_class() -> None:
     assert "CLI commands are unclassified: unknown" in errors
     assert "verify: stable CLI options changed" in errors
     assert "verify: stable CLI positionals changed" in errors
+    assert "doctor: provisional CLI options changed" in errors
+    assert "doctor: provisional CLI positionals changed" in errors
     assert "stable schemas are missing: audit-report" in errors
     assert "schemas are unclassified: unknown" in errors
     assert "review-record: stable schema version changed" in errors

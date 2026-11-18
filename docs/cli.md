@@ -32,6 +32,23 @@ The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
 do not expose `promote --apply`; see [Consumer integrations](integrations.md).
 
+## Adopter preflight
+
+Run `rigor doctor --root /path/to/repository` to check the installed package,
+trusted Git, tracked policy, Bubblewrap and declared native adapter descriptors.
+Use `--policy` and the Git trust options from `rigor scan` to diagnose the same
+configuration. The command reads the repository and prints JSON without
+creating files in it. The sandbox check runs a fixed no-op inside the normal
+native isolation boundary. Repository-declared adapter commands are not run.
+
+Each check reports its status, whether it is required, and an observation or
+remediation. An unavailable Git inventory leaves policy and sandbox checks
+unassessed. A missing tracked policy is reported even when the scanner can use
+portable defaults. The exit status is 1 if any required prerequisite is
+unresolved and 0 otherwise. Sandbox availability is required when the tracked
+policy declares a required native adapter. Descriptor readiness covers local
+resolution and tracked inputs. Actual audit execution produces its own evidence.
+
 ## Explicit output files
 
 Explicit output paths must be new files below existing directories. Existing

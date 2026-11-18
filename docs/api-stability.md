@@ -56,6 +56,10 @@ availability does not erase those migration boundaries.
 
 ## Provisional imports
 
+The `rigor doctor` command is a provisional adopter diagnostic. Its current
+usage and statuses are documented in [the CLI guide](cli.md#adopter-preflight).
+The published 1.0 command manifest continues to describe its original surface.
+
 `report_sarif`, `SARIF_SCHEMA_URI`, and `SARIF_VERSION` are provisional public
 imports. Their emitted document is independently governed by SARIF 2.1.0 and
 the explicit RigorFoundry property names documented in [SARIF export](sarif.md).
