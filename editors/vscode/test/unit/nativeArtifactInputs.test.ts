@@ -69,9 +69,12 @@ void test("binds the complete checkout path scope and refuses absent actual Git 
     await rm(allocation, { recursive: true, force: true });
   });
   const checkout = path.join(allocation, "checkout");
-  const action = ".github/actions/install-editor-host/action.yml";
+  const actions = [
+    ".github/actions/install-editor-host/action.yml",
+    ".github/actions/setup-native-python/action.yml",
+  ];
   const names = [
-    action,
+    ...actions,
     ".github/workflows/ci-vscode.yml",
     "LICENSE",
     "editors/vscode/scripts/build-windows-native.mjs",
@@ -101,19 +104,30 @@ void test("binds the complete checkout path scope and refuses absent actual Git 
     await runCli("git", args, { cwd: checkout, timeoutMilliseconds: 10_000 });
   }
   assert.ok(Object.isFrozen(sourcePaths));
-  assert.ok(sourcePaths.includes(action));
   const status = ["status", "--porcelain", "--untracked-files=all", "--", ...sourcePaths];
   assert.equal(git(checkout, status), "");
   const before = await sourceInputs(checkout);
-  await writeFile(
-    path.join(checkout, action),
-    Buffer.concat([await readFile(path.join(checkout, action)), Buffer.from("\n")]),
-  );
-  assert.match(git(checkout, status), / M \.github\/actions\/install-editor-host\/action\.yml/u);
-  const after = await sourceInputs(checkout);
-  assert.notEqual(after[action], before[action]);
-  for (const name of names.filter((name) => name !== action))
-    assert.equal(after[name], before[name]);
+  for (const action of actions) {
+    assert.ok(sourcePaths.includes(action));
+    assert.ok(before[action]);
+    const filename = path.join(checkout, action);
+    const original = await readFile(filename);
+    await writeFile(filename, Buffer.concat([original, Buffer.from("\n")]));
+    assert.equal(git(checkout, status), ` M ${action}\n`);
+    const after = await sourceInputs(checkout);
+    assert.notEqual(after[action], before[action]);
+    for (const name of names.filter((name) => name !== action))
+      assert.equal(after[name], before[name]);
+    await writeFile(filename, original);
+  }
+  const provisioning = ".github/actions/setup-native-python/action.yml";
+  await rm(path.join(checkout, provisioning));
+  await assert.rejects(sourceInputs(checkout), { code: "ENOENT" });
+  await runCli("git", ["add", "-u", "--", provisioning], {
+    cwd: checkout,
+    timeoutMilliseconds: 10_000,
+  });
+  await assert.rejects(sourceInputs(checkout), { name: "AssertionError" });
   const noGit: NodeJS.ProcessEnv = Object.fromEntries(
     Object.entries(process.env).filter(([name]) => name.toUpperCase() !== "PATH"),
   );

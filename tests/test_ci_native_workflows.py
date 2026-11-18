@@ -115,3 +115,27 @@ def test_actual_native_jobs_use_complete_cached_hash_locked_inputs() -> None:
     assert "--require-hashes" in native["steps"][2]["run"]
     assert native["steps"][-1]["if"] == "${{ always() }}"
     assert native["steps"][-1]["with"]["include-hidden-files"] is True
+
+
+def test_native_python_provisioning_has_one_verified_uv_acquisition_path() -> None:
+    """Require the local provisioning action for all native consumers."""
+    native = ci_jobs()
+    editor = read_workflow(ROOT / ".github/workflows/ci-vscode.yml")["jobs"]
+    action = "./.github/actions/setup-native-python"
+    for name in ("native", "native-primary"):
+        assert native[name]["steps"][1]["uses"] == action
+    native_editor = [step for step in editor["vscode-host"]["steps"] if step.get("uses") == action]
+    assert len(native_editor) == 1
+    assert native_editor[0]["if"] == "runner.os == 'Windows'"
+
+    setup = read_workflow(ROOT / ".github/actions/setup-native-python/action.yml")
+    provision, pip_cache = setup["runs"]["steps"]
+    assert setup["runs"]["using"] == "composite"
+    assert "uses" not in provision
+    assert provision["shell"] == "bash"
+    assert pip_cache["uses"].startswith("actions/cache@")
+    script = provision["run"]
+    verify = script.index('"${hash_command[@]}" --check')
+    assert script.index("https://github.com/astral-sh/uv/releases/download/") < verify
+    assert verify < script.index("unzip -p") < script.index('"$uv" --version')
+    assert verify < script.index("tar -xOzf") < script.index('"$uv" --no-config venv')

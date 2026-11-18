@@ -64,7 +64,7 @@ NATIVE_JOB: dict[str, Any] = {
             "with": {"persist-credentials": False},
         },
         {
-            "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "uses": "./.github/actions/setup-native-python",
             "with": {
                 "python-version": "${{ matrix.python-version }}",
                 "cache": "pip",

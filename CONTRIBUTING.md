@@ -181,9 +181,15 @@ distribution integrations and the VS Code host. Update the versioned
 Every executable job has exactly one declared category and owner.
 
 Each supported Python interpreter keeps eight Linux shards. Windows and macOS
-producers provide native data for the same exact interpreter version. The union
-requires all eight shards and both native platforms with matching source,
-Git revision, run ID and attempt. Parent calls, subtests, JUnit and the original
+producers provide native data for the same exact interpreter version. Native
+jobs and the Windows editor hosts use the isolated CI Python action. It verifies
+the pinned uv archive SHA-256 before extracting and running the executable in a
+fresh runner directory. Its managed x64 CPython catalog supplies patch versions
+that GitHub's runner cache and setup-python manifest omit on those platforms.
+The action verifies the exact runtime, bootstraps bundled pip and keys its cache
+by interpreter identity and lock files. The union requires all eight shards and
+both native platforms with matching source, Git revision, run ID and attempt.
+Parent calls, subtests, JUnit and the original
 branch databases are validated before reporting. The package-wide 98% gate and
 exact native-dispatch gate remain separate from the Python 3.12 whole-file 100%
 gate for the native backend and its maintained tests.

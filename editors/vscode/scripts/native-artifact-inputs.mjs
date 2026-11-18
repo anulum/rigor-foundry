@@ -41,6 +41,7 @@ export const buildFlags = "NODE_JS_LINK_FLAGS=/DELAYLOAD:NODE.EXE;delayimp.lib";
 export const sourcePaths = Object.freeze([
   "editors/vscode",
   ".github/actions/install-editor-host/action.yml",
+  ".github/actions/setup-native-python/action.yml",
   ".github/workflows/ci-vscode.yml",
   "LICENSE",
 ]);
@@ -165,6 +166,7 @@ export async function sourceInputs(root) {
     result[name] = digest(await readMember(root, name));
   assert.ok(result["editors/vscode/scripts/build-windows-native.mjs"]);
   assert.ok(result[".github/workflows/ci-vscode.yml"] && result["LICENSE"]);
+  assert.ok(result[".github/actions/setup-native-python/action.yml"]);
   return result;
 }
 
