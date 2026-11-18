@@ -16,6 +16,11 @@ by `rigor contract` and documented in the
 declares package version `1.0.0`. The manifest describes compatibility; release
 authorisation and registry availability require separate evidence.
 
+The provisional `policy-check` CLI command reports repository policy
+diagnostics without issuing a policy decision. Its command signature is
+checked separately from the frozen 1.0 manifest. See
+[check a repository policy](cli.md#check-a-repository-policy).
+
 The result has sorted `stable` and `provisional` name arrays, exact stable
 runtime-binding records, and structured `deprecated` records. Compatibility
 tests require every top-level export to have exactly one classification. Every

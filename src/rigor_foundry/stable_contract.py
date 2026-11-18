@@ -36,6 +36,7 @@ def _command(*options: str, positionals: tuple[str, ...] = ()) -> CliCommandCont
 # New commands remain explicitly checked outside the frozen 1.0 manifest.
 PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
     {
+        "policy-check": _command("--policy", "--root"),
         "scan-provenance": _command(
             "--output", "--policy", "--profile", "--profile-sha256", "--root"
         ),

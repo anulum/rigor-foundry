@@ -125,6 +125,37 @@ See [CRA readiness rules and StandardPack](cra-rules.md) for policy activation,
 rule verification, pack signing, campaign integration, and the enforcement
 prohibition.
 
+## Check a repository policy
+
+```bash
+rigor policy-check --root . --policy config/draft-policy.json
+```
+
+The default input is `rigor-foundry-policy.json` under the declared root. The
+provisional command accepts a draft as well as a tracked policy. It reads a
+single regular file under that root without following symbolic links and
+bounds the document to one MiB and 32 levels of nesting.
+
+A valid input prints `policy check: PASS` and returns 0. A defective input
+returns 1 and prints each independently diagnosable issue on its own line.
+Each line starts with an escaped JSON Pointer, followed by the problem and
+a fix hint. For example:
+
+```text
+"/native_audits/0/target_paths/1" Invalid repository-relative target. List unique, exact repository-relative targets appropriate to this profile.
+```
+
+Pointer indices start at zero. The empty pointer identifies a document-level
+failure, such as invalid JSON. The command reports precise member names for
+missing or unexpected fields, checks supported policy and adapter variants,
+and locates conflicts such as a required CRA state bound to the wrong ignored
+path. It omits supplied values from diagnostics. Refused input paths and
+unreadable or oversized files return 2.
+
+This is a read-only check. It validates declarations with adapter execution,
+policy installation, enforcement and review authority left to their existing
+entry points.
+
 ## Read-only inspection
 
 `rigor scan --root PATH` inventories one Git repository and emits candidate
