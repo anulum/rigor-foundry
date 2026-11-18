@@ -188,7 +188,11 @@ EDITOR_UNION_GATE = {
 
 EDITOR_PACKAGING = {
     "name": "Package both qualified platform extensions",
-    "run": "npm run package --prefix editors/vscode\n"
+    "shell": "bash",
+    "env": {"TZ": "UTC", "LC_ALL": "C.UTF-8"},
+    "run": 'SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"\n'
+    "export SOURCE_DATE_EPOCH\n"
+    "npm run package --prefix editors/vscode\n"
     "npm run package:windows --prefix editors/vscode\n",
 }
 

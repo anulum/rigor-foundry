@@ -72,6 +72,7 @@ def test_actual_editor_native_workflow_is_required_before_tests(tmp_path: Path) 
         "union-optional",
         "union-gate-reduced",
         "union-steps-invalid",
+        "packaging-time-unbound",
     ],
 )
 def test_real_editor_workflow_changes_refuse_api_and_cli(tmp_path: Path, change: str) -> None:
@@ -180,6 +181,13 @@ def test_real_editor_workflow_changes_refuse_api_and_cli(tmp_path: Path, change:
             if step.get("name") == "Require complete whole-owner editor coverage"
         )
         gate["run"] = gate["run"].replace("c8.config.json", "weaker-config.json")
+    elif change == "packaging-time-unbound":
+        package = next(
+            step
+            for step in jobs["vscode"]["steps"]
+            if step.get("name") == "Package both qualified platform extensions"
+        )
+        package["run"] = package["run"].replace("git log -1 --format=%ct", "date +%s")
     else:
         jobs["vscode"]["steps"] = None
     with pytest.raises(ValueError):

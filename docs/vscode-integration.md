@@ -86,8 +86,14 @@ npm ci --ignore-scripts --engine-strict
 npm audit
 npm run check
 xvfb-run -a env RIGOR_FOUNDRY_CLI=/absolute/path/to/rigor VSCODE_EXECUTABLE=/usr/share/code/code npm run test:coverage
-npm run package
+SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" TZ=UTC LC_ALL=C.UTF-8 npm run package
 ```
+
+The CI packaging step sets the archive epoch to the checkout commit time and
+pins UTC and the C.UTF-8 locale before building both target archives. Use the
+same environment for either local package command. Byte comparisons also
+require the same Node and VSCE versions, admitted native input bytes and file
+permissions.
 
 Development uses Node.js 22.23.3. `npm run check` runs typed ESLint, formatting,
 both strict compiler projects, compilation, documentation validation and unit

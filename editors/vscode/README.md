@@ -41,7 +41,10 @@ the absence of false completion records.
 and process traces remain available for diagnosis; a wrapper exit code alone
 does not establish that the host tests passed.
 `npm run package:windows` stages the Windows binding metadata and produces the
-Windows x64 VSIX. The unchanged vendor loader resolves a private package export
+Windows x64 VSIX. CI packages both targets with the checkout commit timestamp,
+UTC and the C.UTF-8 locale. For a repeatable local package, set SOURCE_DATE_EPOCH
+to the commit timestamp in seconds and use the same timezone, locale, toolchain,
+native input bytes and file permissions. The vendor loader resolves a private package export
 to the bundled native image even when npm development dependencies are present.
 The runtime checks that resolution and its digest before loading the image.
 `npm run stage:windows-native` verifies an existing compiled image and stages
