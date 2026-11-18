@@ -25,6 +25,35 @@ The command returns:
   evidence;
 - `2` for malformed, unsafe, oversized, or unsupported input.
 
+## Use verification in CI
+
+On a Linux runner, install the RigorFoundry wheel using the release and hashes
+approved for the repository. Stage the evidence bundle and the separately
+approved trust policy as local files. Supply the UTC evaluation time from the
+gate or evidence-replay request.
+
+```bash
+set -eu
+attempt_dir="$(mktemp -d "${RUNNER_TEMP}/rigor-verify.XXXXXX")"
+rigor verify \
+  --bundle "$RIGOR_EVIDENCE_BUNDLE" \
+  --trust-policy "$RIGOR_TRUST_POLICY" \
+  --at "$RIGOR_VERIFY_AT" \
+  --output "$attempt_dir/verification.json"
+```
+
+Make later CI steps depend on verification success. Retain the result with the
+identity of the bundle, trust policy and evaluation time. Give each attempt a
+fresh output path so an invalid or stale run preserves the previous verified
+receipt.
+
+For evidence replay, use the retained bundle and trust policy with the original
+evaluation time and compare the new result with the retained receipt. For a
+rollback decision, verify the selected evidence against the current approved
+trust policy at the rollback evaluation time and apply the operator's rollback
+policy. The repository's distribution workflow exercises these file and exit
+boundaries through the installed wheel outside the checkout.
+
 ## Caller-selected trust
 
 The trust policy is a separate input, not part of the untrusted evidence

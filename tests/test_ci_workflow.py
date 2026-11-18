@@ -34,6 +34,10 @@ def test_coverage_jobs_share_source_imports_without_masking_wheel() -> None:
     for step in distribution["steps"]:
         assert "PYTHONPATH" not in step.get("env", {})
         assert "PYTHONPATH" not in step.get("run", "")
+    steps = [step.get("name") for step in distribution["steps"]]
+    assert steps.index("Smoke installed wheel outside checkout") < steps.index(
+        "Verify installed offline evidence and replay"
+    )
 
 
 def test_coverage_combines_real_cli_copies_from_distinct_working_directories(

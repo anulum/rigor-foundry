@@ -95,6 +95,61 @@ jobs:
           second_status=$?
           set -e
           test "$second_status" = 2
+      - name: Verify installed offline evidence and replay
+        env:
+          RF_WHEEL_BIN: /tmp/rigor-wheel/bin
+          RF_ADOPTER_REPORT: /tmp/rigor-adopter-report.json
+        run: |
+          set -euo pipefail
+          attempt="$(mktemp -d "${RUNNER_TEMP}/rigor-verify.XXXXXX")"
+          cd "$attempt"
+          "$RF_WHEEL_BIN/python" -I - "$GITHUB_WORKSPACE/tests" "$RF_ADOPTER_REPORT" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          from rigor_foundry.models import AuditReport
+          from rigor_foundry.offline_verification_models import EvidenceEntry, VerificationBundle
+
+          sys.path.insert(0, sys.argv[1])
+          from offline_verification_fixtures import detached_signature, trust_policy
+
+          report = AuditReport.from_dict(json.loads(Path(sys.argv[2]).read_bytes()))
+          signature = detached_signature("audit-report", report.report_digest, "report-key")
+          bundle = VerificationBundle.build(
+              (EvidenceEntry.available("adopter-report", report, signature=signature),)
+          )
+          Path("bundle.json").write_text(json.dumps(bundle.to_dict()), encoding="utf-8")
+          Path("trust-policy.json").write_text(json.dumps(trust_policy().to_dict()), encoding="utf-8")
+          PY
+          verify() {
+            "$RF_WHEEL_BIN/rigor" verify --bundle bundle.json --trust-policy trust-policy.json \
+              --at "$1" --output "$2"
+          }
+          verify 2026-07-20T12:00:00Z accepted.json
+          accepted_digest="$(sha256sum accepted.json)"
+          stale_status=0
+          verify 2026-07-26T12:00:00Z stale.json || stale_status=$?
+          test "$stale_status" -eq 1
+          overwrite_status=0
+          verify 2026-07-26T12:00:00Z accepted.json || overwrite_status=$?
+          test "$overwrite_status" -eq 2
+          verify 2026-07-20T12:00:00Z replayed.json
+          printf '%s\n' "$accepted_digest" | sha256sum --check --strict
+          cmp accepted.json replayed.json
+          "$RF_WHEEL_BIN/python" -I - <<'PY'
+          import json
+          from pathlib import Path
+
+          from rigor_foundry.offline_verification_report import OfflineVerificationReport
+
+          accepted = OfflineVerificationReport.from_dict(json.loads(Path("accepted.json").read_bytes()))
+          stale = OfflineVerificationReport.from_dict(json.loads(Path("stale.json").read_bytes()))
+          assert accepted.status == accepted.results[0].status == "verified"
+          assert stale.status == stale.results[0].status == "stale"
+          assert accepted.bundle_digest == stale.bundle_digest
+          assert accepted.policy_digest == stale.policy_digest
+          PY
       - name: Run consumer action against external fixture
         uses: ./
         with:
