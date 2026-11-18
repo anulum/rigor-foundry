@@ -96,8 +96,10 @@ def test_exhaustive_job_installs_documentation_dependencies() -> None:
     )
     commands = install["run"].splitlines()
     create = 'python -m venv "$RUNNER_TEMP/rigor-docs-venv"'
-    provision = '"$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes -r requirements/ci.txt'
-    assert commands.index(create) < commands.index(provision)
+    install_locked = '"$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes'
+    bootstrap = f"{install_locked} -r requirements/bootstrap.txt"
+    provision = f"{install_locked} --no-build-isolation -r requirements/ci.txt"
+    assert commands.index(create) < commands.index(bootstrap) < commands.index(provision)
     suite = next(step for step in steps if step.get("name") == "Run exhaustive CI-owned suite")
     assert (
         suite["env"]["RIGOR_DOCUMENTATION_PYTHON"]
@@ -106,7 +108,8 @@ def test_exhaustive_job_installs_documentation_dependencies() -> None:
     setup = next(
         step for step in steps if step.get("uses", "").startswith("actions/setup-python@")
     )
-    assert "requirements/ci.txt" in setup["with"]["cache-dependency-path"].splitlines()
+    cache_paths = setup["with"]["cache-dependency-path"].splitlines()
+    assert {"requirements/bootstrap.txt", "requirements/ci.txt"}.issubset(cache_paths)
     lock = (ROOT / "requirements/ci.txt").read_text()
     assert "\nmkdocs==" in lock
     assert "\nmkdocs-material==" in lock
