@@ -277,6 +277,9 @@ inventory is a production dependency of the CLI.
 - The authoring policy uses focused single-file tests locally; CI owns the
   exhaustive test and coverage gate. External contributors may opt into the
   same local matrix explicitly.
+- The standalone SBOM workflow records the installed Python runtime and
+  attestation profiles and the editor production dependency lock. It is
+  available before release. See the [validation guide](docs/validation.md#pre-release-sbom).
 - Releases, when authorised after public-repository promotion, build wheel and
   source distributions, run metadata checks, generate a CycloneDX SBOM, create
   Sigstore signatures and provenance, and publish through an owner-gated OIDC

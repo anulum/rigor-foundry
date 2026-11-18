@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Standalone reproducible component inventory
+
+name: SBOM
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/sbom.yml
+      - pyproject.toml
+      - requirements/bootstrap.txt
+      - requirements/ci.txt
+      - requirements/runtime.txt
+      - requirements/provenance.txt
+      - editors/vscode/package.json
+      - editors/vscode/package-lock.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements/bootstrap.txt
+            requirements/ci.txt
+            requirements/runtime.txt
+            requirements/provenance.txt
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.23.3
+      - name: Install hash-locked SBOM tools
+        run: |
+          python -m venv "$RUNNER_TEMP/rigor-sbom-tools"
+          tools="$RUNNER_TEMP/rigor-sbom-tools/bin"
+          "$tools/python" -m pip install --require-hashes -r requirements/bootstrap.txt
+          "$tools/python" -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
+      - name: Inventory installed Python distributions
+        run: |
+          work="$RUNNER_TEMP/rigor-sbom"
+          tools="$RUNNER_TEMP/rigor-sbom-tools/bin"
+          mkdir -p "$work/results"
+          "$tools/python" -m build --no-isolation --wheel --outdir "$work/wheel"
+          for profile in runtime provenance; do
+            environment="$work/$profile"
+            python -m venv --without-pip "$environment"
+            "$tools/python" -m pip --python "$environment" install \
+              --require-hashes --only-binary=:all: -r "requirements/$profile.txt"
+            "$tools/python" -m pip --python "$environment" install --no-index --no-deps "$work"/wheel/*.whl
+            "$tools/python" -m pip --python "$environment" check
+            env -u SOURCE_DATE_EPOCH "$tools/cyclonedx-py" environment "$environment/bin/python" \
+              --pyproject pyproject.toml --mc-type library --sv 1.6 --output-reproducible \
+              --output-file "$work/results/python-$profile.cdx.json"
+          done
+      - name: Inventory locked editor dependencies
+        run: |
+          npm --prefix editors/vscode sbom --package-lock-only --omit=dev --sbom-format=cyclonedx |
+            jq -S 'del(.serialNumber, .metadata.timestamp)' \
+              > "$RUNNER_TEMP/rigor-sbom/results/vscode-lock.cdx.json"
+      - name: Bind inventory to source and checksums
+        working-directory: ${{ runner.temp }}/rigor-sbom/results
+        run: |
+          git -C "$GITHUB_WORKSPACE" rev-parse HEAD > SOURCE_COMMIT
+          sha256sum SOURCE_COMMIT python-runtime.cdx.json python-provenance.cdx.json \
+            vscode-lock.cdx.json > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sbom-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/rigor-sbom/results/
+          if-no-files-found: error
+          retention-days: 14

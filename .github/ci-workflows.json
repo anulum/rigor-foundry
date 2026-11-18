@@ -115,6 +115,13 @@
         "release"
       ]
     },
+    ".github/workflows/sbom.yml": {
+      "owner": "@anulum",
+      "category": "distribution",
+      "jobs": [
+        "sbom"
+      ]
+    },
     ".github/workflows/scorecard.yml": {
       "owner": "@anulum",
       "category": "security",

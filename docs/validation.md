@@ -202,6 +202,25 @@ Campaign storage tests also reject symlinked run directories, linked
 attestations, hard-linked reports and reviews, and symlinked campaign-parent
 components through the public durable-loading APIs.
 
+## Pre-release SBOM
+
+The SBOM workflow runs on pull requests that change its inventory inputs
+and can be dispatched for a branch before release. Each run produces an
+Actions artifact containing three CycloneDX JSON documents, the checkout
+commit in `SOURCE_COMMIT`, and a `SHA256SUMS` manifest. Run
+`sha256sum --check SHA256SUMS` from the extracted artifact to check its files.
+
+The Python documents cover the RigorFoundry wheel installed in fresh
+Python 3.12.13 Linux x64 environments. One uses the base runtime lock and
+the other uses the lock for the optional provenance extra. The SBOM
+generator and build tools are installed in a separate environment.
+The editor document inventories the production npm lock graph, including
+its platform-specific optional bindings. It describes the lock, which can
+contain bindings for multiple targets, while installed VSIX and container
+artifacts require their own inventory evidence.
+
+## Release eligibility
+
 Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. The exact-tag guard uses

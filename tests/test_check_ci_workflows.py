@@ -31,10 +31,27 @@ def test_complete_actual_inventory_and_normal_action_guard() -> None:
     assert ci_workflow_errors() == []
     assert action_pin_errors() == []
     inventory = json.loads((ROOT / ".github/ci-workflows.json").read_text())
-    assert len(inventory["workflows"]) == 17
+    assert len(inventory["workflows"]) == 18
     for relative, record in inventory["workflows"].items():
         assert record["jobs"] == list(read_workflow(ROOT / relative)["jobs"])
         assert record["owner"] == "@anulum"
+
+
+def test_sbom_workflow_can_run_without_release_authority() -> None:
+    """Keep pre-release inventory runnable on a pull request or manual dispatch."""
+    workflow = read_workflow(ROOT / ".github/workflows/sbom.yml")
+    assert set(workflow["on"]) == {"workflow_dispatch", "pull_request"}
+    assert workflow["on"]["workflow_dispatch"] is None
+    assert workflow["permissions"] == {"contents": "read"}
+    assert set(workflow["jobs"]) == {"sbom"}
+    job = workflow["jobs"]["sbom"]
+    assert {"permissions", "environment", "if", "needs"}.isdisjoint(job)
+    assert [step["uses"].split("@", 1)[0] for step in job["steps"] if "uses" in step] == [
+        "actions/checkout",
+        "actions/setup-python",
+        "actions/setup-node",
+        "actions/upload-artifact",
+    ]
 
 
 @pytest.mark.parametrize(
