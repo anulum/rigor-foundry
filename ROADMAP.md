@@ -40,6 +40,9 @@ The work below is acceptance-gated. Dates and versions are not delivery promises
 
 - Extend verified source provenance to declared attestation producers and
   dependency evidence.
+- Record an independence level with each review and approval (distinct
+  principal, distinct model family, distinct host), so that a policy can
+  require a minimum and report a degraded state when it is not met.
 - Improve SARIF interoperability and import supported third-party results as
   anchored candidates, preserving unknown fields and partial results.
 - Package the existing cross-model protocol as bounded AI-code assurance
