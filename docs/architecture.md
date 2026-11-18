@@ -1,5 +1,9 @@
 # Architecture
 
+The [repository boundary decision](adr/0001-repository-boundary.md) defines
+where evidence collection, adjudication and authority to change a repository
+are owned.
+
 The [selected dispatch applicability API](selected-dispatch-applicability.md)
 extracts the actual invocation and evaluates active signed clauses under one
 retained chain and semantics context. Its journal-backed rate reader checks

@@ -36,6 +36,7 @@ nav:
   - VS Code integration: vscode-integration.md
   - Jupyter notebook analysis: jupyter-notebook-analysis.md
   - Architecture: architecture.md
+  - Repository boundary: adr/0001-repository-boundary.md
   - Calibration evidence: calibration-evidence-1.0.md
   - Digest dependencies: digest-dependencies.md
   - Report differences: report-diff.md
