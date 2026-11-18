@@ -96,6 +96,45 @@ def test_tracked_manifest_round_trips_and_passes_public_cli(
     assert capsys.readouterr().out == "coverage residuals: PASS\n"
 
 
+def test_public_cli_redacts_residual_findings(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Keep the failing validator's filesystem diagnostics in its Python API."""
+    missing = Path("private-residual-review.json")
+
+    errors = coverage_residual_errors(tmp_path, missing)
+    assert len(errors) == 1
+    assert missing.name in errors[0]
+
+    assert main(["residuals-check", "--root", str(tmp_path), "--manifest", str(missing)]) == 1
+    output = capsys.readouterr()
+    assert output.out == "coverage residuals: FAIL\n"
+    assert output.err == ""
+
+
+def test_public_cli_redacts_validator_exception(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Fail closed when a real verification reference raises during validation."""
+    root = _copy_contract(tmp_path)
+    document = _document()
+    absolute_test = root / "tests/test_adapters.py"
+    _first_residual(document)["public_verification"] = [
+        f"{absolute_test.as_posix()}::test_adapter_waits_for_process_after_output_pipes_close"
+    ]
+    _write_document(root, document)
+
+    with pytest.raises(ValueError, match=r"public_verification\.path must be"):
+        coverage_residual_errors(root)
+
+    assert main(["residuals-check", "--root", str(root)]) == 1
+    output = capsys.readouterr()
+    assert output.out == "coverage residuals: FAIL\n"
+    assert output.err == ""
+
+
 def test_manifest_rejects_unknown_fields_and_duplicate_identifiers() -> None:
     """Versioned residual documents reject schema drift and ambiguous ownership."""
     extra = _document()

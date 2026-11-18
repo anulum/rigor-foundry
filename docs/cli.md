@@ -300,9 +300,9 @@ repository-relative manifest when a repository adopts the same contract.
 The command rejects schema drift, duplicate or unsorted identifiers, source
 symbol or guard drift, stale symbol digests, missing public verification tests,
 review dates in the future, expired reviews, and any preregistered negative
-search match. It does not mark residual lines as covered and does not execute
-the cited tests; the focused owner tests and remote coverage matrix remain
-separate required evidence.
+search match. The command prints a fixed pass or fail status. Trusted callers
+can obtain the detailed findings from the Python validator. The focused owner
+tests and remote coverage matrix supply the measured coverage evidence.
 
 Run `rigor COMMAND --help` for the exact options supported by the installed
 version.

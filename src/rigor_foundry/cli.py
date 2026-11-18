@@ -441,14 +441,12 @@ def _campaign_compare_command(args: argparse.Namespace) -> int:
 
 def _residuals_check_command(args: argparse.Namespace) -> int:
     """Validate classified residual evidence and preregistered negative searches."""
-    errors = coverage_residual_errors(args.root, args.manifest)
-    if errors:
-        print("coverage residuals: FAIL")
-        for error in errors:
-            print(f"- {error}")
-        return 1
-    print("coverage residuals: PASS")
-    return 0
+    try:
+        failed = bool(coverage_residual_errors(args.root, args.manifest))
+    except Exception:
+        failed = True
+    print("coverage residuals: FAIL" if failed else "coverage residuals: PASS")
+    return int(failed)
 
 
 def _bootstrap_command(args: argparse.Namespace) -> int:
