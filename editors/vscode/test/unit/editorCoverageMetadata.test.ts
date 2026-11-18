@@ -27,7 +27,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runCli } from "../../src/cli.js";
 import {
   admitProfileFiles,
@@ -35,7 +35,7 @@ import {
   sealProfileFiles,
 } from "../../scripts/editor-profile-inputs.mjs";
 import { nativeInputs, record } from "../../scripts/native-artifact-inputs.mjs";
-import { stageEditorCoverage } from "../../scripts/editor-coverage.mjs";
+import { relocateEditorV8, stageEditorCoverage } from "../../scripts/editor-coverage.mjs";
 
 void test("admits original unmapped CLI data and refuses contradictory resolved map metadata", async (context) => {
   const editor = path.resolve(__dirname, "../../..");
@@ -146,6 +146,177 @@ void test("admits original unmapped CLI data and refuses contradictory resolved 
   const cached = record(record(mapped.value["source-map-cache"])[protocolUrl]);
   assert.ok(cached["data"] !== null && cached["data"] !== undefined);
   assert.equal(cached["url"], null, "actual supported Node resolves maps with a null URL");
+  const producerRoot = "file:///D:/editor/";
+  const capturedRoot = "file:///d:/editor/";
+  const relativeTest = "out/test/unit/workbenchProtocol.test.js";
+  const capturedUrl = new URL(relativeTest, capturedRoot).href;
+  const declaredUrl = new URL(relativeTest, producerRoot).href;
+  const actualRows = mapped.value["result"];
+  assert.ok(Array.isArray(actualRows));
+  const actualRow = actualRows.map(record).find((row) => row["url"] === protocolUrl);
+  assert.ok(actualRow);
+  const map = record(cached["data"]);
+  const sourceUrls = map["sources"];
+  assert.ok(Array.isArray(sourceUrls));
+  const localRoot = pathToFileURL(editor + path.sep).href;
+  interface DriveTrace extends Record<string, unknown> {
+    result: readonly Record<string, unknown>[];
+    "source-map-cache": Record<string, Record<string, unknown>>;
+  }
+  const driveTrace: DriveTrace = {
+    result: [{ ...actualRow, url: capturedUrl }],
+    "source-map-cache": {
+      [declaredUrl]: {
+        ...cached,
+        data: {
+          ...map,
+          sources: sourceUrls.map((source: unknown) => {
+            assert.ok(typeof source === "string" && source.startsWith(localRoot));
+            return new URL(source.slice(localRoot.length), capturedRoot).href;
+          }),
+        },
+      },
+    },
+  };
+  const drivePrefixes = { [producerRoot]: "" };
+  assert.deepEqual(await relocateEditorV8(editor, driveTrace, inputs, drivePrefixes), driveTrace);
+  const producerProfile = record(
+    JSON.parse(await readFile(path.join(producer, "profile.json"), "utf8")),
+  );
+  const driveProfile = "win32-drive-replay";
+  const resolvedCache = driveTrace["source-map-cache"][declaredUrl];
+  const unresolvedCache = { ...resolvedCache, data: null };
+  const compatibleTrace: DriveTrace = {
+    result: [{ ...actualRow, url: declaredUrl }],
+    "source-map-cache": { [capturedUrl]: unresolvedCache },
+  };
+  const convergingTrace: DriveTrace = {
+    result: [...driveTrace.result, ...compatibleTrace.result],
+    "source-map-cache": {
+      ...driveTrace["source-map-cache"],
+      ...compatibleTrace["source-map-cache"],
+    },
+  };
+  const reverseTrace: DriveTrace = {
+    result: [...compatibleTrace.result, ...driveTrace.result],
+    "source-map-cache": {
+      ...compatibleTrace["source-map-cache"],
+      ...driveTrace["source-map-cache"],
+    },
+  };
+
+  /**
+   * Seal local replay records and run the real supported-profile admission.
+   * @param name - Isolated replay scenario.
+   * @param traces - Node observations with controlled drive spelling variants.
+   * @returns Original admissions and derivative path for counter and cache checks.
+   */
+  async function stageDriveRecords(
+    name: string,
+    traces: readonly DriveTrace[],
+  ): Promise<{ admission: Awaited<ReturnType<typeof stageEditorCoverage>>; union: string }> {
+    const driveProducer = path.join(allocation, name);
+    await mkdir(path.join(driveProducer, "v8"), { recursive: true });
+    await writeFile(
+      path.join(driveProducer, "profile.json"),
+      JSON.stringify({
+        ...producerProfile,
+        kind: "supported-host",
+        profile: driveProfile,
+        editorUri: producerRoot,
+      }) + "\n",
+    );
+    for (const [i, trace] of traces.entries()) {
+      await writeFile(
+        path.join(driveProducer, "v8", String(i) + ".json"),
+        JSON.stringify(trace) + "\n",
+      );
+    }
+    await sealProfileFiles(driveProducer);
+    const union = path.join(allocation, name + "-union");
+    const admission = await stageEditorCoverage(
+      editor,
+      [driveProducer],
+      identity,
+      [driveProfile],
+      union,
+    );
+    return { admission, union };
+  }
+
+  const replays: { name: string; traces: DriveTrace[] }[] = [
+    { name: "alternate-cache-key", traces: [driveTrace] },
+    { name: "resolved-cache-first", traces: [convergingTrace] },
+    { name: "unresolved-cache-first", traces: [reverseTrace] },
+    { name: "two-traces-resolved-first", traces: [driveTrace, compatibleTrace] },
+    { name: "two-traces-unresolved-first", traces: [compatibleTrace, driveTrace] },
+    { name: "equivalent-maps", traces: [driveTrace, driveTrace] },
+  ];
+  for (const { name, traces } of replays) {
+    const { admission, union } = await stageDriveRecords(name, traces);
+    assert.equal(admission.mappedProfiles, traces.length);
+    assert.deepEqual(admission.owners, inputs.owners);
+    const derivativeCache: Record<string, unknown>[] = [];
+    for (const [i, original] of admission.originals.entries()) {
+      const derivative = original["derivative"];
+      assert.ok(typeof derivative === "string");
+      const data = record(JSON.parse(await readFile(path.join(union, derivative), "utf8")));
+      assert.ok(traces[i]);
+      const expectedRows: Record<string, unknown>[] = traces[i].result.map(
+        (): Record<string, unknown> => actualRow,
+      );
+      assert.deepEqual(data["result"], expectedRows);
+      derivativeCache.push(record(data["source-map-cache"]));
+    }
+    for (const earlier of derivativeCache.slice(0, -1)) assert.deepEqual(earlier, {});
+    assert.deepEqual(derivativeCache.at(-1), { [protocolUrl]: cached });
+  }
+  const conflicting: DriveTrace = {
+    ...compatibleTrace,
+    "source-map-cache": { [capturedUrl]: { ...unresolvedCache, lineLengths: [1] } },
+  };
+  await assert.rejects(
+    stageDriveRecords("conflicting-maps", [driveTrace, conflicting]),
+    /conflicting editor cache metadata/u,
+  );
+  const encodedProtocolUrl = protocolUrl.replace(
+    /workbenchProtocol\.test\.js$/u,
+    "%77orkbenchProtocol.test.js",
+  );
+  assert.notEqual(encodedProtocolUrl, protocolUrl);
+  assert.equal(pathToFileURL(fileURLToPath(encodedProtocolUrl)).href, protocolUrl);
+  const overlaps = [
+    { name: "literal-overlapping-cache", key: protocolUrl },
+    { name: "encoded-overlapping-cache", key: encodedProtocolUrl },
+  ];
+  for (const { name, key } of overlaps) {
+    const unownedKey: DriveTrace = {
+      ...driveTrace,
+      "source-map-cache": { ...driveTrace["source-map-cache"], [key]: cached },
+    };
+    await assert.rejects(
+      stageDriveRecords(name, [driveTrace, unownedKey]),
+      /unowned V8 cache key overlaps an editor owner/u,
+    );
+    await assert.rejects(
+      relocateEditorV8(editor, unownedKey, inputs, drivePrefixes, true),
+      /unowned V8 cache key overlaps an editor owner/u,
+    );
+  }
+  assert.deepEqual(
+    await relocateEditorV8(editor, driveTrace, inputs, { "file:///D:/Editor/": "" }, true),
+    driveTrace,
+  );
+  await assert.rejects(
+    relocateEditorV8(
+      editor,
+      driveTrace,
+      inputs,
+      { ...drivePrefixes, [capturedRoot]: "src/" },
+      true,
+    ),
+    /ambiguous editor path alias/u,
+  );
   const union = path.join(allocation, "union");
   const admitted = await stageEditorCoverage(
     editor,
@@ -178,6 +349,18 @@ void test("admits original unmapped CLI data and refuses contradictory resolved 
     originalRow,
   );
   assert.ok(!inputs.owners.includes("node_modules/eslint/bin/eslint.js"));
+  const lintConfigUrl = pathToFileURL(path.join(editor, "eslint.config.mjs")).href;
+  const originalConfig = originalRows
+    .map(record)
+    .find(
+      (row) => typeof row["url"] === "string" && row["url"].startsWith(lintConfigUrl + "?mtime="),
+    );
+  assert.ok(originalConfig, "actual ESLint imports its configuration with an mtime query");
+  assert.deepEqual(
+    derivedRows.map(record).find((row) => row["url"] === lintConfigUrl),
+    { ...originalConfig, url: lintConfigUrl },
+    "admit the actual ESLint file URL at its verified consumer filename",
+  );
   const contradictory = path.join(allocation, "contradictory");
   await cp(producer, contradictory, { recursive: true, errorOnExist: true, force: false });
   cached["url"] = "file:///contradictory-resolved-map.js.map";
