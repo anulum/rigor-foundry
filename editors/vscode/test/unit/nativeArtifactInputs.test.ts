@@ -52,6 +52,11 @@ void test("checks the complete real payload and refuses inconsistent compiler or
   const provenance = record(JSON.parse(provenanceBytes.toString("utf8")));
   await writeFile(provenancePath, JSON.stringify({ ...provenance, buildFlags: "" }));
   await assert.rejects(nativeInputs(editor, allocation), /AssertionError/u);
+  await writeFile(
+    provenancePath,
+    JSON.stringify({ ...provenance, msvcReproducibility: { sourcePathTrim: "/d1trimfile" } }),
+  );
+  await assert.rejects(nativeInputs(editor, allocation), /reproducible MSVC options differ/u);
   await writeFile(provenancePath, provenanceBytes);
   const notices = path.join(allocation, "native/koffi/notices");
   await rm(notices, { recursive: true });

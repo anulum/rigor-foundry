@@ -36,6 +36,12 @@ export const artifactMembers = [
   "LICENSE.txt",
 ];
 export const buildFlags = "NODE_JS_LINK_FLAGS=/DELAYLOAD:NODE.EXE;delayimp.lib";
+export const msvcReproducibility = Object.freeze({
+  /** MSVC option that strips the absolute Koffi source root from compiled file names. */
+  sourcePathTrim: "/d1trimfile",
+  /** MSVC linker option that makes the PE timestamp fields deterministic. */
+  linker: "/Brepro",
+});
 
 /** Repository paths bound by both source digests and clean-checkout admission. */
 export const sourcePaths = Object.freeze([
@@ -212,6 +218,13 @@ export async function nativeInputs(editor, payload) {
   assert.equal(provenance["architecture"], "x64");
   assert.equal(provenance["node"], process.version);
   assert.equal(provenance["buildFlags"], buildFlags);
+  if (provenance["msvcReproducibility"] !== undefined) {
+    assert.deepEqual(
+      provenance["msvcReproducibility"],
+      msvcReproducibility,
+      "reproducible MSVC options differ",
+    );
+  }
   const staged = record(provenance["members"]);
   assert.deepEqual(Object.keys(staged).sort(), [...nativeMembers].sort());
   for (const name of nativeMembers) assert.equal(staged[name], result["native/koffi/" + name]);

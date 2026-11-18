@@ -190,6 +190,13 @@ package resolution metadata and exact source licence before writing any member.
 Conflicting existing files fail without replacement. Original native build
 diagnostics are retained separately even when the producer fails.
 
+The Windows producer uses MSVC's `/d1trimfile` to remove the Koffi source root
+from compiled file names and `/Brepro` to make PE timestamps deterministic.
+With the same compiler, linker, SDK and locked sources, compare the SHA-256 of
+`native/koffi/build/koffi/win32_x64/koffi.node` from two clean compilations in
+different directories. The compiler options are recorded in native provenance,
+which also keeps the unique build allocation for each run.
+
 For local inspection of an existing genuine Windows payload, from the repository
 root use an artifact directory outside the editor source tree:
 

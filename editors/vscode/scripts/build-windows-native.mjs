@@ -20,6 +20,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { buildFlags, msvcReproducibility } from "./native-artifact-inputs.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 assert.ok(
@@ -162,13 +163,14 @@ const output = path.join(allocation, "output");
 const command = path.join(allocation, "compile.cmd");
 for (const value of [process.execPath, vcvars, source, output, command])
   assert.doesNotMatch(value, /["%\r\n\0]/u, "build paths must have literal batch spelling");
-const flags = "NODE_JS_LINK_FLAGS=/DELAYLOAD:NODE.EXE;delayimp.lib";
 const batch = [
   "@echo off",
   "chcp 65001 >nul",
   `call "${vcvars}" >nul`,
   "if errorlevel 1 exit /b 1",
-  `"${process.execPath}" "${path.join(source, "cnoke.cjs")}" build -P "${source}" -D "${path.join(source, "src/koffi")}" -O "${output}" --release --define "${flags}"`,
+  `set CL=${msvcReproducibility.sourcePathTrim}:"${source}"`,
+  `set "LINK=${msvcReproducibility.linker}"`,
+  `"${process.execPath}" "${path.join(source, "cnoke.cjs")}" build -P "${source}" -D "${path.join(source, "src/koffi")}" -O "${output}" --release --define "${buildFlags}"`,
   "exit /b %errorlevel%",
   "",
 ].join("\r\n");
@@ -177,7 +179,7 @@ const systemRoot = process.env["SystemRoot"];
 assert.ok(systemRoot, "Windows system directory is unavailable");
 await run(
   path.join(systemRoot, "System32/cmd.exe"),
-  ["/d", "/s", "/c", `""${command}""`],
+  ["/d", "/s", "/v:off", "/c", `""${command}""`],
   "native-compile",
   allocation,
   true,
@@ -221,7 +223,8 @@ await writeFile(
       node: process.version,
       platform: process.platform,
       architecture: process.arch,
-      buildFlags: flags,
+      buildFlags,
+      msvcReproducibility,
       buildAllocation: path.basename(allocation),
       members: staged,
     },

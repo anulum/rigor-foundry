@@ -32,14 +32,12 @@ void test(
       await rm(allocation, { recursive: true, force: true });
     });
     const editor = path.join(allocation, "product", "editors", "vscode");
-    const copiedScript = path.join(editor, "scripts", "build-windows-native.mjs");
-    const originalScript = path.join(extensionRoot, "scripts", "build-windows-native.mjs");
+    const producer = "scripts/build-windows-native.mjs";
+    const copiedScript = path.join(editor, producer);
+    const originalScript = path.join(extensionRoot, producer);
     const scriptBytes = await readFile(originalScript);
-    for (const relative of [
-      "scripts/build-windows-native.mjs",
-      "native/koffi-source.json",
-      "package-lock.json",
-    ]) {
+    const buildSources = [producer, "scripts/native-artifact-inputs.mjs"];
+    for (const relative of [...buildSources, "native/koffi-source.json", "package-lock.json"]) {
       const destination = path.join(editor, relative);
       await mkdir(path.dirname(destination), { recursive: true });
       await writeFile(destination, await readFile(path.join(extensionRoot, relative)), {
@@ -65,13 +63,18 @@ void test(
       JSON.stringify(
         {
           schema: 1,
-          copies: [
-            {
-              url: pathToFileURL(copiedScript).href,
-              source: "editors/vscode/scripts/build-windows-native.mjs",
-              sha256: createHash("sha256").update(scriptBytes).digest("hex"),
-            },
-          ],
+          copies: await Promise.all(
+            buildSources.map(async (relative) => {
+              const original = await readFile(path.join(extensionRoot, relative));
+              const copy = path.join(editor, relative);
+              assert.deepEqual(await readFile(copy), original);
+              return {
+                url: pathToFileURL(copy).href,
+                source: `editors/vscode/${relative}`,
+                sha256: createHash("sha256").update(original).digest("hex"),
+              };
+            }),
+          ),
         },
         null,
         2,
