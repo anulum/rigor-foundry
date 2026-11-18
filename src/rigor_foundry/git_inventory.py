@@ -16,7 +16,7 @@ import re
 import stat
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import Literal, overload
 
 from .git_provenance import GitExecutableProvenance, GitRunner, GitTrustPolicy
 
@@ -102,6 +102,13 @@ class StableRegularRead:
     git_blob_id: str | None
 
 
+@dataclass(frozen=True)
+class StableGitRead(StableRegularRead):
+    """Content identities including a Git blob computed from the same read."""
+
+    git_blob_id: str
+
+
 class StableReadError(RuntimeError):
     """One finite stable-file read failure suitable for bounded evidence."""
 
@@ -175,7 +182,7 @@ def _tracked_entries(root: Path, runner: GitRunner) -> tuple[TrackedIndexEntry, 
     for record in (part for part in raw.split(b"\0") if part):
         metadata, separator, path_bytes = record.partition(b"\t")
         fields = metadata.split(b" ")
-        if not separator or len(fields) != 3:
+        if not separator or len(fields) != 3 or not path_bytes:
             raise RuntimeError("Git index returned a malformed staged entry")
         try:
             mode, object_id, stage = (field.decode("ascii") for field in fields)
@@ -241,6 +248,32 @@ def _file_snapshot(metadata: os.stat_result) -> tuple[int, int, int, int, int, i
         metadata.st_mtime_ns,
         metadata.st_ctime_ns,
     )
+
+
+@overload
+def read_stable_regular_file_at(
+    parent_descriptor: int,
+    name: str,
+    relative: str,
+    *,
+    object_format: str,
+    buffer_limit: int = MAX_TEXT_BYTES,
+    maximum_bytes: int | None = None,
+    require_single_link: bool = False,
+) -> StableGitRead: ...
+
+
+@overload
+def read_stable_regular_file_at(
+    parent_descriptor: int,
+    name: str,
+    relative: str,
+    *,
+    object_format: str | None = None,
+    buffer_limit: int = MAX_TEXT_BYTES,
+    maximum_bytes: int | None = None,
+    require_single_link: bool = False,
+) -> StableRegularRead: ...
 
 
 def read_stable_regular_file_at(
@@ -341,12 +374,10 @@ def read_stable_regular_file_at(
     ):
         raise StableReadError("changed-while-read", relative)
     payload = None if buffered is None else bytes(buffered)
-    return StableRegularRead(
-        byte_size=byte_count,
-        payload=payload,
-        content_digest=content_digest.hexdigest(),
-        git_blob_id=blob_digest.hexdigest() if blob_digest is not None else None,
-    )
+    digest = content_digest.hexdigest()
+    if blob_digest is None:
+        return StableRegularRead(byte_count, payload, digest, None)
+    return StableGitRead(byte_count, payload, digest, blob_digest.hexdigest())
 
 
 def open_directory_no_follow(path: Path) -> int:
@@ -379,11 +410,11 @@ def open_directory_no_follow(path: Path) -> int:
 def _open_tracked_parent(root: Path, relative: str) -> tuple[int, str]:
     """Open one tracked path parent through root-relative no-follow components."""
     parts = PurePosixPath(relative).parts
-    if not parts:
-        raise RuntimeError("tracked path is empty")
-    descriptor: int | None = None
     try:
         descriptor = open_directory_no_follow(root)
+    except (OSError, RuntimeError) as exc:
+        raise RuntimeError(f"cannot open tracked parent: {relative}") from exc
+    try:
         for component in parts[:-1]:
             next_descriptor = os.open(
                 component,
@@ -393,14 +424,12 @@ def _open_tracked_parent(root: Path, relative: str) -> tuple[int, str]:
                 | getattr(os, "O_NOFOLLOW", 0),
                 dir_fd=descriptor,
             )
-            os.close(descriptor)
+            previous_descriptor = descriptor
             descriptor = next_descriptor
+            os.close(previous_descriptor)
     except (OSError, RuntimeError) as exc:
-        if descriptor is not None:
-            os.close(descriptor)
+        os.close(descriptor)
         raise RuntimeError(f"cannot open tracked parent: {relative}") from exc
-    if descriptor is None:
-        raise RuntimeError(f"cannot open tracked parent: {relative}")
     return descriptor, parts[-1]
 
 
@@ -416,8 +445,6 @@ def _read_regular_bytes(
         result = read_regular_file(
             root / relative, object_format=object_format, require_single_link=False
         )
-        if result.git_blob_id is None:
-            raise RuntimeError(f"tracked path has no Git blob identity: {relative}")
         return result.byte_size, result.payload, result.content_digest, result.git_blob_id
     parent_descriptor, name = _open_tracked_parent(root, relative)
     try:
@@ -430,8 +457,6 @@ def _read_regular_bytes(
         )
     finally:
         os.close(parent_descriptor)
-    if result.git_blob_id is None:
-        raise RuntimeError(f"tracked path has no Git blob identity: {relative}")
     return (
         result.byte_size,
         result.payload,
@@ -448,6 +473,8 @@ def _read_tracked_file(
     """Read one tracked path without following it outside the worktree."""
     relative = entry.path
     relative_path = Path(relative)
+    if not relative_path.parts:
+        raise RuntimeError("tracked path is empty")
     if relative_path.is_absolute() or ".." in relative_path.parts:
         raise RuntimeError(f"tracked path escapes repository root: {relative}")
     absolute = root / relative_path
@@ -647,15 +674,15 @@ def load_git_inventory(
         raise ValueError("supply either a Git trust policy or an existing runner, not both")
     runner = git_runner or GitRunner(git_trust_policy)
     root = _repository_root(path, runner)
-    head = _decode_git_field(_run_git(runner, root, "rev-parse", "HEAD"), "HEAD")
-    head_tree = _decode_git_field(
-        _run_git(runner, root, "rev-parse", "HEAD^{tree}"),
-        "HEAD tree",
-    )
-    object_format = _decode_git_field(
-        _run_git(runner, root, "rev-parse", "--show-object-format"),
-        "object format",
-    )
+    # Resolve the current revision, tree and format in one read-only Git invocation.
+    revision = _run_git(runner, root, "rev-parse", "HEAD", "HEAD^{tree}", "--show-object-format")
+    revision_lines = revision.splitlines()
+    if len(revision_lines) != 3:
+        raise RuntimeError("git returned an invalid revision record")
+    head_line, tree_line, format_line = revision_lines
+    head = _decode_git_field(head_line, "HEAD")
+    head_tree = _decode_git_field(tree_line, "HEAD tree")
+    object_format = _decode_git_field(format_line, "object format")
     if object_format not in {"sha1", "sha256"}:
         raise RuntimeError(f"Git repository uses unsupported object format: {object_format}")
     branch = _decode_git_field(

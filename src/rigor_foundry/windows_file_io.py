@@ -12,9 +12,38 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
+from typing import overload
 
-from .git_inventory import StableReadError, StableRegularRead
+from .git_inventory import StableGitRead, StableReadError, StableRegularRead
 from .windows_handles import WindowsDirectory
+
+
+def _require_single_link(count: int, failure: Exception) -> None:
+    """Enforce the same link-count requirement at every native file boundary."""
+    if count != 1:
+        raise failure
+
+
+@overload
+def read_regular_file(
+    path: Path,
+    *,
+    object_format: str,
+    buffer_limit: int = 8 * 1024 * 1024,
+    maximum_bytes: int | None = None,
+    require_single_link: bool = True,
+) -> StableGitRead: ...
+
+
+@overload
+def read_regular_file(
+    path: Path,
+    *,
+    object_format: str | None = None,
+    buffer_limit: int = 8 * 1024 * 1024,
+    maximum_bytes: int | None = None,
+    require_single_link: bool = True,
+) -> StableRegularRead: ...
 
 
 def read_regular_file(
@@ -62,8 +91,8 @@ def read_regular_file(
         with WindowsDirectory(path.parent) as parent, parent.open_file(path.name) as file:
             _ = parent.identity
             before = file.identity()
-            if require_single_link and before.links != 1:
-                raise StableReadError("multiple-links", str(path))
+            if require_single_link:
+                _require_single_link(before.links, StableReadError("multiple-links", str(path)))
             if maximum_bytes is not None and before.size > maximum_bytes:
                 raise StableReadError("limit-exceeded", str(path))
             if blob is not None:
@@ -94,12 +123,11 @@ def read_regular_file(
         raise StableReadError("inaccessible", str(path)) from exc
     except ValueError as exc:
         raise StableReadError("not-regular-file", str(path)) from exc
-    return StableRegularRead(
-        byte_size=count,
-        payload=None if payload is None else bytes(payload),
-        content_digest=content.hexdigest(),
-        git_blob_id=None if blob is None else blob.hexdigest(),
-    )
+    retained = None if payload is None else bytes(payload)
+    digest = content.hexdigest()
+    if blob is None:
+        return StableRegularRead(count, retained, digest, None)
+    return StableGitRead(count, retained, digest, blob.hexdigest())
 
 
 def write_new_file(path: Path, text: str) -> None:
@@ -159,8 +187,9 @@ def write_new_file_at(
     with file:
         try:
             created = file.identity()
-            if created.links != 1:
-                raise ValueError("new output is not a single-link regular file")
+            _require_single_link(
+                created.links, ValueError("new output is not a single-link regular file")
+            )
             written = 0
             while written < len(payload):
                 count = os.write(file.descriptor, payload[written:])
@@ -169,8 +198,9 @@ def write_new_file_at(
                 written += count
             file.flush()
             after = file.identity()
-            if after.links != 1:
-                raise ValueError("new Windows output identity changed during creation")
+            _require_single_link(
+                after.links, ValueError("new Windows output identity changed during creation")
+            )
             _ = parent.identity
             return after.volume, after.file_id
         except BaseException:

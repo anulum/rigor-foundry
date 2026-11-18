@@ -11,8 +11,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from rigor_foundry.language_capabilities import (
     LANGUAGE_CAPABILITIES,
+    LanguageCapability,
     dependency_family_for,
     extensionless_dependency_suffixes,
     filesystem_path_within,
@@ -57,6 +60,13 @@ def test_registry_has_unique_lowercase_suffixes_and_exact_projections() -> None:
     assert suffixes_with("responsibility") == _RESPONSIBILITY_SUFFIXES
     assert suffixes_with("polyglot") == _RESPONSIBILITY_SUFFIXES - {".py", ".pyi", ".sh"}
     assert suffixes_with("scope") == _RESPONSIBILITY_SUFFIXES | {".yaml", ".yml"}
+
+
+@pytest.mark.parametrize("suffix", ("python", ".PY"))
+def test_capability_record_rejects_invalid_catalogue_suffix(suffix: str) -> None:
+    """A capability record rejects undotted and upper-case suffixes."""
+    with pytest.raises(ValueError, match="lower-case dotted values"):
+        LanguageCapability(suffix, "python", True, True, False)
 
 
 def test_dependency_capabilities_preserve_resolution_families_and_order() -> None:

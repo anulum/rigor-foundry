@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, NamedTuple
 
 LanguageName = Literal[
     "c",
@@ -67,37 +67,52 @@ class LanguageCapability:
     extensionless_priority: int | None = None
     index_priority: int | None = None
 
+    def __post_init__(self) -> None:
+        """Require a lower-case dotted suffix in every capability record."""
+        if not self.suffix.startswith(".") or self.suffix != self.suffix.lower():
+            raise ValueError("language capability suffixes must be lower-case dotted values")
 
-_CAPABILITIES = (
-    LanguageCapability(".c", "c", True, True, True, "c", 6),
-    LanguageCapability(".cc", "c", True, True, True, "c"),
-    LanguageCapability(".cpp", "c", True, True, True, "c", 7),
-    LanguageCapability(".h", "c", True, True, True, "c", 8),
-    LanguageCapability(".hpp", "c", True, True, True, "c", 9),
-    LanguageCapability(".go", "go", True, True, True),
-    LanguageCapability(".jl", "julia", True, True, True, "julia", 5),
-    LanguageCapability(".js", "javascript", True, True, True, "javascript", 2, 2),
-    LanguageCapability(".jsx", "javascript", True, True, True, "javascript", 3, 3),
-    LanguageCapability(".lean", "lean", True, True, True),
-    LanguageCapability(".mojo", "mojo", True, True, True),
-    LanguageCapability(".py", "python", True, True, False),
-    LanguageCapability(".pyi", "python", True, True, False),
-    LanguageCapability(".rs", "rust", True, True, True, "rust", 4),
-    LanguageCapability(".sh", "shell", True, True, False),
-    LanguageCapability(".sv", "systemverilog", True, True, True),
-    LanguageCapability(".ts", "typescript", True, True, True, "javascript", 0, 0),
-    LanguageCapability(".tsx", "typescript", True, True, True, "javascript", 1, 1),
-    LanguageCapability(".v", "verilog", True, True, True),
-    LanguageCapability(".yaml", "yaml", True, False, False),
-    LanguageCapability(".yml", "yaml", True, False, False),
+
+class _CapabilityTraits(NamedTuple):
+    """Describe the behavior associated with a catalogue suffix."""
+
+    language: LanguageName
+    scope_scannable: bool
+    responsibility_metrics: bool
+    polyglot_ownership: bool
+    dependency_family: DependencyFamily | None = None
+    extensionless_priority: int | None = None
+    index_priority: int | None = None
+
+
+# Each authored suffix appears once as a literal key. Ruff F601 rejects
+# duplicate keys before the catalogue can be built.
+_CAPABILITY_TRAITS = {
+    ".c": _CapabilityTraits("c", True, True, True, "c", 6),
+    ".cc": _CapabilityTraits("c", True, True, True, "c"),
+    ".cpp": _CapabilityTraits("c", True, True, True, "c", 7),
+    ".h": _CapabilityTraits("c", True, True, True, "c", 8),
+    ".hpp": _CapabilityTraits("c", True, True, True, "c", 9),
+    ".go": _CapabilityTraits("go", True, True, True),
+    ".jl": _CapabilityTraits("julia", True, True, True, "julia", 5),
+    ".js": _CapabilityTraits("javascript", True, True, True, "javascript", 2, 2),
+    ".jsx": _CapabilityTraits("javascript", True, True, True, "javascript", 3, 3),
+    ".lean": _CapabilityTraits("lean", True, True, True),
+    ".mojo": _CapabilityTraits("mojo", True, True, True),
+    ".py": _CapabilityTraits("python", True, True, False),
+    ".pyi": _CapabilityTraits("python", True, True, False),
+    ".rs": _CapabilityTraits("rust", True, True, True, "rust", 4),
+    ".sh": _CapabilityTraits("shell", True, True, False),
+    ".sv": _CapabilityTraits("systemverilog", True, True, True),
+    ".ts": _CapabilityTraits("typescript", True, True, True, "javascript", 0, 0),
+    ".tsx": _CapabilityTraits("typescript", True, True, True, "javascript", 1, 1),
+    ".v": _CapabilityTraits("verilog", True, True, True),
+    ".yaml": _CapabilityTraits("yaml", True, False, False),
+    ".yml": _CapabilityTraits("yaml", True, False, False),
+}
+LANGUAGE_CAPABILITIES: Mapping[str, LanguageCapability] = MappingProxyType(
+    {suffix: LanguageCapability(suffix, *traits) for suffix, traits in _CAPABILITY_TRAITS.items()}
 )
-
-_CAPABILITY_MAP = {item.suffix: item for item in _CAPABILITIES}
-if len(_CAPABILITY_MAP) != len(_CAPABILITIES):
-    raise RuntimeError("language capability suffixes must be unique")
-if any(not suffix.startswith(".") or suffix != suffix.lower() for suffix in _CAPABILITY_MAP):
-    raise RuntimeError("language capability suffixes must be lower-case dotted values")
-LANGUAGE_CAPABILITIES: Mapping[str, LanguageCapability] = MappingProxyType(_CAPABILITY_MAP)
 """Read-only mapping from a unique lower-case suffix to scanner capabilities."""
 
 
@@ -159,10 +174,10 @@ def index_dependency_suffixes() -> tuple[str, ...]:
 
 def _parts(value: str) -> tuple[str, ...]:
     """Return normalised non-empty repository-relative components."""
-    pure = PurePosixPath(value)
-    if pure.is_absolute() or ".." in pure.parts:
+    if value.startswith("/"):
         return ()
-    return tuple(part for part in pure.parts if part not in {"", "."})
+    parts = tuple(component for component in value.split("/") if component not in {"", "."})
+    return () if ".." in parts else parts
 
 
 def repository_path_under_roots(path: str, roots: tuple[str, ...]) -> bool:
@@ -193,10 +208,11 @@ def repository_path_has_root(path: str, roots: tuple[str, ...]) -> bool:
 
 def owning_repository_root(path: str, roots: tuple[str, ...]) -> str | None:
     """Return the most specific configured root prefix that owns ``path``."""
+    path_parts = _parts(path)
     matches = tuple(
         (len(root_parts), "/".join(root_parts))
         for root in roots
-        if (root_parts := _parts(root)) and _parts(path)[: len(root_parts)] == root_parts
+        if (root_parts := _parts(root)) and path_parts[: len(root_parts)] == root_parts
     )
     if not matches:
         return None

@@ -158,6 +158,24 @@ construction. Human-readable excerpts remain separate, whitespace-normalised,
 and limited to 512 UTF-8 bytes; large member sets carry a full count and
 SHA-256 with a bounded deterministic prefix.
 
+## Repeated Python architecture scans
+
+The Python architecture scanner can reuse bounded source facts across
+scans in the same interpreter. Every scan runs the Python parser under the
+caller's current warning settings before reusing facts from a successful parse.
+Each observation is bound to the exact current
+tracked file, path, mode, content and blob identities, module name and resolved
+policy. The interpreter and installed rule implementation share the lifetime
+of the observations. The scanner derives facts from large inputs afresh and
+stores no observations on disk.
+
+Import resolution uses the complete current module set. Test ownership and
+duplicate-body findings are recomputed from the live repository cohort. Adding
+a test owner or another module can therefore change the report for a source
+file with identical bytes. Inventory, ignored evidence and report anchors are
+collected on every scan. Git supplies the live revision, tree and object format
+in one invocation, followed by the existing branch, index and worktree reads.
+
 ## External source boundary
 
 `source_capture.py` owns bounded retrieval policy, retained-byte capture

@@ -32,6 +32,14 @@ The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
 do not expose `promote --apply`; see [Consumer integrations](integrations.md).
 
+## Repeated scans in one process
+
+Consumers that call the scanner more than once in one Python interpreter can
+reuse bounded facts after parsing Python with current warning settings. Each scan reads current Git,
+worktree and ignored evidence and rebuilds cross-file findings. Independent
+`rigor scan` processes start with empty observation storage. See
+[Repeated Python architecture scans](architecture.md#repeated-python-architecture-scans).
+
 ## Adopter preflight
 
 Run `rigor doctor --root /path/to/repository` to check the installed package,

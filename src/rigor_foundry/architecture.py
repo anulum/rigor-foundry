@@ -9,8 +9,6 @@
 
 from __future__ import annotations
 
-import ast
-import hashlib
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import PurePosixPath
@@ -26,16 +24,7 @@ from .language_capabilities import (
     repository_path_under_roots,
 )
 from .models import AuditPolicy, Candidate
-
-
-@dataclass(frozen=True)
-class _Definition:
-    """Bounded metadata for one top-level Python function definition."""
-
-    name: str
-    line: int
-    end_line: int
-    body_digest: str | None
+from .python_architecture_observations import PythonDefinition, observe_python_architecture
 
 
 @dataclass(frozen=True)
@@ -47,42 +36,26 @@ class _PythonModule:
     edges: tuple[str, ...]
     wildcard_imports: tuple[tuple[int, str], ...]
     broad_import_lines: tuple[int, ...]
-    definitions: tuple[_Definition, ...]
+    definitions: tuple[PythonDefinition, ...]
     has_imports: bool
 
 
 def _module_name(path: str, policy: AuditPolicy) -> str | None:
     """Return the import name represented by one Python path."""
     pure = PurePosixPath(path)
-    if pure.suffix != ".py" or not repository_path_under_roots(path, policy.source_roots):
+    if pure.suffix != ".py":
+        return None
+    root = owning_repository_root(path, policy.source_roots)
+    if root is None:
         return None
     parts = list(pure.with_suffix("").parts)
-    root = owning_repository_root(path, policy.source_roots)
-    if root is not None and (root == "src" or root.endswith("/src")):
+    if root == "src" or root.endswith("/src"):
         parts = parts[len(PurePosixPath(root).parts) :]
-    if not parts:
-        return None
     if parts[-1] == "__init__":
         parts.pop()
     if not parts:
         return None
     return ".".join(parts)
-
-
-def _relative_import_name(module: str, node: ast.ImportFrom, is_package: bool) -> str:
-    """Resolve one relative import against its owning module."""
-    if node.level == 0:
-        return node.module or ""
-    base = module.split(".")
-    if not is_package:
-        base = base[:-1]
-    climb = node.level - 1
-    if climb > len(base):
-        return ""
-    prefix = base[: len(base) - climb]
-    if node.module:
-        prefix.extend(node.module.split("."))
-    return ".".join(prefix)
 
 
 def _match_known_module(name: str, known: frozenset[str]) -> str | None:
@@ -95,68 +68,17 @@ def _match_known_module(name: str, known: frozenset[str]) -> str | None:
     return None
 
 
-def _import_edges(
-    module: str,
-    path: str,
-    tree: ast.Module,
-    known: frozenset[str],
-) -> tuple[str, ...]:
-    """Return first-party import graph edges for one module."""
-    edges: set[str] = set()
-    is_package = PurePosixPath(path).name == "__init__.py"
-    for node in ast.walk(tree):
-        names: list[str] = []
-        if isinstance(node, ast.Import):
-            names.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            base = _relative_import_name(module, node, is_package)
-            if base:
-                names.append(base)
-                names.extend(f"{base}.{alias.name}" for alias in node.names if alias.name != "*")
-        for name in names:
-            matched = _match_known_module(name, known)
-            if matched is not None and matched != module:
-                edges.add(matched)
-    return tuple(sorted(edges))
-
-
-def _handler_is_broad(handler: ast.ExceptHandler) -> bool:
-    """Return whether an exception handler catches every ordinary failure."""
-    if handler.type is None:
-        return True
-    if isinstance(handler.type, ast.Name):
-        return handler.type.id in {"Exception", "BaseException"}
-    if isinstance(handler.type, ast.Tuple):
-        return any(
-            isinstance(item, ast.Name) and item.id in {"Exception", "BaseException"}
-            for item in handler.type.elts
+def _import_edges(module: str, imports: tuple[str, ...], known: frozenset[str]) -> tuple[str, ...]:
+    """Resolve import observations against the complete current module names."""
+    return tuple(
+        sorted(
+            {
+                match
+                for name in imports
+                if (match := _match_known_module(name, known)) is not None and match != module
+            }
         )
-    return False
-
-
-def _broad_import_lines(tree: ast.Module) -> tuple[int, ...]:
-    """Return lines of imports hidden behind broad exception handlers."""
-    lines: list[int] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Try):
-            continue
-        contains_import = any(
-            isinstance(child, (ast.Import, ast.ImportFrom))
-            for statement in node.body
-            for child in ast.walk(statement)
-        )
-        if contains_import and any(_handler_is_broad(item) for item in node.handlers):
-            lines.append(node.lineno)
-    return tuple(sorted(lines))
-
-
-def _definition_digest(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
-    """Return a normalised digest for a non-trivial function body."""
-    statement_count = sum(1 for child in ast.walk(node) if isinstance(child, ast.stmt))
-    if statement_count < 6:
-        return None
-    payload = ast.dump(ast.Module(body=node.body, type_ignores=[]), include_attributes=False)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    )
 
 
 def _python_modules(
@@ -172,44 +94,21 @@ def _python_modules(
         if name is not None
     )
     known = frozenset(name for name, _item in named_files)
+    policy_digest = policy.policy_digest
     modules: list[_PythonModule] = []
     for name, item in named_files:
-        if item.text is None:
-            continue
-        try:
-            tree = ast.parse(item.text, filename=item.path)
-        except SyntaxError:
+        facts = observe_python_architecture(item, name, policy_digest)
+        if facts is None:
             continue
         modules.append(
             _PythonModule(
                 name=name,
                 file=item,
-                edges=_import_edges(name, item.path, tree, known),
-                wildcard_imports=tuple(
-                    sorted(
-                        (
-                            node.lineno,
-                            f"from {node.module or '.'} import *",
-                        )
-                        for node in ast.walk(tree)
-                        if isinstance(node, ast.ImportFrom)
-                        and any(alias.name == "*" for alias in node.names)
-                    )
-                ),
-                broad_import_lines=_broad_import_lines(tree),
-                definitions=tuple(
-                    _Definition(
-                        name=node.name,
-                        line=node.lineno,
-                        end_line=node.end_lineno or node.lineno,
-                        body_digest=_definition_digest(node),
-                    )
-                    for node in tree.body
-                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-                ),
-                has_imports=any(
-                    isinstance(node, (ast.Import, ast.ImportFrom)) for node in tree.body
-                ),
+                edges=_import_edges(name, facts.imports, known),
+                wildcard_imports=facts.wildcard_imports,
+                broad_import_lines=facts.broad_import_lines,
+                definitions=facts.definitions,
+                has_imports=facts.has_top_level_imports,
             )
         )
     return tuple(modules)
@@ -241,13 +140,11 @@ def _strongly_connected_components(
                 lowlinks[node] = min(lowlinks[node], indexes[target])
         if lowlinks[node] != indexes[node]:
             return
-        component: list[str] = []
-        while stack:
-            member = stack.pop()
+        component = [node]
+        while (member := stack.pop()) != node:
             on_stack.remove(member)
             component.append(member)
-            if member == node:
-                break
+        on_stack.remove(node)
         if len(component) > 1:
             components.append(tuple(sorted(component)))
 
@@ -394,8 +291,6 @@ def _ownership_candidates(
     candidates: list[Candidate] = []
     for module in modules:
         pure = PurePosixPath(module.file.path)
-        if owning_repository_root(module.file.path, policy.source_roots) is None:
-            continue
         if pure.name == "__init__.py":
             continue
         if pure.stem.startswith("_") or pure.stem in stems:
@@ -422,7 +317,7 @@ def _duplicate_definition_candidates(
     modules: tuple[_PythonModule, ...],
 ) -> tuple[Candidate, ...]:
     """Return exact duplicated non-trivial top-level implementation bodies."""
-    owners: dict[str, list[tuple[_PythonModule, _Definition]]] = defaultdict(list)
+    owners: dict[str, list[tuple[_PythonModule, PythonDefinition]]] = defaultdict(list)
     for module in modules:
         for definition in module.definitions:
             if definition.body_digest is not None:
