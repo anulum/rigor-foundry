@@ -27,19 +27,23 @@ LABEL org.opencontainers.image.vendor="ANULUM / Fortis Studio"
 # Freeze security upgrades independently of the older digest-pinned base image.
 RUN sed -i \
         -e 's|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/20261029T000000Z|g' \
-        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20261029T000000Z|g' \
+        -e 's|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/20261118T000000Z|g' \
         /etc/apt/sources.list.d/debian.sources \
     && printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --uid 10001 rigor
+    && useradd --create-home --no-log-init --uid 10001 rigor \
+    && chage --lastday -1 rigor \
+    && rm -f /etc/shadow- /var/cache/ldconfig/aux-cache \
+        /var/log/apt/history.log /var/log/apt/term.log /var/log/dpkg.log
 
 COPY --from=builder /build/dist/*.whl /tmp/
 COPY requirements/runtime.txt /tmp/runtime.txt
-RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt \
-    && python -m pip install --no-cache-dir --no-deps /tmp/*.whl \
+RUN python -m pip install --no-cache-dir --no-compile --require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt \
+    && python -m pip install --no-cache-dir --no-compile --no-deps /tmp/*.whl \
+    && python -m compileall -q --invalidation-mode checked-hash /usr/local/lib/python3.12/site-packages \
     && rm -f /tmp/runtime.txt \
     && rm -f /tmp/*.whl
 

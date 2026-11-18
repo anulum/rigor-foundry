@@ -266,7 +266,8 @@ docker run --rm --read-only \
 ```
 
 The container runs as a non-root user and contains Git because repository
-inventory is a production dependency of the CLI.
+inventory is a production dependency of the CLI. For an exact local image
+comparison, use the [reproducible container build](docs/validation.md#reproducible-container-build).
 
 ## Verification and reproducibility
 

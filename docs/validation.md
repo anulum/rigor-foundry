@@ -219,6 +219,32 @@ its platform-specific optional bindings. It describes the lock, which can
 contain bindings for multiple targets, while installed VSIX and container
 artifacts require their own inventory evidence.
 
+## Reproducible container build
+
+For the Linux x64 image comparison, use the verified Buildx installer and the
+same digest-pinned BuildKit image as the container workflow. The commit time
+sets the OCI image timestamp. The OCI exporter normalizes layer timestamps.
+The Dockerfile omits local install logs and caches, clears the locked service
+account's password aging date and compiles Python modules with checked hashes.
+
+From a clean checkout with a Docker daemon, create a dedicated builder and
+export one image layout. Choose a writable location for the archive.
+
+```bash
+python3 -m tools.install_buildx
+docker buildx create --name rigor-repro --driver docker-container \
+  --driver-opt image=moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec
+epoch="$(git log -1 --format=%ct)"
+docker buildx build --builder rigor-repro --platform linux/amd64 --no-cache \
+  --provenance=false --sbom=false --build-arg "SOURCE_DATE_EPOCH=$epoch" \
+  --output type=oci,dest=rigor-foundry.oci.tar,rewrite-timestamp=true .
+docker buildx rm rigor-repro
+```
+
+Compare manifest and layer digests from separate builders with the same source,
+toolchain and inputs. The local image comparison excludes attestations. The
+publication workflow produces its own provenance and SBOM.
+
 ## Release eligibility
 
 Release eligibility additionally requires exact-version metadata, wheel and

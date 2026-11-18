@@ -132,13 +132,19 @@ def test_build_backend_and_base_image_are_immutable() -> None:
     assert len(bases) == 2
     assert all("@sha256:" in base for base in bases)
     assert "snapshot.debian.org/archive/debian/20261029T000000Z" in dockerfile
-    assert "snapshot.debian.org/archive/debian-security/20261029T000000Z" in dockerfile
+    assert "snapshot.debian.org/archive/debian-security/20261118T000000Z" in dockerfile
     assert "USER rigor" in dockerfile
     assert "COPY requirements/bootstrap.txt requirements/bootstrap.txt" in dockerfile
     assert (
         "--require-hashes --only-binary=:all: --no-build-isolation -r /tmp/runtime.txt"
         in dockerfile
     )
+
+    assert dockerfile.count("--no-compile") == 2
+    assert "--invalidation-mode checked-hash /usr/local/lib/python3.12/site-packages" in dockerfile
+    assert "chage --lastday -1 rigor" in dockerfile
+    assert "/var/cache/ldconfig/aux-cache" in dockerfile
+    assert "/var/log/apt/history.log /var/log/apt/term.log /var/log/dpkg.log" in dockerfile
 
 
 def test_hash_locks_cover_each_resolved_distribution() -> None:
