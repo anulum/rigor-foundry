@@ -31,6 +31,15 @@ NATIVE_COVERAGE_DOWNLOAD = {
         "path": "native-data",
     },
 }
+NATIVE_RUNTIME_CACHE_PATHS = (
+    "requirements/bootstrap.txt\nrequirements/test.txt\n"
+    "requirements/runtime.txt\nrequirements/test-windows.txt\n"
+)
+NATIVE_LOCK_INSTALL = (
+    "python -m pip install --require-hashes -r requirements/bootstrap.txt\n"
+    "python -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt "
+    "{locks}\npython -m pip install --no-build-isolation --no-deps .\npython -m pip check\n"
+)
 NATIVE_JOB: dict[str, Any] = {
     "env": {
         "PYTHONPATH": "${{ github.workspace }}",
@@ -68,17 +77,25 @@ NATIVE_JOB: dict[str, Any] = {
             "with": {
                 "python-version": "${{ matrix.python-version }}",
                 "cache": "pip",
-                "cache-dependency-path": "requirements/bootstrap.txt\nrequirements/test.txt\nrequirements/runtime.txt\nrequirements/test-windows.txt\n",
+                "cache-dependency-path": NATIVE_RUNTIME_CACHE_PATHS
+                + "requirements/provenance.txt\n",
             },
         },
         {
             "name": "Install hash-locked native environment",
             "shell": "bash",
-            "run": "python -m pip install --require-hashes -r requirements/bootstrap.txt\npython -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt -r ${{ matrix.test-lock }}\npython -m pip install --no-build-isolation --no-deps .\npython -m pip check\n",
+            "run": NATIVE_LOCK_INSTALL.format(
+                locks="-r ${{ matrix.test-lock }} -r requirements/provenance.txt"
+            ),
         },
         {
             "name": "Run complete source-bound native profile",
             "run": "python -m tools.run_native_tests --role ordinary",
+        },
+        {
+            "name": "Verify installed dependency provenance",
+            "run": "python -m pytest -p no:cacheprovider -q "
+            "tests/test_provenance_scan.py tests/test_provenance_attestation.py",
         },
         {
             "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
@@ -111,13 +128,12 @@ PRIMARY_JOB = {
             "with": {
                 **NATIVE_JOB["steps"][1]["with"],
                 "python-version": "3.12.13",
+                "cache-dependency-path": NATIVE_RUNTIME_CACHE_PATHS,
             },
         },
         {
             **NATIVE_JOB["steps"][2],
-            "run": NATIVE_JOB["steps"][2]["run"].replace(
-                "${{ matrix.test-lock }}", "requirements/test-windows.txt"
-            ),
+            "run": NATIVE_LOCK_INSTALL.format(locks="-r requirements/test-windows.txt"),
         },
         {
             "name": "Run separate required primary acceptance",

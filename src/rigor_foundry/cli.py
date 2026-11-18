@@ -47,6 +47,7 @@ from .models import (
 )
 from .offline_verification_cli import add_offline_verify_command
 from .oscal_cli import add_oscal_commands
+from .provenance_scan_cli import add_provenance_scan_command
 from .report_diff_cli import add_report_diff_command
 from .review import (
     append_todo_entry,
@@ -658,6 +659,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     contract.set_defaults(handler=_contract_command)
     add_source_provenance_commands(subparsers)
+    add_provenance_scan_command(subparsers)
     add_oscal_commands(subparsers)
     add_report_diff_command(subparsers)
     add_offline_verify_command(subparsers)

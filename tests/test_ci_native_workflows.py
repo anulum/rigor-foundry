@@ -53,7 +53,7 @@ def test_actual_native_workflow_passes_the_public_graph_guard() -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["producer", "primary", "qualification", "metadata", "primary-metadata"]
+    "case", ["producer", "primary", "provenance", "qualification", "metadata", "primary-metadata"]
 )
 def test_changed_native_job_or_consumer_input_is_refused(case: str) -> None:
     """Reject actual parsed workflow changes without launching any hosted job.
@@ -61,7 +61,8 @@ def test_changed_native_job_or_consumer_input_is_refused(case: str) -> None:
     Parameters
     ----------
     case : str
-        Selective producer, skipped qualification or missing metadata dependency.
+        Selective producer, missing provenance exercise, skipped qualification
+        or missing metadata dependency.
     """
     jobs = copy.deepcopy(read_workflow(ROOT / ".github/workflows/ci-tests.yml")["jobs"])
     if case == "producer":
@@ -70,6 +71,12 @@ def test_changed_native_job_or_consumer_input_is_refused(case: str) -> None:
         jobs["native-primary"]["steps"][3]["run"] = (
             "python -m tools.run_native_tests --role ordinary"
         )
+    elif case == "provenance":
+        jobs["native"]["steps"] = [
+            step
+            for step in jobs["native"]["steps"]
+            if step.get("name") != "Verify installed dependency provenance"
+        ]
     elif case == "qualification":
         jobs["native-quality"]["if"] = "${{ false() }}"
     else:
@@ -111,8 +118,14 @@ def test_actual_native_jobs_use_complete_cached_hash_locked_inputs() -> None:
         "requirements/test.txt",
         "requirements/runtime.txt",
         "requirements/test-windows.txt",
+        "requirements/provenance.txt",
     }
     assert "--require-hashes" in native["steps"][2]["run"]
+    assert "-r requirements/provenance.txt" in native["steps"][2]["run"]
+    assert native["steps"][4]["run"] == (
+        "python -m pytest -p no:cacheprovider -q "
+        "tests/test_provenance_scan.py tests/test_provenance_attestation.py"
+    )
     assert native["steps"][-1]["if"] == "${{ always() }}"
     assert native["steps"][-1]["with"]["include-hidden-files"] is True
 

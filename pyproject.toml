@@ -51,6 +51,7 @@ dependencies = ["cryptography>=50,<51", "PyYAML>=6.0.3,<7"]
 rigor = "rigor_foundry.cli:main"
 
 [project.optional-dependencies]
+provenance = ["pypi-attestations==0.0.31", "sigstore==4.5.1"]
 dev = [
     "bandit>=1.7,<2.0",
     "build>=1.0,<2.0",

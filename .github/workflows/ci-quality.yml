@@ -79,10 +79,11 @@ jobs:
           cache-dependency-path: |
             requirements/bootstrap.txt
             requirements/ci.txt
+            requirements/provenance.txt
       - name: Install hash-locked quality environment
         run: |
           python -m pip install --require-hashes -r requirements/bootstrap.txt
-          python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
+          python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt -r requirements/provenance.txt
           python -m pip install --no-build-isolation --no-deps .
       - name: Audit repository contracts
         run: python -m tools.audit

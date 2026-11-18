@@ -20,6 +20,7 @@ path = [
     "NOTICE",
     "requirements/*.txt",
     "src/rigor_foundry/py.typed",
+    "tests/fixtures/provenance/README.md",
 ]
 SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"
@@ -34,6 +35,21 @@ path = [
     "rigor-foundry-policy.json",
 ]
 SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["tests/fixtures/provenance/sampleproject-4.0.0*", "LICENSES/MIT.txt"]
+SPDX-FileCopyrightText = "2016 The Python Packaging Authority (PyPA)"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["tests/fixtures/provenance/build-1.4.4*"]
+SPDX-FileCopyrightText = "2019 Filipe Laíns"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["tests/fixtures/provenance/sigstore-public-root.json.gz"]
+SPDX-FileCopyrightText = "The Sigstore Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]

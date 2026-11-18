@@ -15,7 +15,7 @@ EDITOR_DIR ?= editors/vscode
 .PHONY: bootstrap install lock lock-bootstrap lint fmt typecheck bandit typos audit audit-authoring residuals test test-file preflight preflight-fast build docs docs-build docker-build docker-smoke install-hooks clean editor-install editor-check editor-coverage editor-package
 
 install: bootstrap
-	$(PYTHON) -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
+	$(PYTHON) -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt -r requirements/provenance.txt
 	$(PYTHON) -m pip install --no-build-isolation --no-deps -e .
 	$(MAKE) editor-install
 
@@ -39,6 +39,7 @@ lock:
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --output-file requirements/build.txt requirements/build.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --output-file requirements/ci.txt requirements/ci.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/runtime.txt requirements/runtime.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --constraint requirements/runtime.txt --output-file requirements/provenance.txt requirements/provenance.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/security.txt requirements/security.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/test.txt requirements/test.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/native.txt requirements/native.in

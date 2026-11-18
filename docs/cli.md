@@ -65,6 +65,14 @@ content-digest claim against the exact capture and payload. See
 [Verified external source provenance](source-provenance.md) for the complete
 contract and examples.
 
+`scan-provenance` runs the static scan and attaches a separate record for
+hash-locked distribution attestations and source-bound Scorecard checks.
+It uses a local profile whose SHA-256 you supply independently. Install the
+`provenance` extra to verify PyPI Publish and SLSA signatures. A successful
+command writes both the audit report and the individual evidence outcomes.
+See [offline dependency provenance](source-provenance.md#offline-scan-with-signed-distribution-evidence)
+for the profile fields and command example.
+
 ## Offline evidence verification
 
 `rigor verify --bundle BUNDLE.json --trust-policy TRUST.json --at TIMESTAMP

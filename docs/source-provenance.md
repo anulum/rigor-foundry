@@ -108,3 +108,81 @@ verification record. `SourceVerification.from_dict` cannot replay extraction
 because records omit retained payload bytes. At an evidence trust boundary,
 retain the payload and call `verify_external_source` again; an internally
 consistent parsed record alone is not extraction proof.
+
+## Offline scan with signed distribution evidence
+
+`rigor scan-provenance` binds separately versioned provenance to the
+existing static audit report. The output contains the unchanged
+`audit_report` object and a `rigor.provenance-scan.v1` provenance companion. The companion binds the
+audit digest, Git head and tree, unchanged tracked lock blob, caller-profile
+SHA-256 and individual pieces of observed evidence. The regular `rigor scan`
+entry point keeps its existing output contract.
+
+Local evidence uses bounded, stable single-link reads on POSIX and local
+NTFS. Each implementation retains the relevant path components while it reads.
+
+Provide a local schema 1.0 profile from an independently authenticated
+source and its expected SHA-256:
+
+```sh
+rigor scan-provenance --root /path/to/project \
+  --profile /path/to/evidence/profile.json \
+  --profile-sha256 "$EXPECTED_PROFILE_SHA256" \
+  --output /path/to/evidence/scan-provenance.json
+```
+
+A profile has `schema_version`, `lock`, `distributions` and `scorecard`
+fields. The lock names a tracked UTF-8 Python requirements file whose bytes
+match the committed blob. Set `eol=lf` in `.gitattributes` for a lock committed
+with LF line endings so a Windows checkout retains those bytes.
+Each selected distribution specifies these values:
+
+| Field | Meaning |
+| --- | --- |
+| `project`, `version`, `sha256` | Pinned package and authorised distribution hash from the tracked lock |
+| `artifact` | Exact distribution filename under the profile directory |
+| `predicate` | Expected PyPI Publish v1 or SLSA Provenance v1 predicate URI |
+| `identity`, `issuer` | Independently expected signing certificate identity and OIDC issuer |
+| `source_commit` | Exact GitHub source commit from the signing certificate's source repository digest, required for SLSA and optional for PyPI Publish |
+| `bundle`, `bundle_sha256` | Retained producer evidence and its expected digest |
+| `root`, `root_sha256` | Explicit local Sigstore trust material and its expected digest |
+
+Install the optional `provenance` extra for signature verification.
+For a source checkout, provision the interpreter using the bootstrap
+and provenance locks before installing the repository:
+
+```sh
+python -m pip install --require-hashes -r requirements/bootstrap.txt
+python -m pip install --require-hashes --no-build-isolation -r requirements/provenance.txt
+python -m pip install --no-build-isolation --no-deps .
+```
+
+For a Cryptography source build on Intel macOS, provision the Xcode command-line
+tools, Rust and OpenSSL before installing the locks. Set `OPENSSL_DIR` to
+the local OpenSSL installation when the compiler cannot discover it.
+The bootstrap lock installs the Python build requirements before pip
+builds the hash-locked source distribution.
+
+The ordinary native CI matrix exercises the installed provenance command and
+the signed distribution fixtures on Windows and Intel macOS with the same
+hash-locked verifier profile.
+
+The verifier uses `sigstore 4.5.1` and `pypi-attestations 0.0.31`
+with the explicit local trust input, without fetching metadata. The supported
+PyPI Publish profile uses a provenance object holding one signed
+attestation with a single distribution subject. The SLSA profile uses
+one Sigstore DSSE bundle and matches the required subject among distinct
+signed names. Verification checks the distribution name, version, hash,
+predicate and identity before returning verified statement evidence.
+
+Use null for all four bundle/root fields when the evidence is unavailable.
+The companion reports unavailable when the signed evidence or optional
+verifier is absent, unsupported for other predicates, and refused when
+supplied evidence cannot be verified. Profiles with inconsistent lock hashes, a changed
+repository snapshot, or invalid Scorecard selection fail the command.
+
+Set `scorecard` to null or supply `path`, `sha256`, `repository` and
+producer `version`. The importer compares the retained response with the
+current scan commit and emits each named check. Unavailable observations
+are explicit and scores remain probe evidence. The output is informational
+and does not select, adjudicate or promote audit candidates.

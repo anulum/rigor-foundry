@@ -51,15 +51,20 @@ jobs:
           requirements/test.txt
           requirements/runtime.txt
           requirements/test-windows.txt
+          requirements/provenance.txt
     - name: Install hash-locked native environment
       shell: bash
       run: |
         python -m pip install --require-hashes -r requirements/bootstrap.txt
-        python -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt -r ${{ matrix.test-lock }}
+        python -m pip install --require-hashes --no-build-isolation -r requirements/runtime.txt -r ${{ matrix.test-lock }} -r requirements/provenance.txt
         python -m pip install --no-build-isolation --no-deps .
         python -m pip check
     - name: Run complete source-bound native profile
       run: python -m tools.run_native_tests --role ordinary
+    - name: Verify installed dependency provenance
+      run: >-
+        python -m pytest -p no:cacheprovider -q
+        tests/test_provenance_scan.py tests/test_provenance_attestation.py
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       if: ${{ always() }}
       with:
@@ -199,13 +204,14 @@ jobs:
           requirements/test.txt
           requirements/security.txt
           requirements/native.txt
+          requirements/provenance.txt
     - name: Install hash-locked test environment
       run: |
         python -m venv "$RUNNER_TEMP/rigor-docs-venv"
         "$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes -r requirements/bootstrap.txt
         "$RUNNER_TEMP/rigor-docs-venv/bin/python" -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
         python -m pip install --require-hashes -r requirements/bootstrap.txt
-        python -m pip install --require-hashes --no-build-isolation -r requirements/test.txt
+        python -m pip install --require-hashes --no-build-isolation -r requirements/test.txt -r requirements/provenance.txt
         python -m pip install --require-hashes --no-build-isolation -r requirements/security.txt
         python -m pip install --require-hashes --no-build-isolation -r requirements/native.txt
         python -m pip install --no-build-isolation --no-deps .

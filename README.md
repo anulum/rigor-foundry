@@ -147,6 +147,7 @@ explicit policy/evidence paths and no remediation authority.
 | --- | --- |
 | `rigor bootstrap` | Create one explicit policy and ignored canonical TODO without guessing or overwrite. |
 | `rigor scan` | Emit a deterministic JSON or Markdown candidate report. |
+| `rigor scan-provenance` | Attach offline distribution attestations and source-bound Scorecard evidence to an audit report. |
 | `rigor contract` | Emit the digest-bound 1.0 Python, CLI, and schema compatibility contract. |
 | `rigor report-diff` | Compare two exact reports as replay-verifiable candidate-transition evidence. |
 | `rigor verify` | Verify signed reports, reviews, packs, model aliases, freshness, and unavailable evidence offline. |

@@ -25,6 +25,7 @@ PYTHON_LOCKS = tuple(
         "ci",
         "fuzz",
         "native",
+        "provenance",
         "runtime",
         "security",
         "test",

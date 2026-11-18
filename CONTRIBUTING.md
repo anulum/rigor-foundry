@@ -23,7 +23,8 @@ make install-hooks
 
 The installer first installs the hash-locked source-build backends from
 `requirements/bootstrap.txt`, then installs the development lock without
-build isolation. Source distributions therefore use the admitted backends
+build isolation and the verifier profile used by the signed provenance tests.
+Source distributions therefore use the admitted backends
 rather than downloading a separate build environment. Native source builds
 require a C/C++ compiler and the interpreter's development headers; PyYAML's
 LibYAML extension also requires the LibYAML development headers and library.

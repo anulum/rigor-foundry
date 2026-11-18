@@ -174,6 +174,8 @@ test profiles. Before dependency audits, it exercises the actual clean scan,
 both repository-rule refusals and a missing scanner through
 `tests/test_semgrep_runtime.py`, requiring 100% coverage of that complete test
 owner. The dependency-waiver guard requires this unconditional step.
+The dependency audit checks the optional provenance verifier lock with
+the same hash verification and blocking result as the runtime lock.
 
 The launcher requires a finite host soft
 stack limit and lowers its own hard stack to that same value before replacing

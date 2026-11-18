@@ -288,6 +288,14 @@ offline verification. Claim, policy, capture, and verification are separate
 digest nodes. Successful verification is retrieval-policy-only; HTTPS metadata never
 becomes publisher-signature evidence or change authority.
 
+`provenance_scan.py` attaches a separately digested record to the static
+report. It binds the profile, dependency lock and Scorecard observations to
+the repository snapshot. The optional `provenance_attestation.py` verifier
+checks locally retained PyPI Publish and SLSA signatures against explicitly
+pinned trust material and matches each authenticated subject to its
+distribution hash. Signature status and named Scorecard checks stay in the
+provenance record.
+
 ### Native audit adapters
 
 `adapters.py` owns dispatch and the versioned result envelope;

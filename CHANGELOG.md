@@ -47,6 +47,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `rigor scan-provenance` records PyPI Publish and SLSA attestations and named
+  Scorecard checks alongside the static audit report. The optional verifier
+  uses independently pinned local trust material and distribution hashes.
+
 - Closed candidate operation and extractor catalogues bind the exact atomic
   and seven-part native descriptors under complete v3 headers and read budgets.
   Metadata parsing remains separate from installed extraction and execution.

@@ -73,6 +73,9 @@ jobs:
       - name: Native dependency audit
         shell: bash
         run: python -m pip_audit -r requirements/native.txt --require-hashes --disable-pip --strict
+      - name: Provenance verifier dependency audit
+        shell: bash
+        run: python -m pip_audit -r requirements/provenance.txt --require-hashes --disable-pip --strict
       - name: Runtime dependency audit
         shell: bash
         run: python -m pip_audit -r requirements/runtime.txt --require-hashes --disable-pip --strict

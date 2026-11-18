@@ -98,6 +98,8 @@ _SCHEMA_SYMBOLS = {
 }
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
+    "provenance_scan.PROVENANCE_PROFILE_SCHEMA_VERSION": "1.0",
+    "provenance_scan.PROVENANCE_SCAN_SCHEMA_VERSION": "rigor.provenance-scan.v1",
     "extractor_registry_v3.EXTRACTOR_REGISTRY_V3_SCHEMA_VERSION": "3.0",
     "effect_operations_v3.EFFECT_OPERATIONS_V3_SCHEMA_VERSION": "3.0",
     "policy_hold.POLICY_HOLD_SCHEMA_VERSION": "1.0",
@@ -490,3 +492,17 @@ def test_drift_validator_rejects_every_surface_class() -> None:
     assert "review-record: stable schema version changed" in errors
     assert "stable Python APIs are missing: AuditReport" in errors
     assert "stable Python APIs are unclassified: Unknown" in errors
+
+
+def test_provisional_commands_are_checked_outside_the_frozen_manifest() -> None:
+    """Detect missing and changed experimental commands without editing v1.0."""
+    actual = _observed_commands()
+    assert "scan-provenance" in actual
+    assert "scan-provenance" not in json.dumps(stable_contract_manifest())
+    actual["scan-provenance"] = CliCommandContract(("--root",), ("unexpected",))
+    moved = stable_contract_errors(actual, _observed_schemas(), STABLE_PUBLIC_API)
+    assert "scan-provenance: provisional CLI options changed" in moved
+    assert "scan-provenance: provisional CLI positionals changed" in moved
+    del actual["scan-provenance"]
+    missing = stable_contract_errors(actual, _observed_schemas(), STABLE_PUBLIC_API)
+    assert "provisional CLI commands are missing: scan-provenance" in missing

@@ -33,6 +33,16 @@ def _command(*options: str, positionals: tuple[str, ...] = ()) -> CliCommandCont
     return CliCommandContract(tuple(sorted(options)), positionals)
 
 
+# New commands remain explicitly checked outside the frozen 1.0 manifest.
+PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
+    {
+        "scan-provenance": _command(
+            "--output", "--policy", "--profile", "--profile-sha256", "--root"
+        ),
+    }
+)
+
+
 STABLE_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
     {
         "advisory-delay": _command(
@@ -406,21 +416,27 @@ def stable_contract_errors(
 ) -> tuple[str, ...]:
     """Return deterministic drift errors against the frozen 1.0 surfaces."""
     errors: list[str] = []
-    expected_commands = set(STABLE_CLI_COMMANDS)
     observed_commands = set(commands)
-    missing_commands = expected_commands - observed_commands
-    unknown_commands = observed_commands - expected_commands
+    expected_commands = {**STABLE_CLI_COMMANDS, **PROVISIONAL_CLI_COMMANDS}
+    missing_commands = set(STABLE_CLI_COMMANDS) - observed_commands
+    missing_provisional = set(PROVISIONAL_CLI_COMMANDS) - observed_commands
+    unknown_commands = observed_commands - expected_commands.keys()
     if missing_commands:
         errors.append("stable CLI commands are missing: " + ", ".join(sorted(missing_commands)))
+    if missing_provisional:
+        errors.append(
+            "provisional CLI commands are missing: " + ", ".join(sorted(missing_provisional))
+        )
     if unknown_commands:
         errors.append("CLI commands are unclassified: " + ", ".join(sorted(unknown_commands)))
-    for name in sorted(expected_commands & observed_commands):
-        expected = STABLE_CLI_COMMANDS[name]
+    for name in sorted(expected_commands.keys() & observed_commands):
+        expected = expected_commands[name]
         observed = commands[name]
+        maturity = "stable" if name in STABLE_CLI_COMMANDS else "provisional"
         if tuple(sorted(observed.options)) != expected.options:
-            errors.append(f"{name}: stable CLI options changed")
+            errors.append(f"{name}: {maturity} CLI options changed")
         if observed.positionals != expected.positionals:
-            errors.append(f"{name}: stable CLI positionals changed")
+            errors.append(f"{name}: {maturity} CLI positionals changed")
 
     expected_schemas = set(STABLE_SCHEMA_VERSIONS)
     observed_schemas = set(schemas)

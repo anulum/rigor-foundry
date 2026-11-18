@@ -25,6 +25,7 @@ from .audit_primitives import (
 )
 from .git_inventory import (
     StableReadError,
+    StableRegularRead,
     open_directory_no_follow,
     read_stable_regular_file_at,
 )
@@ -488,6 +489,27 @@ class SourceCapture:
         return capture
 
 
+def _read_source_file(absolute: Path, limit: int) -> StableRegularRead:
+    """Read one exact file using the platform's retained no-follow resources."""
+    if os.name == "nt":
+        from .windows_file_io import read_regular_file
+
+        return read_regular_file(absolute, buffer_limit=limit, maximum_bytes=limit)
+
+    parent = open_directory_no_follow(absolute.parent)
+    try:
+        return read_stable_regular_file_at(
+            parent,
+            absolute.name,
+            str(absolute),
+            buffer_limit=limit,
+            maximum_bytes=limit,
+            require_single_link=True,
+        )
+    finally:
+        os.close(parent)
+
+
 def read_source_payload(path: Path, *, maximum_bytes: int) -> bytes:
     """Read a bounded single-link payload through stable no-follow descriptors.
 
@@ -514,22 +536,11 @@ def read_source_payload(path: Path, *, maximum_bytes: int) -> bytes:
     limit = require_integer(maximum_bytes, "source payload maximum_bytes", minimum=1)
     if limit > MAX_SOURCE_BYTES:
         raise ValueError(f"source payload maximum_bytes must be <= {MAX_SOURCE_BYTES}")
-    absolute = path.absolute()
-    parent = open_directory_no_follow(absolute.parent)
     try:
-        result = read_stable_regular_file_at(
-            parent,
-            absolute.name,
-            str(absolute),
-            buffer_limit=limit,
-            maximum_bytes=limit,
-            require_single_link=True,
-        )
+        result = _read_source_file(path.absolute(), limit)
     except StableReadError as exc:
         if exc.reason == "limit-exceeded":
             raise ValueError("source payload exceeds the configured byte limit") from exc
         raise
-    finally:
-        os.close(parent)
     # Equal read and buffer ceilings retain every byte of any successful read.
     return cast(bytes, result.payload)
