@@ -20,10 +20,16 @@ from types import TracebackType
 from typing import cast
 
 from .windows_abi import windows_descriptor, windows_error, windows_handle, windows_library
+from .windows_directory_inventory import (
+    WindowsDirectoryEntry,
+    file_change_token,
+    list_directory_entries,
+)
 from .windows_permissions import private_security_descriptor
 
 _INVALID_HANDLE = ctypes.c_void_p(-1).value
 _DIRECTORY_READ = 0x1000A1
+_METADATA_READ = 0x100080
 _GENERIC_READ = 0x80000000
 _GENERIC_WRITE = 0x40000000
 _DELETE = 0x10000
@@ -85,7 +91,7 @@ class _IoStatus(ctypes.Structure):
 
 
 def _open_relative(
-    parent: int, name: str, *, directory: bool, create: bool = False, private: bool = True
+    parent: int, name: str, *, directory: bool | None, create: bool = False, private: bool = True
 ) -> int:
     """Open one validated child relative to a retained object, without reparsing paths."""
     _component(name)
@@ -116,8 +122,15 @@ def _open_relative(
     library.RtlNtStatusToDosError.restype = wintypes.ULONG
     result = wintypes.HANDLE()
     status_block = _IoStatus()
-    access = _DIRECTORY_READ if directory else _GENERIC_READ | 0x100000
-    options = 0x20 | _OPEN_REPARSE_POINT | (0x1 if directory else 0x40)
+    options = 0x20 | _OPEN_REPARSE_POINT
+    if directory is None:
+        access = _METADATA_READ
+    elif directory:
+        access = _DIRECTORY_READ
+        options |= 0x1
+    else:
+        access = _GENERIC_READ | 0x100000
+        options |= 0x40
     if create:
         access |= _GENERIC_WRITE | _DELETE
         options |= 0x2
@@ -242,6 +255,14 @@ class WindowsFileIdentity:
     created: int
 
 
+@dataclass(frozen=True)
+class WindowsChildSnapshot:
+    """Identity and change metadata from the same handle-relative child observation."""
+
+    identity: WindowsFileIdentity
+    change_token: tuple[int, int, int, int]
+
+
 class WindowsFile:
     """Own one regular file and its noninheritable binary CRT descriptor."""
 
@@ -310,15 +331,14 @@ class WindowsFile:
         self.close()
 
 
-def _identity(library: ctypes.CDLL, handle: int, *, directory: bool) -> WindowsFileIdentity:
-    """Reject reparse/non-disk objects before exposing their handle-bound identity."""
+def _identity(library: ctypes.CDLL, handle: int, *, directory: bool | None) -> WindowsFileIdentity:
+    """Read disk identity, applying non-reparse type constraints to content handles."""
     data = _FileInformation()
     if not library.GetFileInformationByHandle(handle, ctypes.byref(data)):
         raise windows_error()
-    if (
-        library.GetFileType(handle) != 1
-        or data.attributes & _REPARSE_POINT
-        or bool(data.attributes & _DIRECTORY) != directory
+    if library.GetFileType(handle) != 1 or (
+        directory is not None
+        and (data.attributes & _REPARSE_POINT or bool(data.attributes & _DIRECTORY) != directory)
     ):
         raise ValueError("Windows path is not the required non-reparse disk object")
     return WindowsFileIdentity(
@@ -330,6 +350,21 @@ def _identity(library: ctypes.CDLL, handle: int, *, directory: bool) -> WindowsF
         written=(int(data.written.dwHighDateTime) << 32) | int(data.written.dwLowDateTime),
         created=(int(data.created.dwHighDateTime) << 32) | int(data.created.dwLowDateTime),
     )
+
+
+def _handle_path(library: ctypes.CDLL, handle: int, *, capacity: int = 32768) -> str:
+    """Return the volume-guid path of a live handle using a bounded native query."""
+    buffer = ctypes.create_unicode_buffer(capacity)
+    length = library.GetFinalPathNameByHandleW(handle, buffer, len(buffer), 1)
+    if not length or length >= len(buffer):
+        raise windows_error()
+    return buffer.value
+
+
+def _close_handle(library: ctypes.CDLL, handle: int) -> None:
+    """Propagate the native error if a directory-owned handle cannot be closed."""
+    if not library.CloseHandle(handle):
+        raise windows_error()
 
 
 class WindowsDirectory:
@@ -366,18 +401,9 @@ class WindowsDirectory:
                 self._handles.append(int(handle))
                 _identity(self._kernel, int(handle), directory=True)
                 if index == 0:
-                    root_buffer = ctypes.create_unicode_buffer(128)
-                    length = self._kernel.GetFinalPathNameByHandleW(
-                        handle, root_buffer, len(root_buffer), 1
-                    )
-                    if not length or length >= len(root_buffer):
-                        raise windows_error()
-                    if (
-                        re.fullmatch(r"\\\\\?\\Volume\{[0-9a-fA-F-]{36}\}\\", root_buffer.value)
-                        is None
-                    ):
+                    cursor = _handle_path(self._kernel, int(handle), capacity=128)
+                    if re.fullmatch(r"\\\\\?\\Volume\{[0-9a-fA-F-]{36}\}\\", cursor) is None:
                         raise ValueError("Windows root has no supported volume GUID namespace")
-                    cursor = root_buffer.value
             self._native_path = cursor
             filesystem = ctypes.create_unicode_buffer(64)
             if not self._kernel.GetVolumeInformationByHandleW(
@@ -402,6 +428,57 @@ class WindowsDirectory:
         if not self._handles:
             raise ValueError("Windows directory is closed")
         _ = _identity(self._kernel, self._handles[-1], directory=True)
+
+    def change_token(self) -> tuple[int, int, int, int]:
+        """Read stable directory timestamps and attributes from the retained handle."""
+        self._check()
+        return file_change_token(self._handles[-1])
+
+    def list_entries(self, *, maximum_entries: int) -> tuple[WindowsDirectoryEntry, ...]:
+        """List at most the requested number of children through the retained handle.
+
+        Parameters
+        ----------
+        maximum_entries : int
+            Maximum number of children across the complete enumeration.
+
+        Returns
+        -------
+        tuple[WindowsDirectoryEntry, ...]
+            Exact native child names and associated object identifiers.
+
+        Raises
+        ------
+        OverflowError
+            If the directory contains more than the requested bound.
+        OSError
+            If native enumeration fails.
+        """
+        self._check()
+        return list_directory_entries(self._handles[-1], maximum_entries=maximum_entries)
+
+    def inspect_child(self, name: str) -> WindowsChildSnapshot:
+        """Inspect one exact child entry without reading content or following a reparse point.
+
+        Parameters
+        ----------
+        name : str
+            One exact, unambiguous child name relative to the retained directory.
+
+        Returns
+        -------
+        WindowsChildSnapshot
+            The child's identity and change metadata, including any reparse attribute.
+        """
+        self._check()
+        handle = _open_relative(self._handles[-1], name, directory=None)
+        try:
+            identity = _identity(self._kernel, handle, directory=None)
+            if _handle_path(self._kernel, handle) != str(self.native_path(name)):
+                raise ValueError("Windows child differs from the retained parent and name")
+            return WindowsChildSnapshot(identity, file_change_token(handle))
+        finally:
+            _close_handle(self._kernel, handle)
 
     def open_file(self, name: str, *, create: bool = False, private: bool = True) -> WindowsFile:
         """Open a single no-reparse child with write/delete sharing denied.
@@ -428,13 +505,7 @@ class WindowsDirectory:
         result = WindowsFile(int(handle), writable=create)
         try:
             _ = result.identity()
-            name_buffer = ctypes.create_unicode_buffer(32768)
-            length = self._kernel.GetFinalPathNameByHandleW(
-                result.handle, name_buffer, len(name_buffer), 1
-            )
-            if not length or length >= len(name_buffer):
-                raise windows_error()
-            if name_buffer.value != str(self.native_path(name)):
+            if _handle_path(self._kernel, result.handle) != str(self.native_path(name)):
                 raise ValueError("Windows child differs from the retained parent and name")
             self._check()
         except BaseException:
@@ -506,13 +577,8 @@ class WindowsDirectory:
                 _identity(self._kernel, handle, directory=True)
                 child._native_path = child._native_path.rstrip("\\") + "\\" + component
             child._identity = _identity(self._kernel, child._handles[-1], directory=True)
-            buffer = ctypes.create_unicode_buffer(32768)
-            length = self._kernel.GetFinalPathNameByHandleW(
-                child._handles[-1], buffer, len(buffer), 1
-            )
-            if not length or length >= len(buffer):
-                raise windows_error()
-            if buffer.value.rstrip("\\") != child._native_path.rstrip("\\"):
+            path = _handle_path(self._kernel, child._handles[-1])
+            if path.rstrip("\\") != child._native_path.rstrip("\\"):
                 raise ValueError("Windows directory differs from the retained parent and name")
             return child
         except BaseException:
@@ -523,8 +589,10 @@ class WindowsDirectory:
         """Release every directory handle, in reverse acquisition order."""
         errors: list[OSError] = []
         while self._handles:
-            if not self._kernel.CloseHandle(self._handles.pop()):
-                errors.append(windows_error())
+            try:
+                _close_handle(self._kernel, self._handles.pop())
+            except OSError as failure:
+                errors.append(failure)
         if errors:
             raise RuntimeError("native directory handle cleanup failed") from ExceptionGroup(
                 "native directory close failures", errors

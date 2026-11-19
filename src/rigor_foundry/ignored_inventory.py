@@ -363,10 +363,12 @@ def _observe_present(
         or os.stat not in os.supports_follow_symlinks
     ):
         return _unavailable(declaration, "platform-unavailable")
-    descriptor: int | None = None
     flags = os.O_PATH | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
     try:
         descriptor = os.open(name, flags, dir_fd=parent)
+    except OSError:
+        return _unavailable(declaration, "inaccessible")
+    try:
         before = os.fstat(descriptor)
         path_before = os.stat(name, dir_fd=parent, follow_symlinks=False)
         after = os.fstat(descriptor)
@@ -374,8 +376,7 @@ def _observe_present(
     except OSError:
         return _unavailable(declaration, "inaccessible")
     finally:
-        if descriptor is not None:
-            os.close(descriptor)
+        os.close(descriptor)
     if stat.S_ISREG(before.st_mode) and before.st_nlink != 1:
         return _unavailable(declaration, "multiple-links")
     if (
@@ -451,9 +452,11 @@ def _directory_entries(
         if stat.S_ISLNK(metadata.st_mode):
             raise _DirectoryReadError("symlink")
         if stat.S_ISDIR(metadata.st_mode):
-            child: int | None = None
             try:
                 child = os.open(name, directory_flags, dir_fd=descriptor)
+            except OSError as exc:
+                raise _DirectoryReadError("inaccessible") from exc
+            try:
                 child_before = _snapshot(os.fstat(child))
                 entries.append({"path_bytes_hex": relative.hex(), "kind": "directory"})
                 entries.extend(
@@ -472,8 +475,7 @@ def _directory_entries(
             except OSError as exc:
                 raise _DirectoryReadError("inaccessible") from exc
             finally:
-                if child is not None:
-                    os.close(child)
+                os.close(child)
             continue
         if not stat.S_ISREG(metadata.st_mode):
             raise _DirectoryReadError("not-regular-file")
@@ -697,6 +699,10 @@ def collect_ignored_inventory(
     """Validate and collect all declared ignored paths under one Git identity."""
     if not declarations:
         return ()
+    if os.name == "nt":
+        from .windows_ignored_inventory import collect_windows_ignored_inventory
+
+        return collect_windows_ignored_inventory(inventory, declarations, git_runner=git_runner)
     try:
         root_descriptor = open_directory_no_follow(inventory.root)
     except OSError as exc:

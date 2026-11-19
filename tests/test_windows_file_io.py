@@ -100,6 +100,24 @@ class WindowsFileIOTests(unittest.TestCase):
         self.assertEqual(result.byte_size, 0)
         self.assertEqual(result.content_digest, hashlib.sha256(b"").hexdigest())
 
+    def test_borrowed_parent_must_match_requested_file(self) -> None:
+        """Read through a retained directory and refuse a handle for a different path."""
+        path = self.root / "source.bin"
+        path.write_bytes(b"native sample")
+        other = self.root / "other"
+        other.mkdir()
+        other_file = other / path.name
+        other_file.write_bytes(b"separate sample")
+        with WindowsDirectory(self.root) as parent:
+            identity = parent.inspect_child(path.name).identity
+            result = read_regular_file(path, retained_parent=parent, expected_identity=identity)
+            self.assertEqual(result.payload, b"native sample")
+            with self.assertRaises(StableReadError) as failure:
+                read_regular_file(other_file, retained_parent=parent, expected_identity=identity)
+            self.assertEqual(failure.exception.reason, "changed-while-read")
+            self.assertEqual(parent.inspect_child(path.name).identity, identity)
+        self.assertEqual(other_file.read_bytes(), b"separate sample")
+
     def test_static_size_and_link_policies(self) -> None:
         """Exercise declared size and hard-link policies on static owned inputs."""
         path = self.root / "bounded.bin"

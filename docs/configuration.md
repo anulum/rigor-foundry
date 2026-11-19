@@ -71,13 +71,18 @@ rejected.
 
 Collection never records file content, symlink targets, environment values, or
 undeclared roots. `directory-sha256` recursively hashes only the declared tree
-through descriptor-relative no-follow reads, stores byte paths as hexadecimal
-inside a versioned canonical manifest, and caps depth, entry count, and total
-regular-file bytes. Evidence is limited to `observed`, `missing`, or
-`unavailable`, the observed entry kind, bounded byte size, an optional SHA-256,
-and a finite reason. Symlinks, special files, hard links, resource-limit
-breaches, and concurrent mutation fail closed. Missing and unavailable
-observations are evidence gaps, not automatic control failures.
+through no-follow reads relative to the retained parent. POSIX rechecks each
+directory before releasing its descriptor. Native Windows uses retained
+handles on fixed local NTFS volumes and rechecks the membership, identity, and
+change metadata of every visited entry in a final pass before computing the
+digest. Each manifest is a bounded observation of a live filesystem. Both
+paths store byte paths as hexadecimal inside the same versioned canonical
+manifest and cap depth, entry count, and total regular-file bytes. Evidence is
+limited to `observed`, `missing`, or `unavailable`, the observed entry kind, bounded byte
+size, an optional SHA-256, and a finite reason. Symlinks, Windows reparse points,
+special files, hard links, resource-limit breaches, and changes detected during
+collection fail closed. A missing or unavailable observation records an
+evidence gap and leaves control enforcement to the configured policy.
 
 ## Rule-maturity policy and cases
 

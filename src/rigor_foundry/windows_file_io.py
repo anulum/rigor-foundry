@@ -11,11 +11,12 @@ from __future__ import annotations
 
 import hashlib
 import os
+from contextlib import nullcontext
 from pathlib import Path
 from typing import overload
 
 from .git_inventory import StableGitRead, StableReadError, StableRegularRead
-from .windows_handles import WindowsDirectory
+from .windows_handles import WindowsDirectory, WindowsFileIdentity
 
 
 def _require_single_link(count: int, failure: Exception) -> None:
@@ -24,26 +25,34 @@ def _require_single_link(count: int, failure: Exception) -> None:
         raise failure
 
 
+# A docstring documents each overload without adding an executable stub body.
+# Ruff D418 is waived only on these two declarations.
 @overload
-def read_regular_file(
+def read_regular_file(  # noqa: D418
     path: Path,
     *,
     object_format: str,
     buffer_limit: int = 8 * 1024 * 1024,
     maximum_bytes: int | None = None,
     require_single_link: bool = True,
-) -> StableGitRead: ...
+    retained_parent: WindowsDirectory | None = None,
+    expected_identity: WindowsFileIdentity | None = None,
+) -> StableGitRead:
+    """Declare a stable read with a Git blob identity derived from the captured bytes."""
 
 
 @overload
-def read_regular_file(
+def read_regular_file(  # noqa: D418
     path: Path,
     *,
     object_format: str | None = None,
     buffer_limit: int = 8 * 1024 * 1024,
     maximum_bytes: int | None = None,
     require_single_link: bool = True,
-) -> StableRegularRead: ...
+    retained_parent: WindowsDirectory | None = None,
+    expected_identity: WindowsFileIdentity | None = None,
+) -> StableRegularRead:
+    """Declare a stable read whose Git blob identity depends on the requested format."""
 
 
 def read_regular_file(
@@ -53,6 +62,8 @@ def read_regular_file(
     buffer_limit: int = 8 * 1024 * 1024,
     maximum_bytes: int | None = None,
     require_single_link: bool = True,
+    retained_parent: WindowsDirectory | None = None,
+    expected_identity: WindowsFileIdentity | None = None,
 ) -> StableRegularRead:
     """Hash one exact bounded regular file while retaining all Windows path components.
 
@@ -68,6 +79,10 @@ def read_regular_file(
         Optional hard read ceiling, checked before and during reads.
     require_single_link : bool
         Refuse hard links for records and executables; tracked source may permit them.
+    retained_parent : WindowsDirectory or None
+        Borrow the caller's live parent chain when reading an already resolved entry.
+    expected_identity : WindowsFileIdentity or None
+        Require the opened object to match a prior handle-relative observation.
 
     Returns
     -------
@@ -87,10 +102,19 @@ def read_regular_file(
         raise ValueError("maximum_bytes must be an integer >= 0 or None")
     blob = hashlib.new(object_format) if object_format is not None else None
     content = hashlib.sha256()
+    if retained_parent is not None and retained_parent.path != path.parent:
+        raise StableReadError("changed-while-read", str(path))
     try:
-        with WindowsDirectory(path.parent) as parent, parent.open_file(path.name) as file:
+        parent_context = (
+            WindowsDirectory(path.parent)
+            if retained_parent is None
+            else nullcontext(retained_parent)
+        )
+        with parent_context as parent, parent.open_file(path.name) as file:
             _ = parent.identity
             before = file.identity()
+            if expected_identity is not None and before != expected_identity:
+                raise StableReadError("changed-while-read", str(path))
             if require_single_link:
                 _require_single_link(before.links, StableReadError("multiple-links", str(path)))
             if maximum_bytes is not None and before.size > maximum_bytes:

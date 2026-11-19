@@ -218,10 +218,13 @@ for path in tests/test_windows_*.py; do
 done
 python -m tools.check_full_file_coverage --data-file .coverage \
   src/rigor_foundry/windows_abi.py src/rigor_foundry/windows_bootstrap.py \
+  src/rigor_foundry/windows_directory_inventory.py \
   src/rigor_foundry/windows_file_io.py src/rigor_foundry/windows_git.py \
-  src/rigor_foundry/windows_handles.py src/rigor_foundry/windows_permissions.py \
+  src/rigor_foundry/windows_handles.py src/rigor_foundry/windows_ignored_inventory.py \
+  src/rigor_foundry/windows_permissions.py \
   src/rigor_foundry/windows_process.py src/rigor_foundry/bootstrap.py \
   src/rigor_foundry/git_provenance.py src/rigor_foundry/git_inventory.py \
+  src/rigor_foundry/ignored_inventory.py \
   src/rigor_foundry/internal_storage.py src/rigor_foundry/safe_output.py \
   "${ordinary[@]}"
 """,

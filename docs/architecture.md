@@ -33,7 +33,8 @@ generator.
    its path, root, version, executable digest, and policy digest.
 2. Git inventory freezes the exact tracked paths, objects, tree, object format,
    and dirty state; an optional declared ignored inventory separately records
-   bounded content-free local evidence through no-follow descriptors.
+   bounded content-free local evidence through no-follow POSIX descriptors or
+   retained native Windows NTFS handles.
 3. Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.
 4. Review records bind decisions to exact report and policy digests.
