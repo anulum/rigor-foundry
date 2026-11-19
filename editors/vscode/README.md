@@ -37,7 +37,9 @@ lifecycle tests through `npm run test:linux-filesystem` and requires mounted
 Linux kernel filesystems. Unit tests also exercise both complete launchers with
 real Git/CLI adopters and an absent editor, checking retained diagnostics and
 the absence of false completion records.
-`npm run package` produces the VSIX after verification. Failed host workspaces
+`npm run package` produces the Linux x64 VSIX after verification. Its file
+selection omits the staged Windows binding and vendor notices even when CI
+builds both targets in the same checkout. Failed host workspaces
 and process traces remain available for diagnosis; a wrapper exit code alone
 does not establish that the host tests passed.
 `npm run package:windows` stages the Windows binding metadata and produces the

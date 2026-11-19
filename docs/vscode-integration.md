@@ -91,9 +91,10 @@ SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" TZ=UTC LC_ALL=C.UTF-8 npm run pac
 
 The CI packaging step sets the archive epoch to the checkout commit time and
 pins UTC and the C.UTF-8 locale before building both target archives. Use the
-same environment for either local package command. Byte comparisons also
-require the same Node and VSCE versions, admitted native input bytes and file
-permissions.
+same environment for either local package command. The Linux command
+excludes the staged Windows binding and vendor files from that archive.
+Byte comparisons require matching Node and VSCE versions and file permissions.
+Windows comparisons additionally require identical admitted native input bytes.
 
 Development uses Node.js 22.23.3. `npm run check` runs typed ESLint, formatting,
 both strict compiler projects, compilation, documentation validation and unit

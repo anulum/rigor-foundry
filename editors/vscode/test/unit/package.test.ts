@@ -32,7 +32,7 @@ import { pathToFileURL } from "node:url";
 import { CommandExecutionFailure, runCli } from "../../src/cli.js";
 
 void test(
-  "packages only current runtime JavaScript from the build tree despite real extra diagnostics",
+  "packages the current runtime and selects the binding for the archive platform",
   { timeout: 120_000 },
   async () => {
     const extension = path.resolve(__dirname, "../../..");
@@ -68,6 +68,39 @@ void test(
     );
     await writeFile(path.join(allocation, "package.stdout"), packaged.stdout, "utf8");
     await writeFile(path.join(allocation, "package.stderr"), packaged.stderr, "utf8");
+    const linux = path.join(allocation, "rigor-foundry-linux.vsix");
+    const packageLinux = path.join(extension, "scripts", "package-linux.mjs");
+    const packageTemp = path.join(allocation, "package-temp");
+    await mkdir(packageTemp);
+    const packageOptions = {
+      cwd: extension,
+      timeoutMilliseconds: 60_000,
+      environment: { ...process.env, TMPDIR: packageTemp, TMP: packageTemp, TEMP: packageTemp },
+    };
+    await runCli(process.execPath, [packageLinux, "--out", linux], packageOptions);
+    assert.deepEqual(
+      (await readdir(packageTemp)).filter((name) => name.startsWith("rigor-vsix-linux-")),
+      [],
+    );
+    const blockedOutput = path.join(allocation, "blocked-output");
+    await writeFile(blockedOutput, "existing file where a directory is required\n", "utf8");
+    await assert.rejects(
+      runCli(
+        process.execPath,
+        [packageLinux, "--out", path.join(blockedOutput, "failed.vsix")],
+        packageOptions,
+      ),
+      (error: unknown) => {
+        assert.ok(error instanceof CommandExecutionFailure);
+        assert.match(error.output.stderr, /E(?:NOENT|NOTDIR)/u);
+        assert.match(error.output.stderr, /blocked-output/u);
+        return true;
+      },
+    );
+    assert.deepEqual(
+      (await readdir(packageTemp)).filter((name) => name.startsWith("rigor-vsix-linux-")),
+      [],
+    );
     const python = process.env["RIGOR_FOUNDRY_TEST_PYTHON"] ?? "python";
     const inspected = await runCli(
       python,
@@ -99,10 +132,19 @@ void test(
           "    for relative in [*build['members'], *binding['members'], 'provenance.json', 'binding-provenance.json', 'binding-provenance.json.license']:",
           "        assert archive.read('extension/native/koffi/' + relative) == (native / relative).read_bytes()",
           "    assert 'TargetPlatform=\"win32-x64\"' in archive.read('extension.vsixmanifest').decode('utf8')",
+          "    with zipfile.ZipFile(sys.argv[3]) as linux:",
+          "        linux_names = linux.namelist()",
+          "        assert len(linux_names) == len(set(linux_names))",
+          "        shared = {n for n in names if not n.startswith('extension/native/koffi/')}",
+          "        assert set(linux_names) == shared, sorted(set(linux_names) ^ shared)",
+          "        assert 'TargetPlatform=\"linux-x64\"' in linux.read('extension.vsixmanifest').decode('utf8')",
+          "        for name in shared - {'extension.vsixmanifest', '[Content_Types].xml'}:",
+          "            assert linux.read(name) == archive.read(name), name",
           "    print(json.dumps({'runtimeMembers': sorted(actual), 'allCurrentRuntimeBytesMatch': True, 'buildDiagnosticsExcluded': True, 'vsixSha256': hashlib.sha256(Path(sys.argv[2]).read_bytes()).hexdigest()}))",
         ].join("\n"),
         extension,
         vsix,
+        linux,
       ],
       { cwd: extension, timeoutMilliseconds: 10_000 },
     );
