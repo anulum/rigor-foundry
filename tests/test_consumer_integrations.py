@@ -14,7 +14,7 @@ import re
 from tools._repository import ROOT
 from tools.check_action_pins import action_metadata_errors
 
-_INTEGRATION_REVISION = "cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2"
+_PUBLISHED_RELEASE_REVISION = "8de2ecee35c7baa0e4e1dc5500e555a25ab82496"
 
 
 def test_consumer_action_is_hash_locked_explicit_and_read_only() -> None:
@@ -139,14 +139,14 @@ def test_ci_test_matrix_installs_every_verified_native_fixture() -> None:
     )
 
 
-def test_public_integration_examples_use_the_immutable_successor_revision() -> None:
-    """Adopter examples never recommend a mutable action or hook revision."""
+def test_public_integration_examples_use_the_immutable_release_revision() -> None:
+    """The Action and hook examples use the same exact published release commit."""
     guide = (ROOT / "docs/integrations.md").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     navigation = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
-    assert f"anulum/RIGOR-FOUNDRY@{_INTEGRATION_REVISION}" in guide
-    assert f"rev: {_INTEGRATION_REVISION}" in guide
+    assert f"anulum/RIGOR-FOUNDRY@{_PUBLISHED_RELEASE_REVISION}" in guide
+    assert f"rev: {_PUBLISHED_RELEASE_REVISION}" in guide
     assert "anulum/RIGOR-FOUNDRY@main" not in guide
     assert "anulum/RIGOR-FOUNDRY@v" not in guide
     assert re.search(r"rev:\s+(?:main|v\d|HEAD)", guide) is None

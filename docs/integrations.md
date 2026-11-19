@@ -8,8 +8,8 @@ apply remediation, edit source, create policy state, or infer private paths.
 ## GitHub Action
 
 Pin the Action and every other workflow action to a complete commit SHA. The
-following revision is the provenance-hardened integration successor containing
-`action.yml`, `.pre-commit-hooks.yaml`, and the executable-provenance guards:
+examples use the exact commit of the [published 1.0.0 release](https://github.com/anulum/rigor-foundry/releases/tag/v1.0.0)
+for both the Action and the hook:
 
 ```yaml
 name: RigorFoundry
@@ -34,7 +34,7 @@ jobs:
       - name: Prepare explicit ignored output parent
         run: mkdir -p .rigor/reports
       - name: Run read-only evidence gate
-        uses: anulum/RIGOR-FOUNDRY@cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
+        uses: anulum/RIGOR-FOUNDRY@8de2ecee35c7baa0e4e1dc5500e555a25ab82496
         with:
           repository-root: .
           policy-path: rigor-foundry-policy.json
@@ -82,7 +82,7 @@ replace, rather than extend, the manifest defaults:
 minimum_pre_commit_version: 4.6.0
 repos:
   - repo: https://github.com/anulum/RIGOR-FOUNDRY
-    rev: cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
+    rev: 8de2ecee35c7baa0e4e1dc5500e555a25ab82496
     hooks:
       - id: rigor-foundry
         entry: .rigor/rigor-venv/bin/rigor
@@ -116,7 +116,30 @@ only after reviewing the declared adapter commands and sandbox prerequisites.
 For a current-source checkout, install `requirements/bootstrap.txt` into that
 interpreter before the build/runtime locks and pass `--no-build-isolation` for
 subsequent lock installation. Keep the current-source setup separate from the
-older immutable example: its files and dependency pins come from its own revision.
+release example. Use the locks from the exact revision you install.
+
+### Native Windows hook
+
+The published `1.0.0` package requires a POSIX runtime. On native Windows, use
+a Windows-capable build and the hook manifest from its verified source revision.
+Follow the [installation and recovery instructions](getting-started.md#install-and-identify-the-tool).
+Set the pre-commit `entry` to `.rigor/rigor-venv/Scripts/rigor.exe` when that is the
+installation path. Use forward slashes in the entry because pre-commit parses
+backslashes as escapes.
+
+## Upgrade and rollback
+
+Treat the Action SHA, hook Git revision and hook installation as one set. Retain
+the existing pins, locks and hook installation before switching. Keep the same
+tracked policy and use fresh ignored output paths for the new reports. Run the
+new set in observe mode when the policy allows it. Compare exact report and
+gate identities only when both runs use the same checkout and evidence inputs.
+For separate environments, verify each gate against its own report and check
+the expected policy digest and Git state for that environment.
+
+Restore the prior pins and hook installation together to roll back. Use another
+fresh output path to confirm the restored gate. On native Windows, restore the
+last working Windows-capable build and its matching hook revision.
 
 ## Verification boundary
 
