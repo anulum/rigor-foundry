@@ -14,6 +14,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from tools._repository import ROOT
 
@@ -24,15 +25,20 @@ class PreflightStep:
 
     argv: tuple[str, ...]
     timeout_seconds: int
+    distribution_outputs: tuple[Path, ...] = ()
 
 
-def preflight_commands(*, fast: bool) -> tuple[PreflightStep, ...]:
+def preflight_commands(
+    *, fast: bool, distribution_directory: Path = Path("dist")
+) -> tuple[PreflightStep, ...]:
     """Return the explicit, shell-free preflight command contract.
 
     Parameters
     ----------
     fast:
         Omit documentation and distribution builds when true.
+    distribution_directory:
+        Output directory supplied to the build and artifact checks.
 
     Returns
     -------
@@ -74,8 +80,27 @@ def preflight_commands(*, fast: bool) -> tuple[PreflightStep, ...]:
         commands.extend(
             [
                 PreflightStep((python, "-m", "mkdocs", "build", "--strict"), 180),
-                PreflightStep((python, "-m", "build", "--no-isolation"), 300),
-                PreflightStep((python, "-m", "twine", "check", "dist/*"), 180),
+                PreflightStep(
+                    (
+                        python,
+                        "-m",
+                        "build",
+                        "--no-isolation",
+                        "--outdir",
+                        str(distribution_directory),
+                    ),
+                    300,
+                ),
+                PreflightStep(
+                    (python, "-m", "tools.check_distribution_metadata"),
+                    180,
+                    (distribution_directory / "*.whl",),
+                ),
+                PreflightStep(
+                    (python, "-m", "twine", "check"),
+                    180,
+                    (distribution_directory / "*.whl", distribution_directory / "*.tar.gz"),
+                ),
             ]
         )
     return tuple(commands)
@@ -93,13 +118,18 @@ def run_preflight_steps(steps: tuple[PreflightStep, ...], root: Path) -> int:
     """
     for step in steps:
         command = step.argv
-        if command[-1] == "dist/*":
-            distributions = tuple(str(path) for path in sorted((root / "dist").glob("*")))
-            command = (*command[:-1], *distributions)
-            if not distributions:
-                print("preflight: distribution build produced no files", file=sys.stderr)
+        for pattern in step.distribution_outputs:
+            distributions = tuple(
+                path for path in (root / pattern.parent).glob(pattern.name) if path.is_file()
+            )
+            if len(distributions) != 1:
+                print(
+                    f"preflight: expected exactly one distribution matching {pattern.name}",
+                    file=sys.stderr,
+                )
                 return 1
-        print(f"preflight: {' '.join(command[1:])}")
+            command = (*command, str(distributions[0]))
+        print(f"preflight: {' '.join(command[1:])}", flush=True)
         try:
             result = subprocess.run(
                 command,
@@ -113,6 +143,9 @@ def run_preflight_steps(steps: tuple[PreflightStep, ...], root: Path) -> int:
                 file=sys.stderr,
             )
             return 124
+        except FileNotFoundError:
+            print("preflight: command or repository directory is unavailable", file=sys.stderr)
+            return 127
         if result.returncode:
             return result.returncode
     return 0
@@ -128,7 +161,13 @@ def run_preflight(root: Path = ROOT, *, fast: bool = False) -> int:
     fast:
         Omit documentation and distribution builds when true.
     """
-    return run_preflight_steps(preflight_commands(fast=fast), root)
+    if fast:
+        return run_preflight_steps(preflight_commands(fast=True), root)
+    with TemporaryDirectory(prefix="rigor-foundry-preflight-") as distribution_directory:
+        commands = preflight_commands(
+            fast=False, distribution_directory=Path(distribution_directory)
+        )
+        return run_preflight_steps(commands, root)
 
 
 def main() -> int:

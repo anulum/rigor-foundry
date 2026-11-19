@@ -110,7 +110,9 @@ def audit_errors(root: Path = ROOT, *, strict_authoring: bool = False) -> list[s
         text = read_text(path, root)
         if text is None:
             continue
-        errors.extend(f"{error} in {path.as_posix()}" for error in public_identity_errors(text))
+        errors.extend(
+            f"{error} in {path.as_posix()}" for error in public_identity_errors(text, path=path)
+        )
         if path == Path("tools/audit.py"):
             continue
         for term in FORBIDDEN_PUBLIC_TERMS:

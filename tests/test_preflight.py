@@ -7,12 +7,15 @@
 # RigorFoundry — Resource-bounded preflight tests
 """Verify local preflight never embeds the exhaustive test suite."""
 
+import shutil
 import sys
 import time
 from pathlib import Path
 
 import pytest
 
+from rigor_foundry.version import __version__
+from tools._repository import ROOT
 from tools.preflight import PreflightStep, preflight_commands, run_preflight_steps
 
 
@@ -33,6 +36,63 @@ def test_fast_preflight_omits_distribution_and_documentation_builds() -> None:
     assert " build " not in rendered
     assert "tools.check_descriptive_production_naming" in rendered
     assert "tools.audit" in rendered
+
+
+def test_preflight_stops_when_an_executable_is_unavailable(tmp_path: Path) -> None:
+    """A missing executable prevents later preflight commands from running."""
+    marker = tmp_path / "later-step.txt"
+    missing = PreflightStep((str(tmp_path / "missing-executable"),), 10)
+    later = PreflightStep(
+        (sys.executable, "-c", "from pathlib import Path; Path('later-step.txt').touch()"), 10
+    )
+    assert run_preflight_steps((missing, later), tmp_path) == 127
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("valid_metadata", [True, False])
+def test_preflight_validates_the_current_built_distribution_pair(
+    tmp_path: Path, valid_metadata: bool
+) -> None:
+    """Use the actual build and metadata CLI without reading a prior dist directory."""
+    for name in ("pyproject.toml", "README.md", "LICENSE", "NOTICE"):
+        shutil.copyfile(ROOT / name, tmp_path / name)
+    shutil.copytree(ROOT / "src", tmp_path / "src", ignore=shutil.ignore_patterns("__pycache__"))
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    shutil.copyfile(
+        ROOT / "tools/check_distribution_metadata.py", tools / "check_distribution_metadata.py"
+    )
+    readme = tmp_path / "README.md"
+    if not valid_metadata:
+        install = f'python -m pip install "rigor-foundry=={__version__}"'
+        readme.write_text(
+            readme.read_text(encoding="utf-8").replace(
+                install, "Refer to the installation guide."
+            ),
+            encoding="utf-8",
+        )
+    previous = tmp_path / "dist"
+    previous.mkdir()
+    old_artifact = previous / "previous-build.whl"
+    old_artifact.write_bytes(b"retained output")
+    fresh = tmp_path / "preflight"
+    packaging = preflight_commands(fast=False, distribution_directory=fresh)[-3:]
+    assert run_preflight_steps(packaging[:2], tmp_path) == (0 if valid_metadata else 1)
+    assert old_artifact.read_bytes() == b"retained output"
+    verify_members = PreflightStep(
+        (
+            sys.executable,
+            "-c",
+            "import sys, tarfile, zipfile; "
+            "assert zipfile.is_zipfile(sys.argv[1]) and tarfile.is_tarfile(sys.argv[2])",
+        ),
+        10,
+        packaging[-1].distribution_outputs,
+    )
+    assert run_preflight_steps((verify_members,), tmp_path) == 0
+    (sdist,) = fresh.glob("*.tar.gz")
+    sdist.unlink()
+    assert run_preflight_steps(packaging[-1:], tmp_path) == 1
 
 
 def test_preflight_terminates_a_command_that_exceeds_its_budget(tmp_path: Path) -> None:

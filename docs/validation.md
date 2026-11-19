@@ -30,8 +30,10 @@ target. Full `make preflight` also runs `make editor-coverage`, which measures
 the full check and the actual single-folder and multi-root Extension Development Hosts with a per-file 100%
 statement, branch, function and line requirement for all production editor
 modules, scripts and tool configurations. Use `xvfb-run -a make preflight` on
-headless Linux. Fast Make preflight includes native checks and unit tests;
-direct Python preflight does not run Node or VS Code. See
+headless Linux. Fast Make preflight includes native checks and unit tests.
+Full Python preflight builds the documentation and validates a fresh wheel and
+source distribution in a temporary directory using the distribution CI checks.
+Make adds Node and VS Code verification. See
 [editor verification](vscode-integration.md#development-and-verification) for
 the locked setup, host executable and retained failure evidence.
 

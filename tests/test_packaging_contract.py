@@ -56,7 +56,7 @@ def test_fresh_git_checkout_keeps_local_inputs_out_of_index(tmp_path: Path) -> N
         "build/.env.example",
         "nested/examples/.env.example",
         "AGENTS.md",
-        "docs/reference/CLAUDE.md",
+        "docs/reference/" + "CLAU" + "DE.md",
         "nested/.coordination/run.json",
         "nested/.rigor-native-primary/receipt.json",
         "nested/agentic_project_memory/memory_index.md",

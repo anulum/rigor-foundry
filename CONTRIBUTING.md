@@ -110,7 +110,9 @@ format, source, transcript, message or subset context. Attribution cues in the
 same paragraph take precedence; other or ambiguous names require review and an
 explicit policy extension. Public fixtures use descriptive synthetic identities,
 including synthetic session UUIDs, rather than actual session or seat labels.
-There are no path or test-tree exceptions to this policy.
+The audit also recognizes exact private boot filenames as active exclusions in
+the maintained Git, Docker, VSIX and MkDocs projection settings. Comments,
+ordinary references and attribution use the same public identity rules.
 
 The local-only dependency guard permits explicit `urllib.parse` imports and its
 documented parsing/quoting exports. It continues to reject the `urllib` root,
@@ -133,7 +135,9 @@ the editor checks. These commands require the locked editor dependencies.
 The full `make preflight` additionally runs native editor coverage, including
 the actual single-folder and multi-root Extension Development Hosts. On a Linux machine without a display,
 run `xvfb-run -a make preflight`. The direct `python -m tools.preflight` command
-checks Python and repository policies; it does not execute the native editor
+checks Python and repository policies, builds the documentation, and verifies a
+new wheel and source distribution in a temporary directory. It uses the same
+wheel metadata and Twine checks as distribution CI. Make adds the native editor
 toolchain. See [editor verification](docs/vscode-integration.md#development-and-verification)
 for the standalone commands and host requirements.
 

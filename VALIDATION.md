@@ -58,9 +58,11 @@ Git results or fabricated filesystem metadata are not accepted as evidence.
 hook uses that same target. `make preflight-fast` combines Python preflight
 with native checks; full `make preflight` additionally executes
 `make editor-coverage`, including the real single-folder and multi-root hosts. Headless Linux callers wrap
-the full command in `xvfb-run -a`. Direct `python -m tools.preflight` remains
-the Python and repository-policy command; it does not qualify Node tooling or
-VS Code. The editor's 100% gate is separate from the Python aggregate minimum.
+the full command in `xvfb-run -a`. Direct `python -m tools.preflight` checks
+Python and repository policy, builds the documentation and validates the new
+wheel and source distribution in a temporary directory. It uses the wheel
+metadata and Twine checks from distribution CI. Make adds the Node and VS Code
+checks. The editor's 100% gate is separate from the Python aggregate minimum.
 
 ## Local integration evidence
 

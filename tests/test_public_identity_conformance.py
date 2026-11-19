@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from tools.check_public_identity import public_identity_errors
@@ -92,3 +94,94 @@ def test_each_disallowed_identity_is_reported_once_across_paragraphs() -> None:
         "vendor identity is public",
         "vendor identity is public",
     ]
+
+
+@pytest.mark.parametrize(
+    ("path", "pattern"),
+    [
+        (".gitignore", _NAME.upper() + ".md"),
+        (".dockerignore", "**/" + _NAME.upper() + ".md"),
+        ("editors/vscode/.vscodeignore", "**/" + _NAME.upper() + ".md"),
+    ],
+)
+def test_projection_ignore_files_classify_exact_boot_patterns(path: str, pattern: str) -> None:
+    """Exclude boot filenames and still report comments and ordinary path references."""
+    assert public_identity_errors(pattern, path=Path(path)) == []
+    assert public_identity_errors(pattern, path=Path("README.md"))
+    assert public_identity_errors(f"{pattern}\n# Author: {_NAME}", path=Path(path))
+    assert public_identity_errors("!" + pattern, path=Path(path))
+
+
+@pytest.mark.parametrize(
+    ("path", "pattern"),
+    [
+        (".gitignore", _NAME.upper() + ".md"),
+        (".dockerignore", "**/" + _NAME.upper() + ".md"),
+    ],
+)
+def test_ordered_ignore_files_require_exclusions_after_reinclusions(
+    path: str, pattern: str
+) -> None:
+    """A generic re-inclusion can make an earlier boot exclusion ineffective."""
+    projection = Path(path)
+    assert public_identity_errors(f"{pattern}\n!**/*.md\n", path=projection)
+    assert public_identity_errors(f"!**/*.md\n{pattern}\r\n", path=projection) == []
+    assert public_identity_errors(f"{pattern}\n# !**/*.md\n", path=projection) == []
+
+
+def test_docker_ignore_requires_precedence_after_path_cleaning() -> None:
+    """A path component before a bang can disappear before Docker matches it."""
+    path = Path(".dockerignore")
+    pattern = "**/" + _NAME.upper() + ".md"
+    assert public_identity_errors(f"{pattern}\ncache/../!**/*.md\n", path=path)
+
+
+def test_vsix_ignore_requires_disjoint_reinclusions_in_either_order() -> None:
+    """The VSIX packager restores matching re-inclusions in either order."""
+    path = Path("editors/vscode/.vscodeignore")
+    pattern = "**/" + _NAME.upper() + ".md"
+    assert public_identity_errors(f"{pattern}\n!**/*.md\n", path=path)
+    assert public_identity_errors(f"!**/*.md\n{pattern}\n", path=path)
+    assert public_identity_errors(f"{pattern}\n# Keep docs\r \ufeff !**/*.md", path=path)
+    assert public_identity_errors(f"!out/src/*.js\r\n{pattern}\r\n", path=path) == []
+
+
+def test_literal_mkdocs_exclusions_classify_boot_filenames() -> None:
+    """Recognize active exclusion lines while checking the rest of the configuration."""
+    path = Path("mkdocs.yml")
+    active = f"exclude_docs: |\n  {_NAME.upper()}.md\n"
+    assert public_identity_errors(active, path=path) == []
+    assert public_identity_errors(active.rstrip("\n"), path=path) == []
+    assert public_identity_errors(active + f"site_name: {_NAME}\n", path=path)
+    assert public_identity_errors(active + "exclude_docs: |\n  internal/\n", path=path)
+
+
+def test_mkdocs_literal_exclusions_require_precedence_within_one_block() -> None:
+    """Evaluate ordering inside the selected literal, independent of other keys."""
+    path = Path("mkdocs.yml")
+    filename = _NAME.upper() + ".md"
+    assert public_identity_errors(f"exclude_docs: |\n  {filename}\n  !**/*.md\n", path=path)
+    assert public_identity_errors(f"exclude_docs: |\n  !**/*.md\n  {filename}\n", path=path) == []
+    assert (
+        public_identity_errors(
+            f"exclude_docs: |\n  {filename}\nsite_name: '!**/*.md'\n", path=path
+        )
+        == []
+    )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"- {_NAME.upper()}.md\n",
+        f"a: [invalid {_NAME.upper()}.md\n",
+        f"site_name: |\n  {_NAME.upper()}.md\n",
+        f"exclude_docs:\n  - {_NAME.upper()}.md\n",
+        f"exclude_docs: >\n  {_NAME.upper()}.md\n",
+        f"site_name: &text |\n  {_NAME.upper()}.md\nexclude_docs: *text\n",
+        f"exclude_docs: &text |\n  {_NAME.upper()}.md\nsite_name: *text\n",
+    ],
+)
+def test_mkdocs_other_yaml_nodes_retain_identity_checks(text: str) -> None:
+    """Keep the conservative rule for malformed YAML, other fields and aliases."""
+    assert public_identity_errors(text, path=Path("mkdocs.yml"))
