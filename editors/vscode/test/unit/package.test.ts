@@ -13,7 +13,7 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { runCli } from "../../src/cli.js";
@@ -102,3 +102,40 @@ void test(
     await writeFile(path.join(allocation, "payload-observation.json"), inspected.stdout, "utf8");
   },
 );
+
+void test("keeps local-only inputs out of the VSIX file selection", async () => {
+  const extension = path.resolve(__dirname, "../../..");
+  const fixtures = path.join(extension, "out", "fixtures");
+  await mkdir(fixtures, { recursive: true });
+  const checkout = await mkdtemp(path.join(fixtures, "rigor-private-package-"));
+  for (const relative of [".vscodeignore", "package.json", "out/src/extension.js"]) {
+    const target = path.join(checkout, relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await copyFile(path.join(extension, relative), target);
+  }
+  const privateFiles = [
+    ".env.local",
+    "nested/AGENTS.md",
+    "nested/.coordination/note.txt",
+    "nested/.rigor/evidence.json",
+    "nested/.rigor-native-primary/receipt.json",
+    "nested/docs/internal/notes.md",
+    "nested/agentic_project_memory/memory_index.md",
+    "nested/tools/.internal/hygiene/check.txt",
+  ];
+  for (const relative of privateFiles) {
+    const target = path.join(checkout, relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, "synthetic private package boundary control\n", "utf8");
+  }
+  const listed = await runCli(
+    process.execPath,
+    [path.join(extension, "node_modules", "@vscode", "vsce", "vsce"), "ls", "--no-dependencies"],
+    { cwd: checkout, timeoutMilliseconds: 20_000 },
+  );
+  const paths = new Set(listed.stdout.trim().split(/\r?\n/u));
+  assert.ok(paths.has("out/src/extension.js"));
+  for (const relative of privateFiles) {
+    assert.ok(!paths.has(relative), `private package path: ${relative}`);
+  }
+});

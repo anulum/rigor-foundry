@@ -43,6 +43,10 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
     markers = {
         "agentic_project_memory/memory_index.md": b"MEMORYPRIVATECANARY791643\n",
         "docs/internal/publication_canary.md": b"INTERNALPRIVATECANARY582137\n",
+        "docs/reference/AGENTS.md": b"RULEPRIVATECANARY210561\n",
+        "docs/reference/.env.local": b"ENVPRIVATECANARY726495\n",
+        "docs/reference/tools/.internal/hygiene/record.txt": b"TOOLPRIVATECANARY814371\n",
+        "docs/reference/agentic_project_memory/memory_index.md": b"LOCALMEMORYCANARY215526\n",
     }
     before = {}
     for relative, marker in markers.items():
@@ -76,7 +80,13 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
     assert files
     for path in files:
         assert not path.is_symlink()
-        assert not {"internal", "agentic_project_memory"} & set(path.relative_to(site).parts)
+        assert not {
+            "internal",
+            ".internal",
+            "agentic_project_memory",
+            "AGENTS",
+            ".env.local",
+        } & set(path.relative_to(site).parts)
         content = path.read_bytes()
         assert all(marker.strip() not in content for marker in markers.values())
     for relative, (content, status) in before.items():

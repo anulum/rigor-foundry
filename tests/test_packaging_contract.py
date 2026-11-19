@@ -31,7 +31,48 @@ from tools.ci_workflows import ci_jobs, read_workflow
 def test_private_memory_has_portable_repository_exclusions() -> None:
     """Clones and local Docker contexts retain the private-memory boundary."""
     assert "/agentic_project_memory/" in (ROOT / ".gitignore").read_text().splitlines()
-    assert "agentic_project_memory" in (ROOT / ".dockerignore").read_text().splitlines()
+    assert "**/agentic_project_memory" in (ROOT / ".dockerignore").read_text().splitlines()
+
+
+def test_fresh_git_checkout_keeps_local_inputs_out_of_index(tmp_path: Path) -> None:
+    """Ordinary staging leaves synthetic private inputs out of the Git index.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Disposable checkout with no user-provided ignore rules.
+    """
+    git = [
+        "git",
+        "-C",
+        str(tmp_path),
+        "-c",
+        "core.excludesFile=",
+    ]
+    subprocess.run([*git, "init", "--template="], check=True, capture_output=True, timeout=10)
+    shutil.copyfile(ROOT / ".gitignore", tmp_path / ".gitignore")
+    private_paths = (
+        ".env.local",
+        "build/.env.example",
+        "nested/examples/.env.example",
+        "AGENTS.md",
+        "docs/reference/CLAUDE.md",
+        "nested/.coordination/run.json",
+        "nested/.rigor-native-primary/receipt.json",
+        "nested/agentic_project_memory/memory_index.md",
+        "nested/docs/internal/.env.example",
+        "nested/tools/.internal/hygiene/check.txt",
+    )
+    public_paths = (".env.example", "nested/public.md")
+    for relative in (*private_paths, *public_paths):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic staging control\n", encoding="utf-8")
+    subprocess.run([*git, "add", "--all"], check=True, capture_output=True, timeout=10)
+    staged = subprocess.run([*git, "ls-files", "-z"], check=True, capture_output=True, timeout=10)
+    assert set(staged.stdout.decode().split("\0")[:-1]) == {".gitignore", *public_paths}
+    for relative in private_paths:
+        assert (tmp_path / relative).read_text(encoding="utf-8") == "synthetic staging control\n"
 
 
 def test_tagged_release_inventories_the_locked_installed_wheel() -> None:

@@ -32,15 +32,21 @@ editors/vscode/native/koffi/
 editors/vscode/LICENSE.txt
 .rigor-native-coverage/
 
-.coordination/
-.rigor/
-docs/internal/
-
 .env
 .env.*
-!.env.example
+!/.env.example
 
-docs/internal/**
+.coordination/
+.rigor/
+**/docs/internal/
+**/agentic_project_memory/
 /agentic_project_memory/
+**/tools/.internal/
+AGENTS.md
+CLAUDE.md
+CODEX.md
+GEMINI.md
+GROK.md
+KIMI.md
 
 .rigor-native-primary/

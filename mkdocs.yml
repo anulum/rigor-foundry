@@ -12,6 +12,20 @@ site_url: https://anulum.github.io/rigor-foundry/
 repo_url: https://github.com/anulum/rigor-foundry
 exclude_docs: |
   internal/
+  .env
+  .env.*
+  .coordination/
+  .rigor/
+  .rigor-native-coverage/
+  .rigor-native-primary/
+  agentic_project_memory/
+  **/tools/.internal/
+  AGENTS.md
+  CLAUDE.md
+  CODEX.md
+  GEMINI.md
+  GROK.md
+  KIMI.md
 
 theme:
   name: material

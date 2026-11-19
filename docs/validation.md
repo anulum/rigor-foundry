@@ -202,6 +202,22 @@ Campaign storage tests also reject symlinked run directories, linked
 attestations, hard-linked reports and reviews, and symlinked campaign-parent
 components through the public durable-loading APIs.
 
+## Private inputs at build boundaries
+
+Keep local evidence, project memory, operator rules and credentials outside
+public inputs. The tracked Git rules exclude these paths in a fresh clone
+and admit only the public root `.env.example` template.
+Build releases from the reviewed Git revision. The Docker
+context and VSIX selectors also exclude local environment files, agent
+instructions and private data trees at nested paths. Docker admits the
+public root `.env.example` template. MkDocs excludes the private inputs from
+both rendered pages and its search index.
+
+Qualify exclusion with synthetic markers in disposable build inputs. Check the
+Git index and source archive, the Docker context and image layers, the rendered
+site and search index, and the Python and editor archives. Check that the
+public CLI, site and editor entry points still reach their artifacts.
+
 ## Pre-release SBOM
 
 The SBOM workflow runs on pull requests that change its inventory inputs
