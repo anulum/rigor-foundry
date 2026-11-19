@@ -330,7 +330,10 @@ confirmation, runs from either the named tag or the repository default branch,
 always checks out the fully qualified `refs/tags/<name>` ref, and verifies that
 the tag already has a published GitHub Release. The default-branch route permits
 a workflow-only recovery after an immutable release tag exists; it never builds
-package content from the branch or resolves an unqualified branch/tag name. The
+package content from the branch or resolves an unqualified branch/tag name.
+Both paths compare the rebuilt wheel and source distribution byte for byte
+with the same-named assets downloaded from the published release. A missing
+or different asset blocks signing, attestation and publication. The
 publication job grants `contents: write` only so Sigstore can attach signing
 bundles to that release. The pinned Sigstore action's native release uploader is
 disabled because it includes signed inputs and source archives in its upload

@@ -37,7 +37,7 @@ def test_publish_workflow_has_owner_confirmed_manual_recovery() -> None:
     assert "github.ref_name == github.event.repository.default_branch" in workflow
     assert "inputs.confirm_public_pypi == 'publish'" in workflow
     assert "github.event.release.author.login" not in workflow
-    assert workflow.count(RELEASE_TAG_EXPRESSION) == 4
+    assert workflow.count(RELEASE_TAG_EXPRESSION) == 5
 
 
 def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
@@ -69,6 +69,23 @@ def test_publish_workflow_requires_a_published_release_and_oidc() -> None:
         "72bce99a396e7ed0635f3fcc0f0a7052314a68c00c1999f5d0f9454b18cd2e40" in publisher
     )
     assert "password:" not in workflow
+
+
+def test_publish_workflow_checks_release_asset_bytes_before_signing() -> None:
+    """Require both exact released distributions before signature generation."""
+    workflow = _workflow_text()
+    build_step = workflow.index("name: Build and validate distributions")
+    verify_step = workflow.index("name: Verify distributions match release assets")
+    sign_step = workflow.index("uses: sigstore/gh-action-sigstore-python@")
+
+    assert build_step < verify_step < sign_step
+    guard = workflow[verify_step:sign_step]
+    assert f"RELEASE_TAG: {RELEASE_TAG_EXPRESSION}" in guard
+    assert "set -euo pipefail" in guard
+    assert "distributions=(dist/*.whl dist/*.tar.gz)" in guard
+    assert 'asset_patterns+=(--pattern "${distribution##*/}")' in guard
+    assert 'gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"' in guard
+    assert 'cmp -- "$distribution" "$downloads/${distribution##*/}"' in guard
 
 
 def test_publish_workflow_keeps_signatures_out_of_distribution_uploads() -> None:

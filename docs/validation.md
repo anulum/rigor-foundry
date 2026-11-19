@@ -303,8 +303,11 @@ status text that publication would contradict. Automated package publication
 uses the repository owner actor; an explicitly confirmed owner-only dispatch is
 available for recovery from the named tag or the repository default branch,
 always checks out its fully qualified tag ref, and first verifies an existing
-published GitHub Release. The publication job's write permission is limited to
-attaching Sigstore bundles to that release. The signing action's native release
+published GitHub Release. The job compares the rebuilt wheel and source
+distribution byte for byte with the same-named downloads from that release.
+Missing or different assets stop the job before signing. The publication job's
+write permission is limited to attaching Sigstore bundles to that release.
+The signing action's native release
 uploader is disabled because its upload set includes signed inputs and source
 archives. Both paths require exactly two generated package bundles, move them
 out of the distribution directory, and revalidate the wheel and source

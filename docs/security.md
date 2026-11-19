@@ -96,7 +96,8 @@ and archive members as adversarial input.
   separately hash-locked RigorFoundry installation. Both defaults are
   observe-only and carry no promotion or remediation command.
 - Package publication uses a protected OIDC environment rather than a stored
-  package credential.
+  package credential. The rebuilt wheel and source distribution must match the
+  same-named published GitHub Release assets before signing.
 
 ## Dependency advisory audits
 

@@ -103,6 +103,24 @@ jobs:
           /tmp/rigor-foundry-package-smoke/bin/python -m pip check
           /tmp/rigor-foundry-package-smoke/bin/rigor --help >/dev/null
           python -m pip hash dist/*.whl dist/*.tar.gz
+      - name: Verify distributions match release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          downloads=$(mktemp -d "$RUNNER_TEMP/rigor-release-assets.XXXXXX")
+          trap 'rm -r -- "$downloads"' EXIT
+          distributions=(dist/*.whl dist/*.tar.gz)
+          asset_patterns=()
+          for distribution in "${distributions[@]}"; do
+            asset_patterns+=(--pattern "${distribution##*/}")
+          done
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --dir "$downloads" "${asset_patterns[@]}"
+          for distribution in "${distributions[@]}"; do
+            cmp -- "$distribution" "$downloads/${distribution##*/}"
+          done
       - uses: sigstore/gh-action-sigstore-python@790bc6befb9d733738f18d8f895854b453640ec9
         with:
           inputs: >-

@@ -86,7 +86,9 @@ reviews prioritise:
   release, and uses OIDC rather than a stored package credential. The manual
   recovery path accepts the named tag or the repository default branch as its
   dispatch ref, then checks out the fully qualified release tag and verifies
-  its published release. Package content always comes from that tag.
+  its published release. Package content always comes from that tag. Both
+  rebuilt distributions must match the published release assets byte for byte
+  before the job signs or publishes them.
   Required-reviewer environment protection remains a separate
   promotion gate.
 

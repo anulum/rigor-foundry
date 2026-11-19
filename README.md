@@ -282,9 +282,9 @@ comparison, use the [reproducible container build](docs/validation.md#reproducib
   attestation profiles and the editor production dependency lock. It is
   available before release. See the [validation guide](docs/validation.md#pre-release-sbom).
 - Releases, when authorised after public-repository promotion, build wheel and
-  source distributions, run metadata checks, generate a CycloneDX SBOM, create
-  Sigstore signatures and provenance, and publish through an owner-gated OIDC
-  environment.
+  source distributions, run metadata checks and generate a CycloneDX SBOM. The
+  owner-gated OIDC publication job checks that the rebuilt distributions match
+  the GitHub Release assets byte for byte before signing, attestation and upload.
 - Benchmark and effectiveness claims require committed methodology and measured
   evidence. No such performance claim is made by the migration baseline.
 
