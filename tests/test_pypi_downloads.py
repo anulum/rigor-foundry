@@ -11,12 +11,17 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock
 
 import pytest
+import yaml
 
 _ROOT = Path(__file__).resolve().parents[1]
 _MODULE_PATH = _ROOT / "tools" / "pypi_downloads.py"
@@ -406,6 +411,127 @@ def test_main_requires_csv_when_not_printing() -> None:
     """Reject a write invocation without its explicit CSV target."""
     with pytest.raises(SystemExit):
         downloads.main(["--package", "rigor-foundry"])
+
+
+@pytest.mark.parametrize(
+    ("reachable", "branch", "has_history"),
+    [
+        (True, "metrics", True),
+        (True, None, False),
+        (True, "other/metrics", False),
+        (True, "other/refs/heads/metrics", False),
+        (False, None, False),
+    ],
+    ids=["existing", "missing", "matching-short-tail", "matching-full-tail", "unavailable"],
+)
+def test_snapshot_workflow_resolves_the_exact_metrics_branch(
+    tmp_path: Path, reachable: bool, branch: str | None, has_history: bool
+) -> None:
+    """Run the maintained workflow checkout against a real local Git remote."""
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=source, check=True, timeout=15)
+    shutil.copyfile(_ROOT / "pyproject.toml", source / "pyproject.toml")
+    (source / "tools").mkdir()
+    shutil.copyfile(_MODULE_PATH, source / "tools/pypi_downloads.py")
+    remote = tmp_path / "remote.git"
+    subprocess.run(
+        ["git", "remote", "add", "origin", remote.as_uri()], cwd=source, check=True, timeout=15
+    )
+    if reachable:
+        subprocess.run(["git", "init", "--bare", "-q", str(remote)], check=True, timeout=15)
+    csv_file = Path("downloads/rigor-foundry.csv")
+    history = b"date,without_mirrors,with_mirrors\n2026-07-17,11,19\n"
+    if branch is not None:
+        (source / csv_file.parent).mkdir()
+        (source / csv_file).write_bytes(history)
+        subprocess.run(["git", "add", csv_file.as_posix()], cwd=source, check=True, timeout=15)
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-qm",
+                "Keep one dated CSV row",
+            ],
+            cwd=source,
+            check=True,
+            timeout=15,
+        )
+        subprocess.run(
+            [
+                "git",
+                "--git-dir",
+                str(remote),
+                "fetch",
+                "-q",
+                str(source),
+                f"HEAD:refs/heads/{branch}",
+            ],
+            check=True,
+            timeout=15,
+        )
+    workflow = yaml.safe_load(
+        (_ROOT / ".github/workflows/pypi-downloads.yml").read_text(encoding="utf-8")
+    )
+    step = next(
+        item for item in workflow["jobs"]["snapshot"]["steps"] if item.get("id") == "snapshot"
+    )
+    checkout, boundary, _ = step["run"].partition('\ncd "$METRICS_DIR"\n')
+    assert boundary
+    metrics = tmp_path / "snapshot"
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "alias.rigor-metrics-checkout=!bash --noprofile --norc -e -o pipefail -c",
+            "rigor-metrics-checkout",
+            checkout,
+        ],
+        cwd=source,
+        env={
+            **os.environ,
+            "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"],
+            "GITHUB_SERVER_URL": tmp_path.as_uri(),
+            "GITHUB_REPOSITORY": "remote",
+            "METRICS_DIR": metrics.as_posix(),
+        },
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if not reachable:
+        assert result.returncode != 0
+        assert not metrics.exists()
+        return
+    assert result.returncode == 0, result.stderr
+    checked_out = subprocess.run(
+        ["git", "symbolic-ref", "HEAD"],
+        cwd=metrics,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert checked_out.stdout.strip() == "refs/heads/metrics"
+    if has_history:
+        assert (metrics / csv_file).read_text(encoding="utf-8") == history.decode("utf-8")
+    else:
+        assert not (metrics / csv_file).exists()
+        assert (
+            subprocess.run(
+                ["git", "rev-parse", "--verify", "HEAD"],
+                cwd=metrics,
+                capture_output=True,
+                timeout=15,
+            ).returncode
+            != 0
+        )
 
 
 def test_workflow_has_one_bounded_writer_and_hash_pinned_actions() -> None:

@@ -49,8 +49,16 @@ jobs:
           test "$detected" = "$package"
           remote="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
 
-          if git ls-remote --exit-code --heads origin metrics >/dev/null 2>&1; then
-            git clone --depth 1 --branch metrics "$remote" "$METRICS_DIR"
+          # A successful query with no exact match permits a new history.
+          metrics_commit="$(git ls-remote --refs "$remote" refs/heads/metrics |
+            awk '$2 == "refs/heads/metrics" {print $1}')"
+          if [[ -n "$metrics_commit" ]]; then
+            git clone --depth 1 --no-tags --branch metrics "$remote" "$METRICS_DIR"
+            if [[ "$(git -C "$METRICS_DIR" symbolic-ref --quiet HEAD)" != refs/heads/metrics ||
+              "$(git -C "$METRICS_DIR" rev-parse HEAD)" != "$metrics_commit" ]]; then
+              echo "Metrics branch changed during checkout." >&2
+              exit 1
+            fi
           else
             mkdir -p "$METRICS_DIR"
             git -C "$METRICS_DIR" init --initial-branch=metrics
