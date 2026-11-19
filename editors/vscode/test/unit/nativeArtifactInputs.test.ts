@@ -74,12 +74,13 @@ void test("binds the complete checkout path scope and refuses absent actual Git 
     await rm(allocation, { recursive: true, force: true });
   });
   const checkout = path.join(allocation, "checkout");
-  const actions = [
+  const boundInputs = [
     ".github/actions/install-editor-host/action.yml",
     ".github/actions/setup-native-python/action.yml",
+    "NOTICE",
   ];
   const names = [
-    ...actions,
+    ...boundInputs,
     ".github/workflows/ci-vscode.yml",
     "LICENSE",
     "editors/vscode/scripts/build-windows-native.mjs",
@@ -112,16 +113,16 @@ void test("binds the complete checkout path scope and refuses absent actual Git 
   const status = ["status", "--porcelain", "--untracked-files=all", "--", ...sourcePaths];
   assert.equal(git(checkout, status), "");
   const before = await sourceInputs(checkout);
-  for (const action of actions) {
-    assert.ok(sourcePaths.includes(action));
-    assert.ok(before[action]);
-    const filename = path.join(checkout, action);
+  for (const input of boundInputs) {
+    assert.ok(sourcePaths.includes(input));
+    assert.ok(before[input]);
+    const filename = path.join(checkout, input);
     const original = await readFile(filename);
     await writeFile(filename, Buffer.concat([original, Buffer.from("\n")]));
-    assert.equal(git(checkout, status), ` M ${action}\n`);
+    assert.equal(git(checkout, status), ` M ${input}\n`);
     const after = await sourceInputs(checkout);
-    assert.notEqual(after[action], before[action]);
-    for (const name of names.filter((name) => name !== action))
+    assert.notEqual(after[input], before[input]);
+    for (const name of names.filter((name) => name !== input))
       assert.equal(after[name], before[name]);
     await writeFile(filename, original);
   }

@@ -165,6 +165,7 @@
     "check": "npm run clean && npm run lint && npm run format:check && npm run typecheck && npm run compile && npm run docs && npm run test:unit",
     "test:unit": "node --test out/test/unit/*.test.js",
     "test:integration": "npm run compile && node scripts/run-integration-tests.mjs",
+    "vscode:prepublish": "node scripts/stage-package-legal-files.mjs",
     "package": "vsce package --no-dependencies --target linux-x64 --out rigor-foundry-vscode.vsix",
     "lint": "eslint . --max-warnings=0",
     "format:check": "prettier --check \"{src,test,scripts}/**/*.{ts,mjs}\" \"*.mjs\" package.json tsconfig.json tsconfig.tools.json typedoc.json c8.config.json README.md",

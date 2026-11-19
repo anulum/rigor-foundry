@@ -30,6 +30,7 @@ editors/vscode/.vscode-test/
 editors/vscode/*.vsix
 editors/vscode/native/koffi/
 editors/vscode/LICENSE.txt
+editors/vscode/NOTICE
 .rigor-native-coverage/
 
 .env

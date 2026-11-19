@@ -50,6 +50,7 @@ export const sourcePaths = Object.freeze([
   ".github/actions/setup-native-python/action.yml",
   ".github/workflows/ci-vscode.yml",
   "LICENSE",
+  "NOTICE",
 ]);
 
 /**
@@ -173,6 +174,7 @@ export async function sourceInputs(root) {
   assert.ok(result["editors/vscode/scripts/build-windows-native.mjs"]);
   assert.ok(result[".github/workflows/ci-vscode.yml"] && result["LICENSE"]);
   assert.ok(result[".github/actions/setup-native-python/action.yml"]);
+  assert.ok(result["NOTICE"]);
   return result;
 }
 

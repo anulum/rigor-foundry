@@ -13,10 +13,23 @@
  */
 
 import assert from "node:assert/strict";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import {
+  copyFile,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { runCli } from "../../src/cli.js";
+import { pathToFileURL } from "node:url";
+import { CommandExecutionFailure, runCli } from "../../src/cli.js";
 
 void test(
   "packages only current runtime JavaScript from the build tree despite real extra diagnostics",
@@ -75,6 +88,9 @@ void test(
           "    assert 'extension/native/editor-hosts.json.license' not in names",
           "    for name in expected:",
           "        assert archive.read(name) == (root / name.removeprefix('extension/')).read_bytes()",
+          "    repository = root.parent.parent",
+          "    assert archive.read('extension/LICENSE.txt') == (repository / 'LICENSE').read_bytes()",
+          "    assert archive.read('extension/NOTICE') == (repository / 'NOTICE').read_bytes()",
           "    native = root / 'native/koffi'",
           "    build = json.loads((native / 'provenance.json').read_text())",
           "    binding = json.loads((native / 'binding-provenance.json').read_text())",
@@ -102,6 +118,91 @@ void test(
     await writeFile(path.join(allocation, "payload-observation.json"), inspected.stdout, "utf8");
   },
 );
+
+void test("packages the canonical legal files from a clean Linux extension tree", async (context) => {
+  const extension = path.resolve(__dirname, "../../..");
+  const repository = path.resolve(extension, "../..");
+  const allocation = await mkdtemp(path.join(tmpdir(), "rigor-legal-package-"));
+  context.after(async () => {
+    await rm(allocation, { recursive: true, force: true });
+  });
+  const evidence = path.join(
+    extension,
+    "out",
+    "fixtures",
+    "rigor-editor-metadata-" + path.basename(allocation),
+  );
+  await mkdir(evidence, { recursive: true });
+  const checkout = path.join(allocation, "checkout");
+  const editor = path.join(checkout, "editors", "vscode");
+  const scripts = ["scripts/stage-package-legal-files.mjs", "scripts/native-artifact-inputs.mjs"];
+  const copies = [];
+  for (const relative of scripts) {
+    const target = path.join(editor, relative);
+    const original = await readFile(path.join(extension, relative));
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, original);
+    copies.push({
+      source: "editors/vscode/" + relative,
+      url: pathToFileURL(target).href,
+      sha256: createHash("sha256").update(original).digest("hex"),
+    });
+  }
+  await writeFile(
+    path.join(evidence, "source-origin.json"),
+    JSON.stringify({ schema: 1, copies }),
+  );
+  for (const source of ["LICENSE", "NOTICE"]) {
+    await copyFile(path.join(repository, source), path.join(checkout, source));
+  }
+  for (const relative of [".vscodeignore", "README.md", "package.json", "media", "out/src"]) {
+    await cp(path.join(extension, relative), path.join(editor, relative), { recursive: true });
+  }
+  const args = [
+    path.join(extension, "node_modules", "@vscode", "vsce", "vsce"),
+    "package",
+    "--no-dependencies",
+    "--target",
+    "linux-x64",
+    "--out",
+  ];
+  const options = { cwd: editor, timeoutMilliseconds: 45_000 };
+  const vsix = path.join(allocation, "linux.vsix");
+  await runCli(process.execPath, [...args, vsix], options);
+  const python = process.env["RIGOR_FOUNDRY_TEST_PYTHON"] ?? "python";
+  await runCli(
+    python,
+    [
+      "-c",
+      [
+        "from pathlib import Path",
+        "import sys, zipfile",
+        "root = Path(sys.argv[1])",
+        "with zipfile.ZipFile(sys.argv[2]) as archive:",
+        "    for source, member in [('LICENSE', 'LICENSE.txt'), ('NOTICE', 'NOTICE')]:",
+        "        assert archive.namelist().count('extension/' + member) == 1",
+        "        assert archive.read('extension/' + member) == (root / source).read_bytes()",
+      ].join("\n"),
+      repository,
+      vsix,
+    ],
+    options,
+  );
+  const stale = Buffer.from("stale staged distribution notice\n");
+  const notice = path.join(editor, "NOTICE");
+  await writeFile(notice, stale);
+  const rejected = path.join(allocation, "rejected.vsix");
+  await assert.rejects(
+    runCli(process.execPath, [...args, rejected], options),
+    (error: unknown) => {
+      assert.ok(error instanceof CommandExecutionFailure);
+      assert.match(error.output.stderr, /existing VSIX NOTICE differs from repository NOTICE/u);
+      return true;
+    },
+  );
+  assert.deepEqual(await readFile(notice), stale);
+  await assert.rejects(stat(rejected), { code: "ENOENT" });
+});
 
 void test("keeps local-only inputs out of the VSIX file selection", async () => {
   const extension = path.resolve(__dirname, "../../..");
