@@ -12,6 +12,7 @@
  * @module
  */
 
+import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -217,27 +218,65 @@ try {
     path.join(fixture, ".rigor", "initial-report.json"),
   );
   await rm(path.join(fixture, ".rigor", "report.json"));
+  const emptyWindow = path.join(sandbox, "empty-window");
+  const emptyWorkspace = path.join(emptyWindow, "workspace");
+  const emptyUserData = path.join(emptyWindow, "user-data");
+  await cp(fixture, emptyWorkspace, { recursive: true });
+  await rm(path.join(emptyWorkspace, ".rigor", "initial-report.json"));
+  await cp(userData, emptyUserData, { recursive: true });
+  await run(
+    cli,
+    [
+      "scan",
+      "--root",
+      ".",
+      "--policy",
+      "rigor-foundry-policy.json",
+      "--json-out",
+      ".rigor/initial-report.json",
+    ],
+    emptyWorkspace,
+  );
+  const hostArgs = [
+    "--wait",
+    "--disable-workspace-trust",
+    "--skip-welcome",
+    "--skip-release-notes",
+    "--disable-telemetry",
+    "--disable-gpu",
+    "--remote-debugging-port=0",
+    "--remote-debugging-address=127.0.0.1",
+    "--extensionDevelopmentPath=" + extensionRoot,
+    "--extensionTestsPath=" + path.join(extensionRoot, "out", "test", "suite", "index.js"),
+  ];
   await run(
     code,
     [
-      "--wait",
-      "--disable-workspace-trust",
-      "--skip-welcome",
-      "--skip-release-notes",
-      "--disable-telemetry",
-      "--disable-gpu",
-      "--remote-debugging-port=0",
-      "--remote-debugging-address=127.0.0.1",
+      ...hostArgs,
+      "--shared-data-dir=" + path.join(emptyWindow, "shared-data"),
+      "--user-data-dir=" + emptyUserData,
+      "--extensions-dir=" + path.join(emptyWindow, "extensions"),
+      "--new-window",
+    ],
+    extensionRoot,
+    60_000,
+    { ...process.env, RF_VSCODE_FIXTURE: emptyWorkspace, RF_VSCODE_EMPTY_WINDOW: "1" },
+  );
+  const refusals = path.join(emptyWorkspace, ".rigor", "native-command-refusals.ndjson");
+  const emptyCompletion = path.join(emptyWorkspace, ".rigor", "empty-window-test-complete");
+  assert.equal(await readFile(emptyCompletion, "utf8"), "ok\n");
+  await run(
+    code,
+    [
+      ...hostArgs,
       "--shared-data-dir=" + path.join(sandbox, "shared-data"),
       "--user-data-dir=" + userData,
       "--extensions-dir=" + extensions,
-      "--extensionDevelopmentPath=" + extensionRoot,
-      "--extensionTestsPath=" + path.join(extensionRoot, "out", "test", "suite", "index.js"),
       fixture,
     ],
     extensionRoot,
     180_000,
-    { ...process.env, RF_VSCODE_FIXTURE: fixture },
+    { ...process.env, RF_VSCODE_FIXTURE: fixture, RF_VSCODE_EMPTY_WINDOW: "0" },
   );
 
   const completion = await readFile(path.join(fixture, ".rigor", "vscode-test-complete"), "utf8");
@@ -246,6 +285,8 @@ try {
   }
   await mkdir(artifactRoot, { recursive: true });
   await cp(fixture, path.join(artifactRoot, "workspace"), { recursive: true });
+  await cp(refusals, path.join(artifactRoot, "empty-window-refusals.ndjson"));
+  await cp(emptyCompletion, path.join(artifactRoot, "empty-window-test-complete"));
   await cp(path.join(userData, "logs"), path.join(artifactRoot, "user-data-logs"), {
     recursive: true,
   });

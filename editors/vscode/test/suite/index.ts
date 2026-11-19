@@ -16,17 +16,63 @@ import assert from "node:assert/strict";
 import { appendFile, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import * as vscode from "vscode";
+import { parseAuditReport } from "../../src/contracts.js";
 import type { RigorFoundryApi } from "../../src/extension.js";
 import { testTreeView } from "./treeView.test.js";
 import { testValidationRaces } from "./cli.test.js";
 import { testNativeUiDeadlines } from "./nativeUi.test.js";
 import { testCommandOutput } from "./commandOutput.test.js";
 import {
+  expectCommandRefusal,
   testCommandRefusals,
   testEmptyValidation,
   testReportWithoutLedger,
 } from "./extension.test.js";
 import { captureEvidenceView, chooseEvidenceFile } from "../support/nativeUi.js";
+
+/**
+ * Refuse scanning or reading a candidate when the required workspace or report is absent.
+ * @param fixture - Owned Git repository with a report from the real scanner.
+ * @returns Completion after the command refusals preserve the clipboard and evidence.
+ */
+async function testEmptyWindow(fixture: string): Promise<void> {
+  assert.equal(vscode.workspace.workspaceFolders, undefined);
+  const extension = vscode.extensions.getExtension<RigorFoundryApi>("anulum.rigor-foundry-vscode");
+  assert.ok(extension);
+  const api = await extension.activate();
+  const reportPath = path.join(fixture, ".rigor", "initial-report.json");
+  const report = parseAuditReport(JSON.parse(await readFile(reportPath, "utf8")));
+  const candidate = report.candidates[0];
+  assert.ok(candidate);
+  const row = { kind: "candidate", candidate };
+  const command = "rigorFoundry.copyCandidateIdentity";
+  assert.equal(api.getSnapshot().report, undefined);
+  await expectCommandRefusal(
+    api,
+    fixture,
+    "scan-without-workspace",
+    "rigorFoundry.scanWorkspace",
+    "open a local RigorFoundry repository workspace first",
+  );
+  await expectCommandRefusal(
+    api,
+    fixture,
+    "candidate-without-report",
+    command,
+    "select a candidate from the currently loaded report",
+    row,
+  );
+  await api.loadReport(fixture, reportPath);
+  assert.equal(api.getSnapshot().report?.report_digest, report.report_digest);
+  await expectCommandRefusal(
+    api,
+    fixture,
+    "report-owner-without-workspace",
+    command,
+    "loaded report repository is no longer an open workspace folder",
+    row,
+  );
+}
 
 /**
  * Execute the evidence scan, ledger validation, tree rendering, and watcher journey in VS Code.
@@ -35,6 +81,11 @@ import { captureEvidenceView, chooseEvidenceFile } from "../support/nativeUi.js"
 export async function run(): Promise<void> {
   const fixture = process.env["RF_VSCODE_FIXTURE"];
   assert.ok(fixture, "RF_VSCODE_FIXTURE is required");
+  if (process.env["RF_VSCODE_EMPTY_WINDOW"] === "1") {
+    await testEmptyWindow(fixture);
+    await writeFile(path.join(fixture, ".rigor", "empty-window-test-complete"), "ok\n", "utf8");
+    return;
+  }
   await writeFile(
     path.join(fixture, ".rigor", "vscode-host.json"),
     JSON.stringify({

@@ -145,10 +145,13 @@ function configuration(folder: vscode.WorkspaceFolder): ExtensionConfiguration {
  * Resolve a tree-row identity against the current report instead of trusting supplied anchors.
  * @param value - Command argument, normally a row supplied by the evidence tree.
  * @param snapshot - Currently loaded report used as the source of candidate fields.
- * @returns The current report's candidate with the selected identity.
+ * @returns The selected candidate and the digest of the report that supplied it.
  * @throws {EvidenceRefusal} For missing, malformed, stale, or unknown candidate rows.
  */
-function candidateFromNode(value: unknown, snapshot: EvidenceSnapshot): AuditCandidate {
+function candidateFromNode(
+  value: unknown,
+  snapshot: EvidenceSnapshot,
+): { candidate: AuditCandidate; reportDigest: string } {
   if (
     typeof value !== "object" ||
     value === null ||
@@ -163,11 +166,14 @@ function candidateFromNode(value: unknown, snapshot: EvidenceSnapshot): AuditCan
     throw new EvidenceRefusal("select a candidate evidence item first");
   }
   const identity = supplied.candidate_id;
-  const candidate = snapshot.report?.candidates.find((item) => item.candidate_id === identity);
-  if (candidate === undefined) {
-    throw new EvidenceRefusal("select a candidate from the currently loaded report");
+  const report = snapshot.report;
+  if (report !== undefined) {
+    const candidate = report.candidates.find((item) => item.candidate_id === identity);
+    if (candidate !== undefined) {
+      return { candidate, reportDigest: report.report_digest };
+    }
   }
-  return candidate;
+  throw new EvidenceRefusal("select a candidate from the currently loaded report");
 }
 
 /**
@@ -357,7 +363,7 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
     vscode.commands.registerCommand(
       "rigorFoundry.openEvidence",
       runCommand(async (rawNode) => {
-        const candidate = candidateFromNode(rawNode, store.snapshot());
+        const { candidate } = candidateFromNode(rawNode, store.snapshot());
         if (candidate.anchor.kind !== "tracked-blob") {
           throw new EvidenceRefusal("repository-tree evidence has no single source file to open");
         }
@@ -383,11 +389,11 @@ export function activate(context: vscode.ExtensionContext): RigorFoundryApi {
       "rigorFoundry.copyCandidateIdentity",
       runCommand(async (rawNode) => {
         const snapshot = store.snapshot();
-        const candidate = candidateFromNode(rawNode, snapshot);
+        const { candidate, reportDigest } = candidateFromNode(rawNode, snapshot);
         await reportWorkspace(snapshot);
         const anchor = candidate.anchor;
         const identity = [
-          `report=${snapshot.report?.report_digest ?? "unknown"}`,
+          `report=${reportDigest}`,
           `candidate=${candidate.candidate_id}`,
           `anchor=${anchor.path}:${String(anchor.line_start)}-${String(anchor.line_end)}`,
           anchor.kind === "tracked-blob"

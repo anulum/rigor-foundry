@@ -31,7 +31,7 @@ import { readEvidenceOutput, waitForEvidenceOutput } from "../support/nativeUi.j
  * @param argument - Optional public command argument, including deliberately malformed input.
  * @returns Completion after the real command refuses without replacing state or clipboard.
  */
-async function expectCommandRefusal(
+export async function expectCommandRefusal(
   api: RigorFoundryApi,
   fixture: string,
   caseLabel: string,

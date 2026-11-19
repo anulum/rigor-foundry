@@ -152,7 +152,12 @@ original protocol responses, screenshots and visible evidence-tree geometry.
 Missing selection, executable and policy cases must produce the expected
 display explanations without replacing the last accepted snapshot. These
 checks use the registered commands and actual extension output channel.
-They also cover empty and partially loaded evidence, malformed command arguments
+A separate empty VS Code window exercises scan and copy command refusals. It
+verifies that the copy command preserves evidence and the clipboard when a
+candidate has no loaded report or its repository is outside the open workspace.
+The runner requires the empty window’s own completion marker before launching
+the single-folder test.
+The journeys also cover empty and partially loaded evidence, malformed command arguments
 and a stale selection after a real CLI scan under a second Git-tracked fixture
 policy. The original evidence pair is restored through the public loading API.
 Failed native fixture commands retain their bounded streams and a private
