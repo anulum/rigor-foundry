@@ -213,6 +213,47 @@ def test_read_csv_rejects_corrupted_history(tmp_path: Path, csv_text: str, messa
         downloads.read_csv(csv_path)
 
 
+@pytest.mark.parametrize(
+    ("row", "reason"),
+    [
+        ("2026-07-16,7,9,extra", "unexpected CSV field count"),
+        ("2026-07-16,7", "unexpected CSV field count"),
+        ('2026-07-16,7,"9', "invalid CSV syntax"),
+    ],
+)
+@pytest.mark.parametrize("provider_available", [True, False])
+def test_snapshot_refuses_malformed_history_without_replacing_it(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    row: str,
+    reason: str,
+    provider_available: bool,
+) -> None:
+    """Validate the workflow's actual retained file before an update or an outage skip."""
+    monkeypatch.chdir(tmp_path)
+    csv_path = Path("downloads/rigor-foundry.csv")
+    csv_path.parent.mkdir()
+    original = f"date,without_mirrors,with_mirrors\n\n{row}\n".encode()
+    csv_path.write_bytes(original)
+    waits: list[float] = []
+
+    def fetch(package: str) -> bytes:
+        assert package == "rigor-foundry"
+        if not provider_available:
+            raise downloads.RetryableSnapshotError("provider unavailable")
+        return json.dumps(_SAMPLE).encode()
+
+    args = ["--package", "rigor-foundry", "--csv", csv_path.as_posix(), "--project-csv-only"]
+    assert downloads.main(args, fetch, waits.append) == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == f"snapshot failed: {reason} at {csv_path}:3\n"
+    assert waits == ([] if provider_available else [15.0, 30.0, 60.0])
+    assert csv_path.read_bytes() == original
+    assert list(csv_path.parent.iterdir()) == [csv_path]
+
+
 def test_write_csv_real_replace_failure_preserves_destination(tmp_path: Path) -> None:
     """Preserve the existing destination and remove temporary output when actual replacement fails."""
     csv_path = tmp_path / "series.csv"

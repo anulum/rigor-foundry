@@ -8,8 +8,8 @@
 """Record the project's daily PyPI download series in a bounded CSV.
 
 The package name comes from ``pyproject.toml`` unless explicitly supplied. The
-snapshot reads pypistats' bounded overall series, validates every retained row,
-merges it with older valid history, and atomically replaces the target CSV.
+snapshot reads pypistats' bounded overall series, validates the retained CSV
+even when the provider is unavailable, and atomically writes merged history.
 """
 
 from __future__ import annotations
@@ -206,22 +206,30 @@ def read_csv(path: Path) -> DownloadRows:
         return {}
     rows: DownloadRows = {}
     with path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        if tuple(reader.fieldnames or ()) != CSV_HEADER:
-            raise ValueError(f"unexpected CSV header in {path}")
-        for line_number, record in enumerate(reader, start=2):
-            row_date = _valid_date(record.get("date"))
-            if row_date is None:
-                raise ValueError(f"invalid date at {path}:{line_number}")
-            if row_date in rows:
-                raise ValueError(f"duplicate date {row_date} at {path}:{line_number}")
-            values: dict[str, int] = {}
-            for category in CATEGORIES:
-                count = _valid_count(record.get(category))
-                if count is None:
-                    raise ValueError(f"invalid {category} count at {path}:{line_number}")
-                values[category] = count
-            rows[row_date] = values
+        reader = csv.reader(handle, strict=True)
+        try:
+            if tuple(next(reader, ())) != CSV_HEADER:
+                raise ValueError(f"unexpected CSV header in {path}")
+            for record in reader:
+                if not record:
+                    continue
+                location = f"{path}:{reader.line_num}"
+                if len(record) != len(CSV_HEADER):
+                    raise ValueError(f"unexpected CSV field count at {location}")
+                row_date = _valid_date(record[0])
+                if row_date is None:
+                    raise ValueError(f"invalid date at {location}")
+                if row_date in rows:
+                    raise ValueError(f"duplicate date {row_date} at {location}")
+                values: dict[str, int] = {}
+                for index, category in enumerate(CATEGORIES, start=1):
+                    count = _valid_count(record[index])
+                    if count is None:
+                        raise ValueError(f"invalid {category} count at {location}")
+                    values[category] = count
+                rows[row_date] = values
+        except csv.Error as exc:
+            raise ValueError(f"invalid CSV syntax at {path}:{reader.line_num}") from exc
     return rows
 
 
@@ -293,6 +301,7 @@ def main(
         if arguments.project_csv_only:
             require_project_csv_target(package, csv_path)
         fresh_rows = fetch_overall_with_retry(package, fetch, sleep)
+        existing_rows = read_csv(csv_path)
         if fresh_rows is None:
             print(
                 "snapshot skipped: pypistats remained unavailable after bounded retries; "
@@ -300,7 +309,7 @@ def main(
                 file=sys.stderr,
             )
             return 0
-        rows = merge_rows(read_csv(csv_path), fresh_rows)
+        rows = merge_rows(existing_rows, fresh_rows)
         write_csv(csv_path, rows)
     except (DownloadSnapshotError, OSError, ValueError) as exc:
         print(f"snapshot failed: {exc}", file=sys.stderr)
