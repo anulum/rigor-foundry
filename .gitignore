@@ -39,6 +39,8 @@ editors/vscode/LICENSE.txt
 .coordination/
 .rigor/
 **/docs/internal/
+docs/internal/
+docs/internal/**
 **/agentic_project_memory/
 /agentic_project_memory/
 **/tools/.internal/
