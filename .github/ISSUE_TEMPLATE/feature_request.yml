@@ -11,6 +11,12 @@ description: Propose a portable audit, evidence, or remediation capability.
 title: "feat: "
 labels: [enhancement, needs-triage]
 body:
+  - type: markdown
+    attributes:
+      value: >-
+        Report suspected vulnerabilities through a private channel in the
+        [security policy](https://github.com/anulum/rigor-foundry/security/policy).
+        Keep credentials and non-public evidence private.
   - type: textarea
     id: problem
     attributes:

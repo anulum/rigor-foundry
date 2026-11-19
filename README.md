@@ -315,6 +315,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Discussions](https://github.com/anulum/rigor-foundry/discussions)
 - [Support](SUPPORT.md)
 - [Security reporting](SECURITY.md)
+- [Community participation](CODE_OF_CONDUCT.md)
+- [Governance](GOVERNANCE.md)
 - [Sponsor the public core](https://github.com/sponsors/anulum)
 
 ## Licence

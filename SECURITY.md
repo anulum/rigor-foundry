@@ -94,10 +94,10 @@ reviews prioritise:
 
 ## Toolchain dependency policy
 
-The current security lock selects Semgrep `1.180.0` and Click `8.4.2`, with
-SHA-256 hashes and the complete CI constraints. The waiver manifest is empty
-and its guard requires that state. Earlier dated validation records describe
-their original dependency sets; they do not authorise an exception today.
+The [security lock](requirements/security.txt) records the current exact
+tool versions and SHA-256 hashes. Follow the
+[lock maintenance instructions](docs/security.md#security-tool-lock-maintenance)
+for regeneration. The waiver manifest is empty and its guard requires that state.
 
 The Security workflow audits every committed dependency lock and runs the
 repository Semgrep policy with errors blocking the job. The actual locks,

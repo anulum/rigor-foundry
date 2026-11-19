@@ -141,9 +141,8 @@ root-owned launcher is outside this boundary; RigorFoundry detects identity or
 package drift during an audit but does not claim to withstand a compromised
 host root.
 
-Do not disclose a suspected vulnerability in a public issue. Follow the
-[security policy](https://github.com/anulum/RIGOR-FOUNDRY/security/policy) and
-use private vulnerability reporting.
+Report suspected vulnerabilities through a private channel listed in the
+[security policy](https://github.com/anulum/rigor-foundry/security/policy).
 
 
 ## Security-tool lock maintenance

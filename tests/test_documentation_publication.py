@@ -17,6 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 from tools._repository import ROOT
 from tools.ci_workflows import ci_jobs
 
@@ -73,6 +75,13 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
     assert build.returncode == 0, build.stderr[-4000:]
     site = repository / "site"
     homepage = (site / "index.html").read_text(encoding="utf-8")
+    security_policy = "https://github.com/anulum/rigor-foundry/security/policy"
+    support_policy = "https://github.com/anulum/rigor-foundry/blob/main/SUPPORT.md"
+    assert f'href="{support_policy}"' in homepage
+    assert f'href="{security_policy}"' in homepage
+    assert f'href="{security_policy}"' in (site / "security/index.html").read_text(
+        encoding="utf-8"
+    )
     for asset in ("accessibility.css", "accessibility.js"):
         asset_path = Path("assets") / asset
         assert (site / asset_path).read_bytes() == (repository / "docs" / asset_path).read_bytes()
@@ -112,6 +121,26 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
         assert stat.S_IMODE(record.stat().st_mode) == 0o600
         assert record.stat().st_mtime_ns == status.st_mtime_ns
         assert record.stat().st_ino == status.st_ino
+
+
+def test_public_issue_routes_point_to_the_private_reporting_policy() -> None:
+    """Check the actual GitHub chooser and both forms against the public policy."""
+    directory = ROOT / ".github/ISSUE_TEMPLATE"
+    security_policy = "https://github.com/anulum/rigor-foundry/security/policy"
+    configuration = yaml.safe_load((directory / "config.yml").read_text(encoding="utf-8"))
+    assert configuration["blank_issues_enabled"] is False
+    links = {entry["name"]: entry["url"] for entry in configuration["contact_links"]}
+    assert links["Security vulnerability"] == security_policy
+    for filename, label in (("bug_report.yml", "bug"), ("feature_request.yml", "enhancement")):
+        form = yaml.safe_load((directory / filename).read_text(encoding="utf-8"))
+        notice = form["body"][0]
+        assert notice["type"] == "markdown"
+        assert f"[security policy]({security_policy})" in notice["attributes"]["value"]
+        assert "Keep credentials and non-public evidence private." in notice["attributes"]["value"]
+        assert set(form["labels"]) == {label, "needs-triage"}
+    policy = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
+    assert "(mailto:protoscience@anulum.li)" in policy
+    assert "(https://github.com/anulum/rigor-foundry/security/advisories/new)" in policy
 
 
 def test_exhaustive_job_installs_documentation_dependencies() -> None:

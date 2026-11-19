@@ -7,6 +7,14 @@ licensing, publication, release, visibility, and fleet activation. Maintainers
 may implement and review within delegated claims; delegation does not transfer
 release authority.
 
+## Community stewardship
+
+The repository maintainer [@anulum](https://github.com/anulum) owns issue triage
+and Discussions moderation. Follow the [support routes](SUPPORT.md) for public
+questions and proposals. The project owner resolves escalated decisions.
+Report conduct concerns through the [participation standard](CODE_OF_CONDUCT.md)
+and vulnerabilities through the [security policy](SECURITY.md).
+
 ## Decision record
 
 Material decisions require evidence, alternatives, consequences, and an

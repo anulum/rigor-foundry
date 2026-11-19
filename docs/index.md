@@ -31,9 +31,14 @@ becomes an implicit pass.
 - [API and schema compatibility rules](api-compatibility-rules.md) define the
   tracked declared-surface manifest and its candidate-only review boundary.
 
-**Contact:** [protoscience@anulum.li](mailto:protoscience@anulum.li) |
-[GitHub Discussions](https://github.com/anulum/rigor-foundry/discussions) |
-[www.anulum.li](https://www.anulum.li)
+## Support and reporting
+
+- [Support routes](https://github.com/anulum/rigor-foundry/blob/main/SUPPORT.md)
+  cover usage questions, defects, proposals and conduct concerns.
+- [Private vulnerability reporting](https://github.com/anulum/rigor-foundry/security/policy)
+  lists the reporting channels and supported versions.
+
+For general correspondence, email [protoscience@anulum.li](mailto:protoscience@anulum.li).
 
 ---
 

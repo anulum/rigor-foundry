@@ -13,7 +13,10 @@ labels: [bug, needs-triage]
 body:
   - type: markdown
     attributes:
-      value: Security vulnerabilities must follow SECURITY.md instead of this form.
+      value: >-
+        Report suspected vulnerabilities through a private channel in the
+        [security policy](https://github.com/anulum/rigor-foundry/security/policy).
+        Keep credentials and non-public evidence private.
   - type: input
     id: version
     attributes:
