@@ -163,7 +163,7 @@
     "clean": "node scripts/clean.mjs",
     "compile": "tsc -p tsconfig.json",
     "check": "npm run clean && npm run lint && npm run format:check && npm run typecheck && npm run compile && npm run docs && npm run test:unit",
-    "test:unit": "node --test out/test/unit/*.test.js",
+    "test:unit": "node --test --test-concurrency=3 out/test/unit/*.test.js",
     "test:integration": "npm run compile && node scripts/run-integration-tests.mjs",
     "vscode:prepublish": "node scripts/stage-package-legal-files.mjs",
     "package": "node scripts/package-linux.mjs",
