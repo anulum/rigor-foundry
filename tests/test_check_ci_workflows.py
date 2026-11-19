@@ -386,7 +386,7 @@ def test_reusable_job_cannot_introduce_cross_category_or_privilege_drift(
     field: str,
     value: Any,
 ) -> None:
-    """All cross-category dependencies belong to the reviewed coordinator.
+    """Keep category execution free of caller dependencies and privileges.
 
     Parameters
     ----------
@@ -401,6 +401,39 @@ def test_reusable_job_cannot_introduce_cross_category_or_privilege_drift(
     path = root / CI_WORKFLOWS["quality"]
     document = read_workflow(path)
     document["jobs"]["quality"][field] = value
+    path.write_text(yaml.safe_dump(document))
+    assert ci_workflow_errors(root)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("uses", "./.github/workflows/ci-quality.yml"),
+        ("needs", "another-job"),
+        ("if", "false"),
+        ("permissions", {"id-token": "write"}),
+        ("continue-on-error", True),
+        ("secrets", "inherit"),
+    ],
+)
+def test_standalone_editor_caller_refuses_route_or_privilege_drift(
+    tmp_path: Path, field: str, value: Any
+) -> None:
+    """Reject mutations to the standalone workflow's admitted editor call.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Actual copied repository.
+    field : str
+        Edited workflow job setting.
+    value : Any
+        Undeclared job setting to reject.
+    """
+    root = copy_workflow_repository(tmp_path)
+    path = root / ".github/workflows/pre-commit.yml"
+    document = read_workflow(path)
+    document["jobs"]["editor"][field] = value
     path.write_text(yaml.safe_dump(document))
     assert ci_workflow_errors(root)
 

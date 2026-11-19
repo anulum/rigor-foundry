@@ -5,7 +5,7 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — CI workflow contract tests
-"""Verify the hosted CI coverage publication boundary."""
+"""Verify hosted CI composition, hook ownership and coverage publication."""
 
 import os
 import shutil
@@ -115,6 +115,83 @@ def test_codecov_upload_is_exact_oidc_and_fail_closed() -> None:
     assert "disable_search: true" in coverage_job
     assert "fail_ci_if_error: true" in coverage_job
     assert "CODECOV_TOKEN" not in coverage_job
+
+
+def test_editor_hook_is_delegated_only_on_matching_ci_events(tmp_path: Path) -> None:
+    """Run the hosted selector for each event and exact branch identity."""
+    hooks = read_workflow(Path(".github/workflows/pre-commit.yml"))
+    steps = hooks["jobs"]["hooks"]["steps"]
+    selection = next(step for step in steps if step.get("id") == "editor")
+    assert selection["shell"] == "python"
+    output = tmp_path / "github-output"
+    cases = (
+        (("push", "refs/heads/main", ""), "true"),
+        (("pull_request", "refs/pull/22/merge", "main"), "true"),
+        (("pull_request", "refs/pull/22/merge", "Main"), "false"),
+        (("pull_request", "refs/pull/22/merge", "release/1"), "false"),
+        (("push", "refs/heads/Main", ""), "false"),
+        (("push", "refs/tags/main", ""), "false"),
+        (("workflow_dispatch", "refs/heads/main", ""), "false"),
+        (("workflow_dispatch", "refs/heads/release/1", ""), "false"),
+        (("pull_request", "refs/pull/22/merge", ""), "false"),
+    )
+    for context, expected in cases:
+        event, revision, base = context
+        output.write_text("", encoding="utf-8")
+        subprocess.run(
+            [sys.executable, "-c", selection["run"]],
+            env=os.environ
+            | {
+                "GITHUB_EVENT_NAME": event,
+                "GITHUB_REF": revision,
+                "GITHUB_BASE_REF": base,
+                "GITHUB_OUTPUT": str(output),
+            },
+            check=True,
+            timeout=10,
+        )
+        assert output.read_text(encoding="utf-8") == f"editor_in_ci={expected}\n", context
+
+
+def test_editor_hook_delegation_keeps_the_required_editor_run() -> None:
+    """Bind the one skipped hook to the required editor caller and fallback steps."""
+    hooks = read_workflow(Path(".github/workflows/pre-commit.yml"))
+    assert hooks["on"] == {
+        "push": {"branches": ["main"]},
+        "pull_request": None,
+        "workflow_dispatch": None,
+    }
+    hook_job = hooks["jobs"]["hooks"]
+    assert hook_job["outputs"] == {"editor_in_ci": "${{ steps.editor.outputs.editor_in_ci }}"}
+    assert hooks["jobs"]["editor"] == {
+        "name": "Editor integration",
+        "needs": "hooks",
+        "if": "${{ !cancelled() && needs.hooks.outputs.editor_in_ci != 'true' }}",
+        "uses": "./.github/workflows/ci-vscode.yml",
+    }
+    run = hook_job["steps"][-1]
+    assert "if" not in run
+    assert run["env"] == {"SKIP": "vscode-native-check"}
+    assert run["run"] == ".venv/bin/python -m pre_commit run --all-files --show-diff-on-failure"
+    configuration = yaml.safe_load(Path(".pre-commit-config.yaml").read_text(encoding="utf-8"))
+    local = next(
+        hook
+        for repository in configuration["repos"]
+        for hook in repository["hooks"]
+        if hook["id"] == "vscode-native-check"
+    )
+    assert local["entry"] == "make editor-check"
+    assert local["always_run"] is True
+    assert local["stages"] == ["pre-commit"]
+
+    workflow = read_workflow(Path(".github/workflows/ci.yml"))
+    assert workflow["on"]["push"] == workflow["on"]["pull_request"] == {"branches": ["main"]}
+    jobs = workflow["jobs"]
+    assert jobs["vscode"]["uses"] == "./.github/workflows/ci-vscode.yml"
+    assert "if" not in jobs["vscode"]
+    assert "vscode" in jobs["ci-gate"]["needs"]
+    assert jobs["ci-gate"]["env"]["VSCODE_RESULT"] == "${{ needs.vscode.result }}"
+    assert 'test "$VSCODE_RESULT" = success' in jobs["ci-gate"]["steps"][0]["run"]
 
 
 def test_memory_documentation_cohort_is_enforced_in_ci_and_commit_hook() -> None:

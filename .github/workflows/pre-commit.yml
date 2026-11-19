@@ -25,15 +25,12 @@ jobs:
   hooks:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      editor_in_ci: ${{ steps.editor.outputs.editor_in_ci }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22.23.3"
-          cache: npm
-          cache-dependency-path: editors/vscode/package-lock.json
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12.13"
@@ -41,11 +38,33 @@ jobs:
           cache-dependency-path: |
             requirements/bootstrap.txt
             requirements/ci.txt
+      - name: Select the editor check owner
+        id: editor
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+
+          event = os.environ["GITHUB_EVENT_NAME"]
+          editor_in_ci = (
+              event == "push" and os.environ.get("GITHUB_REF") == "refs/heads/main"
+          ) or (
+              event == "pull_request" and os.environ.get("GITHUB_BASE_REF") == "main"
+          )
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as outputs:
+              outputs.write(f"editor_in_ci={str(editor_in_ci).lower()}\n")
       - name: Install hook environment
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
           .venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
           .venv/bin/python -m pip install --no-build-isolation --no-deps .
-          npm ci --ignore-scripts --engine-strict --prefix editors/vscode
-      - run: .venv/bin/python -m pre_commit run --all-files --show-diff-on-failure
+      - name: Run repository hooks
+        env:
+          SKIP: vscode-native-check
+        run: .venv/bin/python -m pre_commit run --all-files --show-diff-on-failure
+  editor:
+    name: Editor integration
+    needs: hooks
+    if: ${{ !cancelled() && needs.hooks.outputs.editor_in_ci != 'true' }}
+    uses: ./.github/workflows/ci-vscode.yml

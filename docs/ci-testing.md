@@ -85,6 +85,16 @@ versioned workflow inventory and source guard check both execution jobs and the
 complete caller graph. The quality workflow tests the partition infrastructure
 and its owning tests with whole-file statement and branch coverage of 100%.
 
+On pushes to `main` and pull requests targeting `main`, the required CI gate
+owns the complete editor check through the supported editor host profiles.
+The separate Pre-commit workflow still runs its repository hooks on every
+tracked file. A manual Pre-commit dispatch or a pull request into another
+branch runs the same editor host matrix within the Pre-commit workflow,
+including its Windows native build and artifact consumer. Local Git commits
+run `make editor-check` through the editor hook. The workflow source guard
+binds the standalone editor job to the same reviewed workflow and trigger
+condition.
+
 An independent quality step exercises the fixed context resolver and retained
 source lifetimes. It measures the complete resolver and both owning test files
 at 100% statement and branch coverage, including all supported context formats,

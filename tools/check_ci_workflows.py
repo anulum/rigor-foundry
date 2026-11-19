@@ -68,6 +68,13 @@ MAX_WORKFLOW_BYTES = 100 * 1_024
 MAX_COORDINATOR_LINES = 200
 MAX_COORDINATOR_BYTES = 32 * 1_024
 MAX_REUSABLE_WORKFLOWS = 16
+HOOK_WORKFLOW = ".github/workflows/pre-commit.yml"
+STANDALONE_EDITOR_CALL = {
+    "name": "Editor integration",
+    "needs": "hooks",
+    "if": "${{ !cancelled() && needs.hooks.outputs.editor_in_ci != 'true' }}",
+    "uses": f"./{CI_WORKFLOWS['vscode']}",
+}
 GATE_COMMAND = "set -euo pipefail\n" + "".join(
     'test "$' + name.upper() + '_RESULT" = success\n' for name in (*CI_WORKFLOWS, "required")
 )
@@ -293,12 +300,12 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
             },
         }
     )
-    # Only the coordinator may introduce reusable or cross-category calls.
     for relative, document in documents.items():
         if relative == ".github/workflows/ci.yml":
             continue
-        for job in document["jobs"].values():
-            _require("uses" not in job)
+        calls = {name: job for name, job in document["jobs"].items() if "uses" in job}
+        allowed = {"editor": STANDALONE_EDITOR_CALL} if relative == HOOK_WORKFLOW else {}
+        _require(calls == allowed)
 
 
 def ci_workflow_errors(root: Path = ROOT) -> list[str]:
