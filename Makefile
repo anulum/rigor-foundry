@@ -105,14 +105,26 @@ docker-build:
 	docker build --tag rigor-foundry:local .
 
 docker-smoke:
-	rm -rf /tmp/rigor-foundry-container-smoke
-	git init --initial-branch=main /tmp/rigor-foundry-container-smoke
-	git -C /tmp/rigor-foundry-container-smoke config user.name 'RigorFoundry Smoke'
-	git -C /tmp/rigor-foundry-container-smoke config user.email audit-tests@example.invalid
-	cp README.md /tmp/rigor-foundry-container-smoke/README.md
-	git -C /tmp/rigor-foundry-container-smoke add README.md
-	git -C /tmp/rigor-foundry-container-smoke commit -m 'test: container fixture'
-	docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges --mount type=bind,src=/tmp/rigor-foundry-container-smoke,dst=/workspace,readonly rigor-foundry:local scan --root /workspace
+	@set -eu; \
+	fixture=$$(mktemp -d "$${TMPDIR:-/tmp}/rigor-foundry-container-smoke.XXXXXXXX"); \
+	trap 'rm -rf -- "$$fixture"' EXIT; \
+	trap 'exit 1' HUP INT TERM; \
+	umask 022; \
+	chmod 0755 "$$fixture"; \
+	git_fixture() { \
+		env -i PATH="$$PATH" TMPDIR="$$fixture" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git "$$@"; \
+	}; \
+	git_fixture init --quiet --template= --initial-branch=main "$$fixture"; \
+	cp README.md "$$fixture/README.md"; \
+	chmod 0644 "$$fixture/README.md"; \
+	git_fixture -C "$$fixture" add -- README.md; \
+	git_fixture -C "$$fixture" -c user.name='RigorFoundry Smoke' -c user.email=audit-tests@example.invalid \
+		commit --quiet -m 'test: container fixture'; \
+	mount_source=$$(printf '%s' "$$fixture" | sed 's/"/""/g'); \
+	docker run --rm --pull=never --network none --read-only --cap-drop ALL \
+		--security-opt no-new-privileges \
+		--mount "type=bind,\"src=$$mount_source\",dst=/workspace,readonly" \
+		-- "$${DOCKER_SMOKE_IMAGE:-rigor-foundry:local}" scan --root /workspace
 
 install-hooks:
 	$(PYTHON) -m pre_commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg

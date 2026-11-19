@@ -266,8 +266,10 @@ docker run --rm --read-only \
 ```
 
 The container runs as a non-root user and contains Git because repository
-inventory is a production dependency of the CLI. For an exact local image
-comparison, use the [reproducible container build](docs/validation.md#reproducible-container-build).
+inventory is a production dependency of the CLI. After building the image,
+`make docker-smoke` scans a disposable Git repository with the hardened
+container settings used in CI. For an exact local image comparison, use
+the [reproducible container build](docs/validation.md#reproducible-container-build).
 
 ## Verification and reproducibility
 

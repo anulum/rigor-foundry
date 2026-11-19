@@ -249,6 +249,12 @@ published signatures and provenance to authenticate the release.
 
 ## Reproducible container build
 
+Run `make docker-smoke` against the locally built image. The container workflow
+uses the same target with `DOCKER_SMOKE_IMAGE=rigor-foundry:ci`. Each invocation
+creates and removes its own Git fixture under `TMPDIR` and scans it through a
+read-only bind mount with networking disabled. Load the selected image before
+running the smoke test.
+
 For the Linux x64 image comparison, use the verified Buildx installer and the
 same digest-pinned BuildKit image as the container workflow. The commit time
 sets the OCI image timestamp. The OCI exporter normalizes layer timestamps.

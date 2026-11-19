@@ -266,6 +266,20 @@ def test_container_scan_uses_repository_verified_trivy() -> None:
     )
 
 
+def test_container_job_smokes_the_built_image_with_the_local_target() -> None:
+    """CI builds the same image it passes to the shared smoke entry point."""
+    steps = read_workflow(ROOT / ".github/workflows/docker.yml")["jobs"]["smoke"]["steps"]
+    (build,) = (
+        step for step in steps if step.get("run") == "docker build --tag rigor-foundry:ci ."
+    )
+    (smoke,) = (step for step in steps if step.get("run") == "make docker-smoke")
+    assert smoke["env"] == {
+        "DOCKER_SMOKE_IMAGE": "rigor-foundry:ci",
+        "TMPDIR": "${{ runner.temp }}",
+    }
+    assert steps.index(build) < steps.index(smoke)
+
+
 def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     """Ubuntu CI keeps global mediation and grants only the bwrap user namespace."""
     jobs = ci_jobs(ROOT)

@@ -32,20 +32,11 @@ jobs:
         with:
           persist-credentials: false
       - run: docker build --tag rigor-foundry:ci .
-      - name: Create host-owned Git fixture
-        run: |
-          git init --initial-branch=main /tmp/rigor-container-target
-          git -C /tmp/rigor-container-target config user.name "RigorFoundry Smoke"
-          git -C /tmp/rigor-container-target config user.email audit-tests@example.invalid
-          cp README.md /tmp/rigor-container-target/README.md
-          git -C /tmp/rigor-container-target add README.md
-          git -C /tmp/rigor-container-target commit -m "test: container fixture"
       - name: Scan fixture through non-root read-only container
-        run: >-
-          docker run --rm --read-only --cap-drop ALL
-          --security-opt no-new-privileges
-          --mount type=bind,src=/tmp/rigor-container-target,dst=/workspace,readonly
-          rigor-foundry:ci scan --root /workspace
+        env:
+          DOCKER_SMOKE_IMAGE: rigor-foundry:ci
+          TMPDIR: ${{ runner.temp }}
+        run: make docker-smoke
       - name: Install and run verified Trivy
         run: |
           python3 -m tools.install_trivy --destination "$RUNNER_TEMP/trivy"
