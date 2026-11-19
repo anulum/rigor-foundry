@@ -40,6 +40,11 @@ theme:
     - navigation.sections
     - content.code.copy
 
+extra_css:
+  - assets/accessibility.css
+extra_javascript:
+  - assets/accessibility.js
+
 markdown_extensions:
   - admonition
   - attr_list

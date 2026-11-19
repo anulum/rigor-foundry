@@ -1,0 +1,63 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Apache License 2.0; see ../../LICENSE. */
+/* © Concepts 1996–2026 Miroslav Šotek. All rights reserved. */
+/* © Code 2020–2026 Miroslav Šotek. All rights reserved. */
+/* ORCID: 0009-0009-3560-0851 */
+/* Contact: www.anulum.li | protoscience@anulum.li */
+/* RigorFoundry — Accessible documentation styles */
+
+.md-copyright {
+  color: var(--md-footer-fg-color--light);
+}
+
+.md-copyright a,
+.md-typeset a:not(.headerlink) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.md-nav__link {
+  min-block-size: 24px;
+}
+
+.md-header__button:focus-visible,
+.md-sidebar--primary :focus-visible,
+.md-nav__link:focus-visible,
+.md-content :focus-visible,
+.md-copyright :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.md-drawer-close {
+  display: none;
+}
+
+@media screen and (max-width: 76.234375em) {
+  #__drawer:not(:checked) ~ .md-container .md-sidebar--primary {
+    visibility: hidden;
+  }
+
+  .md-sidebar--primary[aria-modal="true"] {
+    transition: none;
+  }
+
+  #__drawer:not(:checked) ~ .md-overlay {
+    transition: none;
+  }
+
+  #__drawer:checked ~ .md-container .md-drawer-close {
+    display: block;
+    min-block-size: 24px;
+    padding: 0.4rem 0.8rem;
+    text-decoration: underline;
+  }
+}
+
+@media screen and (max-width: 59.984375em) {
+  #__search:not(:checked)
+    ~ .md-header:has(.md-header__button[for="__search"]:focus-visible)
+    :is(.md-search__inner, .md-search__overlay) {
+    transition: none;
+  }
+}

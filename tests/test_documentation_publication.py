@@ -73,6 +73,15 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
     assert build.returncode == 0, build.stderr[-4000:]
     site = repository / "site"
     homepage = (site / "index.html").read_text(encoding="utf-8")
+    for asset in ("accessibility.css", "accessibility.js"):
+        asset_path = Path("assets") / asset
+        assert (site / asset_path).read_bytes() == (repository / "docs" / asset_path).read_bytes()
+        for page in site.rglob("*.html"):
+            link = os.path.relpath(site / asset_path, page.parent).replace(os.sep, "/")
+            if page.name == "404.html":
+                link = f"/rigor-foundry/{asset_path.as_posix()}"
+            attribute = "href" if asset.endswith(".css") else "src"
+            assert f'{attribute}="{link}"' in page.read_text(encoding="utf-8")
     _, footer_open, after_open = homepage.partition("<footer ")
     footer, footer_close, _ = after_open.partition("</footer>")
     assert footer_open and footer_close
