@@ -9,6 +9,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
 from typing import get_args
 
 import pytest
@@ -23,6 +26,50 @@ from rigor_foundry.polyglot_capability_matrix import (
     _row_for,
     capability_matrix,
 )
+
+_GUIDE = Path(__file__).resolve().parents[1] / "docs/polyglot-capability-matrix.md"
+
+
+def test_documented_matrix_matches_implemented_capabilities() -> None:
+    """Keep the complete published technique table tied to the capability API."""
+    _, section, guide = _GUIDE.read_text(encoding="utf-8").partition("\n## Matrix\n")
+    assert section
+    table = [
+        [cell.strip() for cell in line.strip("|").split("|")]
+        for line in guide.split("\n## ", 1)[0].splitlines()
+        if line.startswith("|")
+    ]
+    assert table[0] == [
+        "Language",
+        "AST / semantic",
+        "Size (GF001)",
+        "Test ownership",
+        "Dependency graph",
+        "Structural",
+    ]
+    expected = []
+    for row in capability_matrix().rows:
+        language = "c / c++" if row.language == "c" else row.language
+        ast = "No"
+        if row.ast_semantic_controls:
+            ast = "Built in" if row.language == "python" else "Native extra"
+        flags = (
+            row.responsibility_size_controls,
+            row.ownership_controls,
+            row.dependency_graph_controls,
+            row.structural_controls,
+        )
+        expected.append([language, ast, *("Yes" if flag else "No" for flag in flags)])
+    assert table[2:] == expected
+
+
+def test_documented_programmatic_example_runs() -> None:
+    """Execute the TypeScript guide example against the public Python API."""
+    _, section, snippet = _GUIDE.read_text(encoding="utf-8").partition("\n```python\n")
+    assert section
+    source, end, _ = snippet.partition("\n```")
+    assert end
+    subprocess.run([sys.executable, "-c", source], check=True, timeout=30)
 
 
 def test_matrix_reflects_actual_scanner_techniques() -> None:

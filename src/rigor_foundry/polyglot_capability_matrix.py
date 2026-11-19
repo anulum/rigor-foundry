@@ -60,8 +60,9 @@ class LanguageCapabilityRow:
     suffixes:
         The lower-case dotted file suffixes mapped to this language.
     ast_semantic_controls:
-        Whether the scanner parses this language's source into an AST for
-        semantic controls (currently Python only).
+        Whether semantic AST controls are implemented for this language.
+        Python controls are built in. Other AST controls require the optional
+        ``native`` extra.
     responsibility_size_controls:
         Whether the responsibility-size scanner (GF001) owns the language.
     ownership_controls:

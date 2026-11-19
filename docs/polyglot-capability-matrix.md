@@ -1,18 +1,17 @@
 # Polyglot capability matrix
 
-RigorFoundry is not a Python-only tool, and it does not claim uniform semantic
-depth across languages. It scans thirteen languages at deliberately different
-depths. This matrix states, per language, which analysis techniques the scanner
-actually applies, so an adopter can see exactly what a green scan does and does
-not establish. It is derived from the live language-capability registry, so it
-cannot drift from the scanner's behaviour.
+RigorFoundry recognises thirteen language families. The matrix shows the
+analysis techniques implemented for each one. The test suite checks every row
+against the public language-capability API.
 
 ## Three technique classes
 
 - **AST / semantic controls** — the scanner parses the language's source into an
   abstract syntax tree and reasons over it. This backs the test-authenticity
   rules (TA001–TA011) and the Python import-graph architecture rules
-  (AR001–AR004, AR006). It is currently **Python only**.
+  (AR001–AR004, AR006) in the base installation. The `native` extra adds
+  targeted tree-sitter rules for C/C++, Go, JavaScript, Julia, Rust, shell,
+  and TypeScript.
 - **Structural / textual heuristics** — responsibility-size ownership (GF001),
   missing-test-owner ownership (AR005 for Python, AR008 for the polyglot
   suffixes), and relative dependency-graph resolution. These apply across the
@@ -24,52 +23,45 @@ cannot drift from the scanner's behaviour.
 
 ## Matrix
 
-| Language | AST / semantic | Size (GF001) | Ownership | Dependency graph | Structural |
+| Language | AST / semantic | Size (GF001) | Test ownership | Dependency graph | Structural |
 | --- | :---: | :---: | :---: | :---: | :---: |
-| python | ✅ | ✅ | ✅ | ✅ | ✅ |
-| c / c++ | ✅† | ✅ | ✅ | ✅ | ✅ |
-| javascript | ✅† | ✅ | ✅ | ✅ | ✅ |
-| typescript | ✅† | ✅ | ✅ | ✅ | ✅ |
-| rust | ✅† | ✅ | ✅ | ✅ | ✅ |
-| julia | ✅† | ✅ | ✅ | ✅ | ✅ |
-| go | ✅† | ✅ | ✅ | — | ✅ |
-| lean | — | ✅ | ✅ | — | ✅ |
-| mojo | — | ✅ | ✅ | — | ✅ |
-| systemverilog | — | ✅ | ✅ | — | ✅ |
-| verilog | — | ✅ | ✅ | — | ✅ |
-| shell | ✅† | ✅ | — | — | ✅ |
-| yaml | — | — | — | — | — |
+| c / c++ | Native extra | Yes | Yes | Yes | Yes |
+| go | Native extra | Yes | Yes | No | Yes |
+| javascript | Native extra | Yes | Yes | Yes | Yes |
+| julia | Native extra | Yes | Yes | Yes | Yes |
+| lean | No | Yes | Yes | No | Yes |
+| mojo | No | Yes | Yes | No | Yes |
+| python | Built in | Yes | Yes | Yes | Yes |
+| rust | Native extra | Yes | Yes | Yes | Yes |
+| shell | Native extra | Yes | No | No | Yes |
+| systemverilog | No | Yes | Yes | No | Yes |
+| typescript | Native extra | Yes | Yes | Yes | Yes |
+| verilog | No | Yes | Yes | No | Yes |
+| yaml | No | No | No | No | No |
 
-`✅` marks an applied technique; `—` marks one the scanner does not apply to that
-language today. `†` marks the native AST/semantic analysis for JavaScript,
-TypeScript, Go, Rust, C/C++, Julia, and Shell, which is implemented through
-tree-sitter parsers but requires the optional `native` extra
-(`pip install rigor-foundry[native]`);
-without the extra a deployment degrades to the structural controls for those
-languages. YAML is scope-scannable data only — it participates in the
-tracked-content scope rule but carries no size, ownership, or dependency control.
+Install the optional parsers with `pip install 'rigor-foundry[native]'`.
+The base installation applies the listed structural controls to those
+languages. YAML participates in tracked-content scope checks.
 Go, Lean, Mojo, and the hardware-description languages are owned for size and
 ownership but have no native dependency-family parser yet.
 
 ## Reading a scan honestly
 
-A green scan means the applied techniques found no candidate — not that the
-language was analysed as deeply as Python. JavaScript, TypeScript, Go, Rust,
-C/C++, Julia, and Shell now have a native AST pass (via the `native` extra); the
-remaining languages (Lean, Mojo, the hardware-description languages, and YAML) run
-only their structural or scope controls, so semantic defects that only an AST pass
-would surface are out of scope for them, guided by adopter evidence.
+A green scan covers the techniques available in that run. The matrix describes
+implemented controls for the language family. For a particular run, the
+installed parsers and the applicable rules determine which controls can report
+findings.
 
 ## Programmatic access
 
 ```python
 from rigor_foundry.polyglot_capability_matrix import capability_matrix
 
-matrix = capability_matrix()
-row = matrix.row("typescript")
-row.ast_semantic_controls        # False — no AST pass yet
-row.dependency_graph_controls    # True  — relative imports are resolved
+row = capability_matrix().row("typescript")
+assert row.ast_semantic_controls
+assert row.dependency_graph_controls
 ```
 
+For TypeScript, the AST capability is available through the `native` extra.
 The matrix is content-addressed (`matrix_digest`) and reachable via submodule
 import (`rigor_foundry.polyglot_capability_matrix`).
