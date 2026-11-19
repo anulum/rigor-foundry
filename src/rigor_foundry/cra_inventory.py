@@ -9,10 +9,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, cast
 
 from .audit_primitives import canonical_digest, require_exact_fields
+from .cra_oci_inventory import OCI_SBOM_FORMAT, OciImageBinding
 from .cra_protocol import CRA_SCHEMA_VERSION, JsonObject, json_text, require_cra_timestamp
 from .git_inventory import GitInventory
 from .model_primitives import (
@@ -23,9 +25,9 @@ from .model_primitives import (
 )
 from .models import require_mapping, require_string
 
-SbomFormat = Literal["cyclonedx-1.5", "cyclonedx-1.6", "spdx-2.3"]
+SbomFormat = Literal["cyclonedx-1.5", "cyclonedx-1.6", "spdx-2.3", "spdx-2.3-oci"]
 
-_FORMATS = frozenset({"cyclonedx-1.5", "cyclonedx-1.6", "spdx-2.3"})
+SBOM_FORMATS = ("cyclonedx-1.5", "cyclonedx-1.6", "spdx-2.3", OCI_SBOM_FORMAT)
 _SOURCE_TOOL_FIELDS = frozenset({"name", "version", "evidence_ref"})
 _COMPONENT_FIELDS = frozenset({"name", "version", "purl"})
 _BINDING_FIELDS = frozenset({"head", "tree_oid", "tracked_content_sha256", "object_format"})
@@ -62,7 +64,7 @@ _DRIFT_FIELDS = frozenset(
 def _format(value: object) -> SbomFormat:
     """Return one explicitly supported imported SBOM format."""
     result = require_string(value, "sbom_format")
-    if result not in _FORMATS:
+    if result not in SBOM_FORMATS:
         raise ValueError("sbom_format is unsupported")
     return cast(SbomFormat, result)
 
@@ -101,6 +103,13 @@ class InventoryComponent:
             version=require_string(data.get("version"), "component.version"),
             purl=None if raw_purl is None else require_string(raw_purl, "component.purl"),
         )
+
+
+def ordered_inventory_components(
+    components: Iterable[InventoryComponent],
+) -> tuple[InventoryComponent, ...]:
+    """Return a stable order for exact identities, including explicit null PURLs."""
+    return tuple(sorted(components, key=lambda item: (item.name, item.version, item.purl or "")))
 
 
 @dataclass(frozen=True)
@@ -204,6 +213,7 @@ class ComponentInventory:
     covers_top_level_only: bool
     tree_binding: RepositoryBinding
     inventory_digest: str
+    oci_image: OciImageBinding | None = None
 
     @classmethod
     def build(
@@ -217,6 +227,7 @@ class ComponentInventory:
         top_level_components: tuple[InventoryComponent, ...],
         covers_top_level_only: bool,
         tree_binding: RepositoryBinding,
+        oci_image: OciImageBinding | None = None,
     ) -> ComponentInventory:
         """Build a sorted, digest-bound imported inventory."""
         product_key = require_identifier(product_key, "product_key")
@@ -226,13 +237,24 @@ class ComponentInventory:
         captured_at = require_cra_timestamp(captured_at, "captured_at")
         if not isinstance(covers_top_level_only, bool):
             raise ValueError("covers_top_level_only must be boolean")
-        components = tuple(
-            sorted(InventoryComponent.from_dict(item.to_dict()) for item in top_level_components)
+        components = ordered_inventory_components(
+            InventoryComponent.from_dict(item.to_dict()) for item in top_level_components
         )
         if not components:
             raise ValueError("top_level_components must contain at least one component")
         if len(components) != len(set(components)):
             raise ValueError("top_level_components must be unique")
+        if (oci_image is not None) != (sbom_format == OCI_SBOM_FORMAT):
+            raise ValueError("OCI image binding is required only for the OCI SPDX profile")
+        if oci_image is not None:
+            if not covers_top_level_only:
+                raise ValueError("OCI SPDX inventory must declare top-level-only coverage")
+            oci_image = OciImageBinding.from_dict(oci_image.to_dict())
+            null_purl = {(item.name, item.version) for item in components if item.purl is None}
+            if any(
+                (item.name, item.version) not in null_purl for item in oci_image.retained_cpe23
+            ):
+                raise ValueError("OCI CPE evidence must identify a projected null-PURL component")
         tree_binding = RepositoryBinding.from_dict(tree_binding.to_dict())
         body: JsonObject = {
             "schema_version": CRA_SCHEMA_VERSION,
@@ -245,6 +267,8 @@ class ComponentInventory:
             "covers_top_level_only": covers_top_level_only,
             "tree_binding": tree_binding.to_dict(),
         }
+        if oci_image is not None:
+            body["oci_image"] = oci_image.to_dict()
         return cls(
             product_key=product_key,
             sbom_format=sbom_format,
@@ -255,11 +279,12 @@ class ComponentInventory:
             covers_top_level_only=covers_top_level_only,
             tree_binding=tree_binding,
             inventory_digest=canonical_digest(body),
+            oci_image=oci_image,
         )
 
     def to_dict(self) -> JsonObject:
         """Serialise the imported inventory."""
-        return {
+        body: JsonObject = {
             "schema_version": CRA_SCHEMA_VERSION,
             "product_key": self.product_key,
             "sbom_format": self.sbom_format,
@@ -271,6 +296,9 @@ class ComponentInventory:
             "tree_binding": self.tree_binding.to_dict(),
             "inventory_digest": self.inventory_digest,
         }
+        if self.oci_image is not None:
+            body["oci_image"] = self.oci_image.to_dict()
+        return body
 
     def to_json(self) -> str:
         """Serialise deterministic human-readable JSON."""
@@ -280,7 +308,9 @@ class ComponentInventory:
     def from_dict(cls, value: object) -> ComponentInventory:
         """Parse and integrity-check one imported inventory."""
         data = require_mapping(value, "component_inventory")
-        require_exact_fields(data, _INVENTORY_FIELDS, "component_inventory")
+        oci = data.get("sbom_format") == OCI_SBOM_FORMAT
+        fields = _INVENTORY_FIELDS | {"oci_image"} if oci else _INVENTORY_FIELDS
+        require_exact_fields(data, fields, "component_inventory")
         if data.get("schema_version") != CRA_SCHEMA_VERSION:
             raise ValueError("component_inventory schema_version is unsupported")
         raw_components = data.get("top_level_components")
@@ -298,6 +328,7 @@ class ComponentInventory:
                 data.get("covers_top_level_only"), "covers_top_level_only"
             ),
             tree_binding=RepositoryBinding.from_dict(data.get("tree_binding")),
+            oci_image=OciImageBinding.from_dict(data.get("oci_image")) if oci else None,
         )
         if components != expected.top_level_components:
             raise ValueError("top_level_components must use canonical sort order")

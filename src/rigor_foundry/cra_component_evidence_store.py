@@ -18,7 +18,11 @@ from typing import Protocol, TypeVar
 
 from .adapters import AdapterResult
 from .audit_primitives import canonical_digest
-from .cra_inventory import ComponentInventory, InventoryDriftEvidence
+from .cra_inventory import (
+    ComponentInventory,
+    InventoryDriftEvidence,
+    ordered_inventory_components,
+)
 from .cra_osv import (
     MAX_ADAPTER_RESULT_BYTES,
     MAX_OSV_OUTPUT_BYTES,
@@ -26,7 +30,7 @@ from .cra_osv import (
     OsvAwarenessEvidence,
 )
 from .cra_protocol import json_text
-from .cra_sbom import MAX_SBOM_BYTES, parse_sbom, read_import_file
+from .cra_sbom import MAX_SBOM_BYTES, parse_sbom_source, read_import_file
 from .cra_store import (
     CraRepository,
     _mkdirs,
@@ -101,9 +105,11 @@ class CraComponentEvidenceStore:
             encoded = sbom_text.encode("utf-8")
             if hashlib.sha256(encoded).hexdigest() != inventory.sbom_sha256:
                 raise ValueError("SBOM bytes do not match component inventory")
-            components = parse_sbom(encoded, inventory.sbom_format)
-            if tuple(sorted(components)) != inventory.top_level_components:
+            components, oci_image = parse_sbom_source(encoded, inventory.sbom_format)
+            if ordered_inventory_components(components) != inventory.top_level_components:
                 raise ValueError("SBOM components do not match component inventory")
+            if oci_image != inventory.oci_image:
+                raise ValueError("SBOM OCI image binding does not match component inventory")
             existing = self.inventories(inventory.product_key)
             if existing:
                 if inventory in existing:
@@ -148,11 +154,11 @@ class CraComponentEvidenceStore:
             )
             if observed_digest != record.sbom_sha256:
                 raise ValueError("stored SBOM digest does not match its bytes")
-            if (
-                tuple(sorted(parse_sbom(encoded, record.sbom_format)))
-                != record.top_level_components
-            ):
+            components, oci_image = parse_sbom_source(encoded, record.sbom_format)
+            if ordered_inventory_components(components) != record.top_level_components:
                 raise ValueError("stored SBOM components do not match inventory")
+            if oci_image != record.oci_image:
+                raise ValueError("stored SBOM OCI image binding does not match inventory")
         return ordered
 
     def current_inventory(self, product_key: str) -> ComponentInventory:

@@ -134,7 +134,8 @@ an event.
 ## Import component inventory evidence
 
 RIGOR-FOUNDRY imports existing JSON SBOMs; it never generates or enriches one.
-Supported bounded profiles are CycloneDX 1.5, CycloneDX 1.6, and SPDX 2.3.
+Supported bounded profiles are CycloneDX 1.5, CycloneDX 1.6, SPDX 2.3, and
+an explicit OCI SPDX 2.3 statement profile.
 Validation covers the exact document envelope and component/package fields
 consumed by the inventory. It does not certify conformance of unconsumed
 optional fields or infer that the SBOM is complete.
@@ -169,6 +170,44 @@ deterministically. The record binds the exact SBOM SHA-256, operator-declared
 source tool and evidence reference, explicit `top-level-only` or
 `declared-complete` coverage, plus the repository HEAD, tree object, Git object
 format, and tracked-worktree content SHA-256 at capture time.
+
+### Import an OCI image statement
+
+Use `--format spdx-2.3-oci` to import the original BuildKit in-toto Statement
+v1 with an SPDX 2.3 predicate. Supply the independently verified lowercase
+SHA-256 digests of the entire statement file and the runnable OCI manifest,
+without the `sha256:` prefix. For a multi-platform image, use the digest of
+the selected platform manifest. The statement must name exactly one subject
+with that digest.
+Durable CRA writes require a POSIX host with no-follow directory locking.
+
+```bash
+rigor sbom-import \
+  --root . \
+  --product-key widget \
+  --file evidence/image-spdx.statement.json \
+  --format spdx-2.3-oci \
+  --statement-sha256 "$statement_sha256" \
+  --image-manifest-sha256 "$manifest_sha256" \
+  --source-tool buildkit@0.31.2 \
+  --source-evidence image-review:release-42 \
+  --coverage top-level-only \
+  --captured-at 2026-09-11T08:30:00Z
+```
+
+The SPDX document must describe exactly one synthetic versionless FILE
+directory root. The inventory records versioned package identities from its
+direct `CONTAINS` relationships and ignores transitive containment. Exact
+name, version and PURL triples collapse. An absent PURL is recorded as
+`null`. CPE 2.3 locators for those components are kept verbatim under
+`oci_image.retained_cpe23`.
+
+The profile keeps the original statement bytes and SHA-256. The record also
+includes the manifest digest and the `direct-root-contains` projection,
+which are rechecked from the stored statement. The digest checks establish
+input identity. Signatures, producer trust, advisory matching and reporting
+remain separate operations. The ordinary `spdx-2.3` profile continues to
+require a standalone document with versioned top-level packages.
 
 `declared-complete` is only an operator declaration. RIGOR-FOUNDRY does not
 verify dependency-graph completeness.

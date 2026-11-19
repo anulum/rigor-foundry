@@ -131,7 +131,10 @@ for the complete workflow and failure boundary.
 `cra-bootstrap`, `vuln-register`, `vuln-timeline`, `cra-draft`, `cra-receipt`,
 `cra-skip`, `user-notice`, and `cra-status` implement the prepare-only CRA
 reporting workflow. `sbom-import` and `sbom-status` add imported-inventory and exact
-Git-drift evidence. `vuln-register` accepts a complete content-bound offline
+Git-drift evidence. The explicit OCI SPDX profile binds an original in-toto
+statement to the selected image manifest and reads its directly contained
+packages. See [OCI image statements](cra-reporting.md#import-an-oci-image-statement).
+`vuln-register` accepts a complete content-bound offline
 OSV adapter bundle as awareness evidence, but still requires separate explicit
 active-exploitation evidence. The commands retain append-only evidence below
 `.rigor/cra/` and contain no network client. A receipt binds operator-supplied

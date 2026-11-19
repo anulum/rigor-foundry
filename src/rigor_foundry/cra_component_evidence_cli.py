@@ -15,16 +15,19 @@ from typing import cast
 
 from .cra_component_evidence_store import CraComponentEvidenceStore
 from .cra_inventory import (
+    SBOM_FORMATS,
     ComponentInventory,
     InventoryDriftEvidence,
     RepositoryBinding,
     SbomFormat,
     SourceToolEvidence,
 )
+from .cra_oci_inventory import OCI_SBOM_FORMAT
 from .cra_osv import import_osv_awareness
 from .cra_protocol import json_text
-from .cra_sbom import MAX_SBOM_BYTES, parse_sbom, read_import_file
+from .cra_sbom import MAX_SBOM_BYTES, parse_sbom_source, read_import_file
 from .git_inventory import load_git_inventory
+from .model_primitives import require_digest
 
 
 def _source_tool(value: str, evidence_ref: str) -> SourceToolEvidence:
@@ -45,7 +48,17 @@ def _sbom_import(args: argparse.Namespace) -> int:
         label="SBOM",
     )
     sbom_format = cast(SbomFormat, args.format)
-    components = parse_sbom(payload, sbom_format)
+    expected_statement = args.statement_sha256
+    expected_manifest = args.image_manifest_sha256
+    if sbom_format == OCI_SBOM_FORMAT:
+        if digest != require_digest(expected_statement, "--statement-sha256"):
+            raise ValueError("OCI SPDX statement SHA-256 does not match its bytes")
+        expected_manifest = require_digest(expected_manifest, "--image-manifest-sha256")
+    elif expected_statement is not None or expected_manifest is not None:
+        raise ValueError("OCI SHA-256 arguments require --format spdx-2.3-oci")
+    components, oci_image = parse_sbom_source(payload, sbom_format)
+    if oci_image is not None and oci_image.manifest_sha256 != expected_manifest:
+        raise ValueError("OCI SPDX image subject does not match the expected manifest SHA-256")
     inventory = ComponentInventory.build(
         product_key=args.product_key,
         sbom_format=sbom_format,
@@ -55,6 +68,7 @@ def _sbom_import(args: argparse.Namespace) -> int:
         top_level_components=components,
         covers_top_level_only=args.coverage == "top-level-only",
         tree_binding=RepositoryBinding.from_inventory(load_git_inventory(args.root)),
+        oci_image=oci_image,
     )
     path = store.append_inventory(inventory, payload.decode("utf-8"))
     print(f"stored imported component inventory {inventory.inventory_digest} at {path}")
@@ -133,8 +147,12 @@ def add_component_evidence_commands(
     sbom_import.add_argument("--file", type=Path, required=True)
     sbom_import.add_argument(
         "--format",
-        choices=("cyclonedx-1.5", "cyclonedx-1.6", "spdx-2.3"),
+        choices=SBOM_FORMATS,
         required=True,
+    )
+    sbom_import.add_argument("--statement-sha256", help="Expected exact OCI statement SHA-256.")
+    sbom_import.add_argument(
+        "--image-manifest-sha256", help="Expected OCI image manifest SHA-256."
     )
     sbom_import.add_argument("--source-tool", required=True)
     sbom_import.add_argument("--source-evidence", required=True)
