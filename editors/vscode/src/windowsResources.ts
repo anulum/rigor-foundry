@@ -555,6 +555,7 @@ export class WindowsDirectory {
   public discardChild(name: string, expected: NativeFileIdentity): void {
     this.identity();
     const handle = openRelative(this.handle, name, true, false, 0x1100a1);
+    const failures: unknown[] = [];
     try {
       const current = identity(handle, true);
       if (current.volume !== expected.volume || current.fileId !== expected.fileId)
@@ -563,9 +564,18 @@ export class WindowsDirectory {
       information.writeInt32LE(1);
       if (abi.setFileInformation(handle, 4, information, information.length) === 0)
         throw new WindowsResourceError("owned directory discard");
-    } finally {
-      abi.closeHandle(handle);
+    } catch (error: unknown) {
+      failures.push(error);
     }
+    try {
+      if (abi.closeHandle(handle) === 0)
+        throw new WindowsResourceError("owned directory discard handle close");
+    } catch (error: unknown) {
+      failures.push(error);
+    }
+    if (failures.length === 1) throw failures[0];
+    if (failures.length > 1)
+      throw new AggregateError(failures, "native Windows directory discard and close failed");
   }
   /** Release every retained directory handle in reverse acquisition order. */
   public close(): void {

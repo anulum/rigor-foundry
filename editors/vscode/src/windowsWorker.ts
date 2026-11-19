@@ -15,6 +15,7 @@
 import { readSync } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { inspect } from "node:util";
 import { WindowsDirectory, bytesDigest, sameIdentity } from "./windowsResources.js";
 import type { WindowsFile, NativeFileIdentity } from "./windowsResources.js";
 import { runWindowsCommand, WindowsCommandFailure } from "./windowsProcess.js";
@@ -24,7 +25,6 @@ import {
   integerField,
   identityRecord,
   maximumHeaderBytes,
-  parseFrame,
   parseIdentity,
   record,
   textField,
@@ -58,9 +58,7 @@ function inputFrame(): WorkerFrame {
   const encoded = inputBytes(size);
   const header = record(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(encoded)));
   const payload = inputBytes(integerField(header["payloadBytes"], 134217728));
-  const parsed = parseFrame(Buffer.concat([length, encoded, payload]));
-  if (parsed === undefined) throw new Error("native worker input frame is incomplete");
-  return parsed.value;
+  return { header, payload };
 }
 
 /**
@@ -121,6 +119,24 @@ function readSource(header: Record<string, unknown>): Buffer {
 }
 
 /**
+ * Release every acquired handle, preserving independent failures in release order.
+ * @param resources - Native resources ordered from child to parent.
+ * @param failures - Prior operation failures followed by any release failures.
+ */
+function closeWorkerResources(
+  resources: readonly (WindowsFile | WindowsDirectory | undefined)[],
+  failures: unknown[],
+): void {
+  for (const resource of resources) {
+    try {
+      resource?.close();
+    } catch (error: unknown) {
+      failures.push(error);
+    }
+  }
+}
+
+/**
  * Prepare exact private files, transfer independent guards, then run the canonical CLI.
  * @param request - Finite byte pair and execution fields received from the controller.
  * @returns Completion after the actual inner CLI tree settles and guards release.
@@ -139,14 +155,12 @@ async function validatePair(request: WorkerFrame): Promise<void> {
     sameObject(parent.identity(), parseIdentity(header["parentIdentity"]));
     const name = `rigor-validation-${randomUUID()}`;
     directory = parent.child(name, true);
-    const contents = [
-      request.payload.subarray(0, reportLength),
-      request.payload.subarray(reportLength),
-    ];
+    const inputs = [
+      ["report.json", request.payload.subarray(0, reportLength)],
+      ["reviews.json", request.payload.subarray(reportLength)],
+    ] as const;
     const receipts: Record<string, unknown>[] = [];
-    for (const [index, leaf] of ["report.json", "reviews.json"].entries()) {
-      const bytes = contents[index];
-      if (bytes === undefined) throw new Error("native validation payload is absent");
+    for (const [leaf, bytes] of inputs) {
       const writer = directory.file(leaf, true);
       try {
         writer.write(bytes);
@@ -224,23 +238,7 @@ async function validatePair(request: WorkerFrame): Promise<void> {
   } catch (error: unknown) {
     failures.push(error);
   } finally {
-    for (const guard of guards.reverse()) {
-      try {
-        guard.close();
-      } catch (error: unknown) {
-        failures.push(error);
-      }
-    }
-    try {
-      directory?.close();
-    } catch (error: unknown) {
-      failures.push(error);
-    }
-    try {
-      parent.close();
-    } catch (error: unknown) {
-      failures.push(error);
-    }
+    closeWorkerResources([...guards.reverse(), directory, parent], failures);
   }
   if (failures.length > 0)
     throw new AggregateError(failures, "native worker operation or guard release failed");
@@ -252,43 +250,46 @@ async function validatePair(request: WorkerFrame): Promise<void> {
  */
 function cleanupPair(header: Record<string, unknown>): void {
   const parent = WindowsDirectory.open(textField(header["temporaryParent"]));
-  let directory: WindowsDirectory | undefined;
+  const failures: unknown[] = [];
   try {
     sameObject(parent.identity(), parseIdentity(header["parentIdentity"]));
     const name = textField(header["name"]);
     if (!/^rigor-validation-[0-9a-f-]{36}$/.test(name))
       throw new Error("owned private directory name is invalid");
     const expectedDirectory = parseIdentity(header["directory"]);
-    directory = parent.child(name);
-    sameObject(directory.identity(), expectedDirectory);
-    const files = header["files"];
-    if (!Array.isArray(files) || files.length !== 2)
-      throw new Error("owned validation pair receipt is incomplete");
-    for (const [index, leaf] of ["report.json", "reviews.json"].entries()) {
-      const receipt = record(files[index]);
-      if (receipt["name"] !== leaf) throw new Error("owned validation file name differs");
-      const file = directory.file(leaf, false, true);
-      try {
+    const directory = parent.child(name);
+    const handles: WindowsFile[] = [];
+    try {
+      sameObject(directory.identity(), expectedDirectory);
+      const files = header["files"];
+      if (!Array.isArray(files) || files.length !== 2)
+        throw new Error("owned validation pair receipt is incomplete");
+      for (const [index, leaf] of ["report.json", "reviews.json"].entries()) {
+        const receipt = record(files[index]);
+        if (receipt["name"] !== leaf) throw new Error("owned validation file name differs");
+        const file = directory.file(leaf, false, true);
+        handles.push(file);
         if (
           !sameIdentity(file.identity(), parseIdentity(receipt["identity"])) ||
           bytesDigest(file.read(67108864)) !== receipt["sha256"]
         )
           throw new Error("owned validation input changed before cleanup");
-        file.discard();
-      } finally {
-        file.close();
       }
-    }
-    directory.close();
-    directory = undefined;
-    parent.discardChild(name, expectedDirectory);
-  } finally {
-    try {
-      directory?.close();
+      for (const file of handles) file.discard();
+    } catch (error: unknown) {
+      failures.push(error);
     } finally {
-      parent.close();
+      closeWorkerResources([...handles.reverse(), directory], failures);
     }
+    if (failures.length === 0) parent.discardChild(name, expectedDirectory);
+  } catch (error: unknown) {
+    failures.push(error);
+  } finally {
+    closeWorkerResources([parent], failures);
   }
+  if (failures.length === 1) throw failures[0];
+  if (failures.length > 1)
+    throw new AggregateError(failures, "native worker cleanup or guard release failed");
 }
 
 /**
@@ -296,6 +297,10 @@ function cleanupPair(header: Record<string, unknown>): void {
  * @returns Completion only after the requested real operation and output flush.
  */
 async function main(): Promise<void> {
+  // The write callback rejects the active operation; Node then emits the same stream error.
+  process.stdout.once("error", (): void => {
+    process.exitCode = 1;
+  });
   const request = inputFrame();
   switch (request.header["kind"]) {
     case "read":
@@ -318,8 +323,12 @@ async function main(): Promise<void> {
 }
 
 void main().catch((error: unknown): void => {
-  process.stderr.write(
-    error instanceof Error ? `${error.stack ?? error.message}\n` : "native worker failed\n",
-  );
+  const diagnostic =
+    error instanceof Error
+      ? inspect(error, { depth: 2, customInspect: false })
+      : "native worker failed";
+  const bounded = Buffer.from(diagnostic, "utf8").subarray(0, 8191);
+  process.stderr.write(bounded);
+  process.stderr.write("\n");
   process.exitCode = 1;
 });
