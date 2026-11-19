@@ -22,7 +22,7 @@ from tools.ci_workflows import ci_jobs
 
 
 def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
-    """HTML, search data and static output exclude private input bytes and paths."""
+    """The public site displays its licence and excludes private source records."""
     repository = tmp_path / "repository"
     repository.mkdir()
     tracked = subprocess.run(
@@ -72,7 +72,15 @@ def test_documentation_build_preserves_private_records(tmp_path: Path) -> None:
     )
     assert build.returncode == 0, build.stderr[-4000:]
     site = repository / "site"
-    assert (site / "index.html").is_file()
+    homepage = (site / "index.html").read_text(encoding="utf-8")
+    _, footer_open, after_open = homepage.partition("<footer ")
+    footer, footer_close, _ = after_open.partition("</footer>")
+    assert footer_open and footer_close
+    assert "© 1996–2026 Miroslav Šotek" in footer
+    assert (
+        '<a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>'
+        in footer
+    )
     search = json.loads((site / "search/search_index.json").read_text())
     assert search["docs"]
     assert any("RigorFoundry" in item["text"] for item in search["docs"])

@@ -10,6 +10,9 @@ site_name: RigorFoundry
 site_description: Evidence-bound codebase transformation
 site_url: https://anulum.github.io/rigor-foundry/
 repo_url: https://github.com/anulum/rigor-foundry
+copyright: >-
+  © 1996–2026 Miroslav Šotek ·
+  <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
 exclude_docs: |
   internal/
   internal/**
