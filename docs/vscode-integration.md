@@ -7,16 +7,45 @@ versioned RigorFoundry CLI and review protocol.
 
 ## Install a built VSIX
 
-The protected CI workflow builds `rigor-foundry-vscode.vsix` from the locked
-Node dependency graph. Install that artifact from a trusted build:
+Use the VSIX for your platform from a verified build. The protected CI workflow
+produces both x64 packages in the `rigor-foundry-vscode-vsix` artifact after
+editor acceptance. The [Python 1.0.0 release](https://github.com/anulum/rigor-foundry/releases/tag/v1.0.0)
+contains Python distributions. Obtain the VSIX from a qualified CI run or
+build it from a verified source revision.
+
+On Linux x64:
 
 ```bash
 code --install-extension rigor-foundry-vscode.vsix
 ```
 
+On Windows x64:
+
+```powershell
+code --install-extension rigor-foundry-vscode-win32-x64.vsix
+```
+
 The extension supports local, trusted workspace folders on VS Code 1.125 or
 newer. Virtual workspaces and Restricted Mode are intentionally unsupported
 because an explicit scan launches a local process and reads local Git evidence.
+
+## Upgrade and roll back
+
+Keep the working VSIX, its SHA-256, the matching CLI wheel and its runtime
+dependency lock before changing versions. Keep the tracked policy and the
+original report and review files in the adopter workspace.
+
+Close the VS Code instance that uses the extension, install the verified
+replacement VSIX and start the same workspace again. Add `--force` to the
+install command when replacing a VSIX with the same extension version. Set
+`rigorFoundry.executable` to the CLI from the matching installation.
+
+Load the retained report and review ledger to inspect them. Canonical
+validation requires the scanner and rule pack that produced the report.
+Use a fresh report path for a scan with the new CLI. To roll back, reinstall
+the retained VSIX and matching CLI and validate the preserved pair.
+On native Windows, recover with the last working Windows-capable VSIX and
+CLI. See the [CLI installation and recovery notes](getting-started.md#install-and-identify-the-tool).
 
 ## Commands
 
