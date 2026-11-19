@@ -34,6 +34,25 @@ def test_private_memory_has_portable_repository_exclusions() -> None:
     assert "agentic_project_memory" in (ROOT / ".dockerignore").read_text().splitlines()
 
 
+def test_tagged_release_inventories_the_locked_installed_wheel() -> None:
+    """The release workflow inventories a real installation and binds its four inputs."""
+    job = read_workflow(ROOT / ".github/workflows/release.yml")["jobs"]["release"]
+    steps = {step["name"]: step for step in job["steps"] if "run" in step}
+    inventory = steps["Inventory installed release runtime"]["run"]
+    assert 'python -m venv --without-pip "$runtime"' in inventory
+    assert "--require-hashes --only-binary=:all: -r requirements/runtime.txt" in inventory
+    assert "install --no-index --no-deps dist/*.whl" in inventory
+    assert 'python -m pip --python "$runtime" check' in inventory
+    assert 'cyclonedx-py environment "$runtime/bin/python"' in inventory
+    assert "--sv 1.6 --output-reproducible" in inventory
+    assert "zipfile" not in inventory
+    manifest = steps["Bind release files to source and checksums"]
+    assert manifest["working-directory"] == "dist"
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in manifest["run"]
+    assert "sha256sum -- *.whl *.tar.gz rigor-foundry.cdx.json SOURCE_COMMIT" in manifest["run"]
+    assert "sha256sum --strict --check SHA256SUMS" in manifest["run"]
+
+
 @pytest.mark.parametrize("distribution", ["wheel", "sdist"])
 def test_distribution_build_excludes_real_private_memory(
     tmp_path: Path, distribution: str

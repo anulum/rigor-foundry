@@ -219,6 +219,18 @@ its platform-specific optional bindings. It describes the lock, which can
 contain bindings for multiple targets, while installed VSIX and container
 artifacts require their own inventory evidence.
 
+## Tagged release assets
+
+The release assembly workflow inventories the wheel installed with the base
+runtime lock in a fresh Python 3.12.13 Linux x64 environment. Its
+`rigor-foundry.cdx.json` uses CycloneDX 1.6 and describes that installation.
+The pre-release workflow supplies the separate optional provenance inventory.
+
+Download the wheel, source distribution, SBOM, `SOURCE_COMMIT` and
+`SHA256SUMS` into the same directory. Run `sha256sum --strict --check SHA256SUMS`
+there and compare `SOURCE_COMMIT` with the expected release commit. Use the
+published signatures and provenance to authenticate the release.
+
 ## Reproducible container build
 
 For the Linux x64 image comparison, use the verified Buildx installer and the
