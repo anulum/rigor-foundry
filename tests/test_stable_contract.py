@@ -21,6 +21,7 @@ import pytest
 from rigor_foundry.api_stability import STABLE_PUBLIC_API
 from rigor_foundry.cli import _parser, main
 from rigor_foundry.stable_contract import (
+    STABLE_CLI_COMMANDS,
     STABLE_CONTRACT_SCHEMA_VERSION,
     STABLE_CONTRACT_TARGET_RELEASE,
     STABLE_SCHEMA_VERSIONS,
@@ -509,3 +510,22 @@ def test_provisional_commands_are_checked_outside_the_frozen_manifest() -> None:
     del actual["scan-provenance"]
     missing = stable_contract_errors(actual, _observed_schemas(), STABLE_PUBLIC_API)
     assert "provisional CLI commands are missing: scan-provenance" in missing
+
+
+def test_oci_import_options_are_checked_outside_the_frozen_manifest() -> None:
+    """Add only the two declared OCI options to the live stable command."""
+    actual = _observed_commands()
+    observed = actual["sbom-import"]
+    frozen = STABLE_CLI_COMMANDS["sbom-import"]
+    oci_options = {"--image-manifest-sha256", "--statement-sha256"}
+    assert set(observed.options) - set(frozen.options) == oci_options
+    for option in oci_options:
+        assert option not in json.dumps(stable_contract_manifest())
+    for options in (
+        tuple(option for option in observed.options if option != "--statement-sha256"),
+        tuple(option for option in observed.options if option != "--file"),
+        (*observed.options, "--unknown"),
+    ):
+        actual["sbom-import"] = CliCommandContract(options, observed.positionals)
+        errors = stable_contract_errors(actual, _observed_schemas(), STABLE_PUBLIC_API)
+        assert errors == ("sbom-import: stable CLI options changed",)

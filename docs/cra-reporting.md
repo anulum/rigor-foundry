@@ -173,6 +173,8 @@ format, and tracked-worktree content SHA-256 at capture time.
 
 ### Import an OCI image statement
 
+The OCI SPDX profile and its two digest options are provisional.
+
 Use `--format spdx-2.3-oci` to import the original BuildKit in-toto Statement
 v1 with an SPDX 2.3 predicate. Supply the independently verified lowercase
 SHA-256 digests of the entire statement file and the runnable OCI manifest,

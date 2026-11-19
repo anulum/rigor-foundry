@@ -5,17 +5,23 @@ letting RigorFoundry guess their locations or overwrite existing project data.
 
 ## Install and identify the tool
 
-Use an exact published version or a reviewed source checkout, then record the
-version that will create the policy:
+On a POSIX runtime, install the published `1.0.0` wheel:
 
 ```bash
-python -m pip install "rigor-foundry==0.1.1"
+python -m pip install "rigor-foundry==1.0.0"
 rigor --version
 ```
 
-The expected output is `rigor 0.1.1`. A policy, report, or campaign remains
-bound to its own schema and scanner identities; the package version is not a
-substitute for those content identities.
+The expected output is `rigor 1.0.0`. The published wheel imports the POSIX
+`fcntl` module during startup and fails on native Windows. On native Windows,
+install a wheel built from a verified source revision with Windows support.
+Keep the wheel's SHA-256 and its runtime dependency lock together so you can
+reinstall the working build. A source-built wheel can also report `rigor 1.0.0`.
+
+Before replacing an installation, retain the exact working wheel and its
+dependency lock, along with the tracked policy and its reports. Restore the
+wheel and its matching lock together when rolling back. On native Windows,
+restore the Windows-capable wheel.
 
 ## Declare private paths first
 
@@ -100,6 +106,15 @@ native evidence, and unresolved domain decisions must remain visible rather
 than being converted into a clean result. Use `review-template`,
 `validate-review`, and an independent campaign before promoting a verified
 finding into the canonical TODO.
+
+## Compare reports across an upgrade
+
+Keep the original report and write the new scan to a separate path. Use
+[`rigor report-diff`](report-diff.md) to compare the two reports. If the rule
+pack changed, pass `--declare-rule-pack-change` with a justification. Review
+validation and SARIF export require the scanner and rule pack that produced
+the report. Use the recorded working installation to reproduce those
+outputs from a historical report.
 
 ## Add a repository gate
 

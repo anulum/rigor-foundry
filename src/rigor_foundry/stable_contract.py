@@ -51,6 +51,10 @@ PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
     }
 )
 
+PROVISIONAL_CLI_OPTIONS: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {"sbom-import": ("--image-manifest-sha256", "--statement-sha256")}
+)
+
 
 STABLE_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
     {
@@ -442,7 +446,8 @@ def stable_contract_errors(
         expected = expected_commands[name]
         observed = commands[name]
         maturity = "stable" if name in STABLE_CLI_COMMANDS else "provisional"
-        if tuple(sorted(observed.options)) != expected.options:
+        expected_options = (*expected.options, *PROVISIONAL_CLI_OPTIONS.get(name, ()))
+        if tuple(sorted(observed.options)) != tuple(sorted(expected_options)):
             errors.append(f"{name}: {maturity} CLI options changed")
         if observed.positionals != expected.positionals:
             errors.append(f"{name}: {maturity} CLI positionals changed")

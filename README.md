@@ -122,6 +122,11 @@ it with:
 python -m pip install "rigor-foundry==1.0.0"
 ```
 
+The published `1.0.0` wheel requires a POSIX runtime. For native Windows, use a
+wheel built from a verified revision that includes Windows support. Retain that
+wheel and its runtime dependency lock for recovery. See the
+[installation and rollback notes](docs/getting-started.md#install-and-identify-the-tool).
+
 ## Quick start from source
 
 ```bash

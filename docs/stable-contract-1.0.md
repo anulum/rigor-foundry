@@ -30,9 +30,10 @@ success as universal compatibility:
 1. **Stable Python imports.** Eleven package-level names have exact runtime
    object, kind, module, and qualified-name checks. Other exported Python names
    remain explicitly provisional even when their serialized records are stable.
-2. **CLI spellings.** Every currently installed command, option spelling, and
-   positional name is in the stable CLI set. CI rejects a removed, renamed,
-   added-but-unclassified, or silently changed parser surface.
+2. **CLI spellings.** The manifest records the frozen commands, options and
+   positional names. CI checks the installed parser against the frozen set
+   and individually declared provisional commands and options. Unexpected
+   additions, missing spellings and renamed arguments fail the check.
 3. **Serialized protocols.** The manifest names exact schema identifiers
    and versions, including reports, reviews, policies, anchors, campaigns,
    packs, maturity, enforcement, offline verification, CRA evidence, SARIF,
@@ -47,6 +48,10 @@ success as universal compatibility:
 The manifest is authoritative for the exact command and schema inventory. The
 human documentation for each command or schema continues to define semantic
 preconditions, field meanings, authority boundaries, and failure modes.
+
+The `sbom-import` options `--statement-sha256` and `--image-manifest-sha256`
+belong to the provisional [OCI SPDX profile](cra-reporting.md#import-an-oci-image-statement).
+The original `sbom-import` spellings remain frozen.
 
 The identity-bearing semantic key-policy wire at version `2.0` is explicitly
 provisional and separately version-pinned. The frozen
