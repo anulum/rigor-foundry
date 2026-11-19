@@ -78,6 +78,8 @@ void test(
           "    native = root / 'native/koffi'",
           "    build = json.loads((native / 'provenance.json').read_text())",
           "    binding = json.loads((native / 'binding-provenance.json').read_text())",
+          "    packaged_build = json.loads(archive.read('extension/native/koffi/provenance.json'))",
+          "    assert 'buildAllocation' not in packaged_build, 'temporary allocation belongs in build diagnostics'",
           "    for relative in [*build['members'], *binding['members'], 'provenance.json', 'binding-provenance.json', 'binding-provenance.json.license']:",
           "        assert archive.read('extension/native/koffi/' + relative) == (native / relative).read_bytes()",
           "    assert 'TargetPlatform=\"win32-x64\"' in archive.read('extension.vsixmanifest').decode('utf8')",

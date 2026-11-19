@@ -200,7 +200,11 @@ from compiled file names and `/Brepro` to make PE timestamps deterministic.
 With the same compiler, linker, SDK and locked sources, compare the SHA-256 of
 `native/koffi/build/koffi/win32_x64/koffi.node` from two clean compilations in
 different directories. The compiler options are recorded in native provenance,
-which also keeps the unique build allocation for each run.
+and the producer's diagnostic output reports the unique trace directory for
+each run. Temporary directory names stay out of the packaged provenance.
+Run `npm run package:windows` in both builds with the same
+`SOURCE_DATE_EPOCH`, timezone and locale, then compare the complete VSIX
+digests.
 
 For local inspection of an existing genuine Windows payload, from the repository
 root use an artifact directory outside the editor source tree:

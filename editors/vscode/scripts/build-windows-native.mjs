@@ -225,7 +225,6 @@ await writeFile(
       architecture: process.arch,
       buildFlags,
       msvcReproducibility,
-      buildAllocation: path.basename(allocation),
       members: staged,
     },
     null,

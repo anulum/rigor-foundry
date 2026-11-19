@@ -44,7 +44,11 @@ does not establish that the host tests passed.
 Windows x64 VSIX. CI packages both targets with the checkout commit timestamp,
 UTC and the C.UTF-8 locale. For a repeatable local package, set SOURCE_DATE_EPOCH
 to the commit timestamp in seconds and use the same timezone, locale, toolchain,
-native input bytes and file permissions. The vendor loader resolves a private package export
+locked native sources and file permissions. Compare the complete Windows VSIX
+digests from two clean builds. The native build's diagnostic output gives the
+trace directory for each run. The packaged provenance uses stable build inputs
+and member digests.
+The vendor loader resolves a private package export
 to the bundled native image even when npm development dependencies are present.
 The runtime checks that resolution and its digest before loading the image.
 `npm run stage:windows-native` verifies an existing compiled image and stages
