@@ -149,17 +149,17 @@
       "guard": "descriptor-pinned executable execution is unavailable",
       "source_digest": "089c2456dbe70256f0a547d3d8231cfa8e6ea72a84e1e2e94eae2520a2ea6491",
       "owner": "runtime-security",
-      "rationale": "supported Linux hosts expose /proc/self/fd or /dev/fd for descriptor execution; real replacement tests retain inspected bytes through the public trusted-command and Git boundaries, while no supported host without both roots has been qualified; replacing Path.is_dir would simulate the platform rather than exercise it",
+      "rationale": "supported Linux hosts expose /proc/self/fd or /dev/fd for descriptor execution; on Windows, _open_parent (src/rigor_foundry/trusted_executable.py:104-110) refuses before any TrustedExecutable exists because O_NOFOLLOW and O_DIRECTORY are Unix-only and os.supports_dir_fd is empty, so execution_path is unreachable there; real replacement tests retain inspected bytes through the public trusted-command and Git boundaries; replacing Path.is_dir would simulate the platform rather than exercise it",
       "public_verification": [
         "tests/test_git_provenance.py::test_runner_pins_descriptor_across_execution_path_swap",
         "tests/test_trusted_executable.py::test_trusted_command_executes_open_descriptor_after_path_replacement"
       ],
       "revisit_triggers": [
-        "a supported runner lacks both descriptor roots",
+        "a supported runner that passes _open_parent lacks both descriptor roots",
         "descriptor execution support or its operating-system contract changes"
       ],
-      "reviewed_on": "2026-10-29",
-      "review_by": "2026-11-28"
+      "reviewed_on": "2026-11-22",
+      "review_by": "2026-12-22"
     },
     {
       "residual_id": "CR-TRUSTED-NOFOLLOW-PLATFORM",
@@ -169,7 +169,7 @@
       "guard": "component-safe executable inspection is unavailable",
       "source_digest": "52c5bd10a5a831bda46bc9624f7e63f582a83b442352c960ee7e8bdfc0a3cf94",
       "owner": "runtime-security",
-      "rationale": "supported hosts provide descriptor-relative open, O_NOFOLLOW, and O_DIRECTORY; deleting those primitives in-process is a forbidden platform simulation rather than native compatibility evidence",
+      "rationale": "Linux and macOS hosts provide descriptor-relative open, O_NOFOLLOW, and O_DIRECTORY; on Windows this refusal is reachable through native adapter preparation and is product behaviour that a Windows-native public-surface test must cover before this record's review_by date; deleting those primitives in-process is a forbidden platform simulation rather than native compatibility evidence",
       "public_verification": [
         "tests/test_trusted_executable.py::test_trusted_executable_rejects_relative_paths"
       ],
