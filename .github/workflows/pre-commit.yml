@@ -38,6 +38,7 @@ jobs:
           cache-dependency-path: |
             requirements/bootstrap.txt
             requirements/ci.txt
+            requirements/provenance.txt
       - name: Select the editor check owner
         id: editor
         shell: python
@@ -57,7 +58,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
-          .venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
+          .venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt -r requirements/provenance.txt
           .venv/bin/python -m pip install --no-build-isolation --no-deps .
       - name: Run repository hooks
         env:
