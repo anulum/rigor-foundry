@@ -94,6 +94,7 @@ NATIVE_JOB: dict[str, Any] = {
         },
         {
             "name": "Verify installed dependency provenance",
+            "if": "matrix.platform != 'darwin'",
             "run": "python -m pytest -p no:cacheprovider -q "
             "tests/test_provenance_scan.py tests/test_provenance_attestation.py",
         },

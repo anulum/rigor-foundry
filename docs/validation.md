@@ -52,6 +52,11 @@ owner to reach 100% statements and branches. Native tooling has its own whole
 source/test-file gate. Local qualification retains its actual local venue;
 hosted admission requires the matching GitHub run.
 
+Git provenance verification is not qualified on macOS: the macOS native profile
+does not run the installed dependency provenance tests. The macOS native profile
+runs the Windows native test inventory, of which only the refusal and argument
+checks run on macOS, so it qualifies no macOS behaviour.
+
 Offline CRA reporting has dedicated model, timeline, payload, storage, and CLI owners. The
 focused set covers all vulnerability/incident stage partitions, exact UTC and
 deadline boundaries, end-of-month clamping, revision-chain persistence,
