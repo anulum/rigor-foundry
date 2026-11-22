@@ -130,16 +130,16 @@
       "guard": "platform lacks component-safe no-follow file opening",
       "source_digest": "7f14ebd4062b6e817529d74a4f049e126481b4741ae20b1a18212c943244666e",
       "owner": "supply-chain-security",
-      "rationale": "the supported POSIX runtime provides O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would not represent a real supported platform and would conceal the need for native platform CI",
+      "rationale": "on Windows, GitRunner._snapshot_file and GitRunner.run route through windows_git before _open_no_follow is reached; Linux and macOS provide O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would not represent a real supported platform",
       "public_verification": [
         "tests/test_git_provenance.py::test_runner_rejects_executable_and_trust_root_symlinks"
       ],
       "revisit_triggers": [
-        "non-POSIX Git execution becomes supported",
+        "Windows Git execution stops routing through windows_git",
         "the minimum Python or operating-system contract changes"
       ],
-      "reviewed_on": "2026-10-29",
-      "review_by": "2026-11-28"
+      "reviewed_on": "2026-11-22",
+      "review_by": "2026-12-22"
     },
     {
       "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
@@ -197,8 +197,8 @@
         "a supported Python runtime permits null PIPE streams",
         "trusted command process transport changes"
       ],
-      "reviewed_on": "2026-10-29",
-      "review_by": "2026-11-28"
+      "reviewed_on": "2026-11-22",
+      "review_by": "2026-12-22"
     },
     {
       "residual_id": "CR-WORKFLOW-EXPRESSION-QUOTE-INVARIANT",
@@ -217,8 +217,8 @@
         "a supported public expression input reaches the lexer fallback",
         "expression extraction or tokenisation changes"
       ],
-      "reviewed_on": "2026-10-22",
-      "review_by": "2026-11-21",
+      "reviewed_on": "2026-11-22",
+      "review_by": "2026-12-22",
       "source_digest": "164b6e7d05600dfbc5d4b410a6c602325fa412d385d4d6cae3397655148f948a"
     },
     {
@@ -239,8 +239,8 @@
         "a supported public YAML input reaches the unexpected-event fallback",
         "workflow document or collection event consumption changes"
       ],
-      "reviewed_on": "2026-10-22",
-      "review_by": "2026-11-21",
+      "reviewed_on": "2026-11-22",
+      "review_by": "2026-12-22",
       "source_digest": "5dee70347ec007d4e01e3365847c927f572ae9f31602eec8c41b438ae79c2933"
     }
   ],
