@@ -25,10 +25,11 @@ from .cra_rules import scan_cra
 from .data_privacy import scan_data_privacy
 from .documentation import scan_documentation
 from .domains import domain_governance_candidates
-from .git_inventory import GitInventory, load_git_inventory
+from .git_inventory import GitInventory, load_git_inventory, resolve_repository_root
 from .git_provenance import GitRunner, GitTrustPolicy
 from .github_actions import scan_github_actions
 from .godfiles import scan_godfiles
+from .historical_checkout import describe_historical_ignored_paths, historical_inventory
 from .ignored_inventory import collect_ignored_inventory
 from .language_capabilities import suffixes_with
 from .models import AuditPolicy, AuditReport, Candidate
@@ -157,6 +158,7 @@ def scan_repository(
     policy_path: Path | None = None,
     *,
     git_trust_policy: GitTrustPolicy | None = None,
+    revision: str | None = None,
 ) -> AuditReport:
     """Read-only scan one Git repository and bind candidates to exact content.
 
@@ -168,6 +170,8 @@ def scan_repository(
         Optional tracked repository-relative audit policy.
     git_trust_policy:
         Optional runtime Git executable trust contract.
+    revision:
+        Optional full commit object ID to scan in an isolated historical checkout.
 
     Returns
     -------
@@ -175,16 +179,35 @@ def scan_repository(
         Content-addressed report including exact Git executable provenance.
     """
     runner = GitRunner(git_trust_policy)
-    inventory = load_git_inventory(root, git_runner=runner)
+    if revision is None:
+        inventory = load_git_inventory(root, git_runner=runner)
+        return _scan_inventory(inventory, policy_path, runner, inventory.root)
+    source = resolve_repository_root(root, runner)
+    with historical_inventory(source, revision, runner) as inventory:
+        return _scan_inventory(inventory, policy_path, runner, source, historical=True)
+
+
+def _scan_inventory(
+    inventory: GitInventory,
+    policy_path: Path | None,
+    runner: GitRunner,
+    report_root: Path,
+    *,
+    historical: bool = False,
+) -> AuditReport:
+    """Scan the selected filesystem and bind the report to its source repository."""
     policy, policy_anchor, governance = resolve_policy(inventory, policy_path)
-    ignored_evidence = collect_ignored_inventory(
+    observe_ignored = (
+        describe_historical_ignored_paths if historical else collect_ignored_inventory
+    )
+    ignored_evidence = observe_ignored(
         inventory,
         policy.ignored_inventory,
         git_runner=runner,
     )
     cra_candidates = scan_cra(inventory, policy, policy_anchor, ignored_evidence)
     if policy.cra is not None and policy.cra.applicability == "required":
-        final_ignored_evidence = collect_ignored_inventory(
+        final_ignored_evidence = observe_ignored(
             inventory,
             policy.ignored_inventory,
             git_runner=runner,
@@ -220,7 +243,7 @@ def scan_repository(
     if anchor_errors:
         raise RuntimeError("candidate anchor verification failed: " + "; ".join(anchor_errors))
     return AuditReport.build(
-        repository_root=str(inventory.root),
+        repository_root=str(report_root),
         head=inventory.head,
         head_tree=inventory.head_tree,
         git_object_format=inventory.object_format,

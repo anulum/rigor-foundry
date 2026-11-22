@@ -210,6 +210,24 @@ Ignored evidence is collected only for exact paths declared by policy schema
 values, or recursive directory members. `missing` and `unavailable` remain
 evidence states and do not create findings by themselves.
 
+### Exact historical revision
+
+Use `rigor scan-revision --root PATH FULL_COMMIT_ID` to inspect an exact
+local commit, including SHA-256 Git repositories. The argument must be the
+full SHA-1 or SHA-256 commit object ID. The scanner reads the local Git object
+store from a temporary checkout outside the source repository. It verifies the
+tracked bytes against Git and removes the checkout before writing the report.
+The report gives the source repository path, the selected commit and tree, and
+the detached state. Current worktree changes, Git tags and branch movement do
+not substitute for the selected object.
+
+The historical tree supplies its own tracked policy. Declarations of ignored
+paths are validated against that tree's Git ignore rules. Their observations
+are unavailable with reason `historical-state-unavailable`, since Git does not
+record their contents. The JSON, Markdown and candidate gate options apply to
+the historical report. The provisional command has its own CLI contract. The
+stable `scan --changed-since` entry keeps its original options.
+
 ### Incremental changed-file view
 
 `rigor scan --changed-since REF` restricts the reported and gated candidates to

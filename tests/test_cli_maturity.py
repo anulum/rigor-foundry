@@ -173,7 +173,7 @@ def test_cli_calibrates_one_rule_and_gates_only_active_candidates(tmp_path: Path
 
 
 def test_cli_rejects_changed_maturity_and_repeats_deterministically(tmp_path: Path) -> None:
-    """Repeated evaluation is byte-identical and changed evidence fails closed."""
+    """Repeated file and standard-output evaluation is byte-identical; changed evidence fails."""
     repository = cli_repository(tmp_path / "repository")
     policy = RuleMaturityPolicy.build(
         minimum_adjudicated_reviews=1,
@@ -217,6 +217,9 @@ def test_cli_rejects_changed_maturity_and_repeats_deterministically(tmp_path: Pa
     assert second.returncode == 0, second.stderr
     assert repeated_output.read_bytes() == before
     assert output.read_bytes() == before
+    printed = repository.run_audit("maturity-evaluate", "--cases", str(cases))
+    assert printed.returncode == 0, printed.stderr
+    assert printed.stdout == before.decode("utf-8")
 
     document = json.loads(output.read_text(encoding="utf-8"))
     document["assessments"][0]["status"] = "active"

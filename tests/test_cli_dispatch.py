@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -19,7 +20,60 @@ from cli_test_support import (
     promotion_arguments,
 )
 
-from rigor_foundry.cli import main
+from rigor_foundry.cli import _parser, main
+from rigor_foundry.stable_contract import PROVISIONAL_CLI_COMMANDS, STABLE_CLI_COMMANDS
+
+
+def _command_parsers(
+    parser: argparse.ArgumentParser, path: tuple[str, ...] = ()
+) -> list[tuple[tuple[str, ...], argparse.ArgumentParser]]:
+    """Return every leaf command parser below the real root parser with its argv path."""
+    groups = [
+        action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
+    ]
+    if not groups:
+        return [(path, parser)]
+    leaves: list[tuple[tuple[str, ...], argparse.ArgumentParser]] = []
+    for group in groups:
+        assert group.required, f"{' '.join(path) or 'root'} must require a command"
+        for name, command in group.choices.items():
+            leaves.extend(_command_parsers(command, (*path, name)))
+    return leaves
+
+
+def test_every_contract_command_registers_a_callable_dispatch_handler() -> None:
+    """The dispatcher calls each leaf's handler directly, so registration is the guard."""
+    leaves = _command_parsers(_parser())
+    assert {path[0] for path, _ in leaves} == set(STABLE_CLI_COMMANDS) | set(
+        PROVISIONAL_CLI_COMMANDS
+    )
+    without_handler = [
+        " ".join(path) for path, command in leaves if not callable(command.get_default("handler"))
+    ]
+    assert without_handler == []
+
+
+@pytest.mark.parametrize(
+    ("argv", "diagnostic"),
+    [
+        ([], "the following arguments are required: command"),
+        (["no-such-command"], "invalid choice: 'no-such-command'"),
+        (["scan", "--root", ".", "--handler", "x"], "unrecognized arguments: --handler x"),
+        (["scan-revision", "--root", "."], "the following arguments are required: revision"),
+    ],
+)
+def test_public_argv_without_a_complete_command_is_refused_before_dispatch(
+    argv: list[str],
+    diagnostic: str,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Missing, unknown, handler-overriding and incomplete argv exit 2 in the parser."""
+    with pytest.raises(SystemExit) as refusal:
+        main(argv)
+    assert refusal.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert diagnostic in captured.err
 
 
 def test_cli_rejects_invalid_outputs_reviews_selection_and_weaker_mode(

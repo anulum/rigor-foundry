@@ -54,6 +54,10 @@ rebound to an incompatible kind of object. Record fields and serialized
 protocols retain their own explicit schema/version contracts; stable import
 availability does not erase those migration boundaries.
 
+`scan_repository(root, revision=commit_id)` also accepts a full local Git
+commit object ID. The optional keyword uses the historical checkout described
+in the CLI guide. [Historical revision scan](cli.md#exact-historical-revision)
+
 ## Provisional imports
 
 The `rigor doctor` command is a provisional adopter diagnostic. Its current

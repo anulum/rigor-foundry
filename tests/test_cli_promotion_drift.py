@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -315,3 +316,57 @@ def test_cli_promotion_rejects_ignored_inventory_drift(
     repository.write_text(".rigor/runtime-state.json", '{"state":"changed"}\n')
     assert main(arguments) == 2
     assert "ignored inventory is stale" in capsys.readouterr().err
+
+
+def test_cli_promotion_refuses_a_candidate_lost_with_the_native_parser(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A reviewed candidate that the current scan no longer reports is not promoted."""
+    pytest.importorskip("tree_sitter")
+    repository = _repository(tmp_path / "parser-drift")
+    repository.write_text("src/calculator.js", 'const result = eval("1 + 1");\n')
+    repository.commit()
+    report_path = repository.root / ".coordination/report.json"
+    review_path = repository.root / ".coordination/review.json"
+    scan = ["scan", "--root", str(repository.root), "--policy", _POLICY]
+    assert main([*scan, "--json-out", str(report_path)]) == 0
+    report = AuditReport.from_path(report_path)
+    selected = next(
+        item for item in report.candidates if item.rule_id == "AS006-js-dynamic-code-execution"
+    )
+    template = next(
+        item for item in review_templates(report) if item.candidate_id == selected.candidate_id
+    )
+    now = datetime.now(UTC).replace(microsecond=0)
+    valid = replace(
+        template,
+        decision="valid",
+        reviewer="agent/native-review",
+        reviewed_at=now.isoformat().replace("+00:00", "Z"),
+        rationale="the scanner identified a direct JavaScript eval call",
+        evidence=("src/calculator.js evaluates a constant string with eval",),
+        severity="P1",
+        owner="runtime-review",
+        acceptance_gates=("replace string evaluation with a numeric expression",),
+        title="Remove unnecessary string evaluation",
+        expires_at=(now + timedelta(days=10)).isoformat().replace("+00:00", "Z"),
+        reopen_triggers=("the JavaScript expression changes",),
+    )
+    review_path.write_text(reviews_to_json((valid,)), encoding="utf-8")
+    arguments = _promotion_arguments(repository, report_path, review_path, selected.candidate_id)
+    todo = repository.root / "docs/internal/work/INDEX.md"
+    original = todo.read_bytes()
+    assert main(arguments) == 0
+    capsys.readouterr()
+
+    def _parser_unavailable() -> tuple[object, ...]:
+        raise ImportError("tree-sitter is not installed")
+
+    monkeypatch.setattr("rigor_foundry.native_analysis._import_grammars", _parser_unavailable)
+    assert main([*arguments, "--apply"]) == 2
+    refused = capsys.readouterr()
+    assert refused.out == ""
+    assert "candidate is absent or changed in the current tracked tree" in refused.err
+    assert todo.read_bytes() == original

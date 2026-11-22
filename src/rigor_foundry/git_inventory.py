@@ -161,7 +161,7 @@ def _decode_git_field(value: bytes, field: str) -> str:
     return decoded
 
 
-def _repository_root(path: Path, runner: GitRunner) -> Path:
+def resolve_repository_root(path: Path, runner: GitRunner) -> Path:
     """Resolve the containing Git worktree root."""
     candidate = path.resolve()
     working = candidate if candidate.is_dir() else candidate.parent
@@ -616,7 +616,7 @@ def is_git_ignored(
         and runner.provenance.identity_digest != expected_git_provenance.identity_digest
     ):
         raise RuntimeError("Git executable provenance does not match expected identity")
-    repository = _repository_root(root, runner)
+    repository = resolve_repository_root(root, runner)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError("ignore-check path must be repository-relative")
     try:
@@ -673,7 +673,7 @@ def load_git_inventory(
     if git_trust_policy is not None and git_runner is not None:
         raise ValueError("supply either a Git trust policy or an existing runner, not both")
     runner = git_runner or GitRunner(git_trust_policy)
-    root = _repository_root(path, runner)
+    root = resolve_repository_root(path, runner)
     # Resolve the current revision, tree and format in one read-only Git invocation.
     revision = _run_git(runner, root, "rev-parse", "HEAD", "HEAD^{tree}", "--show-object-format")
     revision_lines = revision.splitlines()

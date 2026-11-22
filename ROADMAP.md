@@ -15,6 +15,7 @@ The work below is acceptance-gated. Dates and versions are not delivery promises
   typed evidence and explicit incomplete or unavailable states.
 - JSON, Markdown and SARIF reports, review and promotion workflows, offline
   verification, and declared native-tool adapters.
+- Exact historical Git commit scanning with detached, byte-verified inputs.
 - Typed profiles, source locking, declarative remediation and campaign
   contracts. A plan or report does not grant execution authority.
 - Offline, prepare-only Cyber Resilience Act evidence and reporting records.
@@ -47,9 +48,8 @@ The work below is acceptance-gated. Dates and versions are not delivery promises
   anchored candidates, preserving unknown fields and partial results.
 - Package the existing cross-model protocol as bounded AI-code assurance
   examples with measured independence, correlation and reviewer effort.
-- Add qualified adopter diagnostics, policy diagnostics and exact-revision
-  scanning. Extend incremental scanning only with complete invalidation and
-  cached-versus-fresh equivalence evidence.
+- Extend incremental scanning with complete invalidation and cached-versus-fresh
+  equivalence evidence.
 - Expand portable rules only with safe and unsafe fixtures, held-out
   calibration, reviewer-cost evidence and explicit probation safeguards.
 - Complete read-only operator views and separately authorised editor,

@@ -48,6 +48,18 @@ PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
         "scan-provenance": _command(
             "--output", "--policy", "--profile", "--profile-sha256", "--root"
         ),
+        "scan-revision": _command(
+            "--fail-on-candidates",
+            "--git-executable",
+            "--git-max-version-exclusive",
+            "--git-min-version",
+            "--git-trust-root",
+            "--json-out",
+            "--markdown-out",
+            "--policy",
+            "--root",
+            positionals=("revision",),
+        ),
     }
 )
 

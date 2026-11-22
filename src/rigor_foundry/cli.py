@@ -181,7 +181,6 @@ def _add_git_trust_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--git-trust-root",
         action="append",
-        type=Path,
         default=[],
         help="Normalised absolute executable root; repeat to declare ordered roots.",
     )
@@ -195,7 +194,9 @@ def _add_git_trust_arguments(parser: argparse.ArgumentParser) -> None:
 def _scan_command(args: argparse.Namespace) -> int:
     """Execute the read-only scan command."""
     trust_policy = _git_trust_policy(args)
-    report = scan_repository(args.root, args.policy, git_trust_policy=trust_policy)
+    report = scan_repository(
+        args.root, args.policy, git_trust_policy=trust_policy, revision=args.revision
+    )
     gating_candidates = report.candidates
     changed_summary: str | None = None
     if args.changed_since is not None:
@@ -501,20 +502,18 @@ def _parser() -> argparse.ArgumentParser:
     bootstrap.set_defaults(handler=_bootstrap_command)
 
     scan = subparsers.add_parser("scan", help="Emit read-only static audit candidates.")
-    scan.add_argument("--root", type=Path, required=True)
-    scan.add_argument("--policy", type=Path)
-    scan.add_argument("--json-out", type=Path)
-    scan.add_argument("--markdown-out", type=Path)
-    scan.add_argument("--fail-on-candidates", action="store_true")
-    scan.add_argument(
-        "--changed-since",
-        help=(
-            "Report and gate only candidates in files changed between this Git "
-            "revision and HEAD; the full report output is unchanged."
-        ),
-    )
-    _add_git_trust_arguments(scan)
-    scan.set_defaults(handler=_scan_command)
+    revision = subparsers.add_parser("scan-revision", help="Audit one exact local Git commit.")
+    for command in (scan, revision):
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--policy", type=Path)
+        command.add_argument("--json-out", type=Path)
+        command.add_argument("--markdown-out", type=Path)
+        command.add_argument("--fail-on-candidates", action="store_true")
+        _add_git_trust_arguments(command)
+    scan.add_argument("--changed-since", help="Gate changed files and retain the full report.")
+    scan.set_defaults(handler=_scan_command, revision=None)
+    revision.add_argument("revision", help="Full SHA-1 or SHA-256 commit object ID.")
+    revision.set_defaults(handler=_scan_command, changed_since=None)
 
     template = subparsers.add_parser(
         "review-template",
@@ -687,10 +686,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
     try:
-        handler = args.handler
-        if not callable(handler):
-            raise ValueError("command has no handler")
-        return int(handler(args))
+        return int(args.handler(args))
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
         print(f"repository audit error: {exc}", file=sys.stderr)
         return 2

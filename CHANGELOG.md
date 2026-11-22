@@ -47,6 +47,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Provisional `rigor scan-revision --root PATH FULL_COMMIT_ID` and
+  `scan_repository(revision=...)` scan the tracked bytes of an exact local SHA-1
+  or SHA-256 commit in an isolated detached checkout. Declared ignored-file
+  evidence is reported as unavailable for that revision after its paths are
+  checked as untracked and ignored.
+
 - `rigor scan-provenance` records PyPI Publish and SLSA attestations and named
   Scorecard checks alongside the static audit report. The optional verifier
   uses independently pinned local trust material and distribution hashes.

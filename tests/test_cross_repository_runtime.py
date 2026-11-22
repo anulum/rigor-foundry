@@ -221,7 +221,7 @@ def test_pre_requested_cancellation_records_every_repository_and_rolls_back(
 def test_cancellation_after_materialisation_removes_detached_workspace(
     tmp_path: Path,
 ) -> None:
-    """A boundary cancellation after fetch never scans or retains the checkout."""
+    """A boundary cancellation after checkout never scans or retains the checkout."""
     prepared = _prepare(tmp_path / "source", "repository")
     capture, plan = _freeze((prepared.request,))
     temporary_parent = tmp_path / "temporary"
@@ -357,18 +357,18 @@ def test_corrupt_historical_object_aborts_git_inspection(tmp_path: Path) -> None
         )
 
 
-def test_controlled_fetch_failure_is_materialisation_failure(
+def test_controlled_checkout_failure_is_materialisation_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A post-availability fetch failure produces one bounded failed outcome."""
+    """A post-availability checkout failure produces one bounded failed outcome."""
     prepared = _prepare(tmp_path / "source", "repository")
     capture, plan = _freeze((prepared.request,))
 
     def fail_materialisation(*_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("controlled fetch boundary failure")
+        raise RuntimeError("controlled checkout boundary failure")
 
-    monkeypatch.setattr(runtime, "_materialise", fail_materialisation)
+    monkeypatch.setattr(runtime, "materialise_historical_commit", fail_materialisation)
 
     execution = execute_cross_repository_campaign(
         plan=plan,

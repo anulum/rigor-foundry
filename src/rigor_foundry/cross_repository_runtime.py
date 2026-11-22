@@ -26,6 +26,7 @@ from .cross_repository_execution import (
     validate_historical_report,
 )
 from .git_provenance import GitRunner, GitTrustPolicy
+from .historical_checkout import materialise_historical_commit
 from .models import AuditReport
 from .scanner import scan_repository
 
@@ -138,35 +139,6 @@ def _workspace_parent(
     return resolved
 
 
-def _materialise(
-    request: RepositoryCaptureRequest,
-    worktree: Path,
-    runner: GitRunner,
-) -> None:
-    """Fetch one exact commit into an isolated repository and detach its checkout."""
-    object_format = "sha1" if len(request.requested_commit) == 40 else "sha256"
-    runner.run(worktree, "init", "--quiet", f"--object-format={object_format}")
-    _run_git(
-        runner,
-        worktree,
-        "fetch",
-        "--quiet",
-        "--no-tags",
-        "--depth=1",
-        "--no-write-fetch-head",
-        request.repository_root.as_uri(),
-        request.requested_commit,
-    )
-    _run_git(
-        runner,
-        worktree,
-        "checkout",
-        "--quiet",
-        "--detach",
-        request.requested_commit,
-    )
-
-
 def _diverges_from_runtime(
     *,
     snapshot: RepositorySnapshot,
@@ -196,9 +168,9 @@ def execute_cross_repository_campaign(
 ) -> CrossRepositoryExecution:
     """Execute one frozen campaign through isolated historical static scans.
 
-    Source repositories are read only. Every historical commit is fetched into
-    a fresh temporary repository, checked out detached, scanned through the
-    production scanner, and removed before the function returns. Native
+    Source repositories are read only. Every historical commit is checked out
+    detached from local objects, scanned through the production scanner, and
+    removed before the function returns. Native
     adapters and remediation procedures are never run by this surface.
     """
     policy_paths = tuple(target.policy_path for target in plan.targets)
@@ -308,8 +280,10 @@ def _execute_repository(
     worktree = workspace / request.repository_id
     worktree.mkdir(mode=0o700)
     try:
-        _materialise(request, worktree, runner)
-    except (OSError, RuntimeError):
+        materialise_historical_commit(
+            request.repository_root, worktree, request.requested_commit, runner
+        )
+    except (OSError, RuntimeError, ValueError):
         return HistoricalRepositoryExecution.build(
             snapshot=snapshot,
             status="failed",

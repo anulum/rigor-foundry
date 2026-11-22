@@ -87,7 +87,7 @@ as stale or substituted.
    object database;
 2. initialise a fresh temporary repository using the captured SHA-1 or SHA-256
    object format;
-3. fetch only the exact captured commit through the attested Git executable;
+3. resolve only the exact captured commit from the local Git object store;
 4. check it out detached and run the production static scanner against the
    historical policy path; and
 5. remove the complete temporary campaign workspace before returning evidence.
