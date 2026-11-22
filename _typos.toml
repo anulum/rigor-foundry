@@ -6,6 +6,15 @@
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — Typo checker configuration
 
+[default]
+# Exact command and switch spellings, not prose typos:
+# the shadow-utils `chage` account-ageing command in the container hardening step,
+# and the Windows `whoami /fo csv` output-format switch.
+extend-ignore-re = [
+  "chage --lastday",
+  '"/fo"',
+]
+
 [default.extend-words]
 argv = "argv"
 gitlink = "gitlink"
