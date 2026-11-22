@@ -21,12 +21,12 @@ import pytest
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry import ignored_inventory, scan_repository
-from rigor_foundry.git_inventory import (
+from rigor_foundry.ignored_inventory import IgnoredCapture, IgnoredInventoryEvidence
+from rigor_foundry.stable_reads import (
     StableRegularRead,
     open_directory_no_follow,
     read_stable_regular_file_at,
 )
-from rigor_foundry.ignored_inventory import IgnoredCapture, IgnoredInventoryEvidence
 
 pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="requires Linux descriptor I/O")
 

@@ -15,7 +15,7 @@ from contextlib import nullcontext
 from pathlib import Path
 from typing import overload
 
-from .git_inventory import StableGitRead, StableReadError, StableRegularRead
+from .stable_reads import StableGitRead, StableReadError, StableRegularRead
 from .windows_handles import WindowsDirectory, WindowsFileIdentity
 
 

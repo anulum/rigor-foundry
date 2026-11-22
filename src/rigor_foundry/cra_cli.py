@@ -40,11 +40,7 @@ from .cra_registration import ProductRegistration
 from .cra_store import CraRepository
 from .cra_submissions import StageSkip, SubmissionReceipt, UserNoticeDraft
 from .cra_timeline import ReportingTimeline, compute_reporting_timeline
-from .git_inventory import (
-    StableReadError,
-    open_directory_no_follow,
-    read_stable_regular_file_at,
-)
+from .stable_reads import StableReadError, open_directory_no_follow, read_stable_regular_file_at
 
 _EVIDENCE_LIMIT = 64 * 1024 * 1024
 

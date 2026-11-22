@@ -29,10 +29,10 @@ from project_registry_syscall_scheduler import (
 )
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.git_provenance import GitRunner, GitTrustPolicy
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.repository_file_inputs import observe_repository_file_inputs
+from rigor_foundry.stable_reads import StableReadError
 
 
 def _budget(

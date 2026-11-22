@@ -19,8 +19,8 @@ from .clause_semantics_scope_v2 import (
     bind_clause_scope_groups_v2,
     validate_clause_scope_v2,
 )
-from .git_inventory import open_directory_no_follow
 from .project_registry_models import ProjectRegistration, ProjectRegistry, ProjectRegistryGroup
+from .stable_reads import open_directory_no_follow
 
 
 @dataclass(frozen=True)

@@ -16,10 +16,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .audit_primitives import canonical_digest
-from .git_inventory import open_directory_no_follow
 from .model_primitives import require_digest
 from .policy_read_budget import PolicyReadBudget1
 from .policy_source_reads import read_policy_source_payloads
+from .stable_reads import open_directory_no_follow
 
 
 def _identity(path: Path) -> list[int]:

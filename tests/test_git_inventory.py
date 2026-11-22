@@ -18,16 +18,15 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.git_inventory import (
+from rigor_foundry.git_inventory import is_git_ignored, load_git_inventory
+from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
+from rigor_foundry.scanner import scan_repository
+from rigor_foundry.stable_reads import (
     MAX_TEXT_BYTES,
     StableReadError,
-    is_git_ignored,
-    load_git_inventory,
     open_directory_no_follow,
     read_stable_regular_file_at,
 )
-from rigor_foundry.git_provenance import GitExecutableProvenance, GitTrustPolicy
-from rigor_foundry.scanner import scan_repository
 
 
 def test_inventory_classifies_real_tracked_content_and_dirty_state(tmp_path: Path) -> None:

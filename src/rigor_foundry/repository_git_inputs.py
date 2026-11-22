@@ -13,7 +13,6 @@ import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from .git_inventory import open_directory_no_follow
 from .git_provenance import GitExecutableProvenance, GitRunner
 from .model_primitives import require_git_object
 from .policy_read_budget import PolicyReadBudget1
@@ -22,6 +21,7 @@ from .repository_inventory_rows import (
     parse_git_index_state,
     require_inventory_path,
 )
+from .stable_reads import open_directory_no_follow
 
 
 @dataclass(frozen=True)

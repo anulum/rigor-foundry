@@ -16,14 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from .audit_primitives import canonical_digest
-from .git_inventory import (
-    GitInventory,
-    TrackedFile,
-    load_git_inventory,
-    open_directory_no_follow,
-    read_stable_regular_file_at,
-)
+from .git_inventory import GitInventory, TrackedFile, load_git_inventory
 from .git_provenance import GitTrustPolicy
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 MAX_PROFILE_FILE_BYTES = 32 * 1024 * 1024
 MAX_PROFILE_INPUT_BYTES = 256 * 1024 * 1024

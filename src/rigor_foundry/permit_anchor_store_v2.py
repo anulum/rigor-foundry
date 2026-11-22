@@ -24,7 +24,6 @@ from .effect_journal_v2 import (
     EffectJournalFileIdentityV2,
     EffectJournalStoreV2,
 )
-from .git_inventory import open_directory_no_follow
 from .permit_anchor_journal_binding_v2 import (
     AnchorJournalBindingV24,
     verify_anchor_journal_binding_v24,
@@ -39,6 +38,7 @@ from .permit_anchor_records_v2 import (
 from .permit_anchor_tail_v2 import scan_anchor_tail_v24
 from .permit_consumption_ledger_v2 import ConsumedPermitLedgerV2
 from .recovery_evidence_store_v2 import RecoveryEvidenceStoreV2
+from .stable_reads import open_directory_no_follow
 
 
 @dataclass(frozen=True)

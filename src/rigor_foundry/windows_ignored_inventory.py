@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import cast
 
 from .audit_primitives import canonical_digest
-from .git_inventory import GitInventory, StableReadError, is_git_ignored
+from .git_inventory import GitInventory, is_git_ignored
 from .git_provenance import GitRunner
 from .ignored_inventory import (
     _DIRECTORY_MANIFEST_SCHEMA_VERSION,
@@ -30,6 +30,7 @@ from .ignored_inventory import (
     _DirectoryReadError,
     _unavailable,
 )
+from .stable_reads import StableReadError
 from .windows_directory_inventory import WindowsDirectoryEntry
 from .windows_file_io import read_regular_file
 from .windows_handles import WindowsChildSnapshot, WindowsDirectory, WindowsFileIdentity

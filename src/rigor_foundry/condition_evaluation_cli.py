@@ -20,9 +20,9 @@ from .audit_primitives import require_exact_fields
 from .condition_evaluation import evaluate_condition_state
 from .condition_facts import ConditionFact, ConditionTruth
 from .condition_language import ConditionExpression
-from .git_inventory import StableReadError
 from .models import canonical_digest, require_mapping
 from .source_capture import read_source_payload
+from .stable_reads import StableReadError
 
 CONDITION_OBSERVATIONS_SCHEMA_VERSION = "rigor.condition-observations.v1"
 CONDITION_EVALUATION_SCHEMA_VERSION = "rigor.condition-evaluation.v1"

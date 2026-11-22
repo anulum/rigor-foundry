@@ -37,9 +37,9 @@ from ._permit_ledger_records_v2 import LedgerFileIdentityV2 as LedgerFileIdentit
 from ._permit_ledger_records_v2 import LedgerRecordV2 as LedgerRecordV2
 from ._permit_ledger_records_v2 import LedgerSnapshotV2 as LedgerSnapshotV2
 from ._permit_ledger_storage_io_v2 import _identity, _owner_only, _read_exact, _write_all
-from .git_inventory import open_directory_no_follow
 from .model_primitives import require_digest
 from .models import canonical_digest
+from .stable_reads import open_directory_no_follow
 
 
 @dataclass

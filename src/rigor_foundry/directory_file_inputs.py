@@ -16,9 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .audit_primitives import require_integer
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .policy_read_budget import PolicyReadBudget1
 from .repository_inventory_rows import RepositoryFileRow, require_inventory_path
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 
 @dataclass(frozen=True)

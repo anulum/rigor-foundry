@@ -18,9 +18,9 @@ from typing import cast
 from uuid import uuid4
 
 from .audit_primitives import canonical_digest, require_integer
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .model_primitives import require_digest
 from .policy_read_budget import PolicyReadBudget1
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 
 def _identity(metadata: os.stat_result) -> tuple[int, ...]:

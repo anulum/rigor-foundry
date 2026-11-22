@@ -16,12 +16,12 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 
 from .audit_primitives import require_integer
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .git_provenance import GitRunner
 from .model_primitives import require_git_object
 from .policy_read_budget import PolicyReadBudget1
 from .repository_git_inputs import RepositoryGitInputs, observe_repository_git_inputs
 from .repository_inventory_rows import RepositoryFileRow
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 
 @dataclass(frozen=True)

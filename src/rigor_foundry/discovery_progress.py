@@ -23,7 +23,7 @@ from .discovery_source_schema import (
     nonempty_list,
     parse_json,
 )
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 _PROGRESS_SCHEMA_VERSION = "discovery-progress-change.v1"
 _INTAKE_SCHEMA_VERSION = "discovery-inventory-intake.v1"

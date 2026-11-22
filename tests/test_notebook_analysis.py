@@ -16,8 +16,8 @@ from typing import cast
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.git_inventory import MAX_TEXT_BYTES
 from rigor_foundry.scanner import scan_repository
+from rigor_foundry.stable_reads import MAX_TEXT_BYTES
 
 
 def _notebook(

@@ -25,7 +25,7 @@ from repository_audit_git_repository import GitRepository
 import rigor_foundry
 import rigor_foundry.ignored_inventory as ignored_inventory_module
 from rigor_foundry.audit_primitives import canonical_digest
-from rigor_foundry.git_inventory import load_git_inventory, open_directory_no_follow
+from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.git_provenance import GitRunner, GitTrustPolicy
 from rigor_foundry.ignored_inventory import (
     IGNORED_INVENTORY_SCHEMA_VERSION,
@@ -37,6 +37,7 @@ from rigor_foundry.ignored_inventory import (
     parse_ignored_inventory,
 )
 from rigor_foundry.models import AuditPolicy, AuditReport
+from rigor_foundry.stable_reads import open_directory_no_follow
 
 _SENTINEL = "private-token-do-not-serialize"
 

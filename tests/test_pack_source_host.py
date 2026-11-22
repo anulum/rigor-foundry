@@ -19,12 +19,12 @@ from typing import cast
 
 import pytest
 
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.pack_source_host import (
     HostPackSourceSelection,
     HostPackSourceState,
     HostPackSourceVerifier,
 )
+from rigor_foundry.stable_reads import StableReadError
 
 _URI = "https://standards.example/core/v2"
 _PAYLOAD = b"retained source with exact identity\n"

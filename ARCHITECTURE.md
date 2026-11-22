@@ -140,7 +140,10 @@ exact bytes scanned. A dirty worktree file is hashed with Git's canonical
 evidence cannot attest a stale index blob. Regular content is opened without
 following symlinks; one descriptor and one pass derive both SHA-256 and Git
 object identity. Exact byte count, descriptor metadata, and pathname identity
-must remain stable through the read or inventory construction fails. Container
+must remain stable through the read or inventory construction fails. These
+descriptor-anchored no-follow reads and directory opens are owned by
+`stable_reads.py`, which the inventory and the other evidence readers share.
+Container
 ownership mismatch is handled with a process-local `safe.directory` limited to
 the explicit audited root after discovery. Global and system Git configuration,
 credentials, terminal prompts, replacement objects, optional locks, and

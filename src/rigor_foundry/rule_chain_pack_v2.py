@@ -14,7 +14,6 @@ from datetime import datetime
 from typing import Final, Literal, cast
 
 from .audit_primitives import require_exact_fields
-from .git_inventory import StableReadError
 from .model_primitives import (
     require_digest,
     require_identifier,
@@ -30,6 +29,7 @@ from .signed_rule_chain_v2 import (
     RuleChainV2Signature,
     RuleChainV2TrustRoles,
 )
+from .stable_reads import StableReadError
 from .standard_pack import ControlDefinition
 
 _CLAUSE_FIELDS: Final = frozenset(

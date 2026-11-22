@@ -17,7 +17,6 @@ from .audit_primitives import canonical_digest
 from .context_owner_implementation import OwnerImplementationSnapshot, observe_owner_implementation
 from .context_source_lease import RetainedContextSource
 from .directory_file_inputs import DirectoryFileInputs, observe_directory_file_inputs
-from .git_inventory import open_directory_no_follow
 from .git_provenance import GitRunner
 from .inventory_classification import InventoryFileClassifier
 from .inventory_domain import InventoryDomain1, InventoryDomainRoot
@@ -26,6 +25,7 @@ from .model_primitives import require_git_object, require_identifier
 from .policy_read_budget import PolicyReadBudget1
 from .repository_file_inputs import RepositoryFileInputs, observe_repository_file_inputs
 from .repository_inventory_rows import RepositoryFileRow
+from .stable_reads import open_directory_no_follow
 from .typed_object_reference import TypedObjectRef1
 
 

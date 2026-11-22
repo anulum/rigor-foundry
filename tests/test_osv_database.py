@@ -19,7 +19,6 @@ from pathlib import Path
 import pytest
 
 import rigor_foundry.osv_database as osv_database
-from rigor_foundry.git_inventory import StableRegularRead
 from rigor_foundry.osv_database import (
     MAX_OSV_ARCHIVE_BYTES,
     OSVDatabaseArchive,
@@ -28,6 +27,7 @@ from rigor_foundry.osv_database import (
     OSVDatabaseUnavailable,
     materialise_osv_database,
 )
+from rigor_foundry.stable_reads import StableRegularRead
 
 
 def _archive(*, name: str = "OSV-TEST.json", payload: bytes | None = None) -> bytes:

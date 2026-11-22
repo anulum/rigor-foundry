@@ -18,14 +18,9 @@ from pathlib import Path, PurePosixPath
 from typing import Literal, cast
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
-from .git_inventory import (
-    GitInventory,
-    StableReadError,
-    is_git_ignored,
-    open_directory_no_follow,
-    read_stable_regular_file_at,
-)
+from .git_inventory import GitInventory, is_git_ignored
 from .git_provenance import GitRunner
+from .stable_reads import StableReadError, open_directory_no_follow, read_stable_regular_file_at
 
 IGNORED_INVENTORY_SCHEMA_VERSION = "1.0"
 IgnoredCapture = Literal["presence", "file-sha256", "directory-sha256"]

@@ -23,12 +23,6 @@ from .audit_primitives import (
     require_mapping,
     require_string,
 )
-from .git_inventory import (
-    StableReadError,
-    StableRegularRead,
-    open_directory_no_follow,
-    read_stable_regular_file_at,
-)
 from .model_primitives import (
     require_boolean,
     require_digest,
@@ -36,6 +30,12 @@ from .model_primitives import (
     require_nonempty_strings,
     require_semantic_version,
     require_utc_timestamp,
+)
+from .stable_reads import (
+    StableReadError,
+    StableRegularRead,
+    open_directory_no_follow,
+    read_stable_regular_file_at,
 )
 
 SOURCE_PROVENANCE_SCHEMA_VERSION = "1.0"

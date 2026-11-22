@@ -16,13 +16,13 @@ from typing import cast
 
 import pytest
 
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.policy_source_reads import (
     parse_policy_document_payload,
     read_policy_document,
     read_policy_source_payloads,
 )
+from rigor_foundry.stable_reads import StableReadError
 
 
 def test_retained_payload_parser_preserves_exact_json_semantics() -> None:

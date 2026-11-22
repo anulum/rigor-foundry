@@ -224,6 +224,7 @@ python -m tools.check_full_file_coverage --data-file .coverage \
   src/rigor_foundry/windows_permissions.py \
   src/rigor_foundry/windows_process.py src/rigor_foundry/bootstrap.py \
   src/rigor_foundry/git_provenance.py src/rigor_foundry/git_inventory.py \
+  src/rigor_foundry/stable_reads.py \
   src/rigor_foundry/ignored_inventory.py \
   src/rigor_foundry/internal_storage.py src/rigor_foundry/safe_output.py \
   "${ordinary[@]}"

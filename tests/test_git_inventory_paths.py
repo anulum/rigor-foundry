@@ -18,14 +18,13 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
-from rigor_foundry.git_inventory import (
+from rigor_foundry.git_inventory import is_git_ignored, load_git_inventory
+from rigor_foundry.git_provenance import GitRunner
+from rigor_foundry.stable_reads import (
     StableReadError,
-    is_git_ignored,
-    load_git_inventory,
     open_directory_no_follow,
     read_stable_regular_file_at,
 )
-from rigor_foundry.git_provenance import GitRunner
 
 
 def test_stable_reader_validates_caller_paths_before_reading(

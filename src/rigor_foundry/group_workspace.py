@@ -15,8 +15,8 @@ import stat
 from contextlib import ExitStack
 from pathlib import Path
 
-from .git_inventory import open_directory_no_follow
 from .project_registry_cutover import load_project_registry_state
+from .stable_reads import open_directory_no_follow
 
 
 def allocate_group_workspace(

@@ -31,11 +31,6 @@ from .cra_submissions import (
     validate_receipt_binding,
     validate_skip_binding,
 )
-from .git_inventory import (
-    StableReadError,
-    open_directory_no_follow,
-    read_stable_regular_file_at,
-)
 from .internal_storage import (
     exclusive_lock,
     fsync_directory,
@@ -43,6 +38,7 @@ from .internal_storage import (
     write_new_text,
 )
 from .model_primitives import require_identifier
+from .stable_reads import StableReadError, open_directory_no_follow, read_stable_regular_file_at
 from .version import __version__
 
 _ROOT = Path(".rigor/cra")

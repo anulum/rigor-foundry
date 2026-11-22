@@ -19,7 +19,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from rigor_foundry import windows_file_io
-from rigor_foundry.git_inventory import StableReadError
+from rigor_foundry.stable_reads import StableReadError
 from rigor_foundry.windows_abi import windows_library
 
 

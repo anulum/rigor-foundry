@@ -20,7 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import cast
 
 from .audit_primitives import canonical_digest, require_integer, require_mapping, require_string
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 OSV_DATABASE_MANIFEST_SCHEMA_VERSION = "1.0"
 OSV_DATABASE_ENVIRONMENT = "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"

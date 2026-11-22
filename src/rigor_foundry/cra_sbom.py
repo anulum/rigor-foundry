@@ -18,8 +18,8 @@ from .cra_inventory import InventoryComponent, SbomFormat
 from .cra_oci_inventory import OCI_SBOM_FORMAT, OciImageBinding
 from .cra_oci_spdx import oci_spdx_projection
 from .cra_spdx import spdx_components
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .models import require_mapping, require_string
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 MAX_SBOM_BYTES = 16 * 1024 * 1024
 MAX_COMPONENTS = 100_000

@@ -22,9 +22,9 @@ from hashlib import sha256
 from pathlib import Path
 
 from ._permit_ledger_storage_io_v2 import _identity, _owner_only, _read_exact, _write_all
-from .git_inventory import open_directory_no_follow
 from .model_primitives import require_digest
 from .recovery_evidence_schema_v2 import validate_recovery_evidence_bytes_v2
+from .stable_reads import open_directory_no_follow
 
 _NAME = re.compile(r"[0-9a-f]{64}\.json\Z")
 _JOURNAL_DOMAIN = "rigor.effect-journal-tail-recovery.v2.1"

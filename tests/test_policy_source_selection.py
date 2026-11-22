@@ -29,7 +29,6 @@ from rigor_foundry.context_source_lease import RetainedContextSource
 from rigor_foundry.discovery_source_receipt import DiscoverySourceReceipt1
 from rigor_foundry.discovery_source_schema import DiscoveryLimits
 from rigor_foundry.discovery_source_validation import validate_discovery_sources
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.native_source_host import HostNativeSourceState, HostNativeSourceVerifier
 from rigor_foundry.native_source_pin import NativeSourcePin
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
@@ -37,6 +36,7 @@ from rigor_foundry.policy_source_records import PolicySourceRecord1
 from rigor_foundry.policy_source_selection import DiscoverySourceSelection, PolicySourceSelection
 from rigor_foundry.retained_policy_source import RetainedPolicySource
 from rigor_foundry.source_universe import SourceReadState
+from rigor_foundry.stable_reads import StableReadError
 from rigor_foundry.typed_object_reference import TypedObjectRef1
 
 

@@ -17,9 +17,9 @@ from typing import cast
 import pytest
 from test_context_owner_implementation import implementation_budget
 
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.retained_policy_source import RetainedPolicySource
+from rigor_foundry.stable_reads import StableReadError
 
 
 def retained(path: Path, payload: bytes, **changes: int) -> RetainedPolicySource:

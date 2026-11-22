@@ -19,11 +19,11 @@ from uuid import uuid4
 
 from .audit_primitives import canonical_digest
 from .context_source_resolution import ContextSourceTarget, parse_context_source_target
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .model_primitives import require_digest
 from .policy_read_budget import PolicyReadBudget1
 from .policy_source_reads import parse_policy_document_payload
 from .project_registry_models import ProjectRegistry
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 from .typed_object_reference import TypedObjectRef1
 
 

@@ -30,7 +30,7 @@ from .discovery_source_schema import (
     parse_json,
     text_bytes,
 )
-from .git_inventory import StableReadError, open_directory_no_follow, read_stable_regular_file_at
+from .stable_reads import StableReadError, open_directory_no_follow, read_stable_regular_file_at
 
 
 @dataclass

@@ -16,7 +16,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from rigor_foundry.git_inventory import StableReadError
+from rigor_foundry.stable_reads import StableReadError
 from rigor_foundry.windows_file_io import read_regular_file, write_new_file, write_new_file_at
 from rigor_foundry.windows_handles import WindowsDirectory
 

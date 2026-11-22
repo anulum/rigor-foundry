@@ -17,9 +17,9 @@ from typing import Final, TypedDict
 
 from .audit_primitives import require_exact_fields, require_integer
 from .discovery_source_schema import parse_json
-from .git_inventory import open_directory_no_follow
 from .model_primitives import require_digest, require_identifier, require_utc_timestamp
 from .models import canonical_digest, require_mapping, require_string
+from .stable_reads import open_directory_no_follow
 
 RATIFICATION_SOURCE_SCHEMA: Final = "owner-ratification-source-integrity.v1"
 _NAMES: Final = ("CEO_QUESTION_FULL_TEXT.txt", "OWNER_REPLY.txt")

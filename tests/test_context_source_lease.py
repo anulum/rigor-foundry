@@ -23,9 +23,9 @@ from test_typed_object_reference import reference
 
 from rigor_foundry.context_source_lease import RetainedContextSource
 from rigor_foundry.context_source_resolution import SUPPORTED_CONTEXT_TARGET_FORMATS
-from rigor_foundry.git_inventory import StableReadError
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.project_registry_models import ProjectRegistry
+from rigor_foundry.stable_reads import StableReadError
 from rigor_foundry.typed_object_reference import TypedObjectRef1
 
 

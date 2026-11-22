@@ -21,7 +21,6 @@ from .control_assessment import Classification
 from .discovery_source_receipt import DiscoverySourceReceipt1
 from .discovery_source_schema import DiscoveryLimits, capture_name, exact_object, parse_json
 from .discovery_source_validation import validate_discovery_sources
-from .git_inventory import open_directory_no_follow, read_stable_regular_file_at
 from .model_primitives import require_identifier
 from .native_source_host import HostNativeSourceVerifier
 from .native_source_pin import NativeSourcePin
@@ -30,6 +29,7 @@ from .policy_source_records import PolicySourceRecord1
 from .retained_policy_source import RetainedPolicySource
 from .source_capture import SourceCapture
 from .source_universe import SourceDisposition, SourceReadState
+from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 
 @dataclass(frozen=True)

@@ -35,10 +35,10 @@ from .effect_journal_records_v2 import (
     build_effect_journal_frame_v2,
     parse_effect_journal_frame_v2,
 )
-from .git_inventory import open_directory_no_follow
 from .handler_effect_intent_receipt_v1 import HandlerEffectIntentReceiptV1
 from .model_primitives import require_digest
 from .models import canonical_digest
+from .stable_reads import open_directory_no_follow
 
 if TYPE_CHECKING:
     from .effect_journal_tail_v2 import JournalTailScanV21
