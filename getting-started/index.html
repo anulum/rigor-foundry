@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -364,6 +366,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compare-reports-across-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare reports across an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#add-a-repository-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -478,6 +491,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2165,6 +2205,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compare-reports-across-an-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare reports across an upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#add-a-repository-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2199,14 +2250,19 @@
 <p>This tutorial creates an adopter-owned policy and private work ledger without
 letting RigorFoundry guess their locations or overwrite existing project data.</p>
 <h2 id="install-and-identify-the-tool">Install and identify the tool<a class="headerlink" href="#install-and-identify-the-tool" title="Permanent link">&para;</a></h2>
-<p>Use an exact published version or a reviewed source checkout, then record the
-version that will create the policy:</p>
-<pre><code class="language-bash">python -m pip install &quot;rigor-foundry==0.1.1&quot;
+<p>On a POSIX runtime, install the published <code>1.0.0</code> wheel:</p>
+<pre><code class="language-bash">python -m pip install &quot;rigor-foundry==1.0.0&quot;
 rigor --version
 </code></pre>
-<p>The expected output is <code>rigor 0.1.1</code>. A policy, report, or campaign remains
-bound to its own schema and scanner identities; the package version is not a
-substitute for those content identities.</p>
+<p>The expected output is <code>rigor 1.0.0</code>. The published wheel imports the POSIX
+<code>fcntl</code> module during startup and fails on native Windows. On native Windows,
+install a wheel built from a verified source revision with Windows support.
+Keep the wheel's SHA-256 and its runtime dependency lock together so you can
+reinstall the working build. A source-built wheel can also report <code>rigor 1.0.0</code>.</p>
+<p>Before replacing an installation, retain the exact working wheel and its
+dependency lock, along with the tracked policy and its reports. Restore the
+wheel and its matching lock together when rolling back. On native Windows,
+restore the Windows-capable wheel.</p>
 <h2 id="declare-private-paths-first">Declare private paths first<a class="headerlink" href="#declare-private-paths-first" title="Permanent link">&para;</a></h2>
 <p>From the root of the Git worktree, create the parent of the internal ledger and
 make Git ignore the exact internal namespace. The policy itself must remain
@@ -2275,6 +2331,13 @@ native evidence, and unresolved domain decisions must remain visible rather
 than being converted into a clean result. Use <code>review-template</code>,
 <code>validate-review</code>, and an independent campaign before promoting a verified
 finding into the canonical TODO.</p>
+<h2 id="compare-reports-across-an-upgrade">Compare reports across an upgrade<a class="headerlink" href="#compare-reports-across-an-upgrade" title="Permanent link">&para;</a></h2>
+<p>Keep the original report and write the new scan to a separate path. Use
+<a href="../report-diff/"><code>rigor report-diff</code></a> to compare the two reports. If the rule
+pack changed, pass <code>--declare-rule-pack-change</code> with a justification. Review
+validation and SARIF export require the scanner and rule pack that produced
+the report. Use the recorded working installation to reproduce those
+outputs from a historical report.</p>
 <h2 id="add-a-repository-gate">Add a repository gate<a class="headerlink" href="#add-a-repository-gate" title="Permanent link">&para;</a></h2>
 <p>After committing the reviewed policy, adopt the pinned GitHub Action or
 pre-commit hook from <a href="../integrations/">Consumer integrations</a>. Create and
@@ -2309,6 +2372,10 @@ integration can apply remediation or promote findings.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2334,6 +2401,8 @@ integration can apply remediation or promote findings.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

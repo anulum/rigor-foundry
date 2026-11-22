@@ -16,7 +16,7 @@
         <link rel="prev" href="../jupyter-notebook-analysis/">
       
       
-        <link rel="next" href="../calibration-evidence-1.0/">
+        <link rel="next" href="../adr/0001-repository-boundary/">
       
       
         
@@ -49,6 +49,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../assets/accessibility.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -439,6 +441,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#repeated-python-architecture-scans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated Python architecture scans
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#external-source-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -475,6 +488,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2121,6 +2161,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#repeated-python-architecture-scans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated Python architecture scans
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#external-source-boundary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2174,6 +2225,9 @@
 
 
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
+<p>The <a href="../adr/0001-repository-boundary/">repository boundary decision</a> defines
+where evidence collection, adjudication and authority to change a repository
+are owned.</p>
 <p>The <a href="../selected-dispatch-applicability/">selected dispatch applicability API</a>
 extracts the actual invocation and evaluates active signed clauses under one
 retained chain and semantics context. Its journal-backed rate reader checks
@@ -2199,7 +2253,8 @@ generator.</p>
    its path, root, version, executable digest, and policy digest.</li>
 <li>Git inventory freezes the exact tracked paths, objects, tree, object format,
    and dirty state; an optional declared ignored inventory separately records
-   bounded content-free local evidence through no-follow descriptors.</li>
+   bounded content-free local evidence through no-follow POSIX descriptors or
+   retained native Windows NTFS handles.</li>
 <li>Portable scanners emit candidates anchored to the exact scanned blob or
    repository tree; declared native adapters emit bounded execution evidence.</li>
 <li>Review records bind decisions to exact report and policy digests.</li>
@@ -2312,6 +2367,21 @@ reinterpreted. Every anchor is checked against the same inventory before report
 construction. Human-readable excerpts remain separate, whitespace-normalised,
 and limited to 512 UTF-8 bytes; large member sets carry a full count and
 SHA-256 with a bounded deterministic prefix.</p>
+<h2 id="repeated-python-architecture-scans">Repeated Python architecture scans<a class="headerlink" href="#repeated-python-architecture-scans" title="Permanent link">&para;</a></h2>
+<p>The Python architecture scanner can reuse bounded source facts across
+scans in the same interpreter. Every scan runs the Python parser under the
+caller's current warning settings before reusing facts from a successful parse.
+Each observation is bound to the exact current
+tracked file, path, mode, content and blob identities, module name and resolved
+policy. The interpreter and installed rule implementation share the lifetime
+of the observations. The scanner derives facts from large inputs afresh and
+stores no observations on disk.</p>
+<p>Import resolution uses the complete current module set. Test ownership and
+duplicate-body findings are recomputed from the live repository cohort. Adding
+a test owner or another module can therefore change the report for a source
+file with identical bytes. Inventory, ignored evidence and report anchors are
+collected on every scan. Git supplies the live revision, tree and object format
+in one invocation, followed by the existing branch, index and worktree reads.</p>
 <h2 id="external-source-boundary">External source boundary<a class="headerlink" href="#external-source-boundary" title="Permanent link">&para;</a></h2>
 <p><code>source_capture.py</code> owns bounded retrieval policy, retained-byte capture
 identity, and no-follow stable reads. <code>source_provenance.py</code> owns exact
@@ -2391,6 +2461,10 @@ aliasing cannot authorise promotion.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2416,6 +2490,8 @@ aliasing cannot authorise promotion.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

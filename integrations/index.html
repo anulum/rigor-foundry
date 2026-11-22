@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -355,6 +357,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Pre-commit hook">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#native-windows-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native Windows hook
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-and-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade and rollback
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -445,6 +475,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2096,6 +2153,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Pre-commit hook">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#native-windows-hook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native Windows hook
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-and-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade and rollback
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2136,8 +2221,8 @@ can scan and evaluate an existing policy, but they cannot promote findings,
 apply remediation, edit source, create policy state, or infer private paths.</p>
 <h2 id="github-action">GitHub Action<a class="headerlink" href="#github-action" title="Permanent link">&para;</a></h2>
 <p>Pin the Action and every other workflow action to a complete commit SHA. The
-following revision is the provenance-hardened integration successor containing
-<code>action.yml</code>, <code>.pre-commit-hooks.yaml</code>, and the executable-provenance guards:</p>
+examples use the exact commit of the <a href="https://github.com/anulum/rigor-foundry/releases/tag/v1.0.0">published 1.0.0 release</a>
+for both the Action and the hook:</p>
 <pre><code class="language-yaml">name: RigorFoundry
 
 on:
@@ -2160,7 +2245,7 @@ jobs:
       - name: Prepare explicit ignored output parent
         run: mkdir -p .rigor/reports
       - name: Run read-only evidence gate
-        uses: anulum/RIGOR-FOUNDRY@cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
+        uses: anulum/RIGOR-FOUNDRY@8de2ecee35c7baa0e4e1dc5500e555a25ab82496
         with:
           repository-root: .
           policy-path: rigor-foundry-policy.json
@@ -2178,6 +2263,10 @@ hash-locked build requirements, and the hash-locked runtime requirements. The
 PEP 517 backend and all four of its build dependencies are exact requirements
 as well. Nested <code>setup-python</code> is itself pinned to a full commit. Inputs enter
 Bash only through quoted environment variables.</p>
+<p>The current-source Action first installs the hash-locked source-build bootstrap
+in its new interpreter, then installs the build/runtime locks without build
+isolation. The immutable example above identifies its published source revision;
+it does not acquire later source changes.</p>
 <p><code>repository-root</code>, repository-relative tracked <code>policy-path</code>, <code>report-path</code>, and <code>gate-report-path</code> are
 mandatory. <code>mode</code> accepts only <code>observe</code>, <code>ratchet</code>, or <code>zero</code>; <code>scope</code> accepts
 only <code>staged</code> or <code>full</code>. Ratchet and zero require an explicit <code>maturity-path</code>
@@ -2196,7 +2285,7 @@ replace, rather than extend, the manifest defaults:</p>
 <pre><code class="language-yaml">minimum_pre_commit_version: 4.6.0
 repos:
   - repo: https://github.com/anulum/RIGOR-FOUNDRY
-    rev: cd7a06d6c2e6c1258006ade83aff5e94d5fb1cb2
+    rev: 8de2ecee35c7baa0e4e1dc5500e555a25ab82496
     hooks:
       - id: rigor-foundry
         entry: .rigor/rigor-venv/bin/rigor
@@ -2216,14 +2305,37 @@ repos:
 <p>Create and ignore <code>.rigor/reports</code> before running the hook. The hook uses
 <code>language: system</code> deliberately: pre-commit's Python environment installer does
 not expose pip's <code>--require-hashes</code> contract. Install the pinned RigorFoundry
-checkout into <code>.rigor/rigor-venv</code> with its <code>requirements/build.txt</code> and
-<code>requirements/runtime.txt</code> hash locks, followed by <code>pip install
+checkout into <code>.rigor/rigor-venv</code> with the <code>requirements/build.txt</code> and
+<code>requirements/runtime.txt</code> hash locks from that same immutable revision, followed
+by <code>pip install
 --no-build-isolation --no-deps CHECKOUT</code>; then retain the explicit <code>entry</code>
 shown above. The manifest runs once serially without filenames and does not
 consent to native adapters. For ratchet or zero, replace the complete <code>args</code>
 list, select the stronger mode, and add <code>--maturity PATH</code>. Add <code>--review PATH</code>
 only when the review ledger is explicitly owned. Add <code>--allow-native-audits</code>
 only after reviewing the declared adapter commands and sandbox prerequisites.</p>
+<p>For a current-source checkout, install <code>requirements/bootstrap.txt</code> into that
+interpreter before the build/runtime locks and pass <code>--no-build-isolation</code> for
+subsequent lock installation. Keep the current-source setup separate from the
+release example. Use the locks from the exact revision you install.</p>
+<h3 id="native-windows-hook">Native Windows hook<a class="headerlink" href="#native-windows-hook" title="Permanent link">&para;</a></h3>
+<p>The published <code>1.0.0</code> package requires a POSIX runtime. On native Windows, use
+a Windows-capable build and the hook manifest from its verified source revision.
+Follow the <a href="../getting-started/#install-and-identify-the-tool">installation and recovery instructions</a>.
+Set the pre-commit <code>entry</code> to <code>.rigor/rigor-venv/Scripts/rigor.exe</code> when that is the
+installation path. Use forward slashes in the entry because pre-commit parses
+backslashes as escapes.</p>
+<h2 id="upgrade-and-rollback">Upgrade and rollback<a class="headerlink" href="#upgrade-and-rollback" title="Permanent link">&para;</a></h2>
+<p>Treat the Action SHA, hook Git revision and hook installation as one set. Retain
+the existing pins, locks and hook installation before switching. Keep the same
+tracked policy and use fresh ignored output paths for the new reports. Run the
+new set in observe mode when the policy allows it. Compare exact report and
+gate identities only when both runs use the same checkout and evidence inputs.
+For separate environments, verify each gate against its own report and check
+the expected policy digest and Git state for that environment.</p>
+<p>Restore the prior pins and hook installation together to roll back. Use another
+fresh output path to confirm the restored gate. On native Windows, restore the
+last working Windows-capable build and its matching hook revision.</p>
 <h2 id="verification-boundary">Verification boundary<a class="headerlink" href="#verification-boundary" title="Permanent link">&para;</a></h2>
 <p>Distribution CI builds and checks the wheel and source distribution, creates a
 separate real Git adopter under <code>/tmp</code>, bootstraps and commits its policy, runs
@@ -2265,6 +2377,10 @@ findings are resolved, or that the repository is production-ready.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2290,6 +2406,8 @@ findings are resolved, or that the repository is production-ready.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

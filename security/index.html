@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2226,12 +2255,13 @@ and archive members as adversarial input.</p>
   separately hash-locked RigorFoundry installation. Both defaults are
   observe-only and carry no promotion or remediation command.</li>
 <li>Package publication uses a protected OIDC environment rather than a stored
-  package credential.</li>
+  package credential. The rebuilt wheel and source distribution must match the
+  same-named published GitHub Release assets before signing.</li>
 </ul>
 <h2 id="dependency-advisory-audits">Dependency advisory audits<a class="headerlink" href="#dependency-advisory-audits" title="Permanent link">&para;</a></h2>
-<p>The Security workflow audits all seven hash-locked Python profiles (build,
-CI, fuzz, native, runtime, security and test) and the VS Code extension's
-committed npm lock on every push and pull request to <code>main</code>. Python audits
+<p>The Security workflow audits all nine hash-locked Python profiles (bootstrap,
+build, CI, fuzz, native, runtime, security, test and test-windows) and the VS Code
+extension's committed npm lock on every push and pull request to <code>main</code>. Python audits
 require hashes, avoid installation and fail when dependency collection fails.
 The npm audit includes development dependencies and uses the default failure
 threshold. Advisory findings and registry errors block the jobs.</p>
@@ -2264,11 +2294,10 @@ A compromised runner administrator, kernel, root-owned package database, or
 root-owned launcher is outside this boundary; RigorFoundry detects identity or
 package drift during an audit but does not claim to withstand a compromised
 host root.</p>
-<p>Do not disclose a suspected vulnerability in a public issue. Follow the
-<a href="https://github.com/anulum/RIGOR-FOUNDRY/security/policy">security policy</a> and
-use private vulnerability reporting.</p>
+<p>Report suspected vulnerabilities through a private channel listed in the
+<a href="https://github.com/anulum/rigor-foundry/security/policy">security policy</a>.</p>
 <h2 id="security-tool-lock-maintenance">Security-tool lock maintenance<a class="headerlink" href="#security-tool-lock-maintenance" title="Permanent link">&para;</a></h2>
-<p>The current security lock pins Semgrep <code>1.180.0</code> and Click <code>8.4.2</code>. Its retained
+<p>The current security lock pins Semgrep <code>1.184.0</code> and Click <code>8.4.2</code>. Its retained
 generation header names <code>pip-compile</code> on Python 3.11, matching the repository
 lock target. Use a Python 3.11 environment with the <code>pip-tools</code> version pinned
 in <code>requirements/ci.txt</code> and retain the complete CI constraints and SHA-256
@@ -2280,8 +2309,25 @@ hashes. Regenerate from the repository root:</p>
 <p>Keep the canonical seven-line licence header above the generated header.
 After regeneration, run the strict audit and install the entire hash-locked
 profile in a fresh environment; run pip check, Bandit and the installed
-semgrep console entry point with the repository policy. The local lock
-qualification does not establish hosted CI or runtime admission.</p>
+Semgrep console entry point with the repository policy through the maintained
+Unix process profile:</p>
+<pre><code class="language-sh">bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools
+</code></pre>
+<p>The security job uses Python <code>3.15.2</code> and installs the hash-locked scanner and
+test profiles. Before dependency audits, it exercises the actual clean scan,
+both repository-rule refusals and a missing scanner through
+<code>tests/test_semgrep_runtime.py</code>, requiring 100% coverage of that complete test
+owner. The dependency-waiver guard requires this unconditional step.
+The dependency audit checks the optional provenance verifier lock with
+the same hash verification and blocking result as the runtime lock.</p>
+<p>The launcher requires a finite host soft
+stack limit and lowers its own hard stack to that same value before replacing
+itself with the installed scanner. This bounds Semgrep's native child-process
+stack on Python 3.15 without changing the caller's limits or system settings.
+An unlimited soft stack or missing scanner fails before scanning; findings and
+scanner errors retain their original nonzero exit status. The arguments and
+repository rules are unchanged. The local lock qualification does not establish
+hosted CI or runtime admission.</p>
 
 
 
@@ -2310,6 +2356,10 @@ qualification does not establish hosted CI or runtime admission.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2335,6 +2385,8 @@ qualification does not establish hosted CI or runtime admission.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

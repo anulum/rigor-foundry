@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2054,6 +2083,13 @@ semantics remain valid. The receipt binds the exact command, full Python
 version, source/configuration bytes, ordered collection, index/count and hashes
 of retained observations, JUnit and the raw <code>.coverage</code> database. A provisional
 observation file alone is never success evidence.</p>
+<p>Native profiles select the C tracer explicitly so that per-test dynamic
+contexts remain available on newer Python interpreters. Coverage.py's
+sys.monitoring core does not support those contexts; its
+<a href="https://coverage.readthedocs.io/en/7.17.2/messages.html#warning-no-sysmon-context">context warning</a>
+means that attribution may be incomplete. Keep subprocess branch measurement
+and separate ordinary/primary databases enabled. A successful test process
+with incomplete context attribution does not qualify that attribution.</p>
 <p>All partitions and consumers use the same versioned timing snapshot from their
 checkout. Its normalized content is bound into the source identity and retained
 observations in schema version 2; the launcher and union reject a different
@@ -2089,6 +2125,15 @@ the aggregate. The final CI gate additionally requires every aggregate. The
 versioned workflow inventory and source guard check both execution jobs and the
 complete caller graph. The quality workflow tests the partition infrastructure
 and its owning tests with whole-file statement and branch coverage of 100%.</p>
+<p>On pushes to <code>main</code> and pull requests targeting <code>main</code>, the required CI gate
+owns the complete editor check through the supported editor host profiles.
+The separate Pre-commit workflow still runs its repository hooks on every
+tracked file. A manual Pre-commit dispatch or a pull request into another
+branch runs the same editor host matrix within the Pre-commit workflow,
+including its Windows native build and artifact consumer. Local Git commits
+run <code>make editor-check</code> through the editor hook. The workflow source guard
+binds the standalone editor job to the same reviewed workflow and trigger
+condition.</p>
 <p>An independent quality step exercises the fixed context resolver and retained
 source lifetimes. It measures the complete resolver and both owning test files
 at 100% statement and branch coverage, including all supported context formats,
@@ -2124,6 +2169,10 @@ conditional execution, a lower threshold or a reduced measured owner set.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2149,6 +2198,8 @@ conditional execution, a lower threshold or a reduced measured owner set.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

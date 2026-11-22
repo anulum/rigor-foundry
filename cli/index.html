@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -995,6 +1024,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#repeated-scans-in-one-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated scans in one process
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adopter-preflight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adopter preflight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit output files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#conditions-with-partial-observations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1050,6 +1112,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#check-a-repository-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check a repository policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-only-inspection" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1060,6 +1133,17 @@
   
     <nav class="md-nav" aria-label="Read-only inspection">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact-historical-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact historical revision
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#incremental-changed-file-view" class="md-nav__link">
@@ -2226,6 +2310,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#repeated-scans-in-one-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated scans in one process
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adopter-preflight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adopter preflight
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#explicit-output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit output files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#conditions-with-partial-observations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2281,6 +2398,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#check-a-repository-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check a repository policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-only-inspection" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2291,6 +2419,17 @@
   
     <nav class="md-nav" aria-label="Read-only inspection">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact-historical-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exact historical revision
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#incremental-changed-file-view" class="md-nav__link">
@@ -2418,7 +2557,8 @@ installed command reports the version of the package actually installed.
 Publication requires separate release gates and owner authorisation.</p>
 <p>Install from a verified source checkout during the migration:</p>
 <pre><code class="language-bash">python3 -m venv .venv
-.venv/bin/python -m pip install --require-hashes -r requirements/ci.txt
+.venv/bin/python -m pip install --require-hashes -r requirements/bootstrap.txt
+.venv/bin/python -m pip install --require-hashes --no-build-isolation -r requirements/ci.txt
 .venv/bin/python -m pip install --no-build-isolation --no-deps -e .
 .venv/bin/rigor --help
 .venv/bin/rigor --version
@@ -2428,6 +2568,36 @@ Publication requires separate release gates and owner authorisation.</p>
 <p>The distributed GitHub Action and pre-commit hook invoke this same installed
 CLI with explicit paths. They expose observe, ratchet, and zero gate modes but
 do not expose <code>promote --apply</code>; see <a href="../integrations/">Consumer integrations</a>.</p>
+<h2 id="repeated-scans-in-one-process">Repeated scans in one process<a class="headerlink" href="#repeated-scans-in-one-process" title="Permanent link">&para;</a></h2>
+<p>Consumers that call the scanner more than once in one Python interpreter can
+reuse bounded facts after parsing Python with current warning settings. Each scan reads current Git,
+worktree and ignored evidence and rebuilds cross-file findings. Independent
+<code>rigor scan</code> processes start with empty observation storage. See
+<a href="../architecture/#repeated-python-architecture-scans">Repeated Python architecture scans</a>.</p>
+<h2 id="adopter-preflight">Adopter preflight<a class="headerlink" href="#adopter-preflight" title="Permanent link">&para;</a></h2>
+<p>Run <code>rigor doctor --root /path/to/repository</code> to check the installed package,
+trusted Git, tracked policy, Bubblewrap and declared native adapter descriptors.
+Use <code>--policy</code> and the Git trust options from <code>rigor scan</code> to diagnose the same
+configuration. The command reads the repository and prints JSON without
+creating files in it. The sandbox check runs a fixed no-op inside the normal
+native isolation boundary. Repository-declared adapter commands are not run.</p>
+<p>Each check reports its status, whether it is required, and an observation or
+remediation. An unavailable Git inventory leaves policy and sandbox checks
+unassessed. A missing tracked policy is reported even when the scanner can use
+portable defaults. The exit status is 1 if any required prerequisite is
+unresolved and 0 otherwise. Sandbox availability is required when the tracked
+policy declares a required native adapter. Descriptor readiness covers local
+resolution and tracked inputs. Actual audit execution produces its own evidence.</p>
+<h2 id="explicit-output-files">Explicit output files<a class="headerlink" href="#explicit-output-files" title="Permanent link">&para;</a></h2>
+<p>Explicit output paths must be new files below existing directories. Existing
+files and symbolic links are refused without overwriting their contents.
+Invalid UTF-8 is refused before creating an output file.</p>
+<p>On POSIX, an interrupted or failed write can leave an empty or partial file.
+The command still fails; file existence alone does not prove that a report is
+complete. Inspect retained files before removing them, and use a new filename
+for a retry. Failure cleanup preserves directory entries because another
+process may have replaced the original output. On Windows, the native writer
+can discard its own created object through the retained file handle.</p>
 <h2 id="conditions-with-partial-observations">Conditions with partial observations<a class="headerlink" href="#conditions-with-partial-observations" title="Permanent link">&para;</a></h2>
 <p>The provisional module command
 <code>python -m rigor_foundry.condition_evaluation_cli --expression expression.json
@@ -2444,6 +2614,13 @@ retrieval policy. It does not perform or authorise network access.
 content-digest claim against the exact capture and payload. See
 <a href="../source-provenance/">Verified external source provenance</a> for the complete
 contract and examples.</p>
+<p><code>scan-provenance</code> runs the static scan and attaches a separate record for
+hash-locked distribution attestations and source-bound Scorecard checks.
+It uses a local profile whose SHA-256 you supply independently. Install the
+<code>provenance</code> extra to verify PyPI Publish and SLSA signatures. A successful
+command writes both the audit report and the individual evidence outcomes.
+See <a href="../source-provenance/#offline-scan-with-signed-distribution-evidence">offline dependency provenance</a>
+for the profile fields and command example.</p>
 <h2 id="offline-evidence-verification">Offline evidence verification<a class="headerlink" href="#offline-evidence-verification" title="Permanent link">&para;</a></h2>
 <p><code>rigor verify --bundle BUNDLE.json --trust-policy TRUST.json --at TIMESTAMP
 [--output RESULT.json]</code> verifies signed reports, review attestations,
@@ -2470,7 +2647,10 @@ for the complete workflow and failure boundary.</p>
 <p><code>cra-bootstrap</code>, <code>vuln-register</code>, <code>vuln-timeline</code>, <code>cra-draft</code>, <code>cra-receipt</code>,
 <code>cra-skip</code>, <code>user-notice</code>, and <code>cra-status</code> implement the prepare-only CRA
 reporting workflow. <code>sbom-import</code> and <code>sbom-status</code> add imported-inventory and exact
-Git-drift evidence. <code>vuln-register</code> accepts a complete content-bound offline
+Git-drift evidence. The explicit OCI SPDX profile binds an original in-toto
+statement to the selected image manifest and reads its directly contained
+packages. See <a href="../cra-reporting/#import-an-oci-image-statement">OCI image statements</a>.
+<code>vuln-register</code> accepts a complete content-bound offline
 OSV adapter bundle as awareness evidence, but still requires separate explicit
 active-exploitation evidence. The commands retain append-only evidence below
 <code>.rigor/cra/</code> and contain no network client. A receipt binds operator-supplied
@@ -2488,6 +2668,28 @@ deadline semantics, payload partitions, exit codes, and legal-claims boundary.
 See <a href="../cra-rules/">CRA readiness rules and StandardPack</a> for policy activation,
 rule verification, pack signing, campaign integration, and the enforcement
 prohibition.</p>
+<h2 id="check-a-repository-policy">Check a repository policy<a class="headerlink" href="#check-a-repository-policy" title="Permanent link">&para;</a></h2>
+<pre><code class="language-bash">rigor policy-check --root . --policy config/draft-policy.json
+</code></pre>
+<p>The default input is <code>rigor-foundry-policy.json</code> under the declared root. The
+provisional command accepts a draft as well as a tracked policy. It reads a
+single regular file under that root without following symbolic links and
+bounds the document to one MiB and 32 levels of nesting.</p>
+<p>A valid input prints <code>policy check: PASS</code> and returns 0. A defective input
+returns 1 and prints each independently diagnosable issue on its own line.
+Each line starts with an escaped JSON Pointer, followed by the problem and
+a fix hint. For example:</p>
+<pre><code class="language-text">&quot;/native_audits/0/target_paths/1&quot; Invalid repository-relative target. List unique, exact repository-relative targets appropriate to this profile.
+</code></pre>
+<p>Pointer indices start at zero. The empty pointer identifies a document-level
+failure, such as invalid JSON. The command reports precise member names for
+missing or unexpected fields, checks supported policy and adapter variants,
+and locates conflicts such as a required CRA state bound to the wrong ignored
+path. It omits supplied values from diagnostics. Refused input paths and
+unreadable or oversized files return 2.</p>
+<p>This is a read-only check. It validates declarations with adapter execution,
+policy installation, enforcement and review authority left to their existing
+entry points.</p>
 <h2 id="read-only-inspection">Read-only inspection<a class="headerlink" href="#read-only-inspection" title="Permanent link">&para;</a></h2>
 <p><code>rigor scan --root PATH</code> inventories one Git repository and emits candidate
 evidence. It does not modify the inspected repository.</p>
@@ -2509,6 +2711,21 @@ excerpt.</p>
 1.2. JSON never includes ignored file content, link targets, environment
 values, or recursive directory members. <code>missing</code> and <code>unavailable</code> remain
 evidence states and do not create findings by themselves.</p>
+<h3 id="exact-historical-revision">Exact historical revision<a class="headerlink" href="#exact-historical-revision" title="Permanent link">&para;</a></h3>
+<p>Use <code>rigor scan-revision --root PATH FULL_COMMIT_ID</code> to inspect an exact
+local commit, including SHA-256 Git repositories. The argument must be the
+full SHA-1 or SHA-256 commit object ID. The scanner reads the local Git object
+store from a temporary checkout outside the source repository. It verifies the
+tracked bytes against Git and removes the checkout before writing the report.
+The report gives the source repository path, the selected commit and tree, and
+the detached state. Current worktree changes, Git tags and branch movement do
+not substitute for the selected object.</p>
+<p>The historical tree supplies its own tracked policy. Declarations of ignored
+paths are validated against that tree's Git ignore rules. Their observations
+are unavailable with reason <code>historical-state-unavailable</code>, since Git does not
+record their contents. The JSON, Markdown and candidate gate options apply to
+the historical report. The provisional command has its own CLI contract. The
+stable <code>scan --changed-since</code> entry keeps its original options.</p>
 <h3 id="incremental-changed-file-view">Incremental changed-file view<a class="headerlink" href="#incremental-changed-file-view" title="Permanent link">&para;</a></h3>
 <p><code>rigor scan --changed-since REF</code> restricts the reported and gated candidates to
 files changed between the Git revision <code>REF</code> and <code>HEAD</code>. The full deterministic
@@ -2634,9 +2851,9 @@ repository-relative manifest when a repository adopts the same contract.</p>
 <p>The command rejects schema drift, duplicate or unsorted identifiers, source
 symbol or guard drift, stale symbol digests, missing public verification tests,
 review dates in the future, expired reviews, and any preregistered negative
-search match. It does not mark residual lines as covered and does not execute
-the cited tests; the focused owner tests and remote coverage matrix remain
-separate required evidence.</p>
+search match. The command prints a fixed pass or fail status. Trusted callers
+can obtain the detailed findings from the Python validator. The focused owner
+tests and remote coverage matrix supply the measured coverage evidence.</p>
 <p>Run <code>rigor COMMAND --help</code> for the exact options supported by the installed
 version.</p>
 
@@ -2667,6 +2884,10 @@ version.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2692,6 +2913,8 @@ version.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

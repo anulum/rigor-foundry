@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2142,6 +2171,10 @@ by <code>rigor contract</code> and documented in the
 <a href="../stable-contract-1.0/">1.0 stable compatibility contract</a>. Source metadata
 declares package version <code>1.0.0</code>. The manifest describes compatibility; release
 authorisation and registry availability require separate evidence.</p>
+<p>The provisional <code>policy-check</code> CLI command reports repository policy
+diagnostics without issuing a policy decision. Its command signature is
+checked separately from the frozen 1.0 manifest. See
+<a href="../cli/#check-a-repository-policy">check a repository policy</a>.</p>
 <p>The result has sorted <code>stable</code> and <code>provisional</code> name arrays, exact stable
 runtime-binding records, and structured <code>deprecated</code> records. Compatibility
 tests require every top-level export to have exactly one classification. Every
@@ -2171,7 +2204,13 @@ migration.</p>
 rebound to an incompatible kind of object. Record fields and serialized
 protocols retain their own explicit schema/version contracts; stable import
 availability does not erase those migration boundaries.</p>
+<p><code>scan_repository(root, revision=commit_id)</code> also accepts a full local Git
+commit object ID. The optional keyword uses the historical checkout described
+in the CLI guide. <a href="../cli/#exact-historical-revision">Historical revision scan</a></p>
 <h2 id="provisional-imports">Provisional imports<a class="headerlink" href="#provisional-imports" title="Permanent link">&para;</a></h2>
+<p>The <code>rigor doctor</code> command is a provisional adopter diagnostic. Its current
+usage and statuses are documented in <a href="../cli/#adopter-preflight">the CLI guide</a>.
+The published 1.0 command manifest continues to describe its original surface.</p>
 <p><code>report_sarif</code>, <code>SARIF_SCHEMA_URI</code>, and <code>SARIF_VERSION</code> are provisional public
 imports. Their emitted document is independently governed by SARIF 2.1.0 and
 the explicit RigorFoundry property names documented in <a href="../sarif/">SARIF export</a>.</p>
@@ -2328,6 +2367,10 @@ without extending frozen exports or authenticating a maintained inventory.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2353,6 +2396,8 @@ without extending frozen exports or authenticating a maintained inventory.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

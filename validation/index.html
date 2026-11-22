@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -1929,6 +1958,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#private-inputs-at-build-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private inputs at build boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-release-sbom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-release SBOM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tagged-release-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tagged release assets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducible-container-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducible container build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-eligibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release eligibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#workflow-inventory-and-aggregate-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2055,6 +2139,61 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#private-inputs-at-build-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private inputs at build boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-release-sbom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-release SBOM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tagged-release-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tagged release assets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducible-container-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducible container build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-eligibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release eligibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#workflow-inventory-and-aggregate-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2105,11 +2244,32 @@ make bandit
 make audit
 make test-file TEST=tests/test_name.py
 </code></pre>
+<p>The editor has a separate native owner boundary. <code>make editor-check</code> executes
+typed ESLint, Prettier, both strict TypeScript projects including SDK types,
+validated TypeDoc and complete unit tests. The commit hook runs the same
+target. Full <code>make preflight</code> also runs <code>make editor-coverage</code>, which measures
+the full check and the actual single-folder and multi-root Extension Development Hosts with a per-file 100%
+statement, branch, function and line requirement for all production editor
+modules, scripts and tool configurations. Use <code>xvfb-run -a make preflight</code> on
+headless Linux. Fast Make preflight includes native checks and unit tests.
+Full Python preflight builds the documentation and validates a fresh wheel and
+source distribution in a temporary directory using the distribution CI checks.
+Make adds Node and VS Code verification. See
+<a href="../vscode-integration/#development-and-verification">editor verification</a> for
+the locked setup, host executable and retained failure evidence.</p>
 <p>The exhaustive suite, aggregate branch-coverage threshold, Python 3.11–3.13
 matrix, CodeQL, and OpenSSF Scorecard remain remote gates. A release-candidate
 local closeout may additionally run the hash-locked dependency audit, Semgrep,
 package installation smoke, hardened container smoke, and strict documentation
 build; those local results do not replace the corresponding remote evidence.</p>
+<p>Each exact supported Python version has eight Linux test shards plus Windows
+and macOS native profiles. The complete interpreter union validates source,
+Git revision, run ID, attempt, parent/subtest outcomes, JUnit and raw branch
+databases before applying the package-wide 98% and native-dispatch 100% gates.
+Python 3.12 also requires every complete native backend and maintained-test
+owner to reach 100% statements and branches. Native tooling has its own whole
+source/test-file gate. Local qualification retains its actual local venue;
+hosted admission requires the matching GitHub run.</p>
 <p>Offline CRA reporting has dedicated model, timeline, payload, storage, and CLI owners. The
 focused set covers all vulnerability/incident stage partitions, exact UTC and
 deadline boundaries, end-of-month clamping, revision-chain persistence,
@@ -2245,6 +2405,70 @@ rejection.
 Campaign storage tests also reject symlinked run directories, linked
 attestations, hard-linked reports and reviews, and symlinked campaign-parent
 components through the public durable-loading APIs.</p>
+<h2 id="private-inputs-at-build-boundaries">Private inputs at build boundaries<a class="headerlink" href="#private-inputs-at-build-boundaries" title="Permanent link">&para;</a></h2>
+<p>Keep local evidence, project memory, operator rules and credentials outside
+public inputs. The tracked Git rules exclude these paths in a fresh clone
+and admit only the public root <code>.env.example</code> template.
+Build releases from the reviewed Git revision. The Docker
+context and VSIX selectors also exclude local environment files, agent
+instructions and private data trees at nested paths. Docker admits the
+public root <code>.env.example</code> template. MkDocs excludes the private inputs from
+both rendered pages and its search index.</p>
+<p>Qualify exclusion with synthetic markers in disposable build inputs. Check the
+Git index and source archive, the Docker context and image layers, the rendered
+site and search index, and the Python and editor archives. Check that the
+public CLI, site and editor entry points still reach their artifacts.</p>
+<h2 id="pre-release-sbom">Pre-release SBOM<a class="headerlink" href="#pre-release-sbom" title="Permanent link">&para;</a></h2>
+<p>The SBOM workflow runs on pull requests that change its inventory inputs
+and can be dispatched for a branch before release. Each run produces an
+Actions artifact containing three CycloneDX JSON documents, the checkout
+commit in <code>SOURCE_COMMIT</code>, and a <code>SHA256SUMS</code> manifest. Run
+<code>sha256sum --check SHA256SUMS</code> from the extracted artifact to check its files.</p>
+<p>The Python documents cover the RigorFoundry wheel installed in fresh
+Python 3.12.13 Linux x64 environments. One uses the base runtime lock and
+the other uses the lock for the optional provenance extra. The SBOM
+generator and build tools are installed in a separate environment.
+The editor document inventories the production npm lock graph, including
+its platform-specific optional bindings. It describes the lock, which can
+contain bindings for multiple targets, while installed VSIX and container
+artifacts require their own inventory evidence.</p>
+<h2 id="tagged-release-assets">Tagged release assets<a class="headerlink" href="#tagged-release-assets" title="Permanent link">&para;</a></h2>
+<p>The release assembly workflow inventories the wheel installed with the base
+runtime lock in a fresh Python 3.12.13 Linux x64 environment. Its
+<code>rigor-foundry.cdx.json</code> uses CycloneDX 1.6 and describes that installation.
+The pre-release workflow supplies the separate optional provenance inventory.</p>
+<p>Download the wheel, source distribution, SBOM, <code>SOURCE_COMMIT</code> and
+<code>SHA256SUMS</code> into the same directory. Run <code>sha256sum --strict --check SHA256SUMS</code>
+there and compare <code>SOURCE_COMMIT</code> with the expected release commit. Use the
+published signatures and provenance to authenticate the release.</p>
+<h2 id="reproducible-container-build">Reproducible container build<a class="headerlink" href="#reproducible-container-build" title="Permanent link">&para;</a></h2>
+<p>Run <code>make docker-smoke</code> against the locally built image. The container workflow
+uses the same target with <code>DOCKER_SMOKE_IMAGE=rigor-foundry:ci</code>. Each invocation
+creates and removes its own Git fixture under <code>TMPDIR</code> and scans it through a
+read-only bind mount with networking disabled. Load the selected image before
+running the smoke test.</p>
+<p>For the Linux x64 image comparison, use the verified Buildx installer and the
+same digest-pinned BuildKit image as the container workflow. The commit time
+sets the OCI image timestamp. The OCI exporter normalizes layer timestamps.
+The Dockerfile omits local install logs and caches, clears the locked service
+account's password aging date and compiles Python modules with checked hashes.
+The runtime lock is copied with mode <code>0644</code> so checkout and archive
+permissions produce the same image layer.</p>
+<p>From a clean checkout with a Docker daemon, create a dedicated builder and
+export one image layout. Choose a writable location for the archive.</p>
+<pre><code class="language-bash">python3 -m tools.install_buildx
+docker buildx create --name rigor-repro --driver docker-container \
+  --driver-opt image=moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec
+epoch=&quot;$(git log -1 --format=%ct)&quot;
+docker buildx build --builder rigor-repro --platform linux/amd64 --no-cache \
+  --provenance=false --sbom=false --build-arg &quot;SOURCE_DATE_EPOCH=$epoch&quot; \
+  --output type=oci,dest=rigor-foundry.oci.tar,rewrite-timestamp=true .
+docker buildx rm rigor-repro
+</code></pre>
+<p>Compare manifest and layer digests from separate builders with the same source,
+toolchain and inputs. The local image comparison excludes attestations. The
+publication workflow produces its own provenance and SBOM.</p>
+<h2 id="release-eligibility">Release eligibility<a class="headerlink" href="#release-eligibility" title="Permanent link">&para;</a></h2>
 <p>Release eligibility additionally requires exact-version metadata, wheel and
 source-distribution checks, hashes, SBOM evidence, signatures, provenance, an
 independent audit, and explicit owner authorisation. The exact-tag guard uses
@@ -2283,8 +2507,11 @@ status text that publication would contradict. Automated package publication
 uses the repository owner actor; an explicitly confirmed owner-only dispatch is
 available for recovery from the named tag or the repository default branch,
 always checks out its fully qualified tag ref, and first verifies an existing
-published GitHub Release. The publication job's write permission is limited to
-attaching Sigstore bundles to that release. The signing action's native release
+published GitHub Release. The job compares the rebuilt wheel and source
+distribution byte for byte with the same-named downloads from that release.
+Missing or different assets stop the job before signing. The publication job's
+write permission is limited to attaching Sigstore bundles to that release.
+The signing action's native release
 uploader is disabled because its upload set includes signed inputs and source
 archives. Both paths require exactly two generated package bundles, move them
 out of the distribution directory, and revalidate the wheel and source
@@ -2315,6 +2542,16 @@ unexpectedly skipped results cannot pass. The original aggregate package
 coverage floor remains 98%.</p>
 <p>Hosted required checks need actual emitted check names and separate publication
 validation. Local policy results establish source correctness, not a remote run.</p>
+<p>Native Python evidence has separate ordinary and primary roles. Ordinary profiles
+retain every product and constructor-owned test; the two reserved primary test
+owners belong to the separately required Windows Python 3.12 acceptance job.
+The ordinary union refuses primary-labelled receipts and databases naming
+reserved owners or contexts before reading branch data. Schema-version-1 native
+receipts are obsolete; no old mixed evidence is relabelled or clipped.</p>
+<p>Native observation admission also requires the emitted scheduling strategy and
+advisory duration snapshot to match the source-bound receipt identity. The
+producer refuses publication after mismatched finalisation output, and the
+consumer refuses changed observations even if their artifact digest was updated.</p>
 
 
 
@@ -2343,6 +2580,10 @@ validation. Local policy results establish source correctness, not a remote run.
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2368,6 +2609,8 @@ validation. Local policy results establish source correctness, not a remote run.
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

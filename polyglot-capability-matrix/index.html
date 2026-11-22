@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -365,6 +367,33 @@
     
   
     Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
   
 
     
@@ -2152,18 +2181,17 @@
 
 
 <h1 id="polyglot-capability-matrix">Polyglot capability matrix<a class="headerlink" href="#polyglot-capability-matrix" title="Permanent link">&para;</a></h1>
-<p>RigorFoundry is not a Python-only tool, and it does not claim uniform semantic
-depth across languages. It scans thirteen languages at deliberately different
-depths. This matrix states, per language, which analysis techniques the scanner
-actually applies, so an adopter can see exactly what a green scan does and does
-not establish. It is derived from the live language-capability registry, so it
-cannot drift from the scanner's behaviour.</p>
+<p>RigorFoundry recognises thirteen language families. The matrix shows the
+analysis techniques implemented for each one. The test suite checks every row
+against the public language-capability API.</p>
 <h2 id="three-technique-classes">Three technique classes<a class="headerlink" href="#three-technique-classes" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>AST / semantic controls</strong> — the scanner parses the language's source into an
   abstract syntax tree and reasons over it. This backs the test-authenticity
   rules (TA001–TA011) and the Python import-graph architecture rules
-  (AR001–AR004, AR006). It is currently <strong>Python only</strong>.</li>
+  (AR001–AR004, AR006) in the base installation. The <code>native</code> extra adds
+  targeted tree-sitter rules for C/C++, Go, JavaScript, Julia, Rust, shell,
+  and TypeScript.</li>
 <li><strong>Structural / textual heuristics</strong> — responsibility-size ownership (GF001),
   missing-test-owner ownership (AR005 for Python, AR008 for the polyglot
   suffixes), and relative dependency-graph resolution. These apply across the
@@ -2180,144 +2208,137 @@ cannot drift from the scanner's behaviour.</p>
 <th>Language</th>
 <th style="text-align: center;">AST / semantic</th>
 <th style="text-align: center;">Size (GF001)</th>
-<th style="text-align: center;">Ownership</th>
+<th style="text-align: center;">Test ownership</th>
 <th style="text-align: center;">Dependency graph</th>
 <th style="text-align: center;">Structural</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>python</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-</tr>
-<tr>
 <td>c / c++</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-</tr>
-<tr>
-<td>javascript</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-</tr>
-<tr>
-<td>typescript</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-</tr>
-<tr>
-<td>rust</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-</tr>
-<tr>
-<td>julia</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>go</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>javascript</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>julia</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>lean</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>mojo</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td>systemverilog</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td>python</td>
+<td style="text-align: center;">Built in</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
-<td>verilog</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td>rust</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>shell</td>
-<td style="text-align: center;">✅†</td>
-<td style="text-align: center;">✅</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">✅</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>systemverilog</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>typescript</td>
+<td style="text-align: center;">Native extra</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+</tr>
+<tr>
+<td>verilog</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">Yes</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td>yaml</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">No</td>
 </tr>
 </tbody>
 </table>
-<p><code>✅</code> marks an applied technique; <code>—</code> marks one the scanner does not apply to that
-language today. <code>†</code> marks the native AST/semantic analysis for JavaScript,
-TypeScript, Go, Rust, C/C++, Julia, and Shell, which is implemented through
-tree-sitter parsers but requires the optional <code>native</code> extra
-(<code>pip install rigor-foundry[native]</code>);
-without the extra a deployment degrades to the structural controls for those
-languages. YAML is scope-scannable data only — it participates in the
-tracked-content scope rule but carries no size, ownership, or dependency control.
+<p>Install the optional parsers with <code>pip install 'rigor-foundry[native]'</code>.
+The base installation applies the listed structural controls to those
+languages. YAML participates in tracked-content scope checks.
 Go, Lean, Mojo, and the hardware-description languages are owned for size and
 ownership but have no native dependency-family parser yet.</p>
 <h2 id="reading-a-scan-honestly">Reading a scan honestly<a class="headerlink" href="#reading-a-scan-honestly" title="Permanent link">&para;</a></h2>
-<p>A green scan means the applied techniques found no candidate — not that the
-language was analysed as deeply as Python. JavaScript, TypeScript, Go, Rust,
-C/C++, Julia, and Shell now have a native AST pass (via the <code>native</code> extra); the
-remaining languages (Lean, Mojo, the hardware-description languages, and YAML) run
-only their structural or scope controls, so semantic defects that only an AST pass
-would surface are out of scope for them, guided by adopter evidence.</p>
+<p>A green scan covers the techniques available in that run. The matrix describes
+implemented controls for the language family. For a particular run, the
+installed parsers and the applicable rules determine which controls can report
+findings.</p>
 <h2 id="programmatic-access">Programmatic access<a class="headerlink" href="#programmatic-access" title="Permanent link">&para;</a></h2>
 <pre><code class="language-python">from rigor_foundry.polyglot_capability_matrix import capability_matrix
 
-matrix = capability_matrix()
-row = matrix.row(&quot;typescript&quot;)
-row.ast_semantic_controls        # False — no AST pass yet
-row.dependency_graph_controls    # True  — relative imports are resolved
+row = capability_matrix().row(&quot;typescript&quot;)
+assert row.ast_semantic_controls
+assert row.dependency_graph_controls
 </code></pre>
-<p>The matrix is content-addressed (<code>matrix_digest</code>) and reachable via submodule
+<p>For TypeScript, the AST capability is available through the <code>native</code> extra.
+The matrix is content-addressed (<code>matrix_digest</code>) and reachable via submodule
 import (<code>rigor_foundry.polyglot_capability_matrix</code>).</p>
 
 
@@ -2347,6 +2368,10 @@ import (<code>rigor_foundry.polyglot_capability_matrix</code>).</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2372,6 +2397,8 @@ import (<code>rigor_foundry.polyglot_capability_matrix</code>).</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>

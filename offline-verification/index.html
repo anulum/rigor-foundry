@@ -50,6 +50,8 @@
       
     
     
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -384,6 +386,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../calibration-evidence-1.0/" class="md-nav__link">
         
   
@@ -523,6 +552,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-verification-in-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use verification in CI
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#caller-selected-trust" class="md-nav__link">
@@ -2088,6 +2128,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#use-verification-in-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use verification in CI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caller-selected-trust" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2173,6 +2224,29 @@ exclusive and never overwrites an existing path.</p>
   evidence;</li>
 <li><code>2</code> for malformed, unsafe, oversized, or unsupported input.</li>
 </ul>
+<h2 id="use-verification-in-ci">Use verification in CI<a class="headerlink" href="#use-verification-in-ci" title="Permanent link">&para;</a></h2>
+<p>On a Linux runner, install the RigorFoundry wheel using the release and hashes
+approved for the repository. Stage the evidence bundle and the separately
+approved trust policy as local files. Supply the UTC evaluation time from the
+gate or evidence-replay request.</p>
+<pre><code class="language-bash">set -eu
+attempt_dir=&quot;$(mktemp -d &quot;${RUNNER_TEMP}/rigor-verify.XXXXXX&quot;)&quot;
+rigor verify \
+  --bundle &quot;$RIGOR_EVIDENCE_BUNDLE&quot; \
+  --trust-policy &quot;$RIGOR_TRUST_POLICY&quot; \
+  --at &quot;$RIGOR_VERIFY_AT&quot; \
+  --output &quot;$attempt_dir/verification.json&quot;
+</code></pre>
+<p>Make later CI steps depend on verification success. Retain the result with the
+identity of the bundle, trust policy and evaluation time. Give each attempt a
+fresh output path so an invalid or stale run preserves the previous verified
+receipt.</p>
+<p>For evidence replay, use the retained bundle and trust policy with the original
+evaluation time and compare the new result with the retained receipt. For a
+rollback decision, verify the selected evidence against the current approved
+trust policy at the rollback evaluation time and apply the operator's rollback
+policy. The repository's distribution workflow exercises these file and exit
+boundaries through the installed wheel outside the checkout.</p>
 <h2 id="caller-selected-trust">Caller-selected trust<a class="headerlink" href="#caller-selected-trust" title="Permanent link">&para;</a></h2>
 <p>The trust policy is a separate input, not part of the untrusted evidence
 bundle. Replacing the bundle therefore cannot silently replace its trusted
@@ -2280,6 +2354,10 @@ outside this free verification path.</p>
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
@@ -2305,6 +2383,8 @@ outside this free verification path.</p>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
       
     
   </body>
