@@ -478,10 +478,12 @@ def test_nested_symbol_drift_fails_closed(tmp_path: Path) -> None:
         json.loads((root / MANIFEST).read_text(encoding="utf-8")),
     )
     residuals = cast(list[dict[str, Any]], document["residuals"])
-    git_residual = next(
-        residual for residual in residuals if residual["residual_id"] == "CR-GIT-NOFOLLOW-PLATFORM"
+    class_residual = next(
+        residual
+        for residual in residuals
+        if residual["residual_id"] == "CR-TRUSTED-DESCRIPTOR-ROOT"
     )
-    git_residual["symbol"] = "GitRunner.removed_guard"
+    class_residual["symbol"] = "TrustedExecutable.removed_guard"
     _write_document(root, document)
 
     assert any(

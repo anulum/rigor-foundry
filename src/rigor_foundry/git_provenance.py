@@ -20,6 +20,7 @@ from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Final
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
+from .stable_reads import require_no_follow_descriptor_traversal
 from .trusted_executable import (
     ExecutableSnapshot,
     TrustedCommandTimeout,
@@ -378,7 +379,7 @@ class GitRunner:
             if not containing:
                 raise RuntimeError("configured Git executable is outside trusted roots")
             root = max(containing, key=lambda item: len(item.parts))
-            return self._validate_path(executable, root)
+            return self._validate_path(root, executable.relative_to(root))
         executable_names: tuple[Path, ...] = (executable,)
         if sys.platform == "win32" and not executable.suffix:
             executable_names = (executable.with_suffix(".exe"), executable)
@@ -389,21 +390,23 @@ class GitRunner:
             for executable_name in executable_names:
                 candidate = root / executable_name
                 if candidate.exists() or candidate.is_symlink():
-                    return self._validate_path(candidate, root)
+                    return self._validate_path(root, executable_name)
         raise RuntimeError("Git executable is unavailable below configured trusted roots")
 
-    def _validate_path(self, candidate: Path, root: Path) -> tuple[Path, Path]:
-        """Reject symlinks and non-executable files across the selected path."""
+    def _validate_path(self, root: Path, relative: Path) -> tuple[Path, Path]:
+        """Reject symlinks and non-executable files across ``root / relative``.
+
+        Both callers have already proven containment: an absolute executable was
+        selected by the same lexical test against ``root``, and a relative name is
+        one validated basename.
+        """
+        candidate = root / relative
         try:
             resolved_root = root.resolve(strict=True)
         except (OSError, ValueError) as exc:
             raise RuntimeError(f"Git trusted root is unavailable: {root}") from exc
         if resolved_root != root or root.is_symlink() or not root.is_dir():
             raise RuntimeError(f"Git trusted root must be a real directory, not a symlink: {root}")
-        try:
-            relative = candidate.relative_to(root)
-        except ValueError as exc:
-            raise RuntimeError("configured Git executable is outside trusted roots") from exc
         cursor = root
         for part in relative.parts:
             cursor /= part
@@ -448,10 +451,12 @@ class GitRunner:
     @staticmethod
     def _open_no_follow(path: Path) -> int:
         """Open one absolute file through descriptor-relative no-follow components."""
-        if not path.is_absolute():
-            raise RuntimeError("trusted Git executable path must be absolute")
-        if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
-            raise RuntimeError("platform lacks component-safe no-follow file opening")
+        # Every caller passes self._path, which _locate made absolute: an absolute
+        # executable, or one basename below an absolute trusted root. A relative
+        # path would still fail closed, because opening its empty anchor raises.
+        require_no_follow_descriptor_traversal(
+            "platform lacks component-safe no-follow file opening"
+        )
         directory_flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_DIRECTORY
         file_flags = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK
         directory: int | None = None

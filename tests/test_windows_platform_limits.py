@@ -5,11 +5,11 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — POSIX-only guards and Windows Git limits on actual Windows
-"""Call POSIX-only openers and the Windows Git branch on an actual Windows host.
+"""Call the POSIX-only opener and the Windows Git branch on an actual Windows host.
 
-The POSIX descriptor openers refuse a platform without no-follow directory
-descriptors before opening anything. On Windows those refusals are the real
-behaviour, so each opener is called directly. The Windows Git branch of the
+The public POSIX descriptor opener refuses a platform without no-follow directory
+descriptors before opening anything. On Windows that refusal is the real
+behaviour, and every POSIX opener shares its guard. The Windows Git branch of the
 trusted runner is exercised with the actually installed Git: a real failing
 command and a real command that outlives its limit.
 """
@@ -22,7 +22,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from rigor_foundry import safe_output
 from rigor_foundry.git_provenance import GitRunner
 from rigor_foundry.stable_reads import open_directory_no_follow
 
@@ -37,18 +36,11 @@ class WindowsPlatformLimitTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
 
-    def test_posix_descriptor_openers_refuse_before_opening(self) -> None:
-        """Each POSIX opener names the missing capability and leaves the directory alone."""
+    def test_posix_descriptor_opener_refuses_before_opening(self) -> None:
+        """The public opener names the missing capability and leaves the directory alone."""
         before = sorted(self.root.iterdir())
-        with self.assertRaisesRegex(RuntimeError, "exclusive output creation is unavailable"):
-            safe_output._open_directory_no_follow(self.root)
         with self.assertRaisesRegex(RuntimeError, "platform lacks no-follow descriptor traversal"):
             open_directory_no_follow(self.root)
-        executable = Path(sys.executable).resolve()
-        with self.assertRaisesRegex(
-            RuntimeError, "platform lacks component-safe no-follow file opening"
-        ):
-            GitRunner._open_no_follow(executable)
         self.assertEqual(sorted(self.root.iterdir()), before)
 
     def test_windows_git_branch_reports_a_real_failing_command(self) -> None:

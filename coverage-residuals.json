@@ -82,25 +82,6 @@
       "review_by": "2026-12-23"
     },
     {
-      "residual_id": "CR-GIT-NOFOLLOW-PLATFORM",
-      "classification": "platform-primitive",
-      "source_path": "src/rigor_foundry/git_provenance.py",
-      "symbol": "GitRunner._open_no_follow",
-      "guard": "platform lacks component-safe no-follow file opening",
-      "source_digest": "7f14ebd4062b6e817529d74a4f049e126481b4741ae20b1a18212c943244666e",
-      "owner": "supply-chain-security",
-      "rationale": "on Windows, GitRunner._snapshot_file and GitRunner.run route through windows_git before _open_no_follow is reached; Linux and macOS provide O_NOFOLLOW and O_DIRECTORY; deleting os constants in-process would not represent a real supported platform",
-      "public_verification": [
-        "tests/test_git_provenance.py::test_runner_rejects_executable_and_trust_root_symlinks"
-      ],
-      "revisit_triggers": [
-        "Windows Git execution stops routing through windows_git",
-        "the minimum Python or operating-system contract changes"
-      ],
-      "reviewed_on": "2026-11-22",
-      "review_by": "2026-12-22"
-    },
-    {
       "residual_id": "CR-TRUSTED-DESCRIPTOR-ROOT",
       "classification": "platform-primitive",
       "source_path": "src/rigor_foundry/trusted_executable.py",
