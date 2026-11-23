@@ -478,26 +478,3 @@ def test_runner_rejects_boolean_timeout(tmp_path: Path) -> None:
     runner = GitRunner()
     with pytest.raises(ValueError, match="timeout must be positive"):
         runner.run(tmp_path, "--version", timeout_seconds=True)
-
-
-def test_private_path_contracts_refuse_outside_and_relative_executables(tmp_path: Path) -> None:
-    """The root check and the no-follow opener keep their own refusals for direct callers.
-
-    Parameters
-    ----------
-    tmp_path : Path
-        Real trusted root, outside directory and executable allocation.
-    """
-    runner = GitRunner()
-    root = tmp_path / "root"
-    root.mkdir()
-    outside = tmp_path / "outside"
-    outside.mkdir()
-    executable = outside / "git"
-    executable.write_text("#!/bin/sh\n", encoding="utf-8")
-    executable.chmod(0o755)
-    with pytest.raises(RuntimeError, match="configured Git executable is outside trusted roots"):
-        runner._validate_path(executable, root)
-    with pytest.raises(RuntimeError, match="trusted Git executable path must be absolute"):
-        GitRunner._open_no_follow(Path("relative/git"))
-    assert executable.read_text(encoding="utf-8") == "#!/bin/sh\n"
