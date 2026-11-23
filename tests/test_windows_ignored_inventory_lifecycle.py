@@ -206,8 +206,10 @@ def test_unreadable_ntfs_entry_has_no_digest(
 ) -> None:
     """Preserve native lookup denial for a declared parent or a file inside a tree.
 
-    The denial is removed again before the temporary allocation is cleaned up, because
-    a directory that denies listing cannot be removed by its own cleanup.
+    The denied read rights include the right to read the access list, so the denial
+    cannot be reliably removed again. A denied file is deleted by the allocation cleanup
+    through its parent. A denied parent cannot be listed by that cleanup, so the case
+    deletes its own two entries by name; deletion is not among the denied rights.
     """
     with TemporaryDirectory(dir=tmp_path) as allocation:
         root = Path(allocation) / "repository"
@@ -224,7 +226,9 @@ def test_unreadable_ntfs_entry_has_no_digest(
         try:
             _assert_unavailable(_observe(repository, trust), reason)
         finally:
-            _set_acl(denied, "/remove:d", acl_principal)
+            if not inside_tree:
+                (denied / "value").unlink()
+                denied.rmdir()
 
 
 def test_parent_access_changed_after_git_validation(
