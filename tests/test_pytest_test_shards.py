@@ -198,7 +198,7 @@ def test_existing_skip_xfail_and_nested_unsharded_pytest_semantics(tmp_path: Pat
     assert len(outcomes) == 2
 
 
-@pytest.mark.parametrize("case", ["complete", "duplicate", "empty"])
+@pytest.mark.parametrize("case", ["complete", "reserved", "duplicate", "empty"])
 def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
 ) -> None:
@@ -211,7 +211,9 @@ def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
     monkeypatch : pytest.MonkeyPatch
         Set only the real current directory for this nested pytest invocation.
     case : str
-        Complete actual execution, duplicate collection or an empty partition.
+        Complete actual execution, complete execution beside reserved primary
+        owner modules that fail on import, duplicate collection or an empty
+        partition.
     """
     root = shard_repository(tmp_path)
     (root / "tests/test_dispatch.py").write_text(
@@ -221,6 +223,13 @@ def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
         '@pytest.mark.skip(reason="existing fixture platform case")\ndef test_platform():\n    pass\n'
         '@pytest.mark.xfail(reason="existing expected outcome", strict=True)\ndef test_expected():\n    assert False\n'
     )
+    if case == "reserved":
+        from tools.native_test_profiles import PRIMARY_TEST_NAMES
+
+        for name in PRIMARY_TEST_NAMES:
+            (root / "tests" / name).write_text(
+                'raise AssertionError("reserved primary owner was imported")\n'
+            )
     if case == "duplicate":
         (root / "conftest.py").write_text(
             "def pytest_collection_finish(session):\n    session.items.append(session.items[0])\n"
@@ -241,7 +250,7 @@ def test_public_pytest_entrypoint_observes_real_collection_and_terminal_phases(
             "--test-shard-observations=observations.json",
         ]
     )
-    if case == "complete":
+    if case in {"complete", "reserved"}:
         assert result == 0
         assert len(validate_observations(read_record(root / "observations.json"), 0, 1)) == 4
     else:
