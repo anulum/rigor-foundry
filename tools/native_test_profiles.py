@@ -16,7 +16,7 @@ from typing import Literal
 NativeRole = Literal["ordinary", "primary"]
 PRIMARY_TEST_HASHES = {
     "tests/test_windows_bootstrap_hostile.py": "4e3bc4bed2f7f20523ecb7c6de51c20ce159a417824fb95f1375e9a1616b7035",
-    "tests/test_windows_hostile_controls.py": "433fee280d9ea958ff6be1d7361863fe26006de0b759e2592ad52c1349a57122",
+    "tests/test_windows_hostile_controls.py": "1cf28c9e2e7940d31d8d657ecb94e20b7be80fc661bc898a08bcbd4a2edbb147",
 }
 PRIMARY_TEST_NAMES = {Path(name).name for name in PRIMARY_TEST_HASHES}
 NATIVE_DIRECTORIES = {

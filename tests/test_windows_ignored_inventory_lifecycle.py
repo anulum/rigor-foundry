@@ -204,7 +204,11 @@ def test_real_directory_timestamp_change_before_digest(
 def test_unreadable_ntfs_entry_has_no_digest(
     tmp_path: Path, acl_principal: str, inside_tree: bool
 ) -> None:
-    """Preserve native lookup denial for a declared parent or a file inside a tree."""
+    """Preserve native lookup denial for a declared parent or a file inside a tree.
+
+    The denial is removed again before the temporary allocation is cleaned up, because
+    a directory that denies listing cannot be removed by its own cleanup.
+    """
     with TemporaryDirectory(dir=tmp_path) as allocation:
         root = Path(allocation) / "repository"
         if inside_tree:
@@ -217,7 +221,10 @@ def test_unreadable_ntfs_entry_has_no_digest(
             reason = "inaccessible-parent"
         assert _observe(repository, trust).status == "observed"
         _set_acl(denied, "/deny", f"{acl_principal}:(RX)")
-        _assert_unavailable(_observe(repository, trust), reason)
+        try:
+            _assert_unavailable(_observe(repository, trust), reason)
+        finally:
+            _set_acl(denied, "/remove:d", acl_principal)
 
 
 def test_parent_access_changed_after_git_validation(

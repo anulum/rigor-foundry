@@ -124,10 +124,37 @@ class WindowsPermissionsTests(unittest.TestCase):
         """Require exact equality after all descriptor/token operations have settled."""
         self.assertEqual(self.handle_count(), self.before)
 
+    def rendered(self, sddl: str) -> str:
+        """Render one DACL through the system formatter that reads the product descriptor.
+
+        Windows writes some account SIDs as SDDL aliases, such as ``LA`` for the
+        built-in Administrator, so the independently queried SID is compared in that
+        rendering.
+        """
+        parse = self.advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW
+        parse.argtypes = [w.LPCWSTR, w.DWORD, ctypes.POINTER(w.LPVOID), ctypes.POINTER(w.DWORD)]
+        parse.restype = w.BOOL
+        descriptor = w.LPVOID()
+        self.assertTrue(parse(sddl, 1, ctypes.byref(descriptor), None), windows_last_error())
+        try:
+            text = w.LPWSTR()
+            length = w.DWORD()
+            self.assertTrue(
+                self.conversion(descriptor, 1, 4, ctypes.byref(text), ctypes.byref(length)),
+                windows_last_error(),
+            )
+            try:
+                return str(text.value)
+            finally:
+                self.kernel.LocalFree(text)
+        finally:
+            self.kernel.LocalFree(descriptor)
+
     def test_descriptor_matches_independent_current_user_and_is_freed_after_body_error(
         self,
     ) -> None:
         """Read the real protected DACL and release native strings on both body outcomes."""
+        expected = self.rendered(f"D:P(A;;FA;;;{self.sid})")
         freed: list[int] = []
         local_free = self.kernel.LocalFree
 
@@ -146,7 +173,7 @@ class WindowsPermissionsTests(unittest.TestCase):
                     self.conversion(descriptor, 1, 4, ctypes.byref(text), ctypes.byref(length))
                 )
                 try:
-                    self.assertEqual(text.value, f"D:P(A;;FA;;;{self.sid})")
+                    self.assertEqual(text.value, expected)
                 finally:
                     self.kernel.LocalFree(text)
             with (

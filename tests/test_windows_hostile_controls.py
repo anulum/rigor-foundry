@@ -149,6 +149,52 @@ class WindowsHostileControlTests(unittest.TestCase):
         finally:
             kernel.LocalFree(text)
 
+    def _rendered_dacl(self, sddl: str) -> str:
+        """Render one DACL through the same system formatter as the object read.
+
+        Windows writes some account SIDs as SDDL aliases, such as ``LA`` for the
+        built-in Administrator, so an expected raw SID is compared in that rendering.
+        """
+        advapi = windows_library("advapi32")
+        kernel = windows_library("kernel32")
+        advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+            w.LPCWSTR,
+            w.DWORD,
+            ctypes.POINTER(w.LPVOID),
+            ctypes.POINTER(w.DWORD),
+        ]
+        advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype = w.BOOL
+        advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW.argtypes = [
+            w.LPVOID,
+            w.DWORD,
+            w.DWORD,
+            ctypes.POINTER(w.LPWSTR),
+            ctypes.POINTER(w.DWORD),
+        ]
+        advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW.restype = w.BOOL
+        kernel.LocalFree.argtypes = [w.LPVOID]
+        descriptor = w.LPVOID()
+        self.assertTrue(
+            advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                sddl, 1, ctypes.byref(descriptor), None
+            ),
+            windows_last_error(),
+        )
+        try:
+            text = w.LPWSTR()
+            self.assertTrue(
+                advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW(
+                    descriptor, 1, 4, ctypes.byref(text), None
+                ),
+                windows_last_error(),
+            )
+            try:
+                return str(text.value)
+            finally:
+                kernel.LocalFree(text)
+        finally:
+            kernel.LocalFree(descriptor)
+
     def _mount(self, directory: Path) -> None:
         """Turn one owned empty directory into a real mount point to the attacker target."""
         self.assertEqual(_attack("set", directory, _mount_point(self.target)), "ok")
@@ -220,7 +266,7 @@ class WindowsHostileControlTests(unittest.TestCase):
             os.write(created.descriptor, b"p")
             created.flush()
         descriptor = self._sddl(leaf / "private.bin")
-        self.assertIn(f"D:P(A;;FA;;;{_current_user_sid()})", descriptor)
+        self.assertIn(self._rendered_dacl(f"D:P(A;;FA;;;{_current_user_sid()})"), descriptor)
         self.assertEqual(descriptor.count("(A;"), 1)
 
     def test_script_image_is_refused_before_resume(self) -> None:
