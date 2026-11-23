@@ -142,14 +142,21 @@ class WindowsIdentityRaceTests(unittest.TestCase):
             )
 
     def test_bootstrap_refuses_a_created_file_that_gained_a_link(self) -> None:
-        """A second real link to the created policy is found by the post-creation check."""
+        """A second real link to the created policy is found by the post-creation check.
+
+        Bootstrap retains every directory from the drive root to the repository with
+        read-only sharing, and adding a name to a directory needs write access to it.
+        The second link is therefore added in a sibling directory outside that chain.
+        """
         repository = self.root / "repository"
         for name in ("src", "tests", ".rigor"):
             (repository / name).mkdir(parents=True)
         (repository / ".gitignore").write_text(".rigor/\n", encoding="utf-8")
         GitRunner().run(repository, "init", "--initial-branch=main")
         write = write_new_file_at
-        second = repository / "policy-second-link.json"
+        links = self.root / "links"
+        links.mkdir()
+        second = links / "policy-second-link.json"
 
         def link_after_policy(
             parent: WindowsDirectory, name: str, text: str, *, private: bool = True
