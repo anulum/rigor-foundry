@@ -10,11 +10,13 @@
 from __future__ import annotations
 
 import csv
+import ctypes
 import os
 import subprocess
 import sys
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
+from ctypes import wintypes
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -24,8 +26,16 @@ from repository_audit_git_repository import GitRepository
 from rigor_foundry import scan_repository
 from rigor_foundry.git_provenance import GitTrustPolicy
 from rigor_foundry.ignored_inventory import IgnoredCapture, IgnoredInventoryEvidence, IgnoredReason
+from rigor_foundry.windows_abi import windows_library
 from rigor_foundry.windows_directory_inventory import WindowsDirectoryEntry
-from rigor_foundry.windows_handles import WindowsChildSnapshot, WindowsDirectory, WindowsFile
+from rigor_foundry.windows_handles import (
+    WindowsChildSnapshot,
+    WindowsDirectory,
+    WindowsFile,
+    _IoStatus,
+    _ObjectAttributes,
+    _UnicodeString,
+)
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="requires native NTFS handles")
 
@@ -78,6 +88,47 @@ def _set_acl(path: Path, *arguments: str) -> None:
     icacls = Path(os.environ["SYSTEMROOT"]) / "System32" / "icacls.exe"
     result = subprocess.run([str(icacls), str(path), *arguments], check=False, capture_output=True)
     assert result.returncode == 0
+
+
+def _delete_denied_directory(path: Path) -> None:
+    """Delete one empty directory with a native open that requests only deletion.
+
+    Win32 removal also requests the synchronise and read-attribute rights, which a
+    read-and-execute denial removes. A delete-on-close open asks for nothing else,
+    and deletion is not among the denied rights.
+    """
+    library = windows_library("ntdll")
+    library.NtOpenFile.argtypes = [
+        ctypes.POINTER(wintypes.HANDLE),
+        wintypes.ULONG,
+        ctypes.POINTER(_ObjectAttributes),
+        ctypes.POINTER(_IoStatus),
+        wintypes.ULONG,
+        wintypes.ULONG,
+    ]
+    library.NtOpenFile.restype = wintypes.LONG
+    library.NtClose.argtypes = [wintypes.HANDLE]
+    library.NtClose.restype = wintypes.LONG
+    name = "\\??\\" + str(path)
+    buffer = ctypes.create_unicode_buffer(name)
+    length = len(name.encode("utf-16-le"))
+    string = _UnicodeString(length, length + 2, ctypes.cast(buffer, wintypes.LPWSTR))
+    attributes = _ObjectAttributes(
+        ctypes.sizeof(_ObjectAttributes), None, ctypes.pointer(string), 0x40, None, None
+    )
+    handle = wintypes.HANDLE()
+    # DELETE; share read, write and delete; directory, delete on close, no reparse.
+    status = library.NtOpenFile(
+        ctypes.byref(handle),
+        0x00010000,
+        ctypes.byref(attributes),
+        ctypes.byref(_IoStatus()),
+        0x7,
+        0x1 | 0x1000 | 0x200000,
+    )
+    assert status >= 0, hex(status & 0xFFFFFFFF)
+    assert library.NtClose(handle) >= 0
+    assert not path.exists()
 
 
 @contextmanager
@@ -209,7 +260,7 @@ def test_unreadable_ntfs_entry_has_no_digest(
     The denied read rights include the right to read the access list, so the denial
     cannot be reliably removed again. A denied file is deleted by the allocation cleanup
     through its parent. A denied parent cannot be listed by that cleanup, so the case
-    deletes its own two entries by name; deletion is not among the denied rights.
+    deletes its own file by name and the parent with a delete-only native open.
     """
     with TemporaryDirectory(dir=tmp_path) as allocation:
         root = Path(allocation) / "repository"
@@ -228,7 +279,7 @@ def test_unreadable_ntfs_entry_has_no_digest(
         finally:
             if not inside_tree:
                 (denied / "value").unlink()
-                denied.rmdir()
+                _delete_denied_directory(denied)
 
 
 def test_parent_access_changed_after_git_validation(
