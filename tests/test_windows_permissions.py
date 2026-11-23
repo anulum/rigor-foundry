@@ -283,7 +283,3 @@ class UnsupportedWindowsPermissionsTests(unittest.TestCase):
         """Exercise the public context factory on the actual unsupported platform."""
         with ExitStack() as resources, self.assertRaisesRegex(RuntimeError, "require Windows"):
             resources.enter_context(windows_permissions.private_security_descriptor())
-
-
-if __name__ == "__main__":
-    unittest.main()

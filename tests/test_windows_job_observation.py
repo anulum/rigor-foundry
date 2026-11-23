@@ -184,7 +184,3 @@ class UnsupportedJobObservationTests(unittest.TestCase):
         """Refuse a public observation call before native effects on Linux."""
         with self.assertRaisesRegex(RuntimeError, "require Windows"):
             wait_windows_job_empty(1)
-
-
-if __name__ == "__main__":
-    unittest.main()

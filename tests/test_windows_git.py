@@ -96,7 +96,3 @@ class WindowsGitTests(unittest.TestCase):
             snapshot_windows_git(copied)
         self.assertEqual(copied.read_bytes(), self.git.read_bytes())
         self.assertEqual(linked.read_bytes(), copied.read_bytes())
-
-
-if __name__ == "__main__":
-    unittest.main()

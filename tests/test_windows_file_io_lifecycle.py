@@ -165,7 +165,3 @@ class WindowsFileIOFailureTests(unittest.TestCase):
         self.assertEqual(outcomes, [0])
         self.assertFalse(path.exists())
         self.assertEqual(self.sibling.read_bytes(), b"preserve")
-
-
-if __name__ == "__main__":
-    unittest.main()

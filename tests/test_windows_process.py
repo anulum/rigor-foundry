@@ -168,7 +168,3 @@ class WindowsProcessTests(unittest.TestCase):
                 output_limit=4096,
             )
         self.assertEqual(getattr(failure.exception, "winerror", None), 6)
-
-
-if __name__ == "__main__":
-    unittest.main()

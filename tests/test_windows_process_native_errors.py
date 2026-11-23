@@ -279,7 +279,3 @@ class WindowsProcessNativeErrorTests(unittest.TestCase):
         finally:
             self.assertTrue(self.kernel.CloseHandle(event))
         self.assert_handle_count()
-
-
-if __name__ == "__main__":
-    unittest.main()

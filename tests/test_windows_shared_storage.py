@@ -305,7 +305,3 @@ class PosixStorageFailureTests(unittest.TestCase):
         with internal_storage.exclusive_lock(self.root / "recovered.lock"):
             self.assertEqual(self.path.read_bytes(), b"preserved")
         self.assertEqual(self.path.stat().st_mtime_ns, before.st_mtime_ns)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -309,7 +309,3 @@ class WindowsHandleNativeErrorTests(unittest.TestCase):
             self.assertRaisesRegex(ValueError, "required non-reparse disk object"),
         ):
             file.identity()
-
-
-if __name__ == "__main__":
-    unittest.main()

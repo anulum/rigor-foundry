@@ -183,7 +183,3 @@ class WindowsHandleTests(unittest.TestCase):
         """Require an explicit absolute drive root for construction."""
         with self.assertRaisesRegex(ValueError, "absolute local drive"):
             WindowsDirectory(Path("relative-directory"))
-
-
-if __name__ == "__main__":
-    unittest.main()

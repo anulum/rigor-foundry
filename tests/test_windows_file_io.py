@@ -153,7 +153,3 @@ class WindowsFileIOTests(unittest.TestCase):
                 current = opened.identity()
                 self.assertEqual(identity, (current.volume, current.file_id))
         self.assertEqual((self.root / "empty.txt").read_bytes(), b"")
-
-
-if __name__ == "__main__":
-    unittest.main()

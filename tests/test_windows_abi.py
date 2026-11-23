@@ -108,7 +108,3 @@ class UnsupportedWindowsAbiTests(unittest.TestCase):
         """Refuse native-handle borrowing when the native CRT is unavailable."""
         with self.assertRaisesRegex(RuntimeError, "require Windows"):
             windows_handle(-1)
-
-
-if __name__ == "__main__":
-    unittest.main()

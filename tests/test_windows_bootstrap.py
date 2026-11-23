@@ -148,7 +148,3 @@ class WindowsBootstrapTests(unittest.TestCase):
             self.bootstrap(todo=Path("TODO.md"))
         with self.assertRaisesRegex(ValueError, "review-ledger path must be covered"):
             self.bootstrap(ledger=Path("reviews.json"))
-
-
-if __name__ == "__main__":
-    unittest.main()

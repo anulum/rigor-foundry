@@ -231,7 +231,3 @@ class WindowsResourceLifecycleTests(unittest.TestCase):
             target = directory / "owned-created-input.json"
             self.assertTrue(target.exists())
             target.chmod(0o600)
-
-
-if __name__ == "__main__":
-    unittest.main()
