@@ -73,8 +73,10 @@ def _file_snapshot(metadata: os.stat_result) -> tuple[int, int, int, int, int, i
     )
 
 
+# A docstring documents each overload without adding an executable stub body.
+# Ruff D418 is waived only on these two declarations.
 @overload
-def read_stable_regular_file_at(
+def read_stable_regular_file_at(  # noqa: D418
     parent_descriptor: int,
     name: str,
     relative: str,
@@ -83,11 +85,12 @@ def read_stable_regular_file_at(
     buffer_limit: int = MAX_TEXT_BYTES,
     maximum_bytes: int | None = None,
     require_single_link: bool = False,
-) -> StableGitRead: ...
+) -> StableGitRead:
+    """Declare a stable read with a Git blob identity derived from the same pass."""
 
 
 @overload
-def read_stable_regular_file_at(
+def read_stable_regular_file_at(  # noqa: D418
     parent_descriptor: int,
     name: str,
     relative: str,
@@ -96,7 +99,8 @@ def read_stable_regular_file_at(
     buffer_limit: int = MAX_TEXT_BYTES,
     maximum_bytes: int | None = None,
     require_single_link: bool = False,
-) -> StableRegularRead: ...
+) -> StableRegularRead:
+    """Declare a stable read whose Git blob identity depends on the requested format."""
 
 
 def read_stable_regular_file_at(
