@@ -17,17 +17,40 @@ from pathlib import Path
 import yaml
 
 from tools._repository import ROOT, redacted_guard_exit_code
-from tools.check_dependency_audits import dependency_audit_errors
+from tools.check_dependency_audits import SEMGREP_IMAGE, dependency_audit_errors
 
 WAIVER_PATH = Path(".github/dependency-waivers.json")
 SECURITY_WORKFLOW = Path(".github/workflows/security.yml")
 REQUIRED_COMMANDS = (
     "python -m tools.check_dependency_waivers",
+    "python -m tools.check_semgrep_isolation",
     "python -m pytest tests/test_semgrep_runtime.py --cov=test_semgrep_runtime --cov-branch --cov-report=term-missing --cov-fail-under=100",
     "python -m pip_audit -r requirements/ci.txt --require-hashes --disable-pip --strict",
     "python -m pip_audit -r requirements/security.txt --require-hashes --disable-pip --strict",
-    "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools",
 )
+# The repository policy scan runs offline from the digest-pinned image: no network, a
+# read-only root and workspace, an explicit finite stack and no metrics or version check.
+SEMGREP_SCAN_PREFIX = tuple(
+    shlex.split(
+        "docker run --rm --network none --read-only --tmpfs /tmp:rw,size=256m "
+        '--ulimit stack=8388608:8388608 --user "$(id -u):$(id -g)" --env HOME=/tmp '
+        "--env SEMGREP_SEND_METRICS=off --env SEMGREP_ENABLE_VERSION_CHECK=0 "
+        '--volume "$PWD:/src:ro" --workdir /src'
+    )
+)
+SEMGREP_SCAN_SUFFIX = tuple(
+    shlex.split("semgrep scan --error --metrics off --config .semgrep.yml src tools")
+)
+
+
+def _semgrep_policy_scan(command: tuple[str, ...]) -> bool:
+    prefix, suffix = len(SEMGREP_SCAN_PREFIX), len(SEMGREP_SCAN_SUFFIX)
+    return (
+        len(command) == prefix + 1 + suffix
+        and command[:prefix] == SEMGREP_SCAN_PREFIX
+        and command[prefix + 1 :] == SEMGREP_SCAN_SUFFIX
+        and SEMGREP_IMAGE.fullmatch(command[prefix]) is not None
+    )
 
 
 def dependency_waiver_errors(root: Path = ROOT) -> list[str]:
@@ -92,6 +115,8 @@ def dependency_waiver_errors(root: Path = ROOT) -> list[str]:
     for command in REQUIRED_COMMANDS:
         if tuple(shlex.split(command)) not in commands:
             errors.append(f"security workflow is missing guarded command: {command}")
+    if not any(_semgrep_policy_scan(command) for command in commands):
+        errors.append("security workflow is missing the digest-pinned Semgrep policy scan")
     if re.search(r"--ignore-vuln(?:\s|=|$)", workflow):
         errors.append("security workflow must not ignore vulnerability findings")
     return [*errors, *dependency_audit_errors(root)]

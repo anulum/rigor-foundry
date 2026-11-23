@@ -99,8 +99,15 @@ tool versions and SHA-256 hashes. Follow the
 [lock maintenance instructions](docs/security.md#security-tool-lock-maintenance)
 for regeneration. The waiver manifest is empty and its guard requires that state.
 
-The Security workflow audits every committed dependency lock and runs the
-repository Semgrep policy with errors blocking the job. The actual locks,
+The Security workflow audits every committed dependency lock except the
+isolated Semgrep lock, and runs the repository Semgrep policy with errors
+blocking the job. Semgrep `1.184.0` pins dependencies with advisories that no
+compatible release resolves, so it runs outside the audit: the policy scan uses
+the official digest-pinned image and the scanner tests use a separate
+environment. The
+[Semgrep isolation contract](docs/security.md#semgrep-outside-the-dependency-audit)
+records the image digest, both runtimes and the owner's decision of 2026-11-23.
+The actual locks,
 waiver guard and workflow define this policy; their presence does not prove a
 current hosted audit result or the absence of vulnerabilities. See the
 [dependency audit and regeneration contract](docs/security.md#dependency-advisory-audits).

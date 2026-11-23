@@ -15,7 +15,7 @@ from shutil import copy2
 import pytest
 
 from tools._repository import ROOT
-from tools.check_dependency_audits import NODE_LOCK, PYTHON_LOCKS
+from tools.check_dependency_audits import NODE_LOCK, PYTHON_LOCKS, SEMGREP_LOCK
 from tools.check_dependency_waivers import dependency_waiver_errors, main
 from tools.ci_workflows import CI_WORKFLOWS
 
@@ -27,6 +27,7 @@ def _waiver_root(tmp_path: Path) -> Path:
         ".github/workflows/ci.yml",
         *CI_WORKFLOWS.values(),
         *PYTHON_LOCKS,
+        SEMGREP_LOCK,
         NODE_LOCK,
     ):
         target = tmp_path / relative
@@ -37,7 +38,7 @@ def _waiver_root(tmp_path: Path) -> Path:
 
 
 def test_repository_has_no_dependency_waivers() -> None:
-    """The canonical security workflow audits every lock without exclusions."""
+    """The canonical security workflow keeps the waiver set empty for every audited lock."""
     assert dependency_waiver_errors() == []
     assert main() == 0
 
@@ -97,7 +98,7 @@ def test_missing_document_fails_closed(tmp_path: Path) -> None:
         "python -m pytest tests/test_semgrep_runtime.py --cov=test_semgrep_runtime --cov-branch --cov-report=term-missing --cov-fail-under=100",
         "python -m pip_audit -r requirements/ci.txt",
         "python -m pip_audit -r requirements/security.txt",
-        "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools",
+        "python -m tools.check_semgrep_isolation",
     ),
 )
 def test_workflow_keeps_all_guarded_commands(tmp_path: Path, fragment: str) -> None:
@@ -123,7 +124,7 @@ def test_workflow_rejects_nonexecuting_command_text(tmp_path: Path, replacement:
     """Comments and echo output cannot stand in for the scanner step."""
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
+    command = "python -m tools.check_semgrep_isolation"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: {replacement.format(command=command)}"
@@ -143,7 +144,7 @@ def test_workflow_rejects_command_in_unrelated_job(tmp_path: Path) -> None:
     """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
+    command = "python -m tools.check_semgrep_isolation"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: true\n  decoy:\n    steps:\n      - run: {command}"
@@ -166,7 +167,7 @@ def test_workflow_rejects_disabled_scanner_step(tmp_path: Path, condition: str) 
     """
     root = _waiver_root(tmp_path)
     workflow = root / ".github/workflows/security.yml"
-    command = "bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools"
+    command = "python -m tools.check_semgrep_isolation"
     workflow.write_text(
         workflow.read_text(encoding="utf-8").replace(
             f"run: {command}", f"run: {command}\n        {condition}"
@@ -237,12 +238,46 @@ def test_invalid_scanner_shell_quoting_refuses(tmp_path: Path) -> None:
     """
     root = _waiver_root(tmp_path)
     path = root / ".github/workflows/security.yml"
-    path.write_text(
-        path.read_text()
-        .replace("run: bash tools/run_semgrep.sh scan", 'run: "\\"semgrep scan')
-        .replace(".semgrep.yml src tools", '.semgrep.yml src tools"')
-    )
+    path.write_text(path.read_text().replace("--workdir /src", '--workdir "/src'))
     assert any(
         "cannot parse security workflow run step" in error
         for error in dependency_waiver_errors(root)
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("--network none ", ""),
+        ("--read-only ", ""),
+        ("--ulimit stack=8388608:8388608 ", ""),
+        ('--volume "$PWD:/src:ro"', '--volume "$PWD:/src"'),
+        ("--env SEMGREP_SEND_METRICS=off ", ""),
+        ("--metrics off", "--metrics on"),
+        ("docker run --rm", "echo docker run --rm"),
+        ("--config .semgrep.yml src tools", "--config .semgrep.yml src tools || true"),
+        ("@sha256:", "@sha256:0"),
+    ],
+)
+def test_policy_scan_keeps_the_offline_digest_pinned_profile(
+    tmp_path: Path, old: str, new: str
+) -> None:
+    """The image scan stays offline, read-only, bounded and pinned by digest.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Temporary directory supplied by pytest for repository inputs.
+    old : str
+        Part of the actual policy-scan command that the change removes or weakens.
+    new : str
+        Replacement that disables isolation, hides failures or breaks the digest.
+    """
+    root = _waiver_root(tmp_path)
+    workflow = root / ".github/workflows/security.yml"
+    text = workflow.read_text(encoding="utf-8")
+    assert text.count(old) == 1
+    workflow.write_text(text.replace(old, new), encoding="utf-8")
+    assert "security workflow is missing the digest-pinned Semgrep policy scan" in (
+        dependency_waiver_errors(root)
     )

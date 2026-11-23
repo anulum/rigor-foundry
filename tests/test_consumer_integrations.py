@@ -129,8 +129,16 @@ def test_ci_test_matrix_installs_every_verified_native_fixture() -> None:
     assert "python -m tools.install_typos" in test_job
     assert "python -m tools.install_trivy" in test_job
     assert "python -m tools.install_osv_scanner" in test_job
-    assert 'chmod 0755 "$pythonLocation/bin/semgrep"' in test_job
-    assert test_job.index("chmod 0755") < test_job.index("Run exhaustive CI-owned suite")
+    copy = (
+        'install -m 0755 "$pythonLocation/rigor-semgrep-venv/bin/semgrep" '
+        '"$pythonLocation/rigor-semgrep-venv/bin/pysemgrep" "$pythonLocation/bin/"'
+    )
+    assert "-r requirements/semgrep.txt" in test_job
+    assert copy in test_job
+    assert test_job.index(copy) < test_job.index("python -m tools.check_semgrep_isolation")
+    assert test_job.index("python -m tools.check_semgrep_isolation") < test_job.index(
+        "Run exhaustive CI-owned suite"
+    )
     assert test_job.index("tools.install_buildx") < test_job.index("Run exhaustive CI-owned suite")
     assert test_job.index("tools.install_typos") < test_job.index("Run exhaustive CI-owned suite")
     assert test_job.index("tools.install_trivy") < test_job.index("Run exhaustive CI-owned suite")

@@ -48,6 +48,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   SQLite and libssh2 packages while retaining the digest-pinned container base.
 - Update the VS Code extension's js-yaml lock to 4.3.2 for GHSA-2883-xcg3-v3hh.
 
+- Run Semgrep outside the audited dependency profiles: the repository policy scan
+  uses the official digest-pinned Semgrep 1.184.0 image without network access,
+  and the scanner tests use a separate hash-locked environment. Semgrep pins
+  dependencies with unresolved advisories, so its lock is the one committed
+  lock outside the dependency audit; a guard keeps the image and the lock on
+  one version and keeps Semgrep out of the audited interpreter.
+
 ### Added
 
 - Provisional `rigor scan-revision --root PATH FULL_COMMIT_ID` and

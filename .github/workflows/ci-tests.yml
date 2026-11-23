@@ -204,6 +204,7 @@ jobs:
           requirements/ci.txt
           requirements/test.txt
           requirements/security.txt
+          requirements/semgrep.txt
           requirements/native.txt
           requirements/provenance.txt
     - name: Install hash-locked test environment
@@ -216,7 +217,11 @@ jobs:
         python -m pip install --require-hashes --no-build-isolation -r requirements/security.txt
         python -m pip install --require-hashes --no-build-isolation -r requirements/native.txt
         python -m pip install --no-build-isolation --no-deps .
-        chmod 0755 "$pythonLocation/bin/semgrep"
+        python -m venv "$pythonLocation/rigor-semgrep-venv"
+        "$pythonLocation/rigor-semgrep-venv/bin/python" -m pip install --require-hashes -r requirements/bootstrap.txt
+        "$pythonLocation/rigor-semgrep-venv/bin/python" -m pip install --require-hashes --no-build-isolation -r requirements/semgrep.txt
+        install -m 0755 "$pythonLocation/rigor-semgrep-venv/bin/semgrep" "$pythonLocation/rigor-semgrep-venv/bin/pysemgrep" "$pythonLocation/bin/"
+        python -m tools.check_semgrep_isolation
         python -m tools.install_buildx --destination "$pythonLocation/bin/docker-buildx"
         python -m tools.install_typos
         python -m tools.install_trivy

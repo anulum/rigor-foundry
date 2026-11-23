@@ -41,6 +41,7 @@ lock:
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/runtime.txt requirements/runtime.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --constraint requirements/runtime.txt --output-file requirements/provenance.txt requirements/provenance.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/security.txt requirements/security.in
+	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/semgrep.txt requirements/semgrep.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/test.txt requirements/test.in
 	$(LOCK_PYTHON) -m piptools compile --allow-unsafe --generate-hashes --strip-extras --upgrade --constraint requirements/ci.txt --output-file requirements/native.txt requirements/native.in
 	$(MAKE) lock-bootstrap

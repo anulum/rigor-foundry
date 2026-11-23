@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 from pathlib import Path
 
@@ -33,12 +34,24 @@ PYTHON_LOCKS = tuple(
     )
 )
 NODE_LOCK = "editors/vscode/package-lock.json"
+# The owner's 2026-11-23 decision keeps this one lock outside the advisory audit: Semgrep pins
+# advisory-affected dependencies that no compatible release resolves. The lock installs only
+# into a separate environment, and the repository policy scan runs from the digest-pinned
+# image of the same version.
+SEMGREP_LOCK = "requirements/semgrep.txt"
+SEMGREP_IMAGE = re.compile(
+    r"docker\.io/semgrep/semgrep:(?P<version>[0-9]+\.[0-9]+\.[0-9]+)"
+    r"@sha256:[0-9a-f]{64}(?![0-9A-Za-z])"
+)
+SEMGREP_PIN = re.compile(r"^semgrep==(?P<version>[0-9]+\.[0-9]+\.[0-9]+) \\$", re.MULTILINE)
 AUDIT_FLAGS = "--require-hashes --disable-pip --strict"
 PYTHON_COMMANDS = tuple(f"python -m pip_audit -r {path} {AUDIT_FLAGS}" for path in PYTHON_LOCKS)
 NODE_COMMAND = "npm audit --prefix editors/vscode"
 GUARD_COVERAGE_COMMAND = (
     "python -m pytest tests/test_check_dependency_audits.py tests/test_check_dependency_waivers.py "
+    "tests/test_check_semgrep_isolation.py "
     "--cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers "
+    "--cov=tools.check_semgrep_isolation "
     "--cov-branch --cov-report=term-missing --cov-fail-under=100"
 )
 GATE_COMMAND = 'test "$SCAN_RESULT" = success\ntest "$NODE_RESULT" = success'
@@ -96,6 +109,42 @@ def _blocking_commands(job: object, label: str, errors: list[str]) -> list[tuple
     return commands
 
 
+def semgrep_isolation_errors(root: Path, workflow: str) -> list[str]:
+    """Check that the isolated Semgrep lock and the policy-scan image name one version.
+
+    Parameters
+    ----------
+    root:
+        Actual Git worktree containing the isolated lock and every audited Python lock.
+    workflow:
+        Security workflow text, which names the digest-pinned policy-scan image.
+
+    Returns
+    -------
+    list[str]
+        Findings for a lock without exactly one Semgrep pin, an audited lock that
+        installs Semgrep, an image reference without a digest or used more than once,
+        or an image version that differs from the isolated lock.
+    """
+    try:
+        lock = (root / SEMGREP_LOCK).read_text(encoding="utf-8")
+        audited = [(root / path).read_text(encoding="utf-8") for path in PYTHON_LOCKS]
+    except (OSError, UnicodeError):
+        return ["cannot read the isolated Semgrep lock and the audited locks"]
+    errors: list[str] = []
+    pins = SEMGREP_PIN.findall(lock)
+    images = SEMGREP_IMAGE.findall(workflow)
+    if len(pins) != 1:
+        errors.append("isolated Semgrep lock must pin exactly one Semgrep version")
+    if any(SEMGREP_PIN.search(text) for text in audited):
+        errors.append("an audited dependency lock must not install Semgrep")
+    if len(images) != 1 or workflow.count("semgrep/semgrep") != 1:
+        errors.append("security workflow must name one digest-pinned Semgrep image once")
+    elif len(pins) == 1 and images[0] != pins[0]:
+        errors.append("Semgrep image version differs from the isolated Semgrep lock")
+    return errors
+
+
 def dependency_audit_errors(root: Path = ROOT) -> list[str]:
     """Check lock inventory and unconditional, blocking CI audit enrolment.
 
@@ -108,25 +157,26 @@ def dependency_audit_errors(root: Path = ROOT) -> list[str]:
     -------
     list[str]
         Findings for missing locks, unenrolled lock formats, weakened commands,
-        event filters, or a gate that does not require both audit jobs. No advisory
-        query is performed; the actual CI scanner results remain separate evidence.
+        event filters, a gate that does not require both audit jobs, or an isolated
+        Semgrep lock that differs from its image. No advisory query is performed; the
+        actual CI scanner results remain separate evidence.
     """
     errors: list[str] = []
     try:
         visible = {path.as_posix() for path in visible_files(root)}
-        document: object = yaml.safe_load(
-            (root / ".github/workflows/security.yml").read_text(encoding="utf-8")
-        )
+        workflow = (root / ".github/workflows/security.yml").read_text(encoding="utf-8")
+        document: object = yaml.safe_load(workflow)
         quality_job = ci_jobs(root)["quality"]
     except (OSError, UnicodeError, RepositoryError, yaml.YAMLError, ValueError):
         return ["cannot establish dependency lock inventory and audit workflow"]
     supported = {*PYTHON_LOCKS, NODE_LOCK}
     for path in sorted(visible):
-        if _lock_candidate(Path(path)) and path not in supported:
+        if _lock_candidate(Path(path)) and path not in {*supported, SEMGREP_LOCK}:
             errors.append(f"dependency lock has no qualified audit enrolment: {path}")
-    for path in sorted(supported):
+    for path in sorted({*supported, SEMGREP_LOCK}):
         if path not in visible or (root / path).is_symlink():
             errors.append(f"required dependency lock is missing or linked: {path}")
+    errors.extend(semgrep_isolation_errors(root, workflow))
     if not isinstance(document, dict):
         return [*errors, "dependency audit workflow must be a mapping"]
     events = document.get("on", document.get(True))

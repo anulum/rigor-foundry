@@ -111,7 +111,7 @@ jobs:
           python -m pytest tests/test_context_source_resolution.py tests/test_context_source_lease.py --cov=rigor_foundry.context_source_resolution --cov=test_context_source_resolution --cov=test_context_source_lease --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Dependency audit guard coverage
         shell: bash
-        run: python -m pytest tests/test_check_dependency_audits.py tests/test_check_dependency_waivers.py --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers --cov-branch --cov-report=term-missing --cov-fail-under=100
+        run: python -m pytest tests/test_check_dependency_audits.py tests/test_check_dependency_waivers.py tests/test_check_semgrep_isolation.py --cov=tools.check_dependency_audits --cov=tools.check_dependency_waivers --cov=tools.check_semgrep_isolation --cov-branch --cov-report=term-missing --cov-fail-under=100
       - name: Validate classified coverage residuals
         run: python -m rigor_foundry residuals-check --root .
       - name: Lint and format

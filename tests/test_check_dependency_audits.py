@@ -24,6 +24,9 @@ from tools.check_dependency_audits import (
     NODE_LOCK,
     PYTHON_COMMANDS,
     PYTHON_LOCKS,
+    SEMGREP_IMAGE,
+    SEMGREP_LOCK,
+    SEMGREP_PIN,
     dependency_audit_errors,
 )
 from tools.ci_workflows import CI_WORKFLOWS
@@ -49,6 +52,7 @@ def audit_root(tmp_path: Path) -> Path:
         *CI_WORKFLOWS.values(),
         ".github/dependency-waivers.json",
         *PYTHON_LOCKS,
+        SEMGREP_LOCK,
         NODE_LOCK,
         "tools/__init__.py",
         "tools/_repository.py",
@@ -76,7 +80,7 @@ def test_actual_repository_enrols_every_lock(audit_root: Path) -> None:
     assert dependency_audit_errors(audit_root) == []
 
 
-@pytest.mark.parametrize("lock", [*PYTHON_LOCKS, NODE_LOCK])
+@pytest.mark.parametrize("lock", [*PYTHON_LOCKS, SEMGREP_LOCK, NODE_LOCK])
 def test_missing_and_linked_locks_refuse(audit_root: Path, lock: str) -> None:
     """Removing or linking an enrolled lock cannot erase its audit obligation.
 
@@ -478,4 +482,95 @@ def test_quality_job_cannot_reduce_guard_coverage(audit_root: Path) -> None:
     path.write_text(path.read_text().replace("--cov-fail-under=100", "--cov-fail-under=98"))
     assert any(
         "--cov=tools.check_dependency_audits" in e for e in dependency_audit_errors(audit_root)
+    )
+
+
+def test_missing_isolated_semgrep_lock_cannot_be_read(audit_root: Path) -> None:
+    """Removing the isolated lock also removes the version it must share with the image.
+
+    Parameters
+    ----------
+    audit_root : Path
+        Independent Git worktree containing the actual locks and workflows.
+    """
+    (audit_root / SEMGREP_LOCK).unlink()
+    assert "cannot read the isolated Semgrep lock and the audited locks" in (
+        dependency_audit_errors(audit_root)
+    )
+
+
+def _semgrep_image(root: Path) -> str:
+    match = SEMGREP_IMAGE.search(
+        (root / ".github/workflows/security.yml").read_text(encoding="utf-8")
+    )
+    assert match is not None
+    return match.group(0)
+
+
+@pytest.mark.parametrize("change", ["version", "digest", "duplicate"])
+def test_semgrep_image_names_the_isolated_lock_version_once(audit_root: Path, change: str) -> None:
+    """The policy-scan image carries the isolated lock's version and one exact digest.
+
+    Parameters
+    ----------
+    audit_root : Path
+        Independent Git worktree containing the actual locks and workflows.
+    change : str
+        Another image version, a removed digest or a second image reference.
+    """
+    workflow = audit_root / ".github/workflows/security.yml"
+    text = workflow.read_text(encoding="utf-8")
+    image = _semgrep_image(audit_root)
+    name, digest = image.split("@", 1)
+    if change == "version":
+        replaced = text.replace(image, f"docker.io/semgrep/semgrep:0.0.1@{digest}")
+        finding = "Semgrep image version differs from the isolated Semgrep lock"
+    elif change == "digest":
+        replaced = text.replace(image, name)
+        finding = "security workflow must name one digest-pinned Semgrep image once"
+    else:
+        replaced = f"{text}# {image}\n"
+        finding = "security workflow must name one digest-pinned Semgrep image once"
+    workflow.write_text(replaced, encoding="utf-8")
+    assert finding in dependency_audit_errors(audit_root)
+
+
+@pytest.mark.parametrize("count", [0, 2])
+def test_isolated_lock_pins_exactly_one_semgrep(audit_root: Path, count: int) -> None:
+    """The isolated lock names one Semgrep version, never none or two.
+
+    Parameters
+    ----------
+    audit_root : Path
+        Independent Git worktree containing the actual locks and workflows.
+    count : int
+        Number of Semgrep pin lines left in the isolated lock.
+    """
+    path = audit_root / SEMGREP_LOCK
+    text = path.read_text(encoding="utf-8")
+    match = SEMGREP_PIN.search(text)
+    assert match is not None
+    line = match.group(0) + "\n"
+    path.write_text(text.replace(line, line * count), encoding="utf-8")
+    assert "isolated Semgrep lock must pin exactly one Semgrep version" in (
+        dependency_audit_errors(audit_root)
+    )
+
+
+@pytest.mark.parametrize("lock", PYTHON_LOCKS)
+def test_audited_locks_cannot_install_semgrep(audit_root: Path, lock: str) -> None:
+    """Semgrep cannot return to any audited profile beside its isolated lock.
+
+    Parameters
+    ----------
+    audit_root : Path
+        Independent Git worktree containing the actual locks and workflows.
+    lock : str
+        Audited Python lock that gains a Semgrep pin.
+    """
+    path = audit_root / lock
+    pin = "semgrep==1.0.0 \\\n    --hash=sha256:" + "0" * 64 + "\n"
+    path.write_text(path.read_text(encoding="utf-8") + pin, encoding="utf-8")
+    assert "an audited dependency lock must not install Semgrep" in (
+        dependency_audit_errors(audit_root)
     )

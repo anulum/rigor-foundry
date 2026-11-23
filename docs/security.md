@@ -101,9 +101,11 @@ and archive members as adversarial input.
 
 ## Dependency advisory audits
 
-The Security workflow audits all nine hash-locked Python profiles (bootstrap,
-build, CI, fuzz, native, runtime, security, test and test-windows) and the VS Code
-extension's committed npm lock on every push and pull request to `main`. Python audits
+The Security workflow audits all ten hash-locked Python profiles (bootstrap,
+build, CI, fuzz, native, provenance, runtime, security, test and test-windows) and
+the VS Code extension's committed npm lock on every push and pull request to `main`.
+The isolated Semgrep lock is the one committed lock outside this audit; see
+[Semgrep outside the dependency audit](#semgrep-outside-the-dependency-audit). Python audits
 require hashes, avoid installation and fail when dependency collection fails.
 The npm audit includes development dependencies and uses the default failure
 threshold. Advisory findings and registry errors block the jobs.
@@ -112,7 +114,8 @@ The repository's dependency-waiver guard also checks the actual Git-visible
 lock inventory, exact scanner commands, event enrolment and the aggregate
 `security-gate`. Both scanner jobs must succeed, including when one is skipped
 or cancelled. Adding another lock requires explicit audit enrolment; an
-unsupported lock fails the guard. The current waiver set must remain empty; the
+unsupported lock fails the guard. The guard names the isolated Semgrep lock as
+the only exception. The current waiver set must remain empty; the
 guard rejects a nonempty set and any `--ignore-vuln` workflow option.
 These source checks do not prove that hosted branch protection requires the
 gate or that the current head has passed a hosted audit.
@@ -147,33 +150,68 @@ Report suspected vulnerabilities through a private channel listed in the
 
 ## Security-tool lock maintenance
 
-The current security lock pins Semgrep `1.184.0` and Click `8.4.2`. Its retained
-generation header names `pip-compile` on Python 3.11, matching the repository
-lock target. Use a Python 3.11 environment with the `pip-tools` version pinned
-in `requirements/ci.txt` and retain the complete CI constraints and SHA-256
-hashes. Regenerate from the repository root:
+The security lock pins Bandit, pip-audit and PyYAML. Semgrep has its own
+isolated lock, `requirements/semgrep.txt`, which pins Semgrep `1.184.0`.
+Both retained generation headers name `pip-compile` on Python 3.11, matching
+the repository lock target. Use a Python 3.11 environment with the `pip-tools`
+version pinned in `requirements/ci.txt` and retain the complete CI constraints
+and SHA-256 hashes. Regenerate from the repository root:
 
 ```sh
 python3.11 -m piptools compile --allow-unsafe --generate-hashes --strip-extras \
   --upgrade --constraint requirements/ci.txt \
   --output-file requirements/security.txt requirements/security.in
+python3.11 -m piptools compile --allow-unsafe --generate-hashes --strip-extras \
+  --upgrade --constraint requirements/ci.txt \
+  --output-file requirements/semgrep.txt requirements/semgrep.in
 ```
 
 Keep the canonical seven-line licence header above the generated header.
 After regeneration, run the strict audit and install the entire hash-locked
-profile in a fresh environment; run pip check, Bandit and the installed
-Semgrep console entry point with the repository policy through the maintained
-Unix process profile:
+security profile in a fresh environment, then run pip check and Bandit.
 
-```sh
-bash tools/run_semgrep.sh scan --error --config .semgrep.yml src tools
-```
+### Semgrep outside the dependency audit
 
-The security job uses Python `3.15.2` and installs the hash-locked scanner and
-test profiles. Before dependency audits, it exercises the actual clean scan,
-both repository-rule refusals and a missing scanner through
-`tests/test_semgrep_runtime.py`, requiring 100% coverage of that complete test
-owner. The dependency-waiver guard requires this unconditional step.
+Semgrep `1.184.0` runs outside `pip-audit`. Every Semgrep release up to
+`1.186.0` pins `mcp==1.29.0`, the OpenTelemetry `1.37` line and `wcmatch` `8.x`,
+and no compatible release resolves their advisories. The repository refuses
+audit waivers, so the owner decided on 2026-11-23 to keep Semgrep and the
+packages only it needs out of every audited profile instead.
+
+- **The repository policy scan** runs the official image
+  `docker.io/semgrep/semgrep:1.184.0@sha256:cc1b68266f267878b39739373ea9985b9a78e5d64497dd875c8de100b22695ed`
+  without network access, with a read-only root and a read-only workspace, an
+  explicit finite stack limit, and metrics and the version check off:
+
+  ```sh
+  docker run --rm --network none --read-only --tmpfs /tmp:rw,size=256m \
+    --ulimit stack=8388608:8388608 --user "$(id -u):$(id -g)" --env HOME=/tmp \
+    --env SEMGREP_SEND_METRICS=off --env SEMGREP_ENABLE_VERSION_CHECK=0 \
+    --volume "$PWD:/src:ro" --workdir /src \
+    docker.io/semgrep/semgrep:1.184.0@sha256:cc1b68266f267878b39739373ea9985b9a78e5d64497dd875c8de100b22695ed \
+    semgrep scan --error --metrics off --config .semgrep.yml src tools
+  ```
+
+- **The scanner tests** use the hash-locked `requirements/semgrep.txt`,
+  installed into its own environment at `$pythonLocation/rigor-semgrep-venv`.
+  The `semgrep` and `pysemgrep` entry points are copied into
+  `$pythonLocation/bin` as regular files with mode `0755`, so the trusted
+  executable checks and the adapter sandbox are the same as for any other
+  installed tool. The audited interpreter cannot import Semgrep, and
+  `python -m tools.check_semgrep_isolation` refuses a virtual environment, an
+  importable `semgrep` module and any distribution that only the isolated
+  lock pins.
+- **One version in both places.** The dependency audit guard requires the image
+  tag to equal the isolated lock's Semgrep pin, the image to carry a digest,
+  and no audited lock to pin Semgrep. Move the image digest and the isolated
+  lock in the same change.
+
+The security job uses Python `3.15.2` and installs the hash-locked security and
+test profiles and the isolated Semgrep environment. Before dependency audits,
+it exercises the actual clean scan, both repository-rule refusals and a missing
+scanner through `tests/test_semgrep_runtime.py`, requiring 100% coverage of that
+complete test owner. The dependency-waiver guard requires this unconditional
+step, the isolation guard and the image policy scan.
 The dependency audit checks the optional provenance verifier lock with
 the same hash verification and blocking result as the runtime lock.
 
