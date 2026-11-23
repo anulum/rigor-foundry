@@ -229,7 +229,13 @@ def test_actual_primary_observations_have_all_required_successful_calls(
     actual_primary_artifacts : Path
         Genuine unchanged producer observations, JUnit and branch database.
     """
-    identity = source_identity(ROOT, dict(os.environ))
+    consumer = source_identity(ROOT, dict(os.environ))
+    # Only hosted Windows Python 3.12 produces the primary profile, while every
+    # interpreter shard consumes it. The run, source, configuration and schedule
+    # must equal this consumer's; the producer interpreter is the receipt's, and
+    # the primary inventory admits only 3.12.
+    receipt = read_record(actual_primary_artifacts / "receipt.json")
+    identity = {**consumer, "python": receipt["identity"]["python"]}
     expected = native_test_files(ROOT, "win32", identity["python"], hosted=True, role="primary")
     assert (
         validate_native_receipt(
