@@ -22,8 +22,8 @@
       "responsibility": "Offline CRA append-only repository owner for bootstrap, registrations, event revisions, prepared payloads, receipts, skips, user notices, fixed-vulnerability advisories, content-addressed evidence replay, and fail-closed record-chain integrity."
     },
     {
-      "dependency_boundary": "Canonical audit and model primitives define digests and validated policy values. trusted_executable owns POSIX descriptor-bound process execution and cleanup; windows_git owns native image identity and delegates bounded process execution to windows_process. Git inventory, repository input and adapter callers consume the semantic Git runner. No file-content inventory, source classification, context authentication, remediation, network or host admission lifecycle is owned here.",
-      "lines": 764,
+      "dependency_boundary": "Canonical audit and model primitives define digests and validated policy values. stable_reads owns the shared no-follow descriptor capability guard. trusted_executable owns POSIX descriptor-bound process execution and cleanup; windows_git owns native image identity and delegates bounded process execution to windows_process. Git inventory, repository input and adapter callers consume the semantic Git runner. No file-content inventory, source classification, context authentication, remediation, network or host admission lifecycle is owned here.",
+      "lines": 769,
       "path": "src/rigor_foundry/git_provenance.py",
       "reassess_when": "The file exceeds 850 lines, another executable family needs an independent policy or lifecycle, or Git source capture or context admission enters this owner.",
       "responsibility": "Git executable trust and invocation owner: explicit trust roots, immutable executable identity, semantic version policy, fixed repository-safe environment and descriptor-bound command execution."
