@@ -29,13 +29,14 @@ def _snapshot(image: WindowsFile) -> WindowsGitSnapshot:
     os.lseek(image.descriptor, 0, os.SEEK_SET)
     digest = hashlib.sha256()
     count = 0
+    # Each read asks for at most the bytes left plus one, so count never passes
+    # before.size + 1. At that count the next read asks for zero bytes and ends
+    # the loop, and the size and identity check below refuses the growth.
     while True:
         chunk = os.read(image.descriptor, min(1024 * 1024, before.size - count + 1))
         if not chunk:
             break
         count += len(chunk)
-        if count > before.size:
-            raise RuntimeError("trusted Git executable changed while hashing")
         digest.update(chunk)
     if count != before.size or image.identity() != before:
         raise RuntimeError("trusted Git executable changed while hashing")
