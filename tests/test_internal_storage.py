@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import shutil
 import subprocess
@@ -329,3 +330,23 @@ def test_exclusive_lock_propagates_a_missing_parent_unchanged(tmp_path: Path) ->
         raise AssertionError("the lock body ran without a parent directory")
     assert not missing.exists()
     assert list(tmp_path.iterdir()) == []
+
+
+def test_verified_append_refuses_a_record_path_that_is_a_symbolic_link(tmp_path: Path) -> None:
+    """A record name that is a link to a regular file is refused before any append."""
+    target = tmp_path / "target.log"
+    target.write_text("first\n", encoding="utf-8")
+    record = tmp_path / "record.log"
+    record.symlink_to(target)
+    expected = regular_file_identity(target, label="record")
+    with (
+        pytest.raises(
+            ValueError, match=r"must be an existing regular non-symlink file\Z"
+        ) as failure,
+        open_verified_text_for_append(record, expected, label="record") as handle,
+    ):
+        handle.write("appended\n")
+    assert isinstance(failure.value.__cause__, OSError)
+    assert failure.value.__cause__.errno == errno.ELOOP
+    assert target.read_text(encoding="utf-8") == "first\n"
+    assert record.is_symlink()
