@@ -27,7 +27,7 @@ from tools.native_test_evidence import (
     validate_native_observations,
 )
 from tools.native_test_profiles import NATIVE_DIRECTORIES, NativeRole, native_coverage_config
-from tools.ordinary_coverage import require_ordinary_coverage
+from tools.ordinary_coverage import require_role_coverage
 from tools.test_shard_evidence import digest, require, source_identity
 
 NATIVE_DIRECTORY = Path(".rigor-native-coverage")
@@ -166,8 +166,7 @@ def run_native_tests(files: Sequence[str] | None = None, *, role: NativeRole = "
         return result.returncode
     require(source_identity(root, identity_environment) == identity)
     require(native_package_root(root) == package_root)
-    if role == "ordinary":
-        require_ordinary_coverage(output / ".coverage")
+    require_role_coverage(role, output / ".coverage")
     artifacts = validate_native_observations(
         output, selected, require_primary=role == "primary", identity=identity
     )

@@ -13,7 +13,7 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from tools.native_test_profiles import PRIMARY_TEST_NAMES
+from tools.native_test_profiles import PRIMARY_TEST_NAMES, NativeRole
 
 
 def require_ordinary_coverage(path: Path) -> None:
@@ -42,3 +42,27 @@ def require_ordinary_coverage(path: Path) -> None:
                     raise ValueError("primary-owned data cannot supply ordinary coverage")
     except sqlite3.Error as error:
         raise ValueError("ordinary coverage database is malformed") from error
+
+
+def require_role_coverage(role: NativeRole, path: Path) -> None:
+    """Apply one native role's coverage admission before its receipt is written.
+
+    Parameters
+    ----------
+    role : {"ordinary", "primary"}
+        Acceptance role of the producer that wrote the database.
+    path : Path
+        Terminal coverage database of that producer.
+
+    Raises
+    ------
+    ValueError
+        An ordinary database is linked, missing, malformed or names primary acceptance.
+
+    Notes
+    -----
+    A primary producer is admitted by its required successful calls, which the
+    observation validation checks; its database is never an ordinary input.
+    """
+    if role == "ordinary":
+        require_ordinary_coverage(path)

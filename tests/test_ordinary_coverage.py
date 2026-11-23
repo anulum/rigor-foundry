@@ -17,7 +17,7 @@ import pytest
 from test_run_native_tests import completed_native as completed_native
 
 from tools.native_test_profiles import PRIMARY_TEST_NAMES
-from tools.ordinary_coverage import require_ordinary_coverage
+from tools.ordinary_coverage import require_ordinary_coverage, require_role_coverage
 from tools.test_shard_evidence import digest
 
 
@@ -93,3 +93,22 @@ def test_unavailable_or_malformed_database_cannot_become_an_ordinary_input(
         path.write_bytes(b"not a coverage database")
     with pytest.raises(ValueError, match="ordinary coverage database"):
         require_ordinary_coverage(path)
+
+
+def test_role_admission_reads_only_ordinary_databases(
+    completed_native: Path, tmp_path: Path
+) -> None:
+    """Admit a real ordinary database, refuse a missing one, and never read for primary.
+
+    Parameters
+    ----------
+    completed_native : Path
+        Actual ordinary producer output with its terminal coverage database.
+    tmp_path : Path
+        Allocation that holds no database at all.
+    """
+    require_role_coverage("ordinary", completed_native / ".rigor-native-coverage/.coverage")
+    absent = tmp_path / ".coverage"
+    require_role_coverage("primary", absent)
+    with pytest.raises(ValueError, match="ordinary coverage database is unavailable"):
+        require_role_coverage("ordinary", absent)
