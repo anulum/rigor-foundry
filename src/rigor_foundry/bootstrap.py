@@ -116,27 +116,25 @@ def _create_text(
     mode: int,
     label: str,
 ) -> tuple[int, int]:
-    """Create and synchronize one descriptor-bound regular file exactly once."""
-    descriptor: int | None = None
+    """Create and synchronize one descriptor-bound regular file exactly once.
+
+    ``O_CREAT | O_EXCL`` never opens an existing object, so the created object is a
+    new regular file. The descriptor goes to its file object at once, which is then
+    its only closer on every path.
+    """
     try:
         descriptor = os.open(name, _CREATE_FLAGS, mode, dir_fd=parent_descriptor)
-        os.fchmod(descriptor, mode)
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise RuntimeError(f"{label} was not created as a regular file")
-        identity = metadata.st_dev, metadata.st_ino
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
-            descriptor = None
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.fsync(parent_descriptor)
-        return identity
     except FileExistsError as exc:
         raise ValueError(f"{label} already exists; bootstrap never overwrites") from exc
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
+    with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
+        os.fchmod(handle.fileno(), mode)
+        metadata = os.fstat(handle.fileno())
+        identity = metadata.st_dev, metadata.st_ino
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.fsync(parent_descriptor)
+    return identity
 
 
 def _path_identity(parent_descriptor: int, name: str) -> tuple[int, int]:

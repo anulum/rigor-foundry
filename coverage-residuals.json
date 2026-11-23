@@ -61,26 +61,6 @@
       "review_by": "2026-12-12"
     },
     {
-      "residual_id": "CR-BOOTSTRAP-CREATE-INVARIANT",
-      "classification": "runtime-invariant",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "_create_text",
-      "guard": "was not created as a regular file",
-      "source_digest": "81fdf89bd07418467999ddc06b16280862a2f04158c330e486f48d3dd4f10e31",
-      "owner": "onboarding-security",
-      "rationale": "POSIX O_CREAT plus O_EXCL creates a new regular file when the absent leaf is opened for writing; manufacturing a non-regular descriptor would require replacing kernel open or fstat behavior rather than exercising the public bootstrap boundary",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_creates_exact_fail_closed_policy_and_private_todo",
-        "tests/test_bootstrap.py::test_bootstrap_preserves_created_policy_when_private_todo_cannot_be_created"
-      ],
-      "revisit_triggers": [
-        "bootstrap creation moves to a non-regular storage primitive",
-        "the supported kernel changes O_CREAT plus O_EXCL semantics"
-      ],
-      "reviewed_on": "2026-11-18",
-      "review_by": "2026-12-18"
-    },
-    {
       "residual_id": "CR-BOOTSTRAP-LEDGER-POSTCHECK",
       "classification": "race-window",
       "source_path": "src/rigor_foundry/bootstrap.py",
