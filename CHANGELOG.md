@@ -37,6 +37,9 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 
+- Refresh the pinned Debian security snapshot to include the patched Kerberos
+  libraries (krb5 1.21.3-5+deb13u2) while retaining the digest-pinned container base.
+
 - Update the verified Trivy release to 0.76.1 for the Go certificate distrust
   mitigation for CVE-2026-111943, retaining all three payload digest checks.
 
