@@ -203,12 +203,21 @@ def read_stable_regular_file_at(
     return StableGitRead(byte_count, payload, digest, blob_digest.hexdigest())
 
 
-def open_directory_no_follow(path: Path) -> int:
-    """Open an absolute directory only through no-follow path components."""
-    if not path.is_absolute():
-        raise ValueError("directory path must be absolute")
-    if ".." in path.parts:
-        raise ValueError("directory path must not contain parent traversal")
+def require_no_follow_descriptor_traversal(message: str) -> None:
+    """Refuse a platform without no-follow, descriptor-relative directory traversal.
+
+    Parameters
+    ----------
+    message:
+        Refusal text that names the caller's own unavailable operation.
+
+    Raises
+    ------
+    RuntimeError
+        If ``os`` lacks ``O_DIRECTORY`` or ``O_NOFOLLOW``, if ``os.open`` or
+        ``os.stat`` cannot take a directory descriptor, or if ``os.stat`` cannot
+        refuse to follow a symbolic link.
+    """
     if (
         not hasattr(os, "O_DIRECTORY")
         or not hasattr(os, "O_NOFOLLOW")
@@ -216,7 +225,16 @@ def open_directory_no_follow(path: Path) -> int:
         or os.stat not in os.supports_dir_fd
         or os.stat not in os.supports_follow_symlinks
     ):
-        raise RuntimeError("platform lacks no-follow descriptor traversal")
+        raise RuntimeError(message)
+
+
+def open_directory_no_follow(path: Path) -> int:
+    """Open an absolute directory only through no-follow path components."""
+    if not path.is_absolute():
+        raise ValueError("directory path must be absolute")
+    if ".." in path.parts:
+        raise ValueError("directory path must not contain parent traversal")
+    require_no_follow_descriptor_traversal("platform lacks no-follow descriptor traversal")
     flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
     descriptor = os.open("/", flags)
     try:

@@ -66,7 +66,7 @@
       "source_path": "src/rigor_foundry/bootstrap.py",
       "symbol": "bootstrap_repository",
       "guard": "_require_absent(ledger_parent, ledger_name, \"review-ledger path\")",
-      "source_digest": "00da65eb918f4baca6e19d796ddb1430233763a21d510ca5cc51017870635d73",
+      "source_digest": "1855f527308dc7d1fe44ae53659e27cb7411050d22414c652649a57e97d7d217",
       "owner": "onboarding-security",
       "rationale": "Native own-child syscall scheduling now proves both sides of the final absence sample: presence before it refuses without adopting or overwriting the ledger, while a concurrent writer immediately after it can populate the intentionally uncreated path before success; this remains a point-in-time absence contract, not an atomic reservation",
       "public_verification": [
@@ -78,29 +78,8 @@
         "a public staged bootstrap transaction boundary is introduced",
         "adopters accept bootstrap creating an atomic ledger reservation"
       ],
-      "reviewed_on": "2026-11-18",
-      "review_by": "2026-12-18"
-    },
-    {
-      "residual_id": "CR-BOOTSTRAP-PLATFORM",
-      "classification": "platform-primitive",
-      "source_path": "src/rigor_foundry/bootstrap.py",
-      "symbol": "bootstrap_repository",
-      "guard": "platform lacks descriptor-bound bootstrap support",
-      "source_digest": "00da65eb918f4baca6e19d796ddb1430233763a21d510ca5cc51017870635d73",
-      "owner": "onboarding-security",
-      "rationale": "The Windows bootstrap dispatch returns before this guard. On non-NT platforms this guard refuses when O_NOFOLLOW or O_DIRECTORY is unavailable. Supported POSIX hosts provide both primitives; deleting either in-process would simulate an unsupported host instead of exercising the public descriptor-bound bootstrap.",
-      "public_verification": [
-        "tests/test_bootstrap.py::test_bootstrap_rejects_symlinked_parent_and_missing_roots",
-        "tests/test_bootstrap.py::test_bootstrap_requires_exact_real_git_root_and_unique_existing_roots"
-      ],
-      "revisit_triggers": [
-        "another platform bootstrap backend is implemented",
-        "the Windows dispatch condition changes",
-        "the supported operating-system contract changes"
-      ],
-      "reviewed_on": "2026-11-18",
-      "review_by": "2026-12-18"
+      "reviewed_on": "2026-11-23",
+      "review_by": "2026-12-23"
     },
     {
       "residual_id": "CR-GIT-NOFOLLOW-PLATFORM",

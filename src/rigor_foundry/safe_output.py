@@ -13,6 +13,8 @@ import os
 import stat
 from pathlib import Path
 
+from .stable_reads import require_no_follow_descriptor_traversal
+
 
 def _identity(metadata: os.stat_result) -> tuple[int, int]:
     """Return the filesystem identity fields used for race revalidation."""
@@ -21,10 +23,9 @@ def _identity(metadata: os.stat_result) -> tuple[int, int]:
 
 def _open_directory_no_follow(path: Path) -> int:
     """Open an absolute directory through component-wise no-follow descriptors."""
-    if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
-        raise RuntimeError("exclusive output creation is unavailable on this platform")
-    if os.open not in os.supports_dir_fd:
-        raise RuntimeError("descriptor-relative output creation is unavailable on this platform")
+    require_no_follow_descriptor_traversal(
+        "exclusive output creation is unavailable on this platform"
+    )
     absolute = Path(os.path.abspath(path))
     descriptor = os.open(
         absolute.anchor,

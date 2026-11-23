@@ -18,6 +18,7 @@ from pathlib import Path
 from .git_inventory import is_git_ignored
 from .git_provenance import GitRunner, GitTrustPolicy
 from .models import AUDIT_DOMAINS, AuditDomainSpec, AuditPolicy
+from .stable_reads import require_no_follow_descriptor_traversal
 
 _DIRECTORY_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
 _DIRECTORY_FLAGS |= getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
@@ -233,8 +234,7 @@ def bootstrap_repository(
             test_line_threshold=test_line_threshold,
             git_trust_policy=git_trust_policy,
         )
-    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
-        raise RuntimeError("platform lacks descriptor-bound bootstrap support")
+    require_no_follow_descriptor_traversal("platform lacks descriptor-bound bootstrap support")
     lexical_root = repository_root.absolute()
     repository = repository_root.resolve(strict=True)
     if lexical_root != repository or not repository.is_dir():
