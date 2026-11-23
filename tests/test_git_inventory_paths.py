@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry import stable_reads
 from rigor_foundry.git_inventory import is_git_ignored, load_git_inventory
 from rigor_foundry.git_provenance import GitRunner
 from rigor_foundry.stable_reads import (
@@ -267,3 +268,111 @@ def test_inventory_refuses_non_utf8_rename_source_then_reads_committed_rename(
     assert inventory.dirty_paths == ()
     by_path = {entry.path: entry for entry in inventory.files}
     assert by_path["src/renamed.py"].text == "VALUE = 1\n"
+
+
+def test_inventory_refuses_non_utf8_status_path_then_reads_the_committed_removal(
+    tmp_path: Path,
+) -> None:
+    """Reject an unrepresentable staged removal and read the index once it is committed."""
+    repository = GitRepository.create(tmp_path / "repository")
+    removed = os.fsdecode(b"src/removed-\xff.py")
+    repository.write_bytes(removed, b"VALUE = 1\n")
+    repository.write_bytes("src/kept.py", b"KEPT = 1\n")
+    repository.commit()
+    repository.git_command("rm", "--cached", "--quiet", "--", removed)
+    index = (repository.root / ".git/index").read_bytes()
+    status = subprocess.run(
+        [repository.git, "status", "--porcelain=v1", "-z", "--untracked-files=no"],
+        cwd=repository.root,
+        check=True,
+        capture_output=True,
+    )
+    assert status.stdout == b"D  src/removed-\xff.py\0"
+    with pytest.raises(RuntimeError, match="contains a non-UTF-8 path") as failure:
+        load_git_inventory(repository.root)
+    assert isinstance(failure.value.__cause__, UnicodeDecodeError)
+    assert (repository.root / ".git/index").read_bytes() == index
+    (repository.root / removed).unlink()
+    head = repository.commit()
+    inventory = load_git_inventory(repository.root)
+    assert inventory.head == head
+    assert inventory.dirty_paths == ()
+    paths = {entry.path for entry in inventory.files}
+    assert "src/kept.py" in paths
+    assert not any(path.startswith("src/removed-") for path in paths)
+
+
+def test_stable_reader_refuses_a_file_removed_while_it_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A name removed after the descriptor opened makes the final path check inaccessible.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned directory holding one record.
+    monkeypatch : pytest.MonkeyPatch
+        Wraps the genuine snapshot so the real name is removed right after the first one.
+    """
+    target = tmp_path / "record.bin"
+    target.write_bytes(b"record\n")
+    snapshot = stable_reads._file_snapshot
+    calls = 0
+
+    def remove_after_first_snapshot(
+        metadata: os.stat_result,
+    ) -> tuple[int, int, int, int, int, int, int]:
+        """Take the genuine snapshot, then unlink the real name once."""
+        nonlocal calls
+        calls += 1
+        result = snapshot(metadata)
+        if calls == 1:
+            target.unlink()
+        return result
+
+    monkeypatch.setattr(stable_reads, "_file_snapshot", remove_after_first_snapshot)
+    descriptor = open_directory_no_follow(tmp_path)
+    try:
+        with pytest.raises(StableReadError) as failure:
+            read_stable_regular_file_at(descriptor, target.name, target.name)
+    finally:
+        os.close(descriptor)
+    assert failure.value.reason == "inaccessible"
+    assert isinstance(failure.value.__cause__, FileNotFoundError)
+    assert calls == 1
+    assert not target.exists()
+
+
+def test_inventory_refuses_a_tracked_symlink_removed_after_its_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tracked symlink removed between its type check and its target read is refused.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    monkeypatch : pytest.MonkeyPatch
+        Wraps the genuine type check so the real link is removed right after it answers.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("src/target.py", "VALUE = 1\n")
+    link = repository.root / "src/alias.py"
+    link.symlink_to("target.py")
+    repository.commit()
+    is_symlink = Path.is_symlink
+
+    def remove_after_type_check(path: Path) -> bool:
+        """Answer from the real check, then remove the tracked link once."""
+        answer = is_symlink(path)
+        if path == link and answer:
+            link.unlink()
+        return answer
+
+    monkeypatch.setattr(Path, "is_symlink", remove_after_type_check)
+    with pytest.raises(
+        RuntimeError, match=r"cannot read tracked symlink: src/alias\.py"
+    ) as failure:
+        load_git_inventory(repository.root)
+    assert isinstance(failure.value.__cause__, FileNotFoundError)
+    assert not link.exists() and not link.is_symlink()
