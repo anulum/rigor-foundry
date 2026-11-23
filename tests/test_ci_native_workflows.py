@@ -17,8 +17,9 @@ import sys
 import pytest
 
 from tools._repository import ROOT
-from tools.ci_native_workflows import check_native_jobs
+from tools.ci_native_workflows import NATIVE_WHOLE_FILE_STEP, check_native_jobs
 from tools.ci_workflows import ci_jobs, read_workflow
+from tools.native_test_profiles import DARWIN_TEST_FILES
 
 
 def test_actual_native_workflow_passes_the_public_graph_guard() -> None:
@@ -152,3 +153,18 @@ def test_native_python_provisioning_has_one_verified_uv_acquisition_path() -> No
     assert script.index("https://github.com/astral-sh/uv/releases/download/") < verify
     assert verify < script.index("unzip -p") < script.index('"$uv" --version')
     assert verify < script.index("tar -xOzf") < script.index('"$uv" --no-config venv')
+
+
+def test_whole_file_gate_covers_every_named_macos_module() -> None:
+    """The macOS modules the darwin profile runs are also held to whole-file coverage."""
+    generated = NATIVE_WHOLE_FILE_STEP["run"]
+    actual = next(
+        step["run"]
+        for step in ci_jobs()["test-coverage"]["steps"]
+        if step.get("name") == NATIVE_WHOLE_FILE_STEP["name"]
+    )
+    assert actual == generated
+    arguments = generated.split("check_full_file_coverage", 1)[1].split()
+    assert DARWIN_TEST_FILES
+    assert all(name in arguments for name in DARWIN_TEST_FILES)
+    assert '"${ordinary[@]}"' in arguments

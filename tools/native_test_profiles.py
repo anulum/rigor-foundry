@@ -19,6 +19,9 @@ PRIMARY_TEST_HASHES = {
     "tests/test_windows_hostile_controls.py": "1cf28c9e2e7940d31d8d657ecb94e20b7be80fc661bc898a08bcbd4a2edbb147",
 }
 PRIMARY_TEST_NAMES = {Path(name).name for name in PRIMARY_TEST_HASHES}
+# The macOS ordinary profile also runs this named module, which pins the documented
+# macOS Git trust limitation; no other platform selects it.
+DARWIN_TEST_FILES = ("tests/test_darwin_git_trust.py",)
 NATIVE_DIRECTORIES = {
     "ordinary": Path(".rigor-native-coverage"),
     "primary": Path(".rigor-native-primary"),
@@ -51,7 +54,8 @@ def native_test_files(
     Returns
     -------
     list[str]
-        Complete sorted ordinary inventory or exactly the two pinned primary owners.
+        Complete sorted ordinary inventory, which on darwin also holds the named
+        macOS modules, or exactly the two pinned primary owners.
 
     Raises
     ------
@@ -67,6 +71,10 @@ def native_test_files(
         ordinary = [name for name in files if name not in PRIMARY_TEST_HASHES]
         if not ordinary:
             raise ValueError("ordinary native test inventory is empty")
+        if native_platform == "darwin":
+            if not all((root / name).is_file() for name in DARWIN_TEST_FILES):
+                raise ValueError("darwin native test inventory is incomplete")
+            ordinary = sorted([*ordinary, *DARWIN_TEST_FILES])
         return ordinary
     if not (hosted and native_platform == "win32" and python_version.startswith("3.12.")):
         raise ValueError("primary native profile requires hosted Windows Python 3.12")

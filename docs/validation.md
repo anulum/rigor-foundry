@@ -55,7 +55,9 @@ hosted admission requires the matching GitHub run.
 Git provenance verification is not qualified on macOS: the macOS native profile
 does not run the installed dependency provenance tests. The macOS native profile
 runs the Windows native test inventory, of which only the refusal and argument
-checks run on macOS, so it qualifies no macOS behaviour.
+checks run on macOS, and one macOS test that pins this limitation: the default
+Git trust roots start at `/usr/bin`, whose multi-link developer-tools Git stub
+the single-link rule refuses. It qualifies no other macOS behaviour.
 
 Offline CRA reporting has dedicated model, timeline, payload, storage, and CLI owners. The
 focused set covers all vulnerability/incident stage partitions, exact UTC and

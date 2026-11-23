@@ -15,6 +15,7 @@ import pytest
 
 from tools._repository import ROOT
 from tools.native_test_profiles import (
+    DARWIN_TEST_FILES,
     PRIMARY_TEST_HASHES,
     native_coverage_config,
     native_test_files,
@@ -34,6 +35,30 @@ def test_supported_windows_slot_has_two_disjoint_complete_profiles() -> None:
     assert "patch = subprocess" in ordinary_config and "patch = subprocess" in primary_config
     assert all("*/" + name in ordinary_config for name in primary)
     assert "omit" not in primary_config
+
+
+def test_only_the_macos_profile_admits_its_named_modules(tmp_path: Path) -> None:
+    """Select the named macOS module only on darwin, and refuse a checkout without it.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Checkout holding one ordinary Windows module and no macOS module.
+    """
+    darwin = native_test_files(ROOT, "darwin", "3.12.13", hosted=True)
+    windows = native_test_files(ROOT, "win32", "3.12.13", hosted=True)
+    linux = native_test_files(ROOT, "linux", "3.12.13", hosted=True)
+    assert darwin == sorted(darwin)
+    assert set(darwin) - set(windows) == set(DARWIN_TEST_FILES)
+    assert set(windows) <= set(darwin)
+    assert linux == windows
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests/test_windows_ordinary.py").write_text("", encoding="utf-8")
+    assert native_test_files(tmp_path, "win32", "3.12.13", hosted=True) == [
+        "tests/test_windows_ordinary.py"
+    ]
+    with pytest.raises(ValueError, match="darwin native test inventory is incomplete"):
+        native_test_files(tmp_path, "darwin", "3.12.13", hosted=True)
 
 
 @pytest.mark.parametrize(
