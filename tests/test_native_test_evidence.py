@@ -28,6 +28,7 @@ from tools.native_test_evidence import (
     validate_native_observations,
     validate_native_receipt,
 )
+from tools.native_test_profiles import DARWIN_TEST_FILES
 from tools.test_shard_evidence import (
     ARTIFACT_NAMES,
     digest,
@@ -64,6 +65,7 @@ def test_actual_native_inventory_preserves_primary_platform_and_interpreter_boun
         Declared hosted inventory admission.
     primary : bool
         Whether that exact profile admits the two unchanged primary-owned files.
+        Every ordinary darwin profile also holds the named macOS test module.
     """
     actual = native_test_files(
         ROOT,
@@ -75,10 +77,11 @@ def test_actual_native_inventory_preserves_primary_platform_and_interpreter_boun
     complete = sorted(
         path.relative_to(ROOT).as_posix() for path in ROOT.glob("tests/test_windows_*.py")
     )
+    darwin = list(DARWIN_TEST_FILES) if native_platform == "darwin" else []
     expected = (
         sorted(PRIMARY_TEST_HASHES)
         if primary
-        else [name for name in complete if name not in PRIMARY_TEST_HASHES]
+        else sorted([name for name in complete if name not in PRIMARY_TEST_HASHES] + darwin)
     )
     assert actual == expected
 
