@@ -276,7 +276,6 @@ class PosixStorageFailureTests(unittest.TestCase):
         directory.mkdir()
         for target, error in [
             (self.root / "missing" / "lock", FileNotFoundError),
-            (self.path / "lock", NotADirectoryError),
             (directory, IsADirectoryError),
         ]:
             with (
@@ -285,6 +284,12 @@ class PosixStorageFailureTests(unittest.TestCase):
                 self.assertRaises(error),
             ):
                 contexts.enter_context(internal_storage.exclusive_lock(target))
+        with (
+            ExitStack() as contexts,
+            self.assertRaisesRegex(ValueError, "lock parent must be a directory") as parent,
+        ):
+            contexts.enter_context(internal_storage.exclusive_lock(self.path / "lock"))
+        self.assertEqual(cast(OSError, parent.exception.__cause__).errno, errno.ENOTDIR)
 
         alias = self.root / "alias.txt"
         alias.symlink_to(self.path)
