@@ -293,3 +293,39 @@ def test_exclusive_lock_rejects_hard_link_without_mutating_victim(tmp_path: Path
 
     assert victim.read_text(encoding="utf-8") == "unchanged\n"
     assert os.stat(victim).st_mode & 0o777 == 0o644
+
+
+def test_exclusive_lock_refuses_linked_and_nondirectory_parents(tmp_path: Path) -> None:
+    """A symbolic-link parent and a regular-file parent each get their own refusal."""
+    directory = tmp_path / "locks"
+    directory.mkdir()
+    linked = tmp_path / "linked-locks"
+    linked.symlink_to(directory, target_is_directory=True)
+    with (
+        pytest.raises(ValueError, match="lock parent must not be a symbolic link") as link_error,
+        exclusive_lock(linked / "record.lock"),
+    ):
+        raise AssertionError("a linked lock parent was accepted")
+    assert isinstance(link_error.value.__cause__, OSError)
+    assert list(directory.iterdir()) == []
+    regular = tmp_path / "not-a-directory"
+    regular.write_text("data\n", encoding="utf-8")
+    with (
+        pytest.raises(ValueError, match="lock parent must be a directory") as file_error,
+        exclusive_lock(regular / "record.lock"),
+    ):
+        raise AssertionError("a regular-file lock parent was accepted")
+    assert isinstance(file_error.value.__cause__, NotADirectoryError)
+    assert regular.read_text(encoding="utf-8") == "data\n"
+
+
+def test_exclusive_lock_propagates_a_missing_parent_unchanged(tmp_path: Path) -> None:
+    """A parent that does not exist re-raises its own error, runs no body and creates nothing."""
+    missing = tmp_path / "absent"
+    with (
+        pytest.raises(FileNotFoundError),
+        exclusive_lock(missing / "record.lock"),
+    ):
+        raise AssertionError("the lock body ran without a parent directory")
+    assert not missing.exists()
+    assert list(tmp_path.iterdir()) == []

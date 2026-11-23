@@ -7,6 +7,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Refuse a symbolic-link or non-directory internal record lock parent with the
+  intended validation error. Linux reports a symbolic-link parent opened as a
+  directory as ENOTDIR, so callers received NotADirectoryError instead of
+  ValueError. Internal record storage also refuses a host that lacks
+  O_DIRECTORY or O_NOFOLLOW instead of opening paths without them.
 - Balance eight complete test partitions per interpreter from a shared,
   checkout-owned module timing snapshot while retaining every coverage gate.
 

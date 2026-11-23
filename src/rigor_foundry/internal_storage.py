@@ -24,7 +24,7 @@ from .git_provenance import GitRunner, GitTrustPolicy
 
 def _require_posix_storage() -> None:
     """Refuse unsupported record mutations before opening or creating any object."""
-    if os.name == "nt":
+    if os.name == "nt" or not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
         raise RuntimeError("internal record mutations require POSIX no-follow directory locking")
 
 
@@ -115,7 +115,7 @@ def resolve_ignored_path(
 def fsync_directory(directory: Path) -> None:
     """Synchronise directory metadata after an atomic record operation."""
     _require_posix_storage()
-    descriptor = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
     try:
         os.fsync(descriptor)
     finally:
@@ -127,7 +127,7 @@ def write_new_text(path: Path, text: str) -> None:
     _require_posix_storage()
     descriptor: int | None = None
     try:
-        flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+        flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW
         descriptor = os.open(path, flags, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
             descriptor = None
@@ -205,7 +205,7 @@ def open_verified_text_for_append(
     _require_posix_storage()
     descriptor: int | None = None
     try:
-        flags = os.O_RDWR | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        flags = os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW
         try:
             descriptor = os.open(path, flags)
         except OSError as exc:
@@ -249,23 +249,24 @@ def exclusive_lock(path: Path) -> Iterator[None]:
     descriptor: int | None = None
     locked = False
     try:
-        parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-        parent_flags |= getattr(os, "O_NOFOLLOW", 0)
+        parent_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
         try:
             parent_descriptor = os.open(path.parent, parent_flags)
         except OSError as exc:
-            if exc.errno == errno.ELOOP:
+            # With O_DIRECTORY, Linux reports a symbolic-link parent as ENOTDIR.
+            if exc.errno in {errno.ELOOP, errno.ENOTDIR} and path.parent.is_symlink():
                 raise ValueError(
                     f"internal record lock parent must not be a symbolic link: {path.parent}"
                 ) from exc
+            if exc.errno == errno.ENOTDIR:
+                raise ValueError(
+                    f"internal record lock parent must be a directory: {path.parent}"
+                ) from exc
             raise
-        parent_metadata = os.fstat(parent_descriptor)
-        if not stat.S_ISDIR(parent_metadata.st_mode):
-            raise ValueError(f"internal record lock parent must be a directory: {path.parent}")
         _acquire_flock(parent_descriptor, path.parent)
         parent_locked = True
 
-        flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+        flags = os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
         try:
             descriptor = os.open(path, flags, 0o600)
         except OSError as exc:
