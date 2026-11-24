@@ -47,6 +47,21 @@ rule-pack categories in registry order. Every rule relates to its category with
 kind `subset`. RigorFoundry emits no rule-level `security-severity`: severity is
 recorded only by a validated review, never by a rule.
 
+## CWE taxonomy
+
+Each run also declares a second taxonomy, `CWE`. It is pinned to CWE List
+version 5.0 (released 2026-10-28) and holds only the CWE ids that reviewed
+mappings name. A mapped rule relates to its CWE entry with kind `relevant`, never
+`equal`. A candidate of that rule marks a surface related to the weakness, and
+only an evidence review can decide whether the weakness is present. The mapping
+lives in the packaged `cwe_mapping.json`. Each entry pairs one rule with one CWE
+id and a one-sentence justification that cites that entry, together with the
+record of the evidence review that admitted it. Loading refuses an unreviewed,
+duplicated, unregistered or uncited entry. A rule without a reviewed mapping
+claims no CWE. The [rule catalogue](rule-catalogue.md) shows each mapping and
+its justification. The export names CWE entries only by id and link; it carries
+no CWE names or descriptions. CWE is a trademark of The MITRE Corporation.
+
 ## GitHub code-scanning profile
 
 ```bash

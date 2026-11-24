@@ -339,12 +339,16 @@ def test_every_rule_is_a_subset_of_exactly_its_declared_category(tmp_path: Path)
         Owned real Git repository allocation.
     """
     rules, run = _exported_rules(tmp_path)
-    (taxonomy,) = run["taxonomies"]
+    taxonomy = run["taxonomies"][0]
     assert taxonomy["name"] == CATEGORY_TAXONOMY_NAME
     taxa = [taxon["id"] for taxon in taxonomy["taxa"]]
     assert taxa == list(dict.fromkeys(rule.category for rule in RULES))
     for rule, registered in zip(rules, RULES, strict=True):
-        (relationship,) = rule["relationships"]
+        (relationship,) = [
+            relationship
+            for relationship in rule["relationships"]
+            if relationship["target"]["toolComponent"]["name"] == CATEGORY_TAXONOMY_NAME
+        ]
         assert relationship["kinds"] == ["subset"]
         target = relationship["target"]
         assert target["id"] == registered.category == taxa[target["index"]]

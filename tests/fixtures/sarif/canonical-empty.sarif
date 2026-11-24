@@ -88,6 +88,62 @@
               "name": "github-actions"
             }
           ]
+        },
+        {
+          "downloadUri": "https://cwe.mitre.org/data/xml/cwec_v5.0.xml.zip",
+          "informationUri": "https://cwe.mitre.org/",
+          "isComprehensive": false,
+          "name": "CWE",
+          "organization": "MITRE",
+          "releaseDateUtc": "2026-10-28",
+          "taxa": [
+            {
+              "id": "78"
+            },
+            {
+              "id": "94"
+            },
+            {
+              "id": "95"
+            },
+            {
+              "id": "250"
+            },
+            {
+              "id": "295"
+            },
+            {
+              "id": "321"
+            },
+            {
+              "id": "328"
+            },
+            {
+              "id": "367"
+            },
+            {
+              "id": "396"
+            },
+            {
+              "id": "494"
+            },
+            {
+              "id": "502"
+            },
+            {
+              "id": "532"
+            },
+            {
+              "id": "676"
+            },
+            {
+              "id": "798"
+            },
+            {
+              "id": "829"
+            }
+          ],
+          "version": "5.0"
         }
       ],
       "tool": {
@@ -1229,6 +1285,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "95",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1265,6 +1334,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "78",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1305,6 +1387,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "502",
+                    "index": 10,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1341,6 +1436,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "328",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1381,6 +1489,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "367",
+                    "index": 7,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1419,6 +1540,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "95",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1455,6 +1589,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "78",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1533,6 +1680,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "676",
+                    "index": 12,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1569,6 +1729,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "676",
+                    "index": 12,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1609,6 +1782,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "78",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1645,6 +1831,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "295",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1685,6 +1884,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "295",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1721,6 +1933,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "396",
+                    "index": 8,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1799,6 +2024,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "494",
+                    "index": 9,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1835,6 +2073,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "494",
+                    "index": 9,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1875,6 +2126,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "494",
+                    "index": 9,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1911,6 +2175,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "250",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -1951,6 +2228,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "798",
+                    "index": 13,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -1987,6 +2277,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "321",
+                    "index": 5,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -2215,6 +2518,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "532",
+                    "index": 11,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }
@@ -2597,6 +2913,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "829",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -2635,6 +2964,19 @@
                       "name": "RigorFoundry rule categories"
                     }
                   }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "94",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
+                    }
+                  }
                 }
               ],
               "shortDescription": {
@@ -2671,6 +3013,19 @@
                     "toolComponent": {
                       "index": 0,
                       "name": "RigorFoundry rule categories"
+                    }
+                  }
+                },
+                {
+                  "kinds": [
+                    "relevant"
+                  ],
+                  "target": {
+                    "id": "829",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 1,
+                      "name": "CWE"
                     }
                   }
                 }

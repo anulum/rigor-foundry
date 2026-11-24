@@ -1,0 +1,285 @@
+{
+  "schema_version": "1.0",
+  "cwe_version": "5.0",
+  "cwe_release_date": "2026-10-28",
+  "cwe_download_uri": "https://cwe.mitre.org/data/xml/cwec_v5.0.xml.zip",
+  "cwe_member_sha256": "47165a9593def89c69b9ef50c34d99ac68db55df8373613e85e9cc9ceecefb1d",
+  "mappings": [
+    {
+      "rule_id": "AS001-dynamic-code-execution",
+      "cwe_id": 95,
+      "kind": "relevant",
+      "justification": "The rule marks a Python eval or exec call, the dynamic evaluation call through which unneutralised input can execute as code, as CWE-95 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS006-js-dynamic-code-execution",
+      "cwe_id": 95,
+      "kind": "relevant",
+      "justification": "The rule marks a JavaScript or TypeScript eval or Function call, a dynamic evaluation call through which unneutralised input can execute as code, as CWE-95 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS002-shell-command-execution",
+      "cwe_id": 78,
+      "kind": "relevant",
+      "justification": "The rule marks shell=True, os.system or os.popen, surfaces where an OS command is built from input whose special elements may not be neutralised, as CWE-78 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS007-go-command-execution",
+      "cwe_id": 78,
+      "kind": "relevant",
+      "justification": "The rule marks Go os/exec Command or CommandContext, where an OS command can be built from externally influenced input, as CWE-78 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS011-shell-eval-execution",
+      "cwe_id": 78,
+      "kind": "relevant",
+      "justification": "The rule marks a shell eval builtin, which re-parses its argument as an OS command so that unneutralised special elements change the command, as CWE-78 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS003-unsafe-deserialization",
+      "cwe_id": 502,
+      "kind": "relevant",
+      "justification": "The rule marks pickle or an unbounded yaml.load, which turn untrusted bytes into live objects, a surface CWE-502 is relevant to.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS004-weak-hash-primitive",
+      "cwe_id": 328,
+      "kind": "relevant",
+      "justification": "The rule marks md5 or sha1 in a possible security context, hash algorithms whose digests do not meet the security expectations CWE-328 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS005-insecure-temporary-file",
+      "cwe_id": 367,
+      "kind": "relevant",
+      "justification": "The rule marks tempfile.mktemp, which checks that a name is free before the caller creates the file, so the file's state can change between that check and its use, as CWE-367 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS009-c-unsafe-libc",
+      "cwe_id": 676,
+      "kind": "relevant",
+      "justification": "The rule marks C library calls with no bound on their writes, or that run a command, a surface CWE-676 is relevant to.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS010-julia-unsafe-memory",
+      "cwe_id": 676,
+      "kind": "relevant",
+      "justification": "The rule marks Julia unsafe_* intrinsics, which bypass bounds, type and garbage-collector checks, a surface CWE-676 is relevant to.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS012-disabled-tls-verification",
+      "cwe_id": 295,
+      "kind": "relevant",
+      "justification": "The rule marks verify=False, which disables certificate validation, the weakness CWE-295 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "AS013-insecure-ssl-context",
+      "cwe_id": 295,
+      "kind": "relevant",
+      "justification": "The rule marks ssl._create_unverified_context, whose context does not validate certificates, the weakness CWE-295 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "RL001-bare-except",
+      "cwe_id": 396,
+      "kind": "relevant",
+      "justification": "The rule marks a bare except clause, a catch for a generic exception as CWE-396 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "SC001-unhashed-pinned-requirement",
+      "cwe_id": 494,
+      "kind": "relevant",
+      "justification": "The rule marks a pinned requirement without an integrity hash, so the installer downloads and runs code without verifying its integrity, as CWE-494 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "SC002-vcs-url-requirement",
+      "cwe_id": 494,
+      "kind": "relevant",
+      "justification": "The rule marks a dependency installed from a VCS checkout or URL, which bypasses index hash pinning, so the installed code's integrity is not verified, as CWE-494 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "DK001-unpinned-base-image",
+      "cwe_id": 494,
+      "kind": "relevant",
+      "justification": "The rule marks a base image referenced by a mutable tag with no digest, so the pulled image's integrity is not verified, as CWE-494 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "DK002-root-runtime-user",
+      "cwe_id": 250,
+      "kind": "relevant",
+      "justification": "The rule marks a runtime stage with no non-root USER, so the container runs with more privilege than it needs, as CWE-250 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "DP001-hardcoded-credential",
+      "cwe_id": 798,
+      "kind": "relevant",
+      "justification": "The rule marks a credential-named variable assigned a literal secret, a hard-coded credential as CWE-798 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "DP002-embedded-private-key",
+      "cwe_id": 321,
+      "kind": "relevant",
+      "justification": "The rule marks an embedded PEM private-key block, a hard-coded cryptographic key as CWE-321 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "OP002-credential-in-log-call",
+      "cwe_id": 532,
+      "kind": "relevant",
+      "justification": "The rule marks a logging call that receives a credential-named expression, writing sensitive information to a log, as CWE-532 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "GA001-unpinned-action-reference",
+      "cwe_id": 829,
+      "kind": "relevant",
+      "justification": "The rule marks an action or reusable workflow reference without an immutable pin, which includes executable functionality from outside the intended control sphere, as CWE-829 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "GA002-run-context-interpolation",
+      "cwe_id": 94,
+      "kind": "relevant",
+      "justification": "The rule marks a run script that interpolates untrusted event, branch or input data into generated code without neutralisation, as CWE-94 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    },
+    {
+      "rule_id": "GA003-pull-request-target-checkout",
+      "cwe_id": 829,
+      "kind": "relevant",
+      "justification": "The rule marks a pull_request_target checkout of PR code, which brings functionality from an untrusted control sphere into a trusted context, as CWE-829 describes.",
+      "author": "7b7e",
+      "review": {
+        "reviewer": "b0f9",
+        "date": "2026-11-24",
+        "scope": "evidence"
+      }
+    }
+  ]
+}

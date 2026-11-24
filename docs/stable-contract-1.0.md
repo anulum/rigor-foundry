@@ -94,6 +94,11 @@ evidence reference and assessment consumers remain unchanged.
 seven-field declaration preserves bounded hold provenance; parsing does not
 authenticate applicability, clear a hold or admit a selected policy.
 
+The packaged reviewed CWE mapping, `cwe_mapping.json`, is separately version-pinned
+provisional at `1.0`. Only RigorFoundry's own loader reads it, and it does not extend
+the frozen manifest. The [SARIF export](sarif.md) that carries its CWE taxonomy keeps
+SARIF version `2.1.0`.
+
 `ExtractorRegistryV3` and `EffectOperationsV3` are separately version-pinned
 provisional at `3.0`. Their complete candidate metadata does not add a supported
 effect handler or change original v2 catalogues, digests or selected consumers.

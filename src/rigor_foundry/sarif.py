@@ -14,6 +14,14 @@ from pathlib import PurePosixPath
 from typing import cast
 
 from .candidate_anchor import Candidate, RepositoryTreeAnchor
+from .cwe_mapping import (
+    CWE_INFORMATION_URI,
+    CWE_ORGANIZATION,
+    CWE_TAXONOMY_NAME,
+    CweCatalogue,
+    CweMapping,
+    cwe_catalogue,
+)
 from .models import AuditReport, ReviewRecord
 from .review import validate_reviews
 from .rule_catalogue import (
@@ -78,9 +86,39 @@ def _rule_help(summary: str, guidance: RuleGuidance) -> dict[str, str]:
     return {"text": "\n\n".join(text), "markdown": "\n\n".join(markdown)}
 
 
-def _rule_descriptor(index: int, guidance: RuleGuidance, category_index: int) -> dict[str, object]:
-    """Return stable SARIF metadata for one rule-registry position."""
+def _rule_descriptor(
+    index: int,
+    guidance: RuleGuidance,
+    category_index: int,
+    cwe: tuple[CweMapping, int] | None,
+) -> dict[str, object]:
+    """Return stable SARIF metadata for one rule-registry position.
+
+    ``cwe`` is the rule's reviewed CWE mapping and its CWE taxon index, or ``None`` for an
+    unmapped rule, which then carries no CWE relationship.
+    """
     rule = RULES[index]
+    relationships: list[dict[str, object]] = [
+        {
+            "target": {
+                "id": rule.category,
+                "index": category_index,
+                "toolComponent": {"name": CATEGORY_TAXONOMY_NAME, "index": 0},
+            },
+            "kinds": ["subset"],
+        }
+    ]
+    if cwe is not None:
+        relationships.append(
+            {
+                "target": {
+                    "id": str(cwe[0].cwe_id),
+                    "index": cwe[1],
+                    "toolComponent": {"name": CWE_TAXONOMY_NAME, "index": 1},
+                },
+                "kinds": [cwe[0].kind],
+            }
+        )
     return {
         "id": rule.rule_id,
         "name": rule.rule_id,
@@ -96,16 +134,21 @@ def _rule_descriptor(index: int, guidance: RuleGuidance, category_index: int) ->
             "introduced": rule.introduced,
             "tags": ["rigor-foundry", rule.category],
         },
-        "relationships": [
-            {
-                "target": {
-                    "id": rule.category,
-                    "index": category_index,
-                    "toolComponent": {"name": CATEGORY_TAXONOMY_NAME, "index": 0},
-                },
-                "kinds": ["subset"],
-            }
-        ],
+        "relationships": relationships,
+    }
+
+
+def _cwe_taxonomy(catalogue: CweCatalogue) -> dict[str, object]:
+    """Return the pinned CWE taxonomy, holding each reviewed mapping's CWE id once."""
+    return {
+        "name": CWE_TAXONOMY_NAME,
+        "organization": CWE_ORGANIZATION,
+        "version": catalogue.version,
+        "releaseDateUtc": catalogue.release_date,
+        "informationUri": CWE_INFORMATION_URI,
+        "downloadUri": catalogue.download_uri,
+        "isComprehensive": False,
+        "taxa": [{"id": str(cwe_id)} for cwe_id in catalogue.taxa()],
     }
 
 
@@ -229,6 +272,12 @@ def _sarif_document(
     guidance = rule_guidance()
     categories = _rule_categories()
     category_index = {category: index for index, category in enumerate(categories)}
+    catalogue = cwe_catalogue()
+    cwe_index = {cwe_id: index for index, cwe_id in enumerate(catalogue.taxa())}
+    cwe_by_rule = {
+        rule_id: (mapping, cwe_index[mapping.cwe_id])
+        for rule_id, mapping in catalogue.mappings.items()
+    }
     results = [
         _result(
             report,
@@ -253,6 +302,7 @@ def _sarif_document(
                                 index,
                                 guidance[rule.rule_id],
                                 category_index[rule.category],
+                                cwe_by_rule.get(rule.rule_id),
                             )
                             for index, rule in enumerate(RULES)
                         ],
@@ -264,7 +314,8 @@ def _sarif_document(
                         "name": CATEGORY_TAXONOMY_NAME,
                         "informationUri": f"{_DOCUMENTATION_ROOT}/blob/main/{RULE_CATALOGUE_PATH}",
                         "taxa": [{"id": category, "name": category} for category in categories],
-                    }
+                    },
+                    _cwe_taxonomy(catalogue),
                 ],
                 "results": results,
                 "properties": {

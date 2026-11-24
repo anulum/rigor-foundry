@@ -100,6 +100,7 @@ _SCHEMA_SYMBOLS = {
 
 _PROVISIONAL_SCHEMA_SYMBOLS = {
     "provenance_scan.PROVENANCE_PROFILE_SCHEMA_VERSION": "1.0",
+    "cwe_mapping.CWE_MAPPING_SCHEMA_VERSION": "1.0",
     "provenance_scan.PROVENANCE_SCAN_SCHEMA_VERSION": "rigor.provenance-scan.v1",
     "extractor_registry_v3.EXTRACTOR_REGISTRY_V3_SCHEMA_VERSION": "3.0",
     "effect_operations_v3.EFFECT_OPERATIONS_V3_SCHEMA_VERSION": "3.0",

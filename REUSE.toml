@@ -33,6 +33,7 @@ path = [
     "module-size-decisions.json",
     "rigor-public-api.json",
     "rigor-foundry-policy.json",
+    "src/rigor_foundry/cwe_mapping.json",
     "tests/fixtures/sarif/*",
 ]
 SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"

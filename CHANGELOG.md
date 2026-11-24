@@ -76,6 +76,13 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   page documents all registered rules, and SARIF runs carry a RigorFoundry rule
   category taxonomy that every rule relates to as a subset.
 
+- SARIF runs carry a CWE taxonomy pinned to CWE List 5.0. 23 rules relate to
+  one CWE entry each, with kind `relevant` and never `equal`: the rule marks a
+  surface related to the weakness and does not prove it. Each mapping is a
+  reviewed entry with a one-sentence justification, which the rule catalogue
+  shows. An unreviewed, duplicated or uncited mapping is refused, and an unmapped
+  rule claims no CWE.
+
 - Provisional `rigor scan-revision --root PATH FULL_COMMIT_ID` and
   `scan_repository(revision=...)` scan the tracked bytes of an exact local SHA-1
   or SHA-256 commit in an isolated detached checkout. Declared ignored-file

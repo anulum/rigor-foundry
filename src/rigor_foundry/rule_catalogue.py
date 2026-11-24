@@ -34,6 +34,7 @@ from . import (
     supply_chain,
     test_authenticity,
 )
+from .cwe_mapping import CWE_RELATIONSHIP_KIND, cwe_catalogue, cwe_definition_uri
 from .rule_guidance import RuleGuidance
 from .rules import RULES
 
@@ -114,6 +115,7 @@ def render_rule_catalogue() -> str:
         The exact Markdown text that ``docs/rule-catalogue.md`` must hold.
     """
     guidance = rule_guidance()
+    catalogue = cwe_catalogue()
     lines = [
         "# Rule catalogue",
         "",
@@ -124,6 +126,12 @@ def render_rule_catalogue() -> str:
         "`helpUri` values point at these sections.",
         "",
         CANDIDATE_NOT_VERDICT,
+        "",
+        f"A rule with a reviewed CWE mapping names the CWE {catalogue.version} entry its candidates are",
+        "relevant to, with the reviewed justification. SARIF relates the rule to that entry with",
+        f"kind `{CWE_RELATIONSHIP_KIND}`, never `equal`: the rule marks a surface related to the weakness",
+        f"and does not prove it. {len(catalogue.mappings)} rules are mapped; an unmapped rule claims no CWE.",
+        "CWE is a trademark of The MITRE Corporation.",
     ]
     categories = list(dict.fromkeys(rule.category for rule in RULES))
     for category in categories:
@@ -138,6 +146,13 @@ def render_rule_catalogue() -> str:
                 "",
                 f"Introduced in {rule.introduced}.",
             ]
+            mapping = catalogue.mappings.get(rule.rule_id)
+            if mapping is not None:
+                lines += [
+                    "",
+                    f"**Related weakness.** [CWE-{mapping.cwe_id}]({cwe_definition_uri(mapping.cwe_id)})"
+                    f" ({mapping.kind}). {mapping.justification}",
+                ]
             cases = entry.all_cases()
             for number, case in enumerate(cases, start=1):
                 label = (
