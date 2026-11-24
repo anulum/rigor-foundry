@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import runpy
 import subprocess
@@ -17,6 +18,8 @@ from pathlib import Path
 import pytest
 
 from tools.check_secrets import main, secret_errors
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _initialize_repository(root: Path) -> None:
@@ -203,3 +206,31 @@ def test_secret_guard_module_entrypoint(
     output = capsys.readouterr()
     assert output.out == "Secret guard passed\n"
     assert output.err == ""
+
+
+def test_compressed_fixtures_are_scanned_as_their_decompressed_bytes(tmp_path: Path) -> None:
+    """The guard reads text only, so every tracked gzip fixture is scanned decompressed here.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Repository receiving the decompressed fixtures.
+    """
+    fixtures = sorted((ROOT / "tests/fixtures").rglob("*.gz"))
+    names = {fixture.name for fixture in fixtures}
+    assert {
+        "codeql-2.26.0-actions-analysis-1496041210.sarif.gz",
+        "codeql-2.27.2-actions-analysis-2237134604.sarif.gz",
+        "sigstore-public-root.json.gz",
+    } <= names
+    _initialize_repository(tmp_path)
+    for fixture in fixtures:
+        target = tmp_path / fixture.relative_to(ROOT).with_suffix("")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(gzip.decompress(fixture.read_bytes()))
+    assert secret_errors(tmp_path) == []
+    planted = tmp_path / "tests/fixtures/sarif_import/planted.sarif"
+    planted.write_text(_aws_access_key(), encoding="utf-8")
+    assert secret_errors(tmp_path) == [
+        f"path-sha256:{_path_digest('tests/fixtures/sarif_import/planted.sarif')}:1: aws-access-key"
+    ]

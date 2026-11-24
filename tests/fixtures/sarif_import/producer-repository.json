@@ -1,0 +1,6 @@
+{
+  "files": {
+    "src/app/core.py": "VALUE = 1\n",
+    "src/app/settings.py": "import os\n\nAPI_TOKEN = \"RIGORFIXTURE-0123456789ab\"\n\n\ndef run(expression):\n    return eval(expression)\n"
+  }
+}

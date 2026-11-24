@@ -33,7 +33,7 @@ from .sarif_import_records import (
     ImportSkip,
     anchor_from_record,
 )
-from .sarif_import_rules import require_producer_id
+from .sarif_import_rules import ToolComponent, require_producer_id
 
 IMPORT_REPORT_SCHEMA: Final = "rigor.import-report.v1"
 Provenance = Literal["executed", "declared"]
@@ -45,6 +45,7 @@ _FIELDS: Final = frozenset(
         "tracked_content_digest",
         "producer_id",
         "producer_declaration_digest",
+        "driver",
         "provenance",
         "profile_evidence_digest",
         "sarif_sha256",
@@ -74,6 +75,7 @@ class ImportReport:
     tracked_content_digest: str
     producer_id: str
     producer_declaration_digest: str
+    driver: ToolComponent
     provenance: Provenance
     profile_evidence_digest: str | None
     sarif_sha256: str
@@ -110,6 +112,7 @@ class ImportReport:
             "tracked_content_digest": self.tracked_content_digest,
             "producer_id": self.producer_id,
             "producer_declaration_digest": self.producer_declaration_digest,
+            "driver": self.driver.to_dict(),
             "provenance": self.provenance,
             "profile_evidence_digest": self.profile_evidence_digest,
             "sarif_sha256": self.sarif_sha256,
@@ -161,6 +164,10 @@ def verify_import_report(value: object) -> dict[str, object]:
     if _sha256(data["report_digest"], "report_digest") != canonical_digest(body):
         raise ValueError("import report digest does not match its fields")
     producer = require_producer_id(data["producer_id"])
+    driver = require_mapping(data["driver"], "driver")
+    require_exact_fields(driver, frozenset({"name", "version"}), "driver")
+    if not isinstance(driver["name"], str) or not isinstance(driver["version"], str):
+        raise ValueError("the driver name and version must be strings")
     lists = {name: data[name] for name in ("imported_candidates", "observations", "skipped")}
     if not all(isinstance(items, list) for items in lists.values()):
         raise ValueError("candidates, observations and skips must be arrays")

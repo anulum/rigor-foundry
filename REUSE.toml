@@ -40,6 +40,11 @@ SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
+path = ["tests/fixtures/sarif_import/*.sarif", "tests/fixtures/sarif_import/producer-repository.json"]
+SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
 path = ["tests/fixtures/sarif_import/codeql-*.sarif.gz"]
 SPDX-FileCopyrightText = ["GitHub, Inc.", "1996-2026 Miroslav Šotek"]
 SPDX-License-Identifier = "MIT AND Apache-2.0"

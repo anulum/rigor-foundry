@@ -16,3 +16,16 @@ These files are unmodified producer output, stored as gzip as the provenance fix
 The CodeQL driver lists no rules. Every rule lives in the `codeql/python-queries` tool extension, and each result
 names its rule through `rule.toolComponent.index`. The rule help text inside the files comes from the CodeQL
 queries, which GitHub publishes under the MIT licence.
+
+## Semgrep and Trivy output on the producer repository
+
+`producer-repository.json` holds the two files of the fixture repository that both producers scanned, from
+`/tmp/rigor-sarif-import/producer-repo`, a neutral path, so that no internal path enters the output. The token in it
+is a project-specific fixture string, not a real-secret shape. The two rule files below carry this repository's
+licence header as comments, which were added after the run; the rules themselves are byte-identical to the
+configuration the producers used.
+
+| File | Producer | Producing command (run in the fixture repository's parent) | SHA-256 |
+|---|---|---|---|
+| `semgrep-1.186.0-producer-repository.sarif` | Semgrep 1.186.0 (`Semgrep OSS`) | `cd producer-repo && semgrep scan --config ../semgrep-rules.yaml --sarif --output ../semgrep.sarif --metrics=off --disable-version-check --quiet .` | `1ed50724f27a674e740798adcb0a387033732931002941696f585fa43f70e746` |
+| `trivy-0.76.2-producer-repository.sarif` | Trivy 0.76.2 | `trivy fs --scanners secret --secret-config trivy-secret.yaml --format sarif --output trivy.sarif --quiet producer-repo` | `c9593b12d91785a3d5766437112e96cdc99b222dde9abe47b2f80bcf6faa62d8` |

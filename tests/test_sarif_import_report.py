@@ -31,7 +31,7 @@ from rigor_foundry.sarif_import_report import (
     read_import_report,
     verify_import_report,
 )
-from rigor_foundry.sarif_import_rules import RunRules
+from rigor_foundry.sarif_import_rules import RunRules, ToolComponent
 
 ROOT = Path(__file__).resolve().parents[1]
 REAL_SARIF = ROOT / "tests/fixtures/sarif/canonical-states.sarif"
@@ -81,6 +81,7 @@ def _report(**changes: Any) -> ImportReport:
         "tracked_content_digest": "e" * 64,
         "producer_id": "semgrep",
         "producer_declaration_digest": "f" * 64,
+        "driver": ToolComponent("Semgrep OSS", "1.186.0"),
         "provenance": "declared",
         "profile_evidence_digest": None,
         "sarif_sha256": "0" * 64,
@@ -193,6 +194,18 @@ def _records_object(document: dict[str, Any]) -> None:
     _redigest(document)
 
 
+def _driver_extra_field(document: dict[str, Any]) -> None:
+    """Add a field to the driver identity and recompute the digest."""
+    document["driver"]["verified"] = True
+    _redigest(document)
+
+
+def _driver_without_version(document: dict[str, Any]) -> None:
+    """Replace the driver version with null and recompute the digest."""
+    document["driver"]["version"] = None
+    _redigest(document)
+
+
 def _bad_digest(document: dict[str, Any]) -> None:
     """Write a non-hex report digest."""
     document["report_digest"] = "x" * 64
@@ -207,6 +220,8 @@ REFUSALS: tuple[tuple[Callable[[dict[str, Any]], None], str], ...] = (
     (_reviewed_candidate, "must be unreviewed and from the producer"),
     (_moved_anchor, "candidate id does not match its recorded identity"),
     (_records_object, "must be arrays"),
+    (_driver_extra_field, "driver fields do not match the schema"),
+    (_driver_without_version, "driver name and version must be strings"),
     (_bad_digest, "lower-case SHA-256 digest"),
 )
 

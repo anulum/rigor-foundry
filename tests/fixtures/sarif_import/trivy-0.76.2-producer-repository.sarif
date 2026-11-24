@@ -1,0 +1,80 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "fullName": "Trivy Vulnerability Scanner",
+          "informationUri": "https://github.com/aquasecurity/trivy",
+          "name": "Trivy",
+          "rules": [
+            {
+              "id": "rigor-fixture-token",
+              "name": "Secret",
+              "shortDescription": {
+                "text": "RigorFoundry fixture token"
+              },
+              "fullDescription": {
+                "text": "API_TOKEN = \"*************************\""
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://github.com/aquasecurity/trivy/blob/main/pkg/fanal/secret/builtin-rules.go",
+              "help": {
+                "text": "Secret RigorFoundry fixture token\nSeverity: HIGH\nMatch: API_TOKEN = \"*************************\"",
+                "markdown": "**Secret RigorFoundry fixture token**\n| Severity | Match |\n| --- | --- |\n|HIGH|API_TOKEN = \"*************************\"|"
+              },
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "8.0",
+                "tags": [
+                  "secret",
+                  "security",
+                  "HIGH"
+                ]
+              }
+            }
+          ],
+          "version": "0.76.2"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "rigor-fixture-token",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Artifact: src/app/settings.py\nType: \nSecret RigorFoundry fixture token\nSeverity: HIGH\nMatch: API_TOKEN = \"*************************\""
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app/settings.py",
+                  "uriBaseId": "ROOTPATH"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 1,
+                  "endLine": 3,
+                  "endColumn": 1
+                }
+              },
+              "message": {
+                "text": "src/app/settings.py"
+              }
+            }
+          ]
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "originalUriBaseIds": {
+        "ROOTPATH": {
+          "uri": "file:///tmp/rigor-sarif-import/producer-repo/"
+        }
+      }
+    }
+  ]
+}

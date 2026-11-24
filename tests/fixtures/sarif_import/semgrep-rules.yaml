@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Apache License 2.0; see LICENSE.
+# © Concepts 1996–2026 Miroslav Šotek. All rights reserved.
+# © Code 2020–2026 Miroslav Šotek. All rights reserved.
+# ORCID: 0009-0009-3560-0851
+# Contact: www.anulum.li | protoscience@anulum.li
+# RigorFoundry — Semgrep rule that produced the import fixture
+rules:
+  - id: rigor-fixture-eval
+    languages: [python]
+    severity: ERROR
+    message: Dynamic evaluation of an expression argument.
+    pattern: eval($X)
