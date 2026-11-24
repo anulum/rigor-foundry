@@ -56,10 +56,16 @@ REQUIRED_JOB = {
         }
     ],
 }
+SARIF_SCHEMA_STEP = {
+    "name": "Fetch the pinned SARIF schema",
+    "shell": "bash",
+    "run": 'set -euo pipefail\nschema="$RUNNER_TEMP/sarif-schema-2.1.0.json"\ncurl --proto \'=https\' --tlsv1.2 --fail --location --output "$schema" "$(python -m tools.sarif_schema_pin url)"\nprintf \'%s  %s\\n\' "$(python -m tools.sarif_schema_pin sha256)" "$schema" | sha256sum --check --strict\n',
+}
 SHARD_STEP = {
     "name": "Run exhaustive CI-owned suite",
     "env": {
         "RIGOR_DOCUMENTATION_PYTHON": "${{ runner.temp }}/rigor-docs-venv/bin/python",
+        "RIGOR_SARIF_SCHEMA_PATH": "${{ runner.temp }}/sarif-schema-2.1.0.json",
         **NATIVE_METADATA_ENV,
     },
     "run": "python -m tools.run_test_shard --index ${{ matrix.shard }} --count 8",

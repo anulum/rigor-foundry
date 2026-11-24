@@ -220,6 +220,20 @@ exact source checkout through `RIGOR_NATIVE_WINDOWS_SOURCE_ROOT`, and must meet
 the current versioned receipt contract. Local ordinary receipts retain their
 local venue; hosted admission requires the GitHub venue and current run identity.
 
+SARIF schema tests consume the OASIS SARIF 2.1.0 Errata 01 schema through
+`RIGOR_SARIF_SCHEMA_PATH`. Its URL and SHA-256 have one tracked source,
+`tools/sarif_schema_pin.py`. The shard job fetches the schema before the tests
+and checks the digest, and the tests refuse a copy whose digest differs. To run
+them locally, fetch it the same way and point the variable at the file:
+
+```bash
+curl --proto '=https' --tlsv1.2 --fail --location --output sarif-schema-2.1.0.json \
+  "$(python -m tools.sarif_schema_pin url)"
+printf '%s  %s\n' "$(python -m tools.sarif_schema_pin sha256)" sarif-schema-2.1.0.json \
+  | sha256sum --check --strict
+export RIGOR_SARIF_SCHEMA_PATH="$PWD/sarif-schema-2.1.0.json"
+```
+
 After workflow edits, run Actionlint and focused policy tests, then the normal
 action-pin guard; it also checks the complete inventory and graph:
 

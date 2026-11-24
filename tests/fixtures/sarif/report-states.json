@@ -1,0 +1,539 @@
+{
+  "branch": "main",
+  "candidates": [
+    {
+      "anchor": {
+        "blob_oid": "a356a24349c2abf00d3f02b2b37722d1f7a76549",
+        "content_sha256": "4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4",
+        "kind": "tracked-blob",
+        "line_end": 6,
+        "line_start": 6,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "43711808b1afdec1ca52bf5b3448e0a239e0681b03e2807808bf0f9d36dc0152",
+      "category": "application-security",
+      "confidence": "high",
+      "evidence": "file_sha256=4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4; line_sha256=ebe3b3f79df503a64bb452987cb1da5fce931c36b3a3a4e78eaccb2020585d4d",
+      "rationale": "eval and exec run arbitrary code and turn any tainted argument into execution.",
+      "rule_id": "AS001-dynamic-code-execution",
+      "symbol": "eval",
+      "verification": "Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator."
+    },
+    {
+      "anchor": {
+        "blob_oid": "a356a24349c2abf00d3f02b2b37722d1f7a76549",
+        "content_sha256": "4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4",
+        "kind": "tracked-blob",
+        "line_end": 7,
+        "line_start": 7,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "0625d6d24c7a907c75de19d29601a4e0ff3db867843c9c24ff0caba0ef09ce79",
+      "category": "application-security",
+      "confidence": "high",
+      "evidence": "file_sha256=4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4; line_sha256=8c1764545b3de0ef1c1062fb9140a15d93767ff61827a0f5e75df3415aa0fdd8",
+      "rationale": "A shell command surface lets a tainted argument inject additional commands.",
+      "rule_id": "AS002-shell-command-execution",
+      "symbol": "subprocess.run",
+      "verification": "Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant."
+    },
+    {
+      "anchor": {
+        "blob_oid": "a356a24349c2abf00d3f02b2b37722d1f7a76549",
+        "content_sha256": "4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4",
+        "kind": "tracked-blob",
+        "line_end": 8,
+        "line_start": 8,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "706d19304354d5e6b6316dcd5169dd5b3d5d8fd364be6b02b7069f6edc7a80c2",
+      "category": "application-security",
+      "confidence": "high",
+      "evidence": "file_sha256=4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4; line_sha256=3d893135d0d19d66dedeba9a6dafc6ac176ebbc74207e624ca792f0a6b327f82",
+      "rationale": "pickle and the default yaml.load reconstruct arbitrary objects from their input.",
+      "rule_id": "AS003-unsafe-deserialization",
+      "symbol": "pickle.loads",
+      "verification": "Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "src/pkg/wild.py",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "63444b2e66967fde9315c10634e40287f6bf7f96ef3082c87757167f238f9aa0",
+      "category": "architecture",
+      "confidence": "low",
+      "evidence": "no tracked test stem matches wild",
+      "rationale": "The production module has no obvious dedicated module-named test owner.",
+      "rule_id": "AR005-no-module-named-test-owner",
+      "symbol": "pkg.wild",
+      "verification": "Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
+    },
+    {
+      "anchor": {
+        "blob_oid": "2a837110dcfb057e1478cd1c0da975e09d75c62e",
+        "content_sha256": "cae9afdb651904838f3f5473fc9fc6ec54d515639dcced51caf1e6a72f41759d",
+        "kind": "tracked-blob",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "src/pkg/wild.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "00d0299dd7acb308786183bd0530b005aa3dde115fe9d1cff8d468ab6124106e",
+      "category": "architecture",
+      "confidence": "medium",
+      "evidence": "from pkg.runner import *",
+      "rationale": "A wildcard import hides the explicit API and dependency boundary.",
+      "rule_id": "AR002-wildcard-import-boundary",
+      "symbol": "pkg.wild",
+      "verification": "Enumerate the intended compatibility exports, downstream consumers, and generated API ownership; replace with explicit lazy or static exports unless the facade contract is documented and drift-gated."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "6e39a09b6342399c88697780649a392d22035f40eec3b8888b289ffa955fba31",
+      "category": "architecture",
+      "confidence": "low",
+      "evidence": "no tracked test stem matches über file",
+      "rationale": "The production module has no obvious dedicated module-named test owner.",
+      "rule_id": "AR005-no-module-named-test-owner",
+      "symbol": "pkg.über file",
+      "verification": "Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
+    },
+    {
+      "anchor": {
+        "blob_oid": "2a837110dcfb057e1478cd1c0da975e09d75c62e",
+        "content_sha256": "cae9afdb651904838f3f5473fc9fc6ec54d515639dcced51caf1e6a72f41759d",
+        "kind": "tracked-blob",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "src/pkg/wild.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "1989e8d592184c81b580e142da0e07b76a154cb75448cb1c1d6ccc3a0fe3afdb",
+      "category": "documentation",
+      "confidence": "high",
+      "evidence": "file_sha256=cae9afdb651904838f3f5473fc9fc6ec54d515639dcced51caf1e6a72f41759d; line_sha256=765f5159863bcfc5408e24d850ad8e7cc77ac6ff483477dbcd3fbded8d3363c6",
+      "rationale": "A tracked source owner has no SPDX licence identifier in its leading header, so automated licence inventory cannot establish its declared licence.",
+      "rule_id": "DC001-missing-license-header",
+      "symbol": "spdx-license-header",
+      "verification": "Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed."
+    },
+    {
+      "anchor": {
+        "blob_oid": "a356a24349c2abf00d3f02b2b37722d1f7a76549",
+        "content_sha256": "4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4",
+        "kind": "tracked-blob",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "7ae14f600e988adc3d6c1180bf3c38248ee995ab28b16ecc6439430a44a30b51",
+      "category": "documentation",
+      "confidence": "high",
+      "evidence": "file_sha256=4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4; line_sha256=888eeaa6fc98f1969af4b734f9bba9fcdcf74bccfa51bee4aa74a3a2b527995c",
+      "rationale": "A tracked source owner has no SPDX licence identifier in its leading header, so automated licence inventory cannot establish its declared licence.",
+      "rule_id": "DC001-missing-license-header",
+      "symbol": "spdx-license-header",
+      "verification": "Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "30325ecfc9bfdf5bb2b48b03140104a4882d5ce548a0ee6ddf295f6b0aebc101",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "no RigorFoundry policy found; scanner used portable defaults",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV001-missing-repository-audit-policy",
+      "symbol": "",
+      "verification": "Read the repository rules and canonical internal TODO, then define the exact roots, packages, GodFile registries, and enforcement state without copying another project's assumptions."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "25a9c3e65cd3bd073c7876ccf82772c5290f998525606213e6ffb7e2e339d86d",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: scientific-numerical-correctness",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "scientific-numerical-correctness",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "28ffbccf7db66c36050d426b7e8ddc3e7abbee723cf76895b5711637509e53e2",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: performance-and-reproducibility",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "performance-and-reproducibility",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "2cc6e9f9e7154029e87c9c03096c98474a374cead72ef61f95e4f2935e03b214",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: packaging-deployment-iac",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "packaging-deployment-iac",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "49df018e163f459c93ef21d2e7e153ab1561b8c5c06d07c9ec9b3b35849793f9",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: operations-and-observability",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "operations-and-observability",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "830da0d41b89cb61c7f6cf0fa1dd4216df311c765503f03a1f5ea722147f2830",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: ownership-and-maintenance",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "ownership-and-maintenance",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "8378acc2809d5a109f6c69201c4b7a86655cc933b1b505135bbf79c35bc8d4cd",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: api-abi-schema-compatibility",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "api-abi-schema-compatibility",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "890c79a8db667292dfe6f5391f4ae85444025240f9542d7f68ef480861023add",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: test-authenticity",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "test-authenticity",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "9a9c3b2b9dcaed8913f036654a30ddc006a763d9dd0934b04ab40f157afbbed1",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: data-and-privacy",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "data-and-privacy",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "9b0ca9b42357e4219d043ef3340ff5a1e5f66331292b164216224dc96c0e7939",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: reliability-and-concurrency",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "reliability-and-concurrency",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "a35c2fc4b680709a7c50721064001b526b9080e7ca81f154ee5c516bb8bede52",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: architecture-and-wiring",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "architecture-and-wiring",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "b6a35a308251f63bcda4d40ca9869b06b82e679242dd0f68007382a4b937feb0",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: supply-chain",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "supply-chain",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "cace5a5ecc3aaf158470a2340d94c770630f211beaf901cc4b29043d6fc323db",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: application-security",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "application-security",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "e3d424990a00f50a0c401e1ee3a580a3df58c434d9ba8fd2f3455e1d2c7b08cb",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: documentation-claims-ip",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "documentation-claims-ip",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "kind": "repository-tree",
+        "line_end": 1,
+        "line_start": 1,
+        "path": "rigor-foundry-policy.json",
+        "schema_version": "1.0",
+        "tracked_content_sha256": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+        "tree_oid": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6"
+      },
+      "candidate_id": "f809cbbea70da9838cbedc9b9aba2b71a129ce640a02fb88358ea0456b578fa3",
+      "category": "governance",
+      "confidence": "high",
+      "evidence": "mandatory audit domain is undeclared: godfile-responsibility",
+      "rationale": "Repository-specific audit ownership is missing or ambiguous.",
+      "rule_id": "GV003-undeclared-audit-domain",
+      "symbol": "godfile-responsibility",
+      "verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+    },
+    {
+      "anchor": {
+        "blob_oid": "a356a24349c2abf00d3f02b2b37722d1f7a76549",
+        "content_sha256": "4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4",
+        "kind": "tracked-blob",
+        "line_end": 5,
+        "line_start": 5,
+        "path": "src/pkg/über file.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "47c1de26eac5534a0e5ed6be28974cd5d13bb87c26d313766ca8265c4c30cb6a",
+      "category": "reliability",
+      "confidence": "high",
+      "evidence": "file_sha256=4742245eeaf11774de9d8bbe7ab95cb13713f51880b176653892b06ba4b0a9d4; line_sha256=47756baddd69f8a7582431624d0ebc3c6dfa9f02c6c6073ddf3fc584671ed459",
+      "rationale": "A mutable default argument is created once and shared across every call, so state leaks between invocations.",
+      "rule_id": "RL002-mutable-default-argument",
+      "symbol": "default",
+      "verification": "Default the parameter to None and create the list, dict, or set inside the function body, or confirm the shared instance is genuinely intended."
+    },
+    {
+      "anchor": {
+        "blob_oid": "b3f96111aba7e7f4c23b7bd32ac472b77fef1317",
+        "content_sha256": "f544125652fd681a7395de644b81041b74948163722e6fecfd61366a6fcbd36e",
+        "kind": "tracked-blob",
+        "line_end": 3,
+        "line_start": 3,
+        "path": "tests/test_core.py",
+        "schema_version": "1.0"
+      },
+      "candidate_id": "901949d53ef8eece6e0191e0d5607b1c7fad07c54a6b254190b6d10b944c908f",
+      "category": "test-authenticity",
+      "confidence": "high",
+      "evidence": "file_sha256=f544125652fd681a7395de644b81041b74948163722e6fecfd61366a6fcbd36e; line_sha256=118d7da2849e6a4098f85c7c801bace3d356b830cb43c2ef83abbb061a7a9dea; occurrences=1",
+      "rationale": "A conditional or ignored test can hide an unverified production path.",
+      "rule_id": "TA003-skip-or-xfail",
+      "symbol": "occurrences=1",
+      "verification": "Reproduce the dependency or hardware boundary, verify the gate is explicit and fail-closed, and identify the separate real integration job or evidence path that executes the contract."
+    }
+  ],
+  "dirty_paths": [],
+  "git_object_format": "sha1",
+  "git_provenance": {
+    "executable_digest": "eb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201",
+    "identity_digest": "fbb84252a9bd6d5a2ee455fa7275527e4377f21e2315ed19d672881c2eb5f50f",
+    "resolved_path": "/usr/bin/git",
+    "schema_version": "1.0",
+    "trust_policy": {
+      "executable": "git",
+      "maximum_version_exclusive": "3.0.0",
+      "minimum_version": "2.35.2",
+      "schema_version": "1.0",
+      "trusted_roots": [
+        "/usr/bin",
+        "/usr/local/bin",
+        "/opt/homebrew/bin"
+      ]
+    },
+    "trust_policy_digest": "a8fb516fc8ffa2335fbfaa9a39013ca0b5a27287b60ad4f7a447053461284925",
+    "trusted_root": "/usr/bin",
+    "version": "2.43.0"
+  },
+  "head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
+  "head_tree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
+  "ignored_inventory_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "ignored_inventory_evidence": [],
+  "policy": {
+    "audit_domains": [],
+    "canonical_todo": ".rigor/TODO.md",
+    "enforcement_mode": "observe",
+    "ignored_inventory": [],
+    "maturity_policy_digest": null,
+    "module_size_registries": [],
+    "native_audits": [],
+    "production_packages": [],
+    "review_ledger": ".rigor/reviews.json",
+    "schema_version": "1.3",
+    "source_line_threshold": 1000,
+    "source_roots": [
+      "src",
+      "lib",
+      "tools",
+      "scripts"
+    ],
+    "test_line_threshold": 1000,
+    "test_roots": [
+      "tests",
+      "test"
+    ]
+  },
+  "policy_digest": "337869827cef06cc90297cb12217f19f76b57a989ee3f6dec9256e4fc0b4954d",
+  "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+  "repository_root": "/tmp/rigor-sarif-fixture-kgn0kc9m/states",
+  "rule_pack_digest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
+  "rule_pack_version": "rigor-foundry/1.19.0",
+  "scanner_version": "0.3.0",
+  "schema_version": "1.3",
+  "tracked_content_digest": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d",
+  "tracked_file_count": 4
+}

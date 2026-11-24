@@ -243,11 +243,14 @@ diff runs through the same trusted, provenance-bound Git executable as the scan.
 
 ## SARIF export
 
-`rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]`
-verifies the report and optional review ledger before emitting deterministic
-SARIF 2.1.0. Without `--output`, JSON is written to stdout. An explicit output
-parent must already exist. Export is read-only and includes every candidate;
-see [SARIF export](sarif.md) for the state mapping and anchor contract.
+`rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]
+[--profile github-code-scanning]` verifies the report and optional review ledger
+before emitting deterministic SARIF 2.1.0. Without `--output`, JSON is written to
+stdout. An explicit output parent must already exist. The default export is
+read-only and includes every candidate. `--profile github-code-scanning` emits
+only reviewed `valid` results, declares what it omitted, and refuses GitHub's
+upload limits before writing anything; see [SARIF export](sarif.md) for the state
+mapping, the anchor contract and the profile.
 
 ## Content-addressed report differences
 

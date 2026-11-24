@@ -61,6 +61,7 @@ from .rule_maturity import RuleMaturityReport
 from .rule_maturity_manifest import evaluate_rule_maturity_manifest
 from .safe_output import write_new_output
 from .sarif import report_sarif
+from .sarif_github_profile import GITHUB_CODE_SCANNING_PROFILE
 from .scanner import scan_repository
 from .source_provenance_cli import add_source_provenance_commands
 from .stable_contract import stable_contract_manifest
@@ -267,7 +268,7 @@ def _sarif_command(args: argparse.Namespace) -> int:
     """Export one verified report and optional review ledger as SARIF."""
     report = AuditReport.from_path(args.report)
     reviews = () if args.review is None else reviews_from_path(args.review)
-    output = report_sarif(report, reviews)
+    output = report_sarif(report, reviews, profile=args.profile)
     if args.output is None:
         print(output, end="")
     else:
@@ -538,6 +539,11 @@ def _parser() -> argparse.ArgumentParser:
     sarif.add_argument("--report", type=Path, required=True)
     sarif.add_argument("--review", type=Path)
     sarif.add_argument("--output", type=Path)
+    sarif.add_argument(
+        "--profile",
+        choices=(GITHUB_CODE_SCANNING_PROFILE,),
+        help="Emit a consumer profile instead of the complete canonical export.",
+    )
     sarif.set_defaults(handler=_sarif_command)
 
     promote = subparsers.add_parser(

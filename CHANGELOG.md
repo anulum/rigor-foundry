@@ -5,6 +5,14 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- `rigor sarif --profile github-code-scanning` emits a GitHub code-scanning
+  profile of the SARIF export with only reviewed `valid` results, declared counts
+  of the omitted states and the canonical document's digest. It refuses GitHub's
+  documented upload limits, and more than 5,000 results, before writing anything.
+  The default export is unchanged.
+
 ### Fixed
 
 - Refuse a symbolic-link or non-directory internal record lock parent with the

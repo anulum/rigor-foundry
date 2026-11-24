@@ -37,6 +37,24 @@ def test_complete_actual_inventory_and_normal_action_guard() -> None:
         assert record["owner"] == "@anulum"
 
 
+def test_an_unchanged_round_tripped_workflow_is_still_accepted(tmp_path: Path) -> None:
+    """Every graph mutation case starts from a rewrite that the guard alone accepts.
+
+    The mutation tests read a workflow, change one field and write it back. A rewrite that
+    itself broke the workflow would make every such case pass whatever it changed, so each
+    workflow is rewritten here unchanged, in the same key order, and must still qualify.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Independent copied workflow repository.
+    """
+    root = copy_workflow_repository(tmp_path)
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        path.write_text(yaml.safe_dump(read_workflow(path), sort_keys=False))
+        assert ci_workflow_errors(root) == [], path.name
+
+
 def test_sbom_workflow_can_run_without_release_authority() -> None:
     """Keep pre-release inventory runnable on a pull request or manual dispatch."""
     workflow = read_workflow(ROOT / ".github/workflows/sbom.yml")
@@ -224,7 +242,7 @@ def test_actual_inventory_refuses_missing_sources_and_budget_or_graph_drift(
     elif case in {"empty-jobs", "list-jobs", "null-job"}:
         workflow = read_workflow(quality)
         workflow["jobs"] = {"empty-jobs": {}, "list-jobs": [], "null-job": {"quality": None}}[case]
-        quality.write_text(yaml.safe_dump(workflow))
+        quality.write_text(yaml.safe_dump(workflow, sort_keys=False))
     elif case in {"coordinator-bytes", "coordinator-lines", "reusable-bytes", "reusable-lines"}:
         path = coordinator if case.startswith("coordinator") else quality
         suffix = "#" + "a" * 102_401 if case.endswith("bytes") else "\n#" * 1_001
@@ -238,12 +256,16 @@ def test_actual_inventory_refuses_missing_sources_and_budget_or_graph_drift(
     elif case == "extra-reusable":
         workflow = read_workflow(root / ".github/workflows/stale.yml")
         workflow["on"] = {"workflow_call": None}
-        (root / ".github/workflows/stale.yml").write_text(yaml.safe_dump(workflow))
+        (root / ".github/workflows/stale.yml").write_text(
+            yaml.safe_dump(workflow, sort_keys=False)
+        )
     else:
         workflow = read_workflow(root / ".github/workflows/stale.yml")
         job = next(iter(workflow["jobs"]))
         workflow["jobs"][job]["uses"] = "./.github/workflows/ci-quality.yml"
-        (root / ".github/workflows/stale.yml").write_text(yaml.safe_dump(workflow))
+        (root / ".github/workflows/stale.yml").write_text(
+            yaml.safe_dump(workflow, sort_keys=False)
+        )
     assert ci_workflow_errors(root)
 
 
@@ -279,7 +301,7 @@ def test_context_source_coverage_cannot_be_removed_or_weakened(
         step["run"] = step["run"].replace("--cov-fail-under=100", "--cov-fail-under=99")
     else:
         step["run"] = step["run"].replace(" --cov=test_context_source_lease", "")
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)
 
 
@@ -324,7 +346,7 @@ def test_real_workflow_call_surfaces_and_event_policy_are_closed(
     path = root / ".github/workflows" / workflow
     document = read_workflow(path)
     document[field] = value
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)
 
 
@@ -367,7 +389,7 @@ def test_actual_caller_graph_and_aggregate_cannot_omit_a_category(
     path = root / ".github/workflows/ci.yml"
     document = read_workflow(path)
     document["jobs"][job][field] = value
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)
 
 
@@ -401,7 +423,7 @@ def test_reusable_job_cannot_introduce_cross_category_or_privilege_drift(
     path = root / CI_WORKFLOWS["quality"]
     document = read_workflow(path)
     document["jobs"]["quality"][field] = value
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)
 
 
@@ -434,7 +456,7 @@ def test_standalone_editor_caller_refuses_route_or_privilege_drift(
     path = root / ".github/workflows/pre-commit.yml"
     document = read_workflow(path)
     document["jobs"]["editor"][field] = value
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)
 
 
@@ -564,7 +586,7 @@ def test_complete_workflow_contract_cannot_be_satisfied_by_partial_ownership(
         )
         inventory["workflows"][relative]["category"] = "security"
         policy.write_text(json.dumps(inventory))
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     if case in {"extra-call", "extra-category-job"}:
         policy = root / ".github/ci-workflows.json"
         inventory = json.loads(policy.read_text())
@@ -652,6 +674,9 @@ def test_stable_required_contexts_execute_the_actual_strict_shell(state: str) ->
         "conditional-run",
         "hidden-data",
         "attempt-upload",
+        "schema-removed",
+        "schema-after-shard",
+        "schema-unchecked",
         "union-needs",
         "union-if",
         "union-env",
@@ -699,6 +724,16 @@ def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
         execution["steps"][-1]["with"]["include-hidden-files"] = False
     elif case == "attempt-upload":
         execution["steps"][-1]["with"]["name"] = "shared-attempt-input"
+    elif case.startswith("schema-"):
+        schema = execution["steps"][-3]
+        assert schema["name"] == "Fetch the pinned SARIF schema"
+        assert "sha256sum --check --strict" in schema["run"]
+        if case == "schema-removed":
+            del execution["steps"][-3]
+        elif case == "schema-after-shard":
+            execution["steps"][-3:-1] = [execution["steps"][-2], schema]
+        else:
+            schema["run"] = schema["run"].replace("sha256sum --check --strict", "true")
     elif case in {"union-needs", "union-if", "union-env", "union-timeout", "union-matrix"}:
         field, value = {
             "union-needs": ("needs", []),
@@ -738,5 +773,5 @@ def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
         ]
         assert len(indices) == 1
         union["steps"][indices[0]] = {"run": "true"}
-    path.write_text(yaml.safe_dump(document))
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
     assert ci_workflow_errors(root)

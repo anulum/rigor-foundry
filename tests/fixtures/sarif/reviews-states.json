@@ -1,0 +1,179 @@
+{
+  "reviews": [
+    {
+      "acceptance_gates": [
+        "focused regression passes"
+      ],
+      "boundary_justification": "",
+      "candidate_id": "43711808b1afdec1ca52bf5b3448e0a239e0681b03e2807808bf0f9d36dc0152",
+      "decision": "valid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "team/platform",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": "P0",
+      "title": "Resolve the reviewed P0 finding"
+    },
+    {
+      "acceptance_gates": [
+        "focused regression passes"
+      ],
+      "boundary_justification": "",
+      "candidate_id": "0625d6d24c7a907c75de19d29601a4e0ff3db867843c9c24ff0caba0ef09ce79",
+      "decision": "valid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "team/platform",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": "P1",
+      "title": "Resolve the reviewed P1 finding"
+    },
+    {
+      "acceptance_gates": [
+        "focused regression passes"
+      ],
+      "boundary_justification": "",
+      "candidate_id": "706d19304354d5e6b6316dcd5169dd5b3d5d8fd364be6b02b7069f6edc7a80c2",
+      "decision": "valid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "team/platform",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": "P2",
+      "title": "Resolve the reviewed P2 finding"
+    },
+    {
+      "acceptance_gates": [
+        "focused regression passes"
+      ],
+      "boundary_justification": "",
+      "candidate_id": "63444b2e66967fde9315c10634e40287f6bf7f96ef3082c87757167f238f9aa0",
+      "decision": "valid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "team/platform",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": "P3",
+      "title": "Resolve the reviewed P3 finding"
+    },
+    {
+      "acceptance_gates": [
+        "focused regression passes"
+      ],
+      "boundary_justification": "",
+      "candidate_id": "00d0299dd7acb308786183bd0530b005aa3dde115fe9d1cff8d468ab6124106e",
+      "decision": "valid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "team/platform",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": "P4",
+      "title": "Resolve the reviewed P4 finding"
+    },
+    {
+      "acceptance_gates": [],
+      "boundary_justification": "",
+      "candidate_id": "6e39a09b6342399c88697780649a392d22035f40eec3b8888b289ffa955fba31",
+      "decision": "invalid",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": null,
+      "title": ""
+    },
+    {
+      "acceptance_gates": [],
+      "boundary_justification": "Required compatibility boundary.",
+      "candidate_id": "1989e8d592184c81b580e142da0e07b76a154cb75448cb1c1d6ccc3a0fe3afdb",
+      "decision": "accepted-boundary",
+      "dependencies": [],
+      "evidence": [
+        "python -m rigor_foundry scan"
+      ],
+      "expires_at": "",
+      "owner": "",
+      "rationale": "Reproduced against the exact anchored object.",
+      "reopen_triggers": [
+        "anchored bytes change"
+      ],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "2026-11-24T00:00:00Z",
+      "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
+      "severity": null,
+      "title": ""
+    },
+    {
+      "acceptance_gates": [],
+      "boundary_justification": "",
+      "candidate_id": "7ae14f600e988adc3d6c1180bf3c38248ee995ab28b16ecc6439430a44a30b51",
+      "decision": "needs-evidence",
+      "dependencies": [],
+      "evidence": [],
+      "expires_at": "",
+      "owner": "",
+      "rationale": "",
+      "reopen_triggers": [],
+      "report_digest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+      "reviewed_at": "",
+      "reviewer": "",
+      "severity": null,
+      "title": ""
+    }
+  ],
+  "schema_version": "1.0"
+}

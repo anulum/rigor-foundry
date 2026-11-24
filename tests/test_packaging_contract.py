@@ -303,7 +303,8 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "/tmp/rigor-wheel/bin/rigor scan --root ." in workflow
     assert "/tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json" in workflow
     assert 'document["version"] == "2.1.0"' in workflow
-    assert "c3b4bb2d6093897483348925aaa73af03b3e3f4bd4ca38cef26dcb4212a2682e" in workflow
+    assert '"$(python -m tools.sarif_schema_pin sha256)" /tmp/sarif-schema-2.1.0.json' in workflow
+    assert '"$(python -m tools.sarif_schema_pin url)"' in workflow
     assert "Draft4Validator(schema).validate(document)" in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow

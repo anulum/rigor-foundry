@@ -1,0 +1,2697 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "automationDetails": {
+        "id": "rigor-foundry/8b44499a5f1553b03b233fe92b01ec2b65b9e623112f79270ade649425dc5025"
+      },
+      "properties": {
+        "rigorFoundry/branch": "main",
+        "rigorFoundry/canonicalDocumentDigest": "fe285d6ddc4351e5cc2789cf828159b4853231690b68909cf185bfd26bb00b32",
+        "rigorFoundry/consumerProfile": "github-code-scanning",
+        "rigorFoundry/gitObjectFormat": "sha1",
+        "rigorFoundry/head": "bb4b2d5a33879f8059efdd3e83b5aaf906d0b44e",
+        "rigorFoundry/headTree": "5c95b612dd40be4f2d7703c9c28fd369917849f7",
+        "rigorFoundry/ignoredInventoryDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "rigorFoundry/omittedResults": {
+          "accepted-boundary": 0,
+          "invalid": 0,
+          "needs-evidence": 0,
+          "unreviewed": 0
+        },
+        "rigorFoundry/policyDigest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
+        "rigorFoundry/reportDigest": "8b44499a5f1553b03b233fe92b01ec2b65b9e623112f79270ade649425dc5025",
+        "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+        "rigorFoundry/trackedContentDigest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28"
+      },
+      "results": [],
+      "taxonomies": [
+        {
+          "informationUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md",
+          "name": "RigorFoundry rule categories",
+          "taxa": [
+            {
+              "id": "test-authenticity",
+              "name": "test-authenticity"
+            },
+            {
+              "id": "architecture",
+              "name": "architecture"
+            },
+            {
+              "id": "godfile",
+              "name": "godfile"
+            },
+            {
+              "id": "governance",
+              "name": "governance"
+            },
+            {
+              "id": "application-security",
+              "name": "application-security"
+            },
+            {
+              "id": "reliability",
+              "name": "reliability"
+            },
+            {
+              "id": "supply-chain",
+              "name": "supply-chain"
+            },
+            {
+              "id": "container",
+              "name": "container"
+            },
+            {
+              "id": "data-privacy",
+              "name": "data-privacy"
+            },
+            {
+              "id": "documentation",
+              "name": "documentation"
+            },
+            {
+              "id": "scientific",
+              "name": "scientific"
+            },
+            {
+              "id": "operations",
+              "name": "operations"
+            },
+            {
+              "id": "performance",
+              "name": "performance"
+            },
+            {
+              "id": "api-compatibility",
+              "name": "api-compatibility"
+            },
+            {
+              "id": "regulatory-readiness",
+              "name": "regulatory-readiness"
+            },
+            {
+              "id": "github-actions",
+              "name": "github-actions"
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/anulum/RIGOR-FOUNDRY",
+          "name": "RigorFoundry",
+          "rules": [
+            {
+              "fullDescription": {
+                "text": "A test double may replace the production boundary that the test claims to prove."
+              },
+              "help": {
+                "markdown": "Test-double API or fixture signal.\n\n**Why it matters.** A test double may replace the production boundary that the test claims to prove.\n\n**How to verify.** Trace the test from its public API, CLI, adapter, or workflow entry point; verify that the substituted object is an approved protocol-faithful external fixture and that the production adapter and validation path still execute.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Test-double API or fixture signal.\n\nWhy it matters: A test double may replace the production boundary that the test claims to prove.\nHow to verify: Trace the test from its public API, CLI, adapter, or workflow entry point; verify that the substituted object is an approved protocol-faithful external fixture and that the production adapter and validation path still execute."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta001-test-double",
+              "id": "TA001-test-double",
+              "name": "TA001-test-double",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Test-double API or fixture signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Synthetic naming can identify fixtures that do not represent a real contract."
+              },
+              "help": {
+                "markdown": "Synthetic fake, stub, dummy, or toy naming signal.\n\n**Why it matters.** Synthetic naming can identify fixtures that do not represent a real contract.\n\n**How to verify.** Compare the fixture with the repository schema, external protocol, recorded artefact, or documented domain example and prove which production boundary consumes it.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Synthetic fake, stub, dummy, or toy naming signal.\n\nWhy it matters: Synthetic naming can identify fixtures that do not represent a real contract.\nHow to verify: Compare the fixture with the repository schema, external protocol, recorded artefact, or documented domain example and prove which production boundary consumes it."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta002-synthetic-fixture",
+              "id": "TA002-synthetic-fixture",
+              "name": "TA002-synthetic-fixture",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Synthetic fake, stub, dummy, or toy naming signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A conditional or ignored test can hide an unverified production path."
+              },
+              "help": {
+                "markdown": "Skipped or expected-failure test signal.\n\n**Why it matters.** A conditional or ignored test can hide an unverified production path.\n\n**How to verify.** Reproduce the dependency or hardware boundary, verify the gate is explicit and fail-closed, and identify the separate real integration job or evidence path that executes the contract.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Skipped or expected-failure test signal.\n\nWhy it matters: A conditional or ignored test can hide an unverified production path.\nHow to verify: Reproduce the dependency or hardware boundary, verify the gate is explicit and fail-closed, and identify the separate real integration job or evidence path that executes the contract."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta003-skip-or-xfail",
+              "id": "TA003-skip-or-xfail",
+              "name": "TA003-skip-or-xfail",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Skipped or expected-failure test signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Coverage exclusions can conceal reachable error or integration paths."
+              },
+              "help": {
+                "markdown": "Coverage exclusion signal in tracked Python or JavaScript-family text.\n\n**Why it matters.** Coverage exclusions can conceal reachable error or integration paths.\n\n**How to verify.** Prove the branch is structurally unreachable on every supported runtime or replace the exclusion with a real error-path or matrix test.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Coverage exclusion signal in tracked Python or JavaScript-family text.\n\nWhy it matters: Coverage exclusions can conceal reachable error or integration paths.\nHow to verify: Prove the branch is structurally unreachable on every supported runtime or replace the exclusion with a real error-path or matrix test."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta004-coverage-exclusion",
+              "id": "TA004-coverage-exclusion",
+              "name": "TA004-coverage-exclusion",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Coverage exclusion signal in tracked Python or JavaScript-family text."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A local suppression may hide a policy or security defect."
+              },
+              "help": {
+                "markdown": "Local lint or security suppression signal.\n\n**Why it matters.** A local suppression may hide a policy or security defect.\n\n**How to verify.** Run the owning analyser without the suppression, establish the exact diagnostic, and verify a tracked, source-specific justification or remove the suppression.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Local lint or security suppression signal.\n\nWhy it matters: A local suppression may hide a policy or security defect.\nHow to verify: Run the owning analyser without the suppression, establish the exact diagnostic, and verify a tracked, source-specific justification or remove the suppression."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta005-lint-suppression",
+              "id": "TA005-lint-suppression",
+              "name": "TA005-lint-suppression",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Local lint or security suppression signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A type suppression can hide a broken production or test contract."
+              },
+              "help": {
+                "markdown": "Local static-type suppression signal.\n\n**Why it matters.** A type suppression can hide a broken production or test contract.\n\n**How to verify.** Run strict typing on the owning module, confirm the exact error code and external typing boundary, then replace the suppression or document the narrow tracked reason.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Local static-type suppression signal.\n\nWhy it matters: A type suppression can hide a broken production or test contract.\nHow to verify: Run strict typing on the owning module, confirm the exact error code and external typing boundary, then replace the suppression or document the narrow tracked reason."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta006-type-suppression",
+              "id": "TA006-type-suppression",
+              "name": "TA006-type-suppression",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Local static-type suppression signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Module injection can bypass import, packaging, or optional-dependency wiring."
+              },
+              "help": {
+                "markdown": "Module-resolution injection signal.\n\n**Why it matters.** Module injection can bypass import, packaging, or optional-dependency wiring.\n\n**How to verify.** Execute the real package or direct-script import path in a clean subprocess and prove the same packaging and dependency boundary without replacing module resolution.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Module-resolution injection signal.\n\nWhy it matters: Module injection can bypass import, packaging, or optional-dependency wiring.\nHow to verify: Execute the real package or direct-script import path in a clean subprocess and prove the same packaging and dependency boundary without replacing module resolution."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta007-module-injection",
+              "id": "TA007-module-injection",
+              "name": "TA007-module-injection",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Module-resolution injection signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The test owner name suggests a cross-module coverage bucket."
+              },
+              "help": {
+                "markdown": "Non-specific test-owner name signal.\n\n**Why it matters.** The test owner name suggests a cross-module coverage bucket.\n\n**How to verify.** Map every test to one production module or one named integration contract and split unrelated behaviours into their owning test surfaces.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Non-specific test-owner name signal.\n\nWhy it matters: The test owner name suggests a cross-module coverage bucket.\nHow to verify: Map every test to one production module or one named integration contract and split unrelated behaviours into their owning test surfaces."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta008-coverage-bucket-name",
+              "id": "TA008-coverage-bucket-name",
+              "name": "TA008-coverage-bucket-name",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Non-specific test-owner name signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "An unparseable tracked test cannot be structurally audited."
+              },
+              "help": {
+                "markdown": "Tracked Python test cannot be parsed.\n\n**Why it matters.** An unparseable tracked test cannot be structurally audited.\n\n**How to verify.** Run the supported Python parser and repair or remove stale test code.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked Python test cannot be parsed.\n\nWhy it matters: An unparseable tracked test cannot be structurally audited.\nHow to verify: Run the supported Python parser and repair or remove stale test code."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta009-unparseable-python-test",
+              "id": "TA009-unparseable-python-test",
+              "name": "TA009-unparseable-python-test",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked Python test cannot be parsed."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The test exposes no local assertion, exception, or behavioural helper call."
+              },
+              "help": {
+                "markdown": "Test has no local behavioural contract signal.\n\n**Why it matters.** The test exposes no local assertion, exception, or behavioural helper call.\n\n**How to verify.** Identify the observable production regression this test catches and add an explicit result, state, persistence, error, or integration contract.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Test has no local behavioural contract signal.\n\nWhy it matters: The test exposes no local assertion, exception, or behavioural helper call.\nHow to verify: Identify the observable production regression this test catches and add an explicit result, state, persistence, error, or integration contract."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta010-smoke-only-test",
+              "id": "TA010-smoke-only-test",
+              "name": "TA010-smoke-only-test",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Test has no local behavioural contract signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The test directly reaches an underscored first-party production surface."
+              },
+              "help": {
+                "markdown": "Test directly reaches an underscored first-party surface.\n\n**Why it matters.** The test directly reaches an underscored first-party production surface.\n\n**How to verify.** Run the behaviour through the public API, CLI, adapter, pipeline, or documented internal contract and prove that the private call is not bypassing that boundary.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Test directly reaches an underscored first-party surface.\n\nWhy it matters: The test directly reaches an underscored first-party production surface.\nHow to verify: Run the behaviour through the public API, CLI, adapter, pipeline, or documented internal contract and prove that the private call is not bypassing that boundary."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ta011-private-production-surface",
+              "id": "TA011-private-production-surface",
+              "name": "TA011-private-production-surface",
+              "properties": {
+                "category": "test-authenticity",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "test-authenticity"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "test-authenticity",
+                    "index": 0,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Test directly reaches an underscored first-party surface."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A first-party import cycle can invert ownership and obscure initialisation."
+              },
+              "help": {
+                "markdown": "Non-trivial first-party Python import cycle.\n\n**Why it matters.** A first-party import cycle can invert ownership and obscure initialisation.\n\n**How to verify.** Trace runtime import order and public ownership for every edge; dismiss only if the cycle is type-only or otherwise absent from the production execution graph.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Non-trivial first-party Python import cycle.\n\nWhy it matters: A first-party import cycle can invert ownership and obscure initialisation.\nHow to verify: Trace runtime import order and public ownership for every edge; dismiss only if the cycle is type-only or otherwise absent from the production execution graph."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar001-first-party-import-cycle",
+              "id": "AR001-first-party-import-cycle",
+              "name": "AR001-first-party-import-cycle",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Non-trivial first-party Python import cycle."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A wildcard import hides the explicit API and dependency boundary."
+              },
+              "help": {
+                "markdown": "Wildcard Python import boundary.\n\n**Why it matters.** A wildcard import hides the explicit API and dependency boundary.\n\n**How to verify.** Enumerate the intended compatibility exports, downstream consumers, and generated API ownership; replace with explicit lazy or static exports unless the facade contract is documented and drift-gated.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Wildcard Python import boundary.\n\nWhy it matters: A wildcard import hides the explicit API and dependency boundary.\nHow to verify: Enumerate the intended compatibility exports, downstream consumers, and generated API ownership; replace with explicit lazy or static exports unless the facade contract is documented and drift-gated."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar002-wildcard-import-boundary",
+              "id": "AR002-wildcard-import-boundary",
+              "name": "AR002-wildcard-import-boundary",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Wildcard Python import boundary."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A broad import guard can mask dependency defects as optional absence."
+              },
+              "help": {
+                "markdown": "Import guarded by a broad exception handler.\n\n**Why it matters.** A broad import guard can mask dependency defects as optional absence.\n\n**How to verify.** Run the real import with the dependency present, absent, and broken inside its package; catch only the expected absence and surface nested failures.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Import guarded by a broad exception handler.\n\nWhy it matters: A broad import guard can mask dependency defects as optional absence.\nHow to verify: Run the real import with the dependency present, absent, and broken inside its package; catch only the expected absence and surface nested failures."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar003-broad-optional-import-boundary",
+              "id": "AR003-broad-optional-import-boundary",
+              "name": "AR003-broad-optional-import-boundary",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Import guarded by a broad exception handler."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A compatibility facade also owns executable function bodies."
+              },
+              "help": {
+                "markdown": "Facade also owns executable function bodies.\n\n**Why it matters.** A compatibility facade also owns executable function bodies.\n\n**How to verify.** Classify every body as import/lazy-export plumbing or independent execution; extract mixed lifecycle or algorithm ownership behind the stable facade.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Facade also owns executable function bodies.\n\nWhy it matters: A compatibility facade also owns executable function bodies.\nHow to verify: Classify every body as import/lazy-export plumbing or independent execution; extract mixed lifecycle or algorithm ownership behind the stable facade."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar004-executable-facade",
+              "id": "AR004-executable-facade",
+              "name": "AR004-executable-facade",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Facade also owns executable function bodies."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The production module has no obvious dedicated module-named test owner."
+              },
+              "help": {
+                "markdown": "Production module lacks an obvious module-named test owner.\n\n**Why it matters.** The production module has no obvious dedicated module-named test owner.\n\n**How to verify.** Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Production module lacks an obvious module-named test owner.\n\nWhy it matters: The production module has no obvious dedicated module-named test owner.\nHow to verify: Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar005-no-module-named-test-owner",
+              "id": "AR005-no-module-named-test-owner",
+              "name": "AR005-no-module-named-test-owner",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Production module lacks an obvious module-named test owner."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Multiple first-party functions own an exact non-trivial implementation body."
+              },
+              "help": {
+                "markdown": "Exact non-trivial top-level Python implementation body has multiple owners.\n\n**Why it matters.** Multiple first-party functions own an exact non-trivial implementation body.\n\n**How to verify.** Confirm whether the definitions are intentional independent protocol adapters, generated outputs, or duplicated ownership; consolidate only when dependencies and public identities permit it.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Exact non-trivial top-level Python implementation body has multiple owners.\n\nWhy it matters: Multiple first-party functions own an exact non-trivial implementation body.\nHow to verify: Confirm whether the definitions are intentional independent protocol adapters, generated outputs, or duplicated ownership; consolidate only when dependencies and public identities permit it."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar006-duplicate-python-implementation",
+              "id": "AR006-duplicate-python-implementation",
+              "name": "AR006-duplicate-python-implementation",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Exact non-trivial top-level Python implementation body has multiple owners."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Relative dependencies form a non-trivial cross-file cycle."
+              },
+              "help": {
+                "markdown": "Non-trivial relative dependency cycle in a non-Python language surface.\n\n**Why it matters.** Relative dependencies form a non-trivial cross-file cycle.\n\n**How to verify.** Trace build/runtime direction and generated ownership for every edge; break mixed lifecycle or inverted dependencies while preserving public API/ABI.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Non-trivial relative dependency cycle in a non-Python language surface.\n\nWhy it matters: Relative dependencies form a non-trivial cross-file cycle.\nHow to verify: Trace build/runtime direction and generated ownership for every edge; break mixed lifecycle or inverted dependencies while preserving public API/ABI."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar007-relative-dependency-cycle",
+              "id": "AR007-relative-dependency-cycle",
+              "name": "AR007-relative-dependency-cycle",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Non-trivial relative dependency cycle in a non-Python language surface."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The production owner has no obvious dedicated source-named test surface."
+              },
+              "help": {
+                "markdown": "Non-Python production owner lacks an obvious source-named test owner.\n\n**Why it matters.** The production owner has no obvious dedicated source-named test surface.\n\n**How to verify.** Trace language-native unit tests and cross-language parity/integration tests; record the real owner or add a dedicated public ABI, FFI, or executable contract.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Non-Python production owner lacks an obvious source-named test owner.\n\nWhy it matters: The production owner has no obvious dedicated source-named test surface.\nHow to verify: Trace language-native unit tests and cross-language parity/integration tests; record the real owner or add a dedicated public ABI, FFI, or executable contract."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ar008-no-polyglot-test-owner",
+              "id": "AR008-no-polyglot-test-owner",
+              "name": "AR008-no-polyglot-test-owner",
+              "properties": {
+                "category": "architecture",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "architecture"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "architecture",
+                    "index": 1,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Non-Python production owner lacks an obvious source-named test owner."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The file exceeds the configured review threshold; line count opens a responsibility audit but is not itself a GodFile verdict."
+              },
+              "help": {
+                "markdown": "Tracked code owner exceeds its review threshold.\n\n**Why it matters.** The file exceeds the configured review threshold; line count opens a responsibility audit but is not itself a GodFile verdict.\n\n**How to verify.** Read the full file, classify each top-level responsibility and direct dependency, trace every public consumer and test owner, then record one cohesive responsibility with a reopen trigger or split mixed ownership behind stable contracts.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked code owner exceeds its review threshold.\n\nWhy it matters: The file exceeds the configured review threshold; line count opens a responsibility audit but is not itself a GodFile verdict.\nHow to verify: Read the full file, classify each top-level responsibility and direct dependency, trace every public consumer and test owner, then record one cohesive responsibility with a reopen trigger or split mixed ownership behind stable contracts."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gf001-large-responsibility-owner",
+              "id": "GF001-large-responsibility-owner",
+              "name": "GF001-large-responsibility-owner",
+              "properties": {
+                "category": "godfile",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "godfile"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "godfile",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked code owner exceeds its review threshold."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Configured GodFile responsibility evidence cannot be loaded."
+              },
+              "help": {
+                "markdown": "Configured module-size registry is unavailable.\n\n**Why it matters.** Configured GodFile responsibility evidence cannot be loaded.\n\n**How to verify.** Restore the tracked registry and rerun its native strict audit.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Configured module-size registry is unavailable.\n\nWhy it matters: Configured GodFile responsibility evidence cannot be loaded.\nHow to verify: Restore the tracked registry and rerun its native strict audit."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gf002-missing-size-registry",
+              "id": "GF002-missing-size-registry",
+              "name": "GF002-missing-size-registry",
+              "properties": {
+                "category": "godfile",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "godfile"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "godfile",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Configured module-size registry is unavailable."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Configured GodFile responsibility evidence is malformed."
+              },
+              "help": {
+                "markdown": "Configured module-size registry is malformed.\n\n**Why it matters.** Configured GodFile responsibility evidence is malformed.\n\n**How to verify.** Run the repository-native module-size registry parser and repair it.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Configured module-size registry is malformed.\n\nWhy it matters: Configured GodFile responsibility evidence is malformed.\nHow to verify: Run the repository-native module-size registry parser and repair it."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gf003-invalid-size-registry",
+              "id": "GF003-invalid-size-registry",
+              "name": "GF003-invalid-size-registry",
+              "properties": {
+                "category": "godfile",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "godfile"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "godfile",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Configured module-size registry is malformed."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A large-file decision lacks required responsibility evidence."
+              },
+              "help": {
+                "markdown": "Module-size decision lacks required evidence.\n\n**Why it matters.** A large-file decision lacks required responsibility evidence.\n\n**How to verify.** Read the complete owner and record current responsibility, direct dependency boundary, exact line count, disposition, and reopen trigger.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Module-size decision lacks required evidence.\n\nWhy it matters: A large-file decision lacks required responsibility evidence.\nHow to verify: Read the complete owner and record current responsibility, direct dependency boundary, exact line count, disposition, and reopen trigger."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gf004-incomplete-size-decision",
+              "id": "GF004-incomplete-size-decision",
+              "name": "GF004-incomplete-size-decision",
+              "properties": {
+                "category": "godfile",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "godfile"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "godfile",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Module-size decision lacks required evidence."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A reviewed large-file decision no longer matches the tracked tree."
+              },
+              "help": {
+                "markdown": "Module-size decision differs from the tracked tree.\n\n**Why it matters.** A reviewed large-file decision no longer matches the tracked tree.\n\n**How to verify.** Re-read the complete file, re-evaluate its responsibility/dependencies and reopen trigger, then update the registry only after that review.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Module-size decision differs from the tracked tree.\n\nWhy it matters: A reviewed large-file decision no longer matches the tracked tree.\nHow to verify: Re-read the complete file, re-evaluate its responsibility/dependencies and reopen trigger, then update the registry only after that review."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gf005-size-decision-drift",
+              "id": "GF005-size-decision-drift",
+              "name": "GF005-size-decision-drift",
+              "properties": {
+                "category": "godfile",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "godfile"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "godfile",
+                    "index": 2,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Module-size decision differs from the tracked tree."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Repository-specific audit ownership is missing or ambiguous."
+              },
+              "help": {
+                "markdown": "Repository-specific audit policy is absent.\n\n**Why it matters.** Repository-specific audit ownership is missing or ambiguous.\n\n**How to verify.** Read the repository rules and canonical internal TODO, then define the exact roots, packages, GodFile registries, and enforcement state without copying another project's assumptions.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Repository-specific audit policy is absent.\n\nWhy it matters: Repository-specific audit ownership is missing or ambiguous.\nHow to verify: Read the repository rules and canonical internal TODO, then define the exact roots, packages, GodFile registries, and enforcement state without copying another project's assumptions."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv001-missing-repository-audit-policy",
+              "id": "GV001-missing-repository-audit-policy",
+              "name": "GV001-missing-repository-audit-policy",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Repository-specific audit policy is absent."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked code or test path was outside the scanner's parsed scope."
+              },
+              "help": {
+                "markdown": "Tracked code or test content could not be parsed as bounded UTF-8 text.\n\n**Why it matters.** A tracked code or test path was outside the scanner's parsed scope.\n\n**How to verify.** Inspect the Git object and worktree path directly, establish whether it is an intentional symlink/submodule/binary/generated owner, and configure a specific auditor; a clean claim is forbidden while the path remains unexplained.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked code or test content could not be parsed as bounded UTF-8 text.\n\nWhy it matters: A tracked code or test path was outside the scanner's parsed scope.\nHow to verify: Inspect the Git object and worktree path directly, establish whether it is an intentional symlink/submodule/binary/generated owner, and configure a specific auditor; a clean claim is forbidden while the path remains unexplained."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv002-unscanned-tracked-code",
+              "id": "GV002-unscanned-tracked-code",
+              "name": "GV002-unscanned-tracked-code",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked code or test content could not be parsed as bounded UTF-8 text."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Repository-specific audit ownership is missing or ambiguous."
+              },
+              "help": {
+                "markdown": "Mandatory audit domain has no repository applicability decision.\n\n**Why it matters.** Repository-specific audit ownership is missing or ambiguous.\n\n**How to verify.** Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Mandatory audit domain has no repository applicability decision.\n\nWhy it matters: Repository-specific audit ownership is missing or ambiguous.\nHow to verify: Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv003-undeclared-audit-domain",
+              "id": "GV003-undeclared-audit-domain",
+              "name": "GV003-undeclared-audit-domain",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Mandatory audit domain has no repository applicability decision."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A required quality domain cannot support a repository conformance claim without a portable rule or required native adapter."
+              },
+              "help": {
+                "markdown": "Required audit domain has no active portable rule or required native adapter.\n\n**Why it matters.** A required quality domain cannot support a repository conformance claim without a portable rule or required native adapter.\n\n**How to verify.** Read the domain threat/risk model, wire a real time-bounded repository audit or justify not-applicable with repository-specific evidence; do not copy a control name that does not exercise this codebase.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Required audit domain has no active portable rule or required native adapter.\n\nWhy it matters: A required quality domain cannot support a repository conformance claim without a portable rule or required native adapter.\nHow to verify: Read the domain threat/risk model, wire a real time-bounded repository audit or justify not-applicable with repository-specific evidence; do not copy a control name that does not exercise this codebase."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv004-uncontrolled-required-domain",
+              "id": "GV004-uncontrolled-required-domain",
+              "name": "GV004-uncontrolled-required-domain",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.0.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Required audit domain has no active portable rule or required native adapter."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked Jupyter notebook could not be completely projected into the bounded Python-AST analysis surface."
+              },
+              "help": {
+                "markdown": "Tracked Jupyter content could not be completely projected into Python-AST analysis.\n\n**Why it matters.** A tracked Jupyter notebook could not be completely projected into the bounded Python-AST analysis surface.\n\n**How to verify.** Open the exact tracked blob, validate nbformat 4 and an unambiguous Python language declaration, repair malformed or unsupported cells, and rerun the read-only scan.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked Jupyter content could not be completely projected into Python-AST analysis.\n\nWhy it matters: A tracked Jupyter notebook could not be completely projected into the bounded Python-AST analysis surface.\nHow to verify: Open the exact tracked blob, validate nbformat 4 and an unambiguous Python language declaration, repair malformed or unsupported cells, and rerun the read-only scan."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv005-unscanned-jupyter-notebook",
+              "id": "GV005-unscanned-jupyter-notebook",
+              "name": "GV005-unscanned-jupyter-notebook",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.18.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked Jupyter content could not be completely projected into Python-AST analysis."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "eval and exec run arbitrary code and turn any tainted argument into execution."
+              },
+              "help": {
+                "markdown": "Dynamic code execution through eval or exec.\n\n**Why it matters.** eval and exec run arbitrary code and turn any tainted argument into execution.\n\n**How to verify.** Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Dynamic code execution through eval or exec.\n\nWhy it matters: eval and exec run arbitrary code and turn any tainted argument into execution.\nHow to verify: Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as001-dynamic-code-execution",
+              "id": "AS001-dynamic-code-execution",
+              "name": "AS001-dynamic-code-execution",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.2.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Dynamic code execution through eval or exec."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A shell command surface lets a tainted argument inject additional commands."
+              },
+              "help": {
+                "markdown": "Shell command execution surface via shell=True, os.system, or os.popen.\n\n**Why it matters.** A shell command surface lets a tainted argument inject additional commands.\n\n**How to verify.** Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Shell command execution surface via shell=True, os.system, or os.popen.\n\nWhy it matters: A shell command surface lets a tainted argument inject additional commands.\nHow to verify: Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as002-shell-command-execution",
+              "id": "AS002-shell-command-execution",
+              "name": "AS002-shell-command-execution",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.2.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Shell command execution surface via shell=True, os.system, or os.popen."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "pickle and the default yaml.load reconstruct arbitrary objects from their input."
+              },
+              "help": {
+                "markdown": "Unsafe deserialization via pickle or an unbounded yaml.load.\n\n**Why it matters.** pickle and the default yaml.load reconstruct arbitrary objects from their input.\n\n**How to verify.** Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Unsafe deserialization via pickle or an unbounded yaml.load.\n\nWhy it matters: pickle and the default yaml.load reconstruct arbitrary objects from their input.\nHow to verify: Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as003-unsafe-deserialization",
+              "id": "AS003-unsafe-deserialization",
+              "name": "AS003-unsafe-deserialization",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.2.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Unsafe deserialization via pickle or an unbounded yaml.load."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "md5 and sha1 are not collision resistant and must not back a security decision."
+              },
+              "help": {
+                "markdown": "Weak hash primitive md5 or sha1 in a possible security context.\n\n**Why it matters.** md5 and sha1 are not collision resistant and must not back a security decision.\n\n**How to verify.** Confirm the digest is a non-security checksum; otherwise move to SHA-256 or a keyed MAC and record why the primitive is acceptable.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Weak hash primitive md5 or sha1 in a possible security context.\n\nWhy it matters: md5 and sha1 are not collision resistant and must not back a security decision.\nHow to verify: Confirm the digest is a non-security checksum; otherwise move to SHA-256 or a keyed MAC and record why the primitive is acceptable."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as004-weak-hash-primitive",
+              "id": "AS004-weak-hash-primitive",
+              "name": "AS004-weak-hash-primitive",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.2.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Weak hash primitive md5 or sha1 in a possible security context."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "tempfile.mktemp returns a name with a race between the check and the later open."
+              },
+              "help": {
+                "markdown": "Insecure temporary file creation through tempfile.mktemp.\n\n**Why it matters.** tempfile.mktemp returns a name with a race between the check and the later open.\n\n**How to verify.** Use tempfile.mkstemp or NamedTemporaryFile, which create the file atomically with a bound descriptor.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Insecure temporary file creation through tempfile.mktemp.\n\nWhy it matters: tempfile.mktemp returns a name with a race between the check and the later open.\nHow to verify: Use tempfile.mkstemp or NamedTemporaryFile, which create the file atomically with a bound descriptor."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as005-insecure-temporary-file",
+              "id": "AS005-insecure-temporary-file",
+              "name": "AS005-insecure-temporary-file",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.2.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Insecure temporary file creation through tempfile.mktemp."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "eval and the Function constructor execute a string as code, turning any tainted argument into arbitrary execution."
+              },
+              "help": {
+                "markdown": "Native JavaScript or TypeScript dynamic code execution via eval or Function.\n\n**Why it matters.** eval and the Function constructor execute a string as code, turning any tainted argument into arbitrary execution.\n\n**How to verify.** Replace the dynamic evaluation with an explicit parser, a lookup table, or a typed dispatch; if evaluation is unavoidable, prove the source is a trusted literal.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native JavaScript or TypeScript dynamic code execution via eval or Function.\n\nWhy it matters: eval and the Function constructor execute a string as code, turning any tainted argument into arbitrary execution.\nHow to verify: Replace the dynamic evaluation with an explicit parser, a lookup table, or a typed dispatch; if evaluation is unavoidable, prove the source is a trusted literal."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as006-js-dynamic-code-execution",
+              "id": "AS006-js-dynamic-code-execution",
+              "name": "AS006-js-dynamic-code-execution",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.3.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native JavaScript or TypeScript dynamic code execution via eval or Function."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "os/exec runs an external command, so a tainted argument can execute an unintended program or, with a shell, inject further commands."
+              },
+              "help": {
+                "markdown": "Native Go external command execution via os/exec Command or CommandContext.\n\n**Why it matters.** os/exec runs an external command, so a tainted argument can execute an unintended program or, with a shell, inject further commands.\n\n**How to verify.** Prove every argument is a trusted constant or validated allow-list value, pass an explicit argument vector, and never build the command from unsanitised input.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native Go external command execution via os/exec Command or CommandContext.\n\nWhy it matters: os/exec runs an external command, so a tainted argument can execute an unintended program or, with a shell, inject further commands.\nHow to verify: Prove every argument is a trusted constant or validated allow-list value, pass an explicit argument vector, and never build the command from unsanitised input."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as007-go-command-execution",
+              "id": "AS007-go-command-execution",
+              "name": "AS007-go-command-execution",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.4.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native Go external command execution via os/exec Command or CommandContext."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "An unsafe block suspends the compiler's memory-safety guarantees, so a mistake inside it can cause undefined behaviour that safe Rust would have prevented."
+              },
+              "help": {
+                "markdown": "Native Rust unsafe block that suspends compiler memory-safety guarantees.\n\n**Why it matters.** An unsafe block suspends the compiler's memory-safety guarantees, so a mistake inside it can cause undefined behaviour that safe Rust would have prevented.\n\n**How to verify.** Confirm the block is minimal, documents the invariants it upholds, and cannot be replaced by a safe abstraction; record why each unsafe operation is sound.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native Rust unsafe block that suspends compiler memory-safety guarantees.\n\nWhy it matters: An unsafe block suspends the compiler's memory-safety guarantees, so a mistake inside it can cause undefined behaviour that safe Rust would have prevented.\nHow to verify: Confirm the block is minimal, documents the invariants it upholds, and cannot be replaced by a safe abstraction; record why each unsafe operation is sound."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as008-rust-unsafe-block",
+              "id": "AS008-rust-unsafe-block",
+              "name": "AS008-rust-unsafe-block",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.4.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native Rust unsafe block that suspends compiler memory-safety guarantees."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow and command-injection surfaces when their input is not strictly bounded and trusted."
+              },
+              "help": {
+                "markdown": "Native C or C++ call to an unbounded or command-executing libc function.\n\n**Why it matters.** gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow and command-injection surfaces when their input is not strictly bounded and trusted.\n\n**How to verify.** Replace the call with a length-bounded equivalent (fgets, snprintf, strncpy with an explicit size) or an argument-vector exec, and prove the input is trusted and bounded.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native C or C++ call to an unbounded or command-executing libc function.\n\nWhy it matters: gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow and command-injection surfaces when their input is not strictly bounded and trusted.\nHow to verify: Replace the call with a length-bounded equivalent (fgets, snprintf, strncpy with an explicit size) or an argument-vector exec, and prove the input is trusted and bounded."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as009-c-unsafe-libc",
+              "id": "AS009-c-unsafe-libc",
+              "name": "AS009-c-unsafe-libc",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.5.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native C or C++ call to an unbounded or command-executing libc function."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a bad pointer or length reads or writes arbitrary memory."
+              },
+              "help": {
+                "markdown": "Native Julia unsafe_* intrinsic that bypasses bounds, type, and GC safety.\n\n**Why it matters.** The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a bad pointer or length reads or writes arbitrary memory.\n\n**How to verify.** Confirm the pointer and length come from a live, correctly typed, GC-rooted object, or replace the intrinsic with a bounds-checked array or a safe wrapper.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native Julia unsafe_* intrinsic that bypasses bounds, type, and GC safety.\n\nWhy it matters: The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a bad pointer or length reads or writes arbitrary memory.\nHow to verify: Confirm the pointer and length come from a live, correctly typed, GC-rooted object, or replace the intrinsic with a bounds-checked array or a safe wrapper."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as010-julia-unsafe-memory",
+              "id": "AS010-julia-unsafe-memory",
+              "name": "AS010-julia-unsafe-memory",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.6.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native Julia unsafe_* intrinsic that bypasses bounds, type, and GC safety."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The shell eval builtin re-parses and executes its argument as a command, so any tainted value in that argument becomes an injected command."
+              },
+              "help": {
+                "markdown": "Native shell eval builtin that re-parses its argument as a command.\n\n**Why it matters.** The shell eval builtin re-parses and executes its argument as a command, so any tainted value in that argument becomes an injected command.\n\n**How to verify.** Remove eval and call the command with an explicit argument vector, or prove every interpolated value is a trusted constant.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Native shell eval builtin that re-parses its argument as a command.\n\nWhy it matters: The shell eval builtin re-parses and executes its argument as a command, so any tainted value in that argument becomes an injected command.\nHow to verify: Remove eval and call the command with an explicit argument vector, or prove every interpolated value is a trusted constant."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as011-shell-eval-execution",
+              "id": "AS011-shell-eval-execution",
+              "name": "AS011-shell-eval-execution",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.6.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Native shell eval builtin that re-parses its argument as a command."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "verify=False disables certificate verification, so a network attacker can present any certificate and read or alter the traffic."
+              },
+              "help": {
+                "markdown": "Python call that disables TLS certificate verification via verify=False.\n\n**Why it matters.** verify=False disables certificate verification, so a network attacker can present any certificate and read or alter the traffic.\n\n**How to verify.** Restore verification (verify=True or a trusted CA bundle); if a self-signed host is truly required, pin its certificate instead of disabling verification.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python call that disables TLS certificate verification via verify=False.\n\nWhy it matters: verify=False disables certificate verification, so a network attacker can present any certificate and read or alter the traffic.\nHow to verify: Restore verification (verify=True or a trusted CA bundle); if a self-signed host is truly required, pin its certificate instead of disabling verification."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as012-disabled-tls-verification",
+              "id": "AS012-disabled-tls-verification",
+              "name": "AS012-disabled-tls-verification",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.7.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python call that disables TLS certificate verification via verify=False."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "ssl._create_unverified_context returns a context that accepts any certificate, so the peer is never authenticated."
+              },
+              "help": {
+                "markdown": "Python use of ssl._create_unverified_context, which authenticates no peer.\n\n**Why it matters.** ssl._create_unverified_context returns a context that accepts any certificate, so the peer is never authenticated.\n\n**How to verify.** Use ssl.create_default_context, or a context with an explicit trusted CA, so the peer certificate is verified.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python use of ssl._create_unverified_context, which authenticates no peer.\n\nWhy it matters: ssl._create_unverified_context returns a context that accepts any certificate, so the peer is never authenticated.\nHow to verify: Use ssl.create_default_context, or a context with an explicit trusted CA, so the peer certificate is verified."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#as013-insecure-ssl-context",
+              "id": "AS013-insecure-ssl-context",
+              "name": "AS013-insecure-ssl-context",
+              "properties": {
+                "category": "application-security",
+                "introduced": "rigor-foundry/1.7.0",
+                "tags": [
+                  "rigor-foundry",
+                  "application-security"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "application-security",
+                    "index": 4,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python use of ssl._create_unverified_context, which authenticates no peer."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A bare except catches every exception, including SystemExit and KeyboardInterrupt, so it hides real failures and blocks interruption."
+              },
+              "help": {
+                "markdown": "Bare except clause that catches every exception and hides real failures.\n\n**Why it matters.** A bare except catches every exception, including SystemExit and KeyboardInterrupt, so it hides real failures and blocks interruption.\n\n**How to verify.** Catch the specific exception types the block can actually handle, or re-raise after recording context; never swallow BaseException silently.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Bare except clause that catches every exception and hides real failures.\n\nWhy it matters: A bare except catches every exception, including SystemExit and KeyboardInterrupt, so it hides real failures and blocks interruption.\nHow to verify: Catch the specific exception types the block can actually handle, or re-raise after recording context; never swallow BaseException silently."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#rl001-bare-except",
+              "id": "RL001-bare-except",
+              "name": "RL001-bare-except",
+              "properties": {
+                "category": "reliability",
+                "introduced": "rigor-foundry/1.8.0",
+                "tags": [
+                  "rigor-foundry",
+                  "reliability"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "reliability",
+                    "index": 5,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Bare except clause that catches every exception and hides real failures."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A mutable default argument is created once and shared across every call, so state leaks between invocations."
+              },
+              "help": {
+                "markdown": "Mutable default argument shared across calls, leaking state between invocations.\n\n**Why it matters.** A mutable default argument is created once and shared across every call, so state leaks between invocations.\n\n**How to verify.** Default the parameter to None and create the list, dict, or set inside the function body, or confirm the shared instance is genuinely intended.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Mutable default argument shared across calls, leaking state between invocations.\n\nWhy it matters: A mutable default argument is created once and shared across every call, so state leaks between invocations.\nHow to verify: Default the parameter to None and create the list, dict, or set inside the function body, or confirm the shared instance is genuinely intended."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#rl002-mutable-default-argument",
+              "id": "RL002-mutable-default-argument",
+              "name": "RL002-mutable-default-argument",
+              "properties": {
+                "category": "reliability",
+                "introduced": "rigor-foundry/1.8.0",
+                "tags": [
+                  "rigor-foundry",
+                  "reliability"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "reliability",
+                    "index": 5,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Mutable default argument shared across calls, leaking state between invocations."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A hash-pinned lock file records integrity digests for every dependency, but this pinned requirement carries none, so its artefact is installed without verification against tampering or index substitution."
+              },
+              "help": {
+                "markdown": "Pinned requirement in a hash-mode lock file carries no integrity hash.\n\n**Why it matters.** A hash-pinned lock file records integrity digests for every dependency, but this pinned requirement carries none, so its artefact is installed without verification against tampering or index substitution.\n\n**How to verify.** Recompile the lock with hashes (for example `pip-compile --generate-hashes`) so every pinned requirement carries a `--hash=` digest, or justify why this dependency is exempt.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Pinned requirement in a hash-mode lock file carries no integrity hash.\n\nWhy it matters: A hash-pinned lock file records integrity digests for every dependency, but this pinned requirement carries none, so its artefact is installed without verification against tampering or index substitution.\nHow to verify: Recompile the lock with hashes (for example `pip-compile --generate-hashes`) so every pinned requirement carries a `--hash=` digest, or justify why this dependency is exempt."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc001-unhashed-pinned-requirement",
+              "id": "SC001-unhashed-pinned-requirement",
+              "name": "SC001-unhashed-pinned-requirement",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.9.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Pinned requirement in a hash-mode lock file carries no integrity hash."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A dependency installed directly from a VCS checkout or a URL bypasses the package index and hash pinning, so the resolved artefact is mutable and unverified."
+              },
+              "help": {
+                "markdown": "Dependency installed from a VCS checkout or URL, bypassing index hash pinning.\n\n**Why it matters.** A dependency installed directly from a VCS checkout or a URL bypasses the package index and hash pinning, so the resolved artefact is mutable and unverified.\n\n**How to verify.** Pin the dependency to an immutable released version from the index with a recorded hash, or vendor and audit the exact revision if a direct source is genuinely required.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Dependency installed from a VCS checkout or URL, bypassing index hash pinning.\n\nWhy it matters: A dependency installed directly from a VCS checkout or a URL bypasses the package index and hash pinning, so the resolved artefact is mutable and unverified.\nHow to verify: Pin the dependency to an immutable released version from the index with a recorded hash, or vendor and audit the exact revision if a direct source is genuinely required."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc002-vcs-url-requirement",
+              "id": "SC002-vcs-url-requirement",
+              "name": "SC002-vcs-url-requirement",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.9.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Dependency installed from a VCS checkout or URL, bypassing index hash pinning."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A base image referenced only by tag is mutable, so the resolved image can change under the same Dockerfile and is never verified against a known digest."
+              },
+              "help": {
+                "markdown": "Dockerfile base image referenced by a mutable tag with no immutable digest.\n\n**Why it matters.** A base image referenced only by tag is mutable, so the resolved image can change under the same Dockerfile and is never verified against a known digest.\n\n**How to verify.** Pin the base image to an immutable `@sha256:` digest (for example `python:3.12-slim@sha256:...`), or justify why a moving tag is required.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Dockerfile base image referenced by a mutable tag with no immutable digest.\n\nWhy it matters: A base image referenced only by tag is mutable, so the resolved image can change under the same Dockerfile and is never verified against a known digest.\nHow to verify: Pin the base image to an immutable `@sha256:` digest (for example `python:3.12-slim@sha256:...`), or justify why a moving tag is required."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dk001-unpinned-base-image",
+              "id": "DK001-unpinned-base-image",
+              "name": "DK001-unpinned-base-image",
+              "properties": {
+                "category": "container",
+                "introduced": "rigor-foundry/1.10.0",
+                "tags": [
+                  "rigor-foundry",
+                  "container"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "container",
+                    "index": 7,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Dockerfile base image referenced by a mutable tag with no immutable digest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The final image stage sets no non-root USER, so the container runs as root and a process escape keeps full root authority inside the namespace."
+              },
+              "help": {
+                "markdown": "Dockerfile runtime stage sets no non-root USER, so the container runs as root.\n\n**Why it matters.** The final image stage sets no non-root USER, so the container runs as root and a process escape keeps full root authority inside the namespace.\n\n**How to verify.** Add a `USER` directive selecting an unprivileged account (and create it if needed) as the last identity in the runtime stage, or justify the root run.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Dockerfile runtime stage sets no non-root USER, so the container runs as root.\n\nWhy it matters: The final image stage sets no non-root USER, so the container runs as root and a process escape keeps full root authority inside the namespace.\nHow to verify: Add a `USER` directive selecting an unprivileged account (and create it if needed) as the last identity in the runtime stage, or justify the root run."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dk002-root-runtime-user",
+              "id": "DK002-root-runtime-user",
+              "name": "DK002-root-runtime-user",
+              "properties": {
+                "category": "container",
+                "introduced": "rigor-foundry/1.10.0",
+                "tags": [
+                  "rigor-foundry",
+                  "container"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "container",
+                    "index": 7,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Dockerfile runtime stage sets no non-root USER, so the container runs as root."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A credential-named variable is assigned a string literal, so a secret is embedded in tracked source where it cannot be rotated and is exposed to everyone with repository read access."
+              },
+              "help": {
+                "markdown": "Credential-named variable assigned a string literal secret in tracked source.\n\n**Why it matters.** A credential-named variable is assigned a string literal, so a secret is embedded in tracked source where it cannot be rotated and is exposed to everyone with repository read access.\n\n**How to verify.** Load the value from an environment variable or secret manager at runtime and remove the literal, or confirm it is a non-secret placeholder or fixture.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Credential-named variable assigned a string literal secret in tracked source.\n\nWhy it matters: A credential-named variable is assigned a string literal, so a secret is embedded in tracked source where it cannot be rotated and is exposed to everyone with repository read access.\nHow to verify: Load the value from an environment variable or secret manager at runtime and remove the literal, or confirm it is a non-secret placeholder or fixture."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dp001-hardcoded-credential",
+              "id": "DP001-hardcoded-credential",
+              "name": "DP001-hardcoded-credential",
+              "properties": {
+                "category": "data-privacy",
+                "introduced": "rigor-foundry/1.11.0",
+                "tags": [
+                  "rigor-foundry",
+                  "data-privacy"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "data-privacy",
+                    "index": 8,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Credential-named variable assigned a string literal secret in tracked source."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A PEM private-key block is embedded in tracked source, disclosing key material to everyone with repository read access."
+              },
+              "help": {
+                "markdown": "PEM private-key block embedded in tracked source, disclosing key material.\n\n**Why it matters.** A PEM private-key block is embedded in tracked source, disclosing key material to everyone with repository read access.\n\n**How to verify.** Remove the key from source, rotate it, and load it at runtime from a secret store or an out-of-tree file that is never committed.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "PEM private-key block embedded in tracked source, disclosing key material.\n\nWhy it matters: A PEM private-key block is embedded in tracked source, disclosing key material to everyone with repository read access.\nHow to verify: Remove the key from source, rotate it, and load it at runtime from a secret store or an out-of-tree file that is never committed."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dp002-embedded-private-key",
+              "id": "DP002-embedded-private-key",
+              "name": "DP002-embedded-private-key",
+              "properties": {
+                "category": "data-privacy",
+                "introduced": "rigor-foundry/1.11.0",
+                "tags": [
+                  "rigor-foundry",
+                  "data-privacy"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "data-privacy",
+                    "index": 8,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "PEM private-key block embedded in tracked source, disclosing key material."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked source owner has no SPDX licence identifier in its leading header, so automated licence inventory cannot establish its declared licence."
+              },
+              "help": {
+                "markdown": "Tracked source owner lacks an SPDX licence identifier in its leading header.\n\n**Why it matters.** A tracked source owner has no SPDX licence identifier in its leading header, so automated licence inventory cannot establish its declared licence.\n\n**How to verify.** Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked source owner lacks an SPDX licence identifier in its leading header.\n\nWhy it matters: A tracked source owner has no SPDX licence identifier in its leading header, so automated licence inventory cannot establish its declared licence.\nHow to verify: Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dc001-missing-license-header",
+              "id": "DC001-missing-license-header",
+              "name": "DC001-missing-license-header",
+              "properties": {
+                "category": "documentation",
+                "introduced": "rigor-foundry/1.12.0",
+                "tags": [
+                  "rigor-foundry",
+                  "documentation"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "documentation",
+                    "index": 9,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked source owner lacks an SPDX licence identifier in its leading header."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A public README or documentation page names an explicit package version that differs from the repository's static PEP 621 project version."
+              },
+              "help": {
+                "markdown": "Public package-version guidance differs from static PEP 621 project metadata.\n\n**Why it matters.** A public README or documentation page names an explicit package version that differs from the repository's static PEP 621 project version.\n\n**How to verify.** Compare the statement with pyproject.toml [project].version, update current installation or compatibility guidance, or move genuinely historical text to a changelog or release-note surface.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Public package-version guidance differs from static PEP 621 project metadata.\n\nWhy it matters: A public README or documentation page names an explicit package version that differs from the repository's static PEP 621 project version.\nHow to verify: Compare the statement with pyproject.toml [project].version, update current installation or compatibility guidance, or move genuinely historical text to a changelog or release-note surface."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#dc002-doc-version-drift",
+              "id": "DC002-doc-version-drift",
+              "name": "DC002-doc-version-drift",
+              "properties": {
+                "category": "documentation",
+                "introduced": "rigor-foundry/1.12.0",
+                "tags": [
+                  "rigor-foundry",
+                  "documentation"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "documentation",
+                    "index": 9,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Public package-version guidance differs from static PEP 621 project metadata."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A test compares a direct floating-point literal with exact equality, which can hide representation or tolerance assumptions."
+              },
+              "help": {
+                "markdown": "Python test uses exact equality against a direct floating-point literal.\n\n**Why it matters.** A test compares a direct floating-point literal with exact equality, which can hide representation or tolerance assumptions.\n\n**How to verify.** Use a justified absolute/relative tolerance or prove exact binary identity is intended.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python test uses exact equality against a direct floating-point literal.\n\nWhy it matters: A test compares a direct floating-point literal with exact equality, which can hide representation or tolerance assumptions.\nHow to verify: Use a justified absolute/relative tolerance or prove exact binary identity is intended."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sn001-exact-float-equality-in-test",
+              "id": "SN001-exact-float-equality-in-test",
+              "name": "SN001-exact-float-equality-in-test",
+              "properties": {
+                "category": "scientific",
+                "introduced": "rigor-foundry/1.13.0",
+                "tags": [
+                  "rigor-foundry",
+                  "scientific"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "scientific",
+                    "index": 10,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python test uses exact equality against a direct floating-point literal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A supported stochastic API is used before deterministic local seeding, so repeated test outcomes may consume different samples."
+              },
+              "help": {
+                "markdown": "Python test uses a supported stochastic API before deterministic local seeding.\n\n**Why it matters.** A supported stochastic API is used before deterministic local seeding, so repeated test outcomes may consume different samples.\n\n**How to verify.** Seed before the first draw or construct the local generator with a seed, then verify deterministic replay.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python test uses a supported stochastic API before deterministic local seeding.\n\nWhy it matters: A supported stochastic API is used before deterministic local seeding, so repeated test outcomes may consume different samples.\nHow to verify: Seed before the first draw or construct the local generator with a seed, then verify deterministic replay."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sn002-unseeded-stochastic-test",
+              "id": "SN002-unseeded-stochastic-test",
+              "name": "SN002-unseeded-stochastic-test",
+              "properties": {
+                "category": "scientific",
+                "introduced": "rigor-foundry/1.13.0",
+                "tags": [
+                  "rigor-foundry",
+                  "scientific"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "scientific",
+                    "index": 10,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python test uses a supported stochastic API before deterministic local seeding."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Library code writes directly to process output, bypassing caller-controlled observability and output routing."
+              },
+              "help": {
+                "markdown": "Python library code calls builtin print outside an intentional command surface.\n\n**Why it matters.** Library code writes directly to process output, bypassing caller-controlled observability and output routing.\n\n**How to verify.** Replace incidental output with a returned value or structured logger, or prove the module is an intentional command boundary.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python library code calls builtin print outside an intentional command surface.\n\nWhy it matters: Library code writes directly to process output, bypassing caller-controlled observability and output routing.\nHow to verify: Replace incidental output with a returned value or structured logger, or prove the module is an intentional command boundary."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#op001-print-in-library-code",
+              "id": "OP001-print-in-library-code",
+              "name": "OP001-print-in-library-code",
+              "properties": {
+                "category": "operations",
+                "introduced": "rigor-foundry/1.14.0",
+                "tags": [
+                  "rigor-foundry",
+                  "operations"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "operations",
+                    "index": 11,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python library code calls builtin print outside an intentional command surface."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A credential-named expression is passed to an import-bound logging call and may disclose sensitive material."
+              },
+              "help": {
+                "markdown": "Import-bound logging call receives a credential-named expression.\n\n**Why it matters.** A credential-named expression is passed to an import-bound logging call and may disclose sensitive material.\n\n**How to verify.** Remove or redact the credential value before logging and verify captured logs contain only non-sensitive identifiers or digests.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Import-bound logging call receives a credential-named expression.\n\nWhy it matters: A credential-named expression is passed to an import-bound logging call and may disclose sensitive material.\nHow to verify: Remove or redact the credential value before logging and verify captured logs contain only non-sensitive identifiers or digests."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#op002-credential-in-log-call",
+              "id": "OP002-credential-in-log-call",
+              "name": "OP002-credential-in-log-call",
+              "properties": {
+                "category": "operations",
+                "introduced": "rigor-foundry/1.14.0",
+                "tags": [
+                  "rigor-foundry",
+                  "operations"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "operations",
+                    "index": 11,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Import-bound logging call receives a credential-named expression."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A test assertion reads a process wall clock without a recognised local freeze or dominating monkeypatch, so scheduling and clock movement can change its result."
+              },
+              "help": {
+                "markdown": "Python test assertion reads an imported wall clock without explicit local control.\n\n**Why it matters.** A test assertion reads a process wall clock without a recognised local freeze or dominating monkeypatch, so scheduling and clock movement can change its result.\n\n**How to verify.** Inject or freeze the clock at the assertion boundary, then replay the test with the exact controlled timestamp; retain a live-clock assertion only with bounded timing evidence and an explicit review.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Python test assertion reads an imported wall clock without explicit local control.\n\nWhy it matters: A test assertion reads a process wall clock without a recognised local freeze or dominating monkeypatch, so scheduling and clock movement can change its result.\nHow to verify: Inject or freeze the clock at the assertion boundary, then replay the test with the exact controlled timestamp; retain a live-clock assertion only with bounded timing evidence and an explicit review."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#pr001-wall-clock-in-test",
+              "id": "PR001-wall-clock-in-test",
+              "name": "PR001-wall-clock-in-test",
+              "properties": {
+                "category": "performance",
+                "introduced": "rigor-foundry/1.15.0",
+                "tags": [
+                  "rigor-foundry",
+                  "performance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "performance",
+                    "index": 12,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Python test assertion reads an imported wall clock without explicit local control."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A declared Python public surface is not bound exactly by the tracked API manifest, so compatibility review cannot distinguish an intentional API edit from drift. The tracked public API manifest is malformed or retains a surface with no matching literal declaration, so it cannot bind the repository's declared API state."
+              },
+              "help": {
+                "markdown": "Declared Python public surface differs from its tracked pinned manifest.\n\n**When the declared public surface is not bound by the manifest.**\n\n**Why it matters.** A declared Python public surface is not bound exactly by the tracked API manifest, so compatibility review cannot distinguish an intentional API edit from drift.\n\n**How to verify.** Review the declared names and downstream compatibility contract, then update rigor-public-api.json only when the exact public-surface change is intentional; do not infer a breaking change from unrelated source edits.\n\n**When the manifest is malformed or records a surface with no declaration.**\n\n**Why it matters.** The tracked public API manifest is malformed or retains a surface with no matching literal declaration, so it cannot bind the repository's declared API state.\n\n**How to verify.** Validate the versioned manifest schema and compare every recorded path with its exact module-level __all__; remove or update a row only after compatibility review.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Declared Python public surface differs from its tracked pinned manifest.\n\nWhen the declared public surface is not bound by the manifest:\nWhy it matters: A declared Python public surface is not bound exactly by the tracked API manifest, so compatibility review cannot distinguish an intentional API edit from drift.\nHow to verify: Review the declared names and downstream compatibility contract, then update rigor-public-api.json only when the exact public-surface change is intentional; do not infer a breaking change from unrelated source edits.\n\nWhen the manifest is malformed or records a surface with no declaration:\nWhy it matters: The tracked public API manifest is malformed or retains a surface with no matching literal declaration, so it cannot bind the repository's declared API state.\nHow to verify: Validate the versioned manifest schema and compare every recorded path with its exact module-level __all__; remove or update a row only after compatibility review."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#aa001-unbound-api-manifest",
+              "id": "AA001-unbound-api-manifest",
+              "name": "AA001-unbound-api-manifest",
+              "properties": {
+                "category": "api-compatibility",
+                "introduced": "rigor-foundry/1.16.0",
+                "tags": [
+                  "rigor-foundry",
+                  "api-compatibility"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "api-compatibility",
+                    "index": 13,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Declared Python public surface differs from its tracked pinned manifest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Explicit CRA scope names a coordinated-vulnerability-disclosure policy that is not available as one tracked text file."
+              },
+              "help": {
+                "markdown": "Explicit CRA scope lacks a tracked coordinated-vulnerability-disclosure policy.\n\n**Why it matters.** Explicit CRA scope names a coordinated-vulnerability-disclosure policy that is not available as one tracked text file.\n\n**How to verify.** Confirm applicability, then add and independently review the declared tracked CVD policy; this candidate is not a compliance verdict.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Explicit CRA scope lacks a tracked coordinated-vulnerability-disclosure policy.\n\nWhy it matters: Explicit CRA scope names a coordinated-vulnerability-disclosure policy that is not available as one tracked text file.\nHow to verify: Confirm applicability, then add and independently review the declared tracked CVD policy; this candidate is not a compliance verdict."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr001-missing-disclosure-policy",
+              "id": "CR001-missing-disclosure-policy",
+              "name": "CR001-missing-disclosure-policy",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Explicit CRA scope lacks a tracked coordinated-vulnerability-disclosure policy."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The declared tracked CVD policy did not expose a syntactically bounded public contact address."
+              },
+              "help": {
+                "markdown": "Tracked coordinated-vulnerability-disclosure policy lacks a public contact signal.\n\n**Why it matters.** The declared tracked CVD policy did not expose a syntactically bounded public contact address.\n\n**How to verify.** Review the complete public disclosure policy and verify a monitored public contact channel; aliases, routing, and response operation require independent evidence.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked coordinated-vulnerability-disclosure policy lacks a public contact signal.\n\nWhy it matters: The declared tracked CVD policy did not expose a syntactically bounded public contact address.\nHow to verify: Review the complete public disclosure policy and verify a monitored public contact channel; aliases, routing, and response operation require independent evidence."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr002-missing-security-contact",
+              "id": "CR002-missing-security-contact",
+              "name": "CR002-missing-security-contact",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked coordinated-vulnerability-disclosure policy lacks a public contact signal."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The newest imported component inventory is bound to a different exact repository state."
+              },
+              "help": {
+                "markdown": "Imported component inventory is not bound to the current repository state.\n\n**Why it matters.** The newest imported component inventory is bound to a different exact repository state.\n\n**How to verify.** Review repository/SBOM drift and import a new externally generated SBOM only when appropriate; RIGOR-FOUNDRY does not generate an SBOM.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Imported component inventory is not bound to the current repository state.\n\nWhy it matters: The newest imported component inventory is bound to a different exact repository state.\nHow to verify: Review repository/SBOM drift and import a new externally generated SBOM only when appropriate; RIGOR-FOUNDRY does not generate an SBOM."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr003-stale-component-inventory",
+              "id": "CR003-stale-component-inventory",
+              "name": "CR003-stale-component-inventory",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Imported component inventory is not bound to the current repository state."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Explicit CRA scope has no readable declared offline state, so reporting-stage evidence cannot be assessed. An operational reporting-stage clock has an evidence anchor but no bound draft, receipt, or explicit already-provided skip."
+              },
+              "help": {
+                "markdown": "CRA event has a started reporting stage without a bound draft, receipt, or skip.\n\n**When the declared CRA state is unreadable.**\n\n**Why it matters.** Explicit CRA scope has no readable declared offline state, so reporting-stage evidence cannot be assessed.\n\n**How to verify.** Bootstrap or recover the local ignored CRA evidence tree, then repeat the scan; absence is unresolved evidence, not a passing result.\n\n**When a reporting-stage clock has no bound draft, receipt or skip.**\n\n**Why it matters.** An operational reporting-stage clock has an evidence anchor but no bound draft, receipt, or explicit already-provided skip.\n\n**How to verify.** Recompute the exact offline timeline and inspect operator evidence; only the manufacturer decides applicability and performs any submission.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "CRA event has a started reporting stage without a bound draft, receipt, or skip.\n\nWhen the declared CRA state is unreadable:\nWhy it matters: Explicit CRA scope has no readable declared offline state, so reporting-stage evidence cannot be assessed.\nHow to verify: Bootstrap or recover the local ignored CRA evidence tree, then repeat the scan; absence is unresolved evidence, not a passing result.\n\nWhen a reporting-stage clock has no bound draft, receipt or skip:\nWhy it matters: An operational reporting-stage clock has an evidence anchor but no bound draft, receipt, or explicit already-provided skip.\nHow to verify: Recompute the exact offline timeline and inspect operator evidence; only the manufacturer decides applicability and performs any submission."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr004-untracked-reporting-timeline",
+              "id": "CR004-untracked-reporting-timeline",
+              "name": "CR004-untracked-reporting-timeline",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "CRA event has a started reporting stage without a bound draft, receipt, or skip."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The declared support period is below 60 months and no internally consistent shorter expected-use relation currently supports it."
+              },
+              "help": {
+                "markdown": "Declared support period below 60 months lacks a supported shorter-use relation.\n\n**Why it matters.** The declared support period is below 60 months and no internally consistent shorter expected-use relation currently supports it.\n\n**How to verify.** Verify the product's reasonably expected use time and retained evidence against the current official act; a below-60 declaration is not by itself a legal failure.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Declared support period below 60 months lacks a supported shorter-use relation.\n\nWhy it matters: The declared support period is below 60 months and no internally consistent shorter expected-use relation currently supports it.\nHow to verify: Verify the product's reasonably expected use time and retained evidence against the current official act; a below-60 declaration is not by itself a legal failure."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr005-support-period-too-short",
+              "id": "CR005-support-period-too-short",
+              "name": "CR005-support-period-too-short",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Declared support period below 60 months lacks a supported shorter-use relation."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Operator-declared fixed-vulnerability state lacks a verified advisory publication record or justified-delay review record."
+              },
+              "help": {
+                "markdown": "Fixed-vulnerability state lacks publication or justified-delay evidence.\n\n**Why it matters.** Operator-declared fixed-vulnerability state lacks a verified advisory publication record or justified-delay review record.\n\n**How to verify.** Inspect the fixed-vulnerability and security-update evidence, then bind only operator-confirmed publication or justified-delay records; RIGOR-FOUNDRY never publishes automatically.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Fixed-vulnerability state lacks publication or justified-delay evidence.\n\nWhy it matters: Operator-declared fixed-vulnerability state lacks a verified advisory publication record or justified-delay review record.\nHow to verify: Inspect the fixed-vulnerability and security-update evidence, then bind only operator-confirmed publication or justified-delay records; RIGOR-FOUNDRY never publishes automatically."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#cr006-fixed-vuln-without-advisory",
+              "id": "CR006-fixed-vuln-without-advisory",
+              "name": "CR006-fixed-vuln-without-advisory",
+              "properties": {
+                "category": "regulatory-readiness",
+                "introduced": "rigor-foundry/1.17.0",
+                "tags": [
+                  "rigor-foundry",
+                  "regulatory-readiness"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "regulatory-readiness",
+                    "index": 14,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Fixed-vulnerability state lacks publication or justified-delay evidence."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked GitHub Actions owner could not be completely analysed."
+              },
+              "help": {
+                "markdown": "Tracked GitHub Actions YAML could not be completely analysed.\n\n**Why it matters.** A tracked GitHub Actions owner could not be completely analysed.\n\n**How to verify.** Read the exact tracked blob, resolve the bounded parser or structural limitation, and rerun. An unexplained incomplete owner cannot support a clean claim.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked GitHub Actions YAML could not be completely analysed.\n\nWhy it matters: A tracked GitHub Actions owner could not be completely analysed.\nHow to verify: Read the exact tracked blob, resolve the bounded parser or structural limitation, and rerun. An unexplained incomplete owner cannot support a clean claim."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#gv006-unscanned-github-actions",
+              "id": "GV006-unscanned-github-actions",
+              "name": "GV006-unscanned-github-actions",
+              "properties": {
+                "category": "governance",
+                "introduced": "rigor-foundry/1.19.0",
+                "tags": [
+                  "rigor-foundry",
+                  "governance"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "governance",
+                    "index": 3,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked GitHub Actions YAML could not be completely analysed."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "An executable action or reusable workflow reference lacks a full commit or image digest."
+              },
+              "help": {
+                "markdown": "Executable action or reusable workflow reference lacks an immutable pin.\n\n**Why it matters.** An executable action or reusable workflow reference lacks a full commit or image digest.\n\n**How to verify.** Inspect the action owner and exact upstream object, then pin a reviewed full commit SHA or Docker SHA-256 digest. Local repository actions do not need external revision pins.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Executable action or reusable workflow reference lacks an immutable pin.\n\nWhy it matters: An executable action or reusable workflow reference lacks a full commit or image digest.\nHow to verify: Inspect the action owner and exact upstream object, then pin a reviewed full commit SHA or Docker SHA-256 digest. Local repository actions do not need external revision pins."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ga001-unpinned-action-reference",
+              "id": "GA001-unpinned-action-reference",
+              "name": "GA001-unpinned-action-reference",
+              "properties": {
+                "category": "github-actions",
+                "introduced": "rigor-foundry/1.19.0",
+                "tags": [
+                  "rigor-foundry",
+                  "github-actions"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "github-actions",
+                    "index": 15,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Executable action or reusable workflow reference lacks an immutable pin."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A run script directly interpolates event data, a branch name or an input."
+              },
+              "help": {
+                "markdown": "Run script directly interpolates untrusted event, branch or input data.\n\n**Why it matters.** A run script directly interpolates event data, a branch name or an input.\n\n**How to verify.** Trace the exact trigger and value into the generated script. Prefer an intermediate environment variable with shell-appropriate quoting. This signal is not an exploit proof.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Run script directly interpolates untrusted event, branch or input data.\n\nWhy it matters: A run script directly interpolates event data, a branch name or an input.\nHow to verify: Trace the exact trigger and value into the generated script. Prefer an intermediate environment variable with shell-appropriate quoting. This signal is not an exploit proof."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ga002-run-context-interpolation",
+              "id": "GA002-run-context-interpolation",
+              "name": "GA002-run-context-interpolation",
+              "properties": {
+                "category": "github-actions",
+                "introduced": "rigor-foundry/1.19.0",
+                "tags": [
+                  "rigor-foundry",
+                  "github-actions"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "github-actions",
+                    "index": 15,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Run script directly interpolates untrusted event, branch or input data."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A pull_request_target checkout selects PR code or an unresolved dynamic source."
+              },
+              "help": {
+                "markdown": "Target-event checkout selects PR code or an unresolved dynamic source.\n\n**Why it matters.** A pull_request_target checkout selects PR code or an unresolved dynamic source.\n\n**How to verify.** Review token permissions, secrets, downstream execution and the checkout version's fork protections, including allow-unsafe-pr-checkout. Prefer trusted base checkout; this configuration candidate does not prove that untrusted code was executed.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Target-event checkout selects PR code or an unresolved dynamic source.\n\nWhy it matters: A pull_request_target checkout selects PR code or an unresolved dynamic source.\nHow to verify: Review token permissions, secrets, downstream execution and the checkout version's fork protections, including allow-unsafe-pr-checkout. Prefer trusted base checkout; this configuration candidate does not prove that untrusted code was executed."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#ga003-pull-request-target-checkout",
+              "id": "GA003-pull-request-target-checkout",
+              "name": "GA003-pull-request-target-checkout",
+              "properties": {
+                "category": "github-actions",
+                "introduced": "rigor-foundry/1.19.0",
+                "tags": [
+                  "rigor-foundry",
+                  "github-actions"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "github-actions",
+                    "index": 15,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Target-event checkout selects PR code or an unresolved dynamic source."
+              }
+            }
+          ],
+          "semanticVersion": "1.0.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

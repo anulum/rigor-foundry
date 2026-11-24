@@ -220,7 +220,7 @@ STABLE_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
         ),
         "residuals-check": _command("--manifest", "--root"),
         "review-template": _command("--output", "--report"),
-        "sarif": _command("--output", "--report", "--review"),
+        "sarif": _command("--output", "--profile", "--report", "--review"),
         "sbom-import": _command(
             "--captured-at",
             "--coverage",

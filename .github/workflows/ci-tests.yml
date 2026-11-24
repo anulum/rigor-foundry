@@ -228,9 +228,17 @@ jobs:
         python -m tools.install_osv_scanner
     - *id003
     - *id004
+    - name: Fetch the pinned SARIF schema
+      shell: bash
+      run: |
+        set -euo pipefail
+        schema="$RUNNER_TEMP/sarif-schema-2.1.0.json"
+        curl --proto '=https' --tlsv1.2 --fail --location --output "$schema" "$(python -m tools.sarif_schema_pin url)"
+        printf '%s  %s\n' "$(python -m tools.sarif_schema_pin sha256)" "$schema" | sha256sum --check --strict
     - name: Run exhaustive CI-owned suite
       env:
         RIGOR_DOCUMENTATION_PYTHON: ${{ runner.temp }}/rigor-docs-venv/bin/python
+        RIGOR_SARIF_SCHEMA_PATH: ${{ runner.temp }}/sarif-schema-2.1.0.json
         RIGOR_NATIVE_PRIMARY_EVIDENCE_DIR: ${{ runner.temp }}/rigor-native-primary
         RIGOR_NATIVE_WINDOWS_EVIDENCE_DIR: ${{ runner.temp }}/rigor-native-windows
       run: python -m tools.run_test_shard --index ${{ matrix.shard }} --count 8

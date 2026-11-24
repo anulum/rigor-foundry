@@ -26,6 +26,7 @@ from tools.ci_workflows import (
     CI_WORKFLOWS,
     PYTHON_VERSIONS,
     REQUIRED_JOB,
+    SARIF_SCHEMA_STEP,
     SHARD_COUNT,
     SHARD_STEP,
     SHARD_UPLOAD,
@@ -229,7 +230,7 @@ def _check_graph(root: Path, documents: dict[str, Any], records: dict[str, Any])
             "matrix": {"python-version": PYTHON_VERSIONS, "shard": list(range(SHARD_COUNT))},
         }
     )
-    _require(execution["steps"][-2:] == [SHARD_STEP, SHARD_UPLOAD])
+    _require(execution["steps"][-3:] == [SARIF_SCHEMA_STEP, SHARD_STEP, SHARD_UPLOAD])
     union = test_jobs["test-coverage"]
     _require(
         set(union) == {"needs", "if", "env", "runs-on", "timeout-minutes", "strategy", "steps"}

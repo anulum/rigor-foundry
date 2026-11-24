@@ -1,0 +1,133 @@
+{
+  "branch": "main",
+  "candidates": [],
+  "dirty_paths": [],
+  "git_object_format": "sha1",
+  "git_provenance": {
+    "executable_digest": "eb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201",
+    "identity_digest": "fbb84252a9bd6d5a2ee455fa7275527e4377f21e2315ed19d672881c2eb5f50f",
+    "resolved_path": "/usr/bin/git",
+    "schema_version": "1.0",
+    "trust_policy": {
+      "executable": "git",
+      "maximum_version_exclusive": "3.0.0",
+      "minimum_version": "2.35.2",
+      "schema_version": "1.0",
+      "trusted_roots": [
+        "/usr/bin",
+        "/usr/local/bin",
+        "/opt/homebrew/bin"
+      ]
+    },
+    "trust_policy_digest": "a8fb516fc8ffa2335fbfaa9a39013ca0b5a27287b60ad4f7a447053461284925",
+    "trusted_root": "/usr/bin",
+    "version": "2.43.0"
+  },
+  "head": "bb4b2d5a33879f8059efdd3e83b5aaf906d0b44e",
+  "head_tree": "5c95b612dd40be4f2d7703c9c28fd369917849f7",
+  "ignored_inventory_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "ignored_inventory_evidence": [],
+  "policy": {
+    "audit_domains": [
+      {
+        "applicability": "required",
+        "name": "test-authenticity",
+        "rationale": "repository-specific decision for test-authenticity"
+      },
+      {
+        "applicability": "required",
+        "name": "architecture-and-wiring",
+        "rationale": "repository-specific decision for architecture-and-wiring"
+      },
+      {
+        "applicability": "required",
+        "name": "godfile-responsibility",
+        "rationale": "repository-specific decision for godfile-responsibility"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "application-security",
+        "rationale": "repository-specific decision for application-security"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "supply-chain",
+        "rationale": "repository-specific decision for supply-chain"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "api-abi-schema-compatibility",
+        "rationale": "repository-specific decision for api-abi-schema-compatibility"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "scientific-numerical-correctness",
+        "rationale": "repository-specific decision for scientific-numerical-correctness"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "reliability-and-concurrency",
+        "rationale": "repository-specific decision for reliability-and-concurrency"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "performance-and-reproducibility",
+        "rationale": "repository-specific decision for performance-and-reproducibility"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "data-and-privacy",
+        "rationale": "repository-specific decision for data-and-privacy"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "operations-and-observability",
+        "rationale": "repository-specific decision for operations-and-observability"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "packaging-deployment-iac",
+        "rationale": "repository-specific decision for packaging-deployment-iac"
+      },
+      {
+        "applicability": "not-applicable",
+        "name": "documentation-claims-ip",
+        "rationale": "repository-specific decision for documentation-claims-ip"
+      },
+      {
+        "applicability": "required",
+        "name": "ownership-and-maintenance",
+        "rationale": "repository-specific decision for ownership-and-maintenance"
+      }
+    ],
+    "canonical_todo": "docs/internal/work/INDEX.md",
+    "enforcement_mode": "observe",
+    "ignored_inventory": [],
+    "maturity_policy_digest": null,
+    "module_size_registries": [],
+    "native_audits": [],
+    "production_packages": [
+      "pkg"
+    ],
+    "review_ledger": "docs/internal/audit/reviews.json",
+    "schema_version": "1.3",
+    "source_line_threshold": 1000,
+    "source_roots": [
+      "src",
+      "tools"
+    ],
+    "test_line_threshold": 1000,
+    "test_roots": [
+      "tests"
+    ]
+  },
+  "policy_digest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
+  "report_digest": "8b44499a5f1553b03b233fe92b01ec2b65b9e623112f79270ade649425dc5025",
+  "repository_root": "/tmp/rigor-sarif-fixture-kgn0kc9m/empty",
+  "rule_pack_digest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
+  "rule_pack_version": "rigor-foundry/1.19.0",
+  "scanner_version": "0.3.0",
+  "schema_version": "1.3",
+  "tracked_content_digest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28",
+  "tracked_file_count": 4
+}

@@ -47,6 +47,27 @@ rule-pack categories in registry order. Every rule relates to its category with
 kind `subset`. RigorFoundry emits no rule-level `security-severity`: severity is
 recorded only by a validated review, never by a rule.
 
+## GitHub code-scanning profile
+
+```bash
+rigor sarif --report report.json --review reviews.json --profile github-code-scanning \
+  --output github.sarif
+```
+
+GitHub code scanning presents every uploaded result as an alert, so this profile
+keeps only results whose validated review decision is `valid`. The canonical
+export without `--profile` is unchanged and keeps every candidate. The profile's
+run properties declare `rigorFoundry/consumerProfile`, the omitted result count
+for each state in `rigorFoundry/omittedResults` (`unreviewed`, `needs-evidence`,
+`invalid`, `accepted-boundary`), and `rigorFoundry/canonicalDocumentDigest`, the
+SHA-256 of the canonical document for the same report and reviews.
+
+Before anything is written, the profile refuses GitHub's documented upload limits:
+20 runs per file, 25,000 rules per run, 20 tags per rule, 1,000 locations per
+result and 10 MB of gzip-compressed SARIF per file. It also refuses more than
+5,000 results, because GitHub shows only the top 5,000 and would otherwise drop
+results silently. The error names the exceeded count and the command exits 2.
+
 ## Identity and anchors
 
 Rule IDs and indices come from the complete versioned RigorFoundry rule pack.

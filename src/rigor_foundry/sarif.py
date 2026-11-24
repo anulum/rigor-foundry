@@ -24,6 +24,11 @@ from .rule_catalogue import (
 )
 from .rule_guidance import RuleGuidance
 from .rules import RULES
+from .sarif_github_profile import (
+    GITHUB_CODE_SCANNING_PROFILE,
+    github_code_scanning_document,
+    require_github_limits,
+)
 from .version import __version__
 
 SARIF_SCHEMA_URI = (
@@ -279,9 +284,18 @@ def _sarif_document(
     }
 
 
+def _render(document: dict[str, object]) -> str:
+    """Render one SARIF document as deterministic, stable-key-order JSON with a newline."""
+    return (
+        json.dumps(document, allow_nan=False, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    )
+
+
 def report_sarif(
     report: AuditReport,
     reviews: tuple[ReviewRecord, ...] = (),
+    *,
+    profile: str | None = None,
 ) -> str:
     """Render deterministic SARIF 2.1.0 JSON with a trailing newline.
 
@@ -291,19 +305,28 @@ def report_sarif(
         Integrity-verified repository audit report.
     reviews:
         Optional evidence decisions for candidates in ``report``.
+    profile:
+        ``None`` for the complete canonical export, or ``"github-code-scanning"`` for the
+        GitHub consumer profile that keeps only reviewed ``valid`` results.
 
     Returns
     -------
     str
         Human-readable, stable-key-order SARIF JSON.
+
+    Raises
+    ------
+    ValueError
+        If reviews are invalid, the profile is unknown, or the GitHub profile exceeds a
+        documented GitHub upload limit.
     """
-    return (
-        json.dumps(
-            _sarif_document(report, reviews),
-            allow_nan=False,
-            ensure_ascii=False,
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n"
-    )
+    document = _sarif_document(report, reviews)
+    canonical = _render(document)
+    if profile is None:
+        return canonical
+    if profile != GITHUB_CODE_SCANNING_PROFILE:
+        raise ValueError(f"unknown SARIF profile: {profile}")
+    profiled = github_code_scanning_document(document, canonical)
+    rendered = _render(profiled)
+    require_github_limits(profiled, rendered)
+    return rendered
