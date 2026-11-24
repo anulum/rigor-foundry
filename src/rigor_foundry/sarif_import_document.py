@@ -18,6 +18,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Final, cast
 
+from .sarif_import_rules import ToolComponent
+
 MAX_SARIF_BYTES: Final = 32 * 1024 * 1024
 MAX_NESTING: Final = 64
 MAX_RUNS: Final = 8
@@ -111,12 +113,6 @@ def _component_rules(component: dict[str, Any]) -> int:
     return len(rules)
 
 
-def _component_identity(component: dict[str, Any]) -> tuple[str, str | None]:
-    """Return the name and version that identify one checked tool component."""
-    semantic = component.get("semanticVersion")
-    return component["name"], semantic if semantic is not None else component.get("version")
-
-
 def _limit(count: int, label: str, limit: int, reason: str) -> None:
     """Refuse the file when one counted run field holds more items than allowed."""
     if count > limit:
@@ -183,7 +179,7 @@ def parse_sarif_document(payload: bytes) -> SarifDocument:
         rules = sum(_component_rules(component) for component in (driver, *extensions))
         _limit(rules, "rules", MAX_RULES_PER_RUN, "too-many-rules")
         # A candidate names its rule's component by name and version, so they must be unique.
-        identities = [_component_identity(component) for component in (driver, *extensions)]
+        identities = [ToolComponent.from_object(component) for component in (driver, *extensions)]
         if len(identities) != len(set(identities)):
             raise SarifImportRefused(
                 "malformed-run", "two tool components share a name and version"

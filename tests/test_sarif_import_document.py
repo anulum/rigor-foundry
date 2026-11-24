@@ -210,6 +210,14 @@ def _unversioned_twins(document: dict[str, Any]) -> None:
     document["runs"][0]["tool"]["extensions"] = [{"name": "pack"}, {"name": "pack"}]
 
 
+def _same_semantic_version_other_version(document: dict[str, Any]) -> None:
+    """List two extensions whose identities agree because semanticVersion wins over version."""
+    document["runs"][0]["tool"]["extensions"] = [
+        {"name": "pack/a", "semanticVersion": "1.0.0", "version": "a"},
+        {"name": "pack/a", "semanticVersion": "1.0.0", "version": "b"},
+    ]
+
+
 def _repeated_rule_id(document: dict[str, Any]) -> None:
     """Repeat one rule id within a single tool extension."""
     document["runs"][0]["tool"]["extensions"] = [
@@ -236,6 +244,7 @@ def _repeated_rule_id(document: dict[str, Any]) -> None:
         (_repeated_component, "malformed-run"),
         (_extension_named_as_the_driver, "malformed-run"),
         (_unversioned_twins, "malformed-run"),
+        (_same_semantic_version_other_version, "malformed-run"),
     ],
 )
 def test_a_document_that_is_not_sarif_2_1_0_is_refused(
@@ -303,5 +312,7 @@ def test_one_component_name_may_appear_with_different_versions() -> None:
         {"name": "pack/a", "semanticVersion": "1.0.0"},
         {"name": "pack/a", "version": "1.0.1"},
         {"name": "pack/a"},
+        {"name": "pack/b", "semanticVersion": "1.0.0", "version": "1"},
+        {"name": "pack/b", "semanticVersion": "2.0.0", "version": "1"},
     ]
-    assert len(parse_sarif_document(_bytes(document)).runs[0]["tool"]["extensions"]) == 3
+    assert len(parse_sarif_document(_bytes(document)).runs[0]["tool"]["extensions"]) == 5
