@@ -267,8 +267,11 @@ class PreservedResult:
         ------
         ResultSkipped
             With ``result-without-rule`` if neither ``ruleId`` nor ``rule.index`` is given,
-            ``rule-index-out-of-range`` if the index names no rule, or
-            ``rule-id-index-mismatch`` if both are given and disagree.
+            ``rule-index-out-of-range`` if the index names no rule,
+            ``rule-id-index-mismatch`` if both are given and disagree, ``missing-message`` if
+            the result has no message text, ``malformed-kind`` or ``malformed-level`` if
+            either is present but not a string, or ``unknown-kind`` if the kind is neither a
+            candidate nor an observation kind. An absent kind is SARIF's default ``fail``.
         """
         rule_reference = result.get("rule")
         raw_index = rule_reference.get("index") if isinstance(rule_reference, dict) else None
@@ -287,11 +290,18 @@ class PreservedResult:
         else:
             raise ResultSkipped("result-without-rule")
         message = result.get("message")
-        raw_text = message.get("text") if isinstance(message, dict) else None
-        full_text = raw_text if isinstance(raw_text, str) else ""
+        full_text = message.get("text") if isinstance(message, dict) else None
+        if not isinstance(full_text, str):
+            raise ResultSkipped("missing-message")
         text, truncated = _bounded_text(full_text, MAX_MESSAGE_BYTES)
         kind = result.get("kind", "fail")
+        if not isinstance(kind, str):
+            raise ResultSkipped("malformed-kind")
+        if kind not in CANDIDATE_KINDS | OBSERVATION_KINDS:
+            raise ResultSkipped("unknown-kind")
         level = result.get("level")
+        if level is not None and not isinstance(level, str):
+            raise ResultSkipped("malformed-level")
         baseline = result.get("baselineState")
         suppressions = result.get("suppressions")
         kept_suppressions = tuple(
@@ -319,8 +329,8 @@ class PreservedResult:
             message_text=text,
             message_text_sha256=hashlib.sha256(full_text.encode("utf-8")).hexdigest(),
             message_truncated=truncated,
-            level=level if isinstance(level, str) else None,
-            kind=kind if isinstance(kind, str) else "fail",
+            level=level,
+            kind=kind,
             baseline_state=baseline if isinstance(baseline, str) else None,
             suppressions=kept_suppressions,
             partial_fingerprints=cast(dict[str, object], partial)

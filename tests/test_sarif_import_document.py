@@ -125,6 +125,16 @@ def _version_2_0(document: dict[str, Any]) -> None:
     document["version"] = "2.0.0"
 
 
+def _version_release_candidate(document: dict[str, Any]) -> None:
+    """Declare a pre-release spelling that only starts like 2.1.0."""
+    document["version"] = "2.1.0-rtm.5"
+
+
+def _version_short(document: dict[str, Any]) -> None:
+    """Declare the two-part spelling 2.1."""
+    document["version"] = "2.1"
+
+
 def _runs_object(document: dict[str, Any]) -> None:
     """Replace the run list with an object."""
     document["runs"] = {}
@@ -144,6 +154,8 @@ def _results_object(document: dict[str, Any]) -> None:
     ("alter", "reason"),
     [
         (_version_2_0, "not-sarif-2.1.0"),
+        (_version_release_candidate, "not-sarif-2.1.0"),
+        (_version_short, "not-sarif-2.1.0"),
         (_runs_object, "malformed-run"),
         (_run_without_driver, "malformed-run"),
         (_results_object, "malformed-run"),

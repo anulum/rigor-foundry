@@ -208,3 +208,42 @@ def test_building_import_records_never_changes_the_rule_registry() -> None:
     assert built
     assert rule_pack_digest() == digest and dict(RULES_BY_ID) == registered
     assert not {rule.rule_id for rule in rules} & set(RULES_BY_ID)
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"kind": 3}, "malformed-kind"),
+        ({"kind": None}, "malformed-kind"),
+        ({"kind": "bogus"}, "unknown-kind"),
+        ({"level": 3}, "malformed-level"),
+        ({"message": {"id": "default"}}, "missing-message"),
+        ({"message": "text"}, "missing-message"),
+    ],
+)
+def test_a_malformed_or_unknown_kind_level_or_message_is_skipped(
+    change: dict[str, object], reason: str
+) -> None:
+    """A kind or level that is not a string, an unknown kind or no message text is skipped.
+
+    Parameters
+    ----------
+    change : dict[str, object]
+        Fields replacing those of a real result.
+    reason : str
+        The skip reason.
+    """
+    with pytest.raises(ResultSkipped) as skipped:
+        _preserved({**_run()["results"][0], **change})
+    assert skipped.value.reason == reason
+
+
+def test_only_an_absent_kind_takes_the_sarif_default() -> None:
+    """A result without a kind is SARIF's default ``fail``, and so a candidate kind."""
+    result = {key: value for key, value in _run()["results"][0].items() if key != "kind"}
+    preserved = _preserved(result)
+    assert (preserved.kind, preserved.is_candidate_kind, preserved.level) == (
+        "fail",
+        True,
+        result.get("level"),
+    )
