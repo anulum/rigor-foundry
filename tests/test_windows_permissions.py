@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import csv
 import ctypes
 import os
 import subprocess
@@ -69,23 +70,20 @@ class WindowsPermissionsTests(unittest.TestCase):
         self.resources.enter_context(
             patch.object(windows_permissions, "windows_library", side_effect=self.library)
         )
-        powershell = (
-            Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
-        )
+        # The native whoami image is an oracle independent of the code under test, and it
+        # starts in well under a second where a PowerShell host can take longer than 15 s
+        # on a loaded runner.
+        whoami = Path(os.environ["SYSTEMROOT"]) / "System32/whoami.exe"
         result = subprocess.run(
-            [
-                str(powershell),
-                "-NoProfile",
-                "-NonInteractive",
-                "-Command",
-                "[Security.Principal.WindowsIdentity]::GetCurrent().User.Value",
-            ],
+            [str(whoami), "/user", "/fo", "csv", "/nh"],
             capture_output=True,
             check=True,
             timeout=15,
             encoding="utf-8",
+            errors="replace",
         )
-        self.sid = result.stdout.strip()
+        (row,) = csv.reader(result.stdout.strip().splitlines())
+        self.sid = row[1]
         self.assertRegex(self.sid, r"^S-1-[0-9-]+$")
         self.conversion = self.advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
         self.conversion.argtypes = [
