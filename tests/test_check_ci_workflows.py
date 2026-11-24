@@ -17,8 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
-from test_ci_workflows import copy_workflow_repository
+from test_ci_workflows import copy_workflow_repository, write_workflow
 
 from tools._repository import ROOT
 from tools.check_action_pins import action_pin_errors
@@ -51,7 +50,7 @@ def test_an_unchanged_round_tripped_workflow_is_still_accepted(tmp_path: Path) -
     """
     root = copy_workflow_repository(tmp_path)
     for path in sorted((root / ".github/workflows").glob("*.yml")):
-        path.write_text(yaml.safe_dump(read_workflow(path), sort_keys=False))
+        write_workflow(path, read_workflow(path))
         assert ci_workflow_errors(root) == [], path.name
 
 
@@ -242,7 +241,7 @@ def test_actual_inventory_refuses_missing_sources_and_budget_or_graph_drift(
     elif case in {"empty-jobs", "list-jobs", "null-job"}:
         workflow = read_workflow(quality)
         workflow["jobs"] = {"empty-jobs": {}, "list-jobs": [], "null-job": {"quality": None}}[case]
-        quality.write_text(yaml.safe_dump(workflow, sort_keys=False))
+        write_workflow(quality, workflow)
     elif case in {"coordinator-bytes", "coordinator-lines", "reusable-bytes", "reusable-lines"}:
         path = coordinator if case.startswith("coordinator") else quality
         suffix = "#" + "a" * 102_401 if case.endswith("bytes") else "\n#" * 1_001
@@ -256,16 +255,12 @@ def test_actual_inventory_refuses_missing_sources_and_budget_or_graph_drift(
     elif case == "extra-reusable":
         workflow = read_workflow(root / ".github/workflows/stale.yml")
         workflow["on"] = {"workflow_call": None}
-        (root / ".github/workflows/stale.yml").write_text(
-            yaml.safe_dump(workflow, sort_keys=False)
-        )
+        write_workflow(root / ".github/workflows/stale.yml", workflow)
     else:
         workflow = read_workflow(root / ".github/workflows/stale.yml")
         job = next(iter(workflow["jobs"]))
         workflow["jobs"][job]["uses"] = "./.github/workflows/ci-quality.yml"
-        (root / ".github/workflows/stale.yml").write_text(
-            yaml.safe_dump(workflow, sort_keys=False)
-        )
+        write_workflow(root / ".github/workflows/stale.yml", workflow)
     assert ci_workflow_errors(root)
 
 
@@ -301,7 +296,7 @@ def test_context_source_coverage_cannot_be_removed_or_weakened(
         step["run"] = step["run"].replace("--cov-fail-under=100", "--cov-fail-under=99")
     else:
         step["run"] = step["run"].replace(" --cov=test_context_source_lease", "")
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)
 
 
@@ -346,7 +341,7 @@ def test_real_workflow_call_surfaces_and_event_policy_are_closed(
     path = root / ".github/workflows" / workflow
     document = read_workflow(path)
     document[field] = value
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)
 
 
@@ -389,7 +384,7 @@ def test_actual_caller_graph_and_aggregate_cannot_omit_a_category(
     path = root / ".github/workflows/ci.yml"
     document = read_workflow(path)
     document["jobs"][job][field] = value
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)
 
 
@@ -423,7 +418,7 @@ def test_reusable_job_cannot_introduce_cross_category_or_privilege_drift(
     path = root / CI_WORKFLOWS["quality"]
     document = read_workflow(path)
     document["jobs"]["quality"][field] = value
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)
 
 
@@ -456,7 +451,7 @@ def test_standalone_editor_caller_refuses_route_or_privilege_drift(
     path = root / ".github/workflows/pre-commit.yml"
     document = read_workflow(path)
     document["jobs"]["editor"][field] = value
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)
 
 
@@ -586,7 +581,7 @@ def test_complete_workflow_contract_cannot_be_satisfied_by_partial_ownership(
         )
         inventory["workflows"][relative]["category"] = "security"
         policy.write_text(json.dumps(inventory))
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     if case in {"extra-call", "extra-category-job"}:
         policy = root / ".github/ci-workflows.json"
         inventory = json.loads(policy.read_text())
@@ -773,5 +768,5 @@ def test_actual_complete_shard_and_union_graph_refuses_partial_execution(
         ]
         assert len(indices) == 1
         union["steps"][indices[0]] = {"run": "true"}
-    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(path, document)
     assert ci_workflow_errors(root)

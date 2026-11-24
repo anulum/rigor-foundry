@@ -16,8 +16,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
-from test_ci_workflows import copy_workflow_repository
+from test_ci_workflows import copy_workflow_repository, write_workflow
 
 from tools._repository import ROOT
 from tools.check_ci_workflows import ci_workflow_errors
@@ -192,7 +191,7 @@ def test_real_editor_workflow_changes_refuse_api_and_cli(tmp_path: Path, change:
         jobs["vscode"]["steps"] = None
     with pytest.raises(ValueError):
         check_editor_jobs(jobs, root)
-    workflow.write_text(yaml.safe_dump(document, sort_keys=False))
+    write_workflow(workflow, document)
     assert ci_workflow_errors(root)
     child = subprocess.run(
         [sys.executable, "-m", "tools.check_ci_workflows"],

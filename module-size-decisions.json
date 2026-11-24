@@ -44,7 +44,7 @@
     },
     {
       "dependency_boundary": "The real workflow inventory and YAML through tools.ci_workflows, the guard tools.check_ci_workflows and its CLI, the action-pin guard, and copied workflow repositories from tests/test_ci_workflows; no product source, release authority, or remote GitHub state.",
-      "lines": 777,
+      "lines": 772,
       "path": "tests/test_check_ci_workflows.py",
       "reassess_when": "The file exceeds 850 lines, a second guard tool gains tests here, or workflow inventory parsing tests move into this owner from tests/test_ci_workflows.py.",
       "responsibility": "Single test owner of the CI workflow guard in tools/check_ci_workflows.py: complete job inventory and ownership, caller graph and aggregate shell, event and privilege policy, reusable-workflow budgets, and shard and union graph refusals through the real guard and its CLI."
