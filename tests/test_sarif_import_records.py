@@ -4,8 +4,8 @@
 # © Code 2020–2026 Miroslav Šotek. All rights reserved.
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
-# RigorFoundry — bounded imported SARIF rule and result record tests
-"""Verify that imported rules and results keep the producer's words, bounded, never judged."""
+# RigorFoundry — bounded imported SARIF result record tests
+"""Verify that imported results keep the producer's words, bounded, and are never judged."""
 
 from __future__ import annotations
 
@@ -18,18 +18,19 @@ import pytest
 
 from rigor_foundry.candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from rigor_foundry.rules import RULES_BY_ID, rule_pack_digest
+from rigor_foundry.sarif_import_bounds import ResultSkipped
 from rigor_foundry.sarif_import_records import (
     MAX_MESSAGE_BYTES,
     MAX_PROPERTIES_BYTES,
-    MAX_SHORT_DESCRIPTION_BYTES,
-    MAX_TAG_BYTES,
-    MAX_TAGS,
     ImportedCandidate,
-    ImportedRule,
     LocationMetadata,
     PreservedResult,
-    ResultSkipped,
     anchor_from_record,
+)
+from rigor_foundry.sarif_import_rules import (
+    ImportedRule,
+    RunRules,
+    ToolComponent,
     imported_rule_id,
     require_producer_id,
 )
@@ -53,53 +54,21 @@ def _run() -> dict[str, Any]:
     return result
 
 
-def _rules() -> tuple[ImportedRule, ...]:
-    """Return the real run's driver rules recorded under one producer namespace."""
-    return tuple(
-        ImportedRule.build("semgrep", rule, index)
-        for index, rule in enumerate(_run()["tool"]["driver"]["rules"])
-    )
+def _rules() -> RunRules:
+    """Return the real run's rules recorded under one producer namespace."""
+    return RunRules.build("semgrep", _run())
+
+
+def _driver_rule(index: int) -> ImportedRule:
+    """Return one recorded driver rule of the real run."""
+    rule = _rules().driver.rules[index]
+    assert rule is not None
+    return rule
 
 
 def _preserved(result: dict[str, Any]) -> PreservedResult:
     """Record one result against the real run's rules."""
     return PreservedResult.build("semgrep", result, _rules(), run_index=0, result_index=0)
-
-
-def test_a_real_rule_keeps_bounded_metadata_and_the_whole_rule_digest() -> None:
-    """Every real rule records its namespaced id, help link, level, tags and object digest."""
-    rule = _run()["tool"]["driver"]["rules"][0]
-    recorded = ImportedRule.build("semgrep", rule, 0)
-    assert recorded.rule_id == f"ext:semgrep:{rule['id']}"
-    assert recorded.rule_id not in RULES_BY_ID
-    assert recorded.help_uri == rule["helpUri"] and not recorded.help_uri_dropped
-    assert recorded.short_description == rule["shortDescription"]["text"]
-    assert recorded.tags == tuple(rule["properties"]["tags"]) and not recorded.tags_truncated
-    assert len(recorded.rule_object_sha256) == 64
-    assert recorded.to_dict()["rule_index"] == 0
-
-
-def test_rule_metadata_past_its_bounds_is_cut_dropped_or_refused() -> None:
-    """A long description is cut, a non-https link dropped, excess tags cut, no id refused."""
-    rule: dict[str, Any] = {
-        "id": "x",
-        "shortDescription": {"text": "é" * MAX_SHORT_DESCRIPTION_BYTES},
-        "helpUri": "http://example.invalid/rule",
-        "properties": {"tags": [*["t"] * (MAX_TAGS + 1), "w" * (MAX_TAG_BYTES + 1)]},
-        "defaultConfiguration": {"level": "warning"},
-    }
-    recorded = ImportedRule.build("codeql", rule, 3)
-    assert recorded.short_description is not None
-    assert len(recorded.short_description.encode()) <= MAX_SHORT_DESCRIPTION_BYTES
-    assert recorded.short_description_truncated
-    assert (recorded.help_uri, recorded.help_uri_dropped) == (None, True)
-    assert recorded.tags == ("t",) * MAX_TAGS and recorded.tags_truncated
-    assert recorded.default_level == "warning"
-    bare = ImportedRule.build("codeql", {"id": "y", "properties": {"tags": "solo"}}, 0)
-    assert (bare.tags, bare.tags_truncated, bare.help_uri_dropped) == ((), True, False)
-    with pytest.raises(ResultSkipped) as skipped:
-        ImportedRule.build("codeql", {"name": "unnamed"}, 0)
-    assert skipped.value.reason == "rule-without-id"
 
 
 def test_a_result_keeps_the_producers_words_verbatim_and_never_maps_them() -> None:
@@ -117,6 +86,8 @@ def test_a_result_keeps_the_producers_words_verbatim_and_never_maps_them() -> No
     assert preserved.partial_fingerprints == {"primaryLocationLineHash": "abc:1"}
     assert preserved.rule_id == f"ext:semgrep:{result['ruleId']}"
     assert preserved.is_candidate_kind
+    assert preserved.tool_component == ToolComponent.from_object(_run()["tool"]["driver"])
+    assert preserved.tool_component_index is None
     record = preserved.to_dict()
     assert not {"severity", "confidence", "category", "priority"} & set(record)
     assert record["result_object_sha256"] == preserved.result_object_sha256
@@ -165,11 +136,11 @@ def test_a_result_names_its_rule_by_id_or_index_and_is_skipped_otherwise() -> No
         {**base, "ruleIndex": 1, "rule": {"index": -1}},
     ):
         by_index = _preserved(indexed)
-        assert by_index.rule_id == _rules()[1].rule_id and by_index.rule_index == 1
+        assert by_index.rule_id == _driver_rule(1).rule_id and by_index.rule_index == 1
     for result, reason in (
         (base, "result-without-rule"),
         ({**base, "ruleIndex": -1}, "result-without-rule"),
-        ({**base, "rule": {"index": len(_rules())}}, "rule-index-out-of-range"),
+        ({**base, "rule": {"index": len(_rules().driver.rules)}}, "rule-index-out-of-range"),
         ({**base, "ruleId": "other", "rule": {"index": 0}}, "rule-id-index-mismatch"),
     ):
         with pytest.raises(ResultSkipped) as skipped:
@@ -217,7 +188,7 @@ def test_only_tracked_blob_anchors_and_valid_producers_are_accepted() -> None:
 def test_building_import_records_never_changes_the_rule_registry() -> None:
     """Importing rules and results leaves RULES and the rule-pack digest exactly as they were."""
     digest, registered = rule_pack_digest(), dict(RULES_BY_ID)
-    rules = _rules()
+    rules = [rule for rule in _rules().driver.rules if rule is not None]
     built = [
         ImportedCandidate.build("semgrep", ANCHOR, preserved, NO_DETAIL)
         for preserved in map(_preserved, _run()["results"])

@@ -20,7 +20,6 @@ from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.candidate_anchor import TrackedBlobAnchor
 from rigor_foundry.sarif_import_records import (
     ImportedCandidate,
-    ImportedRule,
     ImportObservation,
     ImportSkip,
     LocationMetadata,
@@ -32,6 +31,7 @@ from rigor_foundry.sarif_import_report import (
     read_import_report,
     verify_import_report,
 )
+from rigor_foundry.sarif_import_rules import RunRules
 
 ROOT = Path(__file__).resolve().parents[1]
 REAL_SARIF = ROOT / "tests/fixtures/sarif/canonical-states.sarif"
@@ -40,10 +40,7 @@ REAL_SARIF = ROOT / "tests/fixtures/sarif/canonical-states.sarif"
 def _records() -> tuple[tuple[ImportedCandidate, ...], ImportObservation, ImportSkip]:
     """Return candidates, one observation and one skip built from a real exported SARIF run."""
     (run,) = json.loads(REAL_SARIF.read_text(encoding="utf-8"))["runs"]
-    rules = tuple(
-        ImportedRule.build("semgrep", rule, index)
-        for index, rule in enumerate(run["tool"]["driver"]["rules"])
-    )
+    rules = RunRules.build("semgrep", run)
     preserved = [
         PreservedResult.build("semgrep", result, rules, run_index=0, result_index=index)
         for index, result in enumerate(run["results"])

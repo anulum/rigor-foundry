@@ -32,8 +32,8 @@ from .sarif_import_records import (
     ImportObservation,
     ImportSkip,
     anchor_from_record,
-    require_producer_id,
 )
+from .sarif_import_rules import require_producer_id
 
 IMPORT_REPORT_SCHEMA: Final = "rigor.import-report.v1"
 Provenance = Literal["executed", "declared"]
@@ -150,8 +150,8 @@ def verify_import_report(value: object) -> dict[str, object]:
     ------
     ValueError
         If any field is missing or extra, the schema or a digest differs, a count disagrees,
-        or a candidate's identifier does not match its recorded producer, rule, anchor,
-        message digest and partial fingerprints.
+        or a candidate's identifier does not match its recorded producer, rule, tool
+        component, anchor, message digest and partial fingerprints.
     """
     data = require_mapping(value, "import report")
     require_exact_fields(data, _FIELDS, "import report")
@@ -175,6 +175,7 @@ def verify_import_report(value: object) -> dict[str, object]:
         identity = {
             "producer_id": producer,
             "rule_id": result.get("rule_id"),
+            "tool_component": result.get("tool_component"),
             "anchor": anchor_from_record(record.get("anchor")).to_dict(),
             "message_text_sha256": result.get("message_text_sha256"),
             "partial_fingerprints_sha256": result.get("partial_fingerprints_sha256"),

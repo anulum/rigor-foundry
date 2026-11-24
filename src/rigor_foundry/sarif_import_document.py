@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Any, Final, cast
 
 MAX_SARIF_BYTES: Final = 32 * 1024 * 1024
 MAX_NESTING: Final = 64
@@ -85,13 +85,36 @@ def _nesting(value: object) -> int:
     return deepest
 
 
-def _count(run: dict[str, Any], key: str, label: str, limit: int, reason: str) -> None:
-    """Refuse a run whose list field is not a list or holds more items than allowed."""
-    items = run.get(key, [])
+def _items(record: dict[str, Any], key: str) -> list[Any]:
+    """Return one optional array field, refusing the run when it is not an array."""
+    items = record.get(key, [])
     if not isinstance(items, list):
-        raise SarifImportRefused("malformed-run", f"{label} must be an array")
-    if len(items) > limit:
-        raise SarifImportRefused(reason, f"{len(items)} {label} exceed the limit of {limit}")
+        raise SarifImportRefused("malformed-run", f"{key} must be an array")
+    return items
+
+
+def _component_rules(component: dict[str, Any]) -> int:
+    """Return one tool component's rule count after checking its identity and rule ids."""
+    if not isinstance(component.get("name"), str):
+        raise SarifImportRefused("malformed-run", "every tool component must have a name")
+    if any(
+        key in component and not isinstance(component[key], str)
+        for key in ("semanticVersion", "version")
+    ):
+        raise SarifImportRefused("malformed-run", "a tool component version must be a string")
+    rules = _items(component, "rules")
+    ids = [
+        rule["id"] for rule in rules if isinstance(rule, dict) and isinstance(rule.get("id"), str)
+    ]
+    if len(ids) != len(set(ids)):
+        raise SarifImportRefused("malformed-run", "a tool component repeats a rule id")
+    return len(rules)
+
+
+def _limit(count: int, label: str, limit: int, reason: str) -> None:
+    """Refuse the file when one counted run field holds more items than allowed."""
+    if count > limit:
+        raise SarifImportRefused(reason, f"{count} {label} exceed the limit of {limit}")
 
 
 def parse_sarif_document(payload: bytes) -> SarifDocument:
@@ -112,7 +135,9 @@ def parse_sarif_document(payload: bytes) -> SarifDocument:
     SarifImportRefused
         With reason ``too-large``, ``not-json``, ``duplicate-key``, ``non-finite-number``,
         ``too-deep``, ``not-sarif-2.1.0``, ``malformed-run``, ``too-many-runs``,
-        ``too-many-results`` or ``too-many-rules``.
+        ``too-many-results`` or ``too-many-rules``. The rules limit counts the rules of the
+        driver and of every tool extension together. A tool component without a name, with
+        a version that is not a string, or repeating a rule id is a ``malformed-run``.
     """
     if len(payload) > MAX_SARIF_BYTES:
         raise SarifImportRefused(
@@ -139,10 +164,15 @@ def parse_sarif_document(payload: bytes) -> SarifDocument:
             "too-many-runs", f"{len(runs)} runs exceed the limit of {MAX_RUNS}"
         )
     for run in runs:
-        _count(run, "results", "results", MAX_RESULTS_PER_RUN, "too-many-results")
+        _limit(len(_items(run, "results")), "results", MAX_RESULTS_PER_RUN, "too-many-results")
         tool = run.get("tool")
         driver = tool.get("driver") if isinstance(tool, dict) else None
         if not isinstance(driver, dict):
             raise SarifImportRefused("malformed-run", "every run must name its tool driver")
-        _count(driver, "rules", "rules", MAX_RULES_PER_RUN, "too-many-rules")
+        extensions = _items(cast(dict[str, Any], tool), "extensions")
+        if not all(isinstance(extension, dict) for extension in extensions):
+            raise SarifImportRefused("malformed-run", "tool extensions must be objects")
+        # A run's rules live in its driver and in every extension, and all of them count.
+        rules = sum(_component_rules(component) for component in (driver, *extensions))
+        _limit(rules, "rules", MAX_RULES_PER_RUN, "too-many-rules")
     return SarifDocument(decoded, tuple(runs))

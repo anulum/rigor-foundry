@@ -28,10 +28,10 @@ from rigor_foundry.sarif_import_locations import LocationRoots, RunLocations, ro
 from rigor_foundry.sarif_import_records import (
     MAX_SNIPPET_BYTES,
     ImportedCandidate,
-    ImportedRule,
     ImportObservation,
     ImportSkip,
 )
+from rigor_foundry.sarif_import_rules import RunRules
 from rigor_foundry.scanner import scan_repository
 
 ROOT_ID = "%SRCROOT%"
@@ -45,7 +45,7 @@ class Scanned:
     inventory: GitInventory
     sarif: str
     run: dict[str, Any]
-    rules: tuple[ImportedRule, ...]
+    rules: RunRules
 
 
 def _scan(root: Path) -> Scanned:
@@ -62,10 +62,7 @@ def _scan(root: Path) -> Scanned:
     report = scan_repository(repository.root, Path("rigor-foundry-policy.json"))
     sarif = report_sarif(report)
     (run,) = parse_sarif_document(sarif.encode()).runs
-    rules = tuple(
-        ImportedRule.build("semgrep", rule, index)
-        for index, rule in enumerate(run["tool"]["driver"]["rules"])
-    )
+    rules = RunRules.build("semgrep", run)
     return Scanned(repository, load_git_inventory(repository.root), sarif, run, rules)
 
 
@@ -197,6 +194,28 @@ def test_every_accepted_uri_form_resolves_to_the_same_tracked_blob(scanned: Scan
     ci_uri = {"uri": "file:///home/runner/work/repo/repo/src/pkg/core.py"}
     assert _anchored(_route(scanned, _at(scanned, ci_uri), roots=producer_side)) == expected
     assert (expected.path, expected.line_start, expected.line_end) == ("src/pkg/core.py", 2, 2)
+
+
+def test_a_sibling_directory_sharing_the_root_prefix_is_outside_the_checkout(
+    scanned: Scanned,
+) -> None:
+    """``/work/repo-evil`` is not under ``/work/repo``, as a file URI or as a file base."""
+    roots = _roots(scanned, "/work/repo")
+    inside = _at(scanned, {"uri": "file:///work/repo/src/pkg/core.py"})
+    assert _anchored(_route(scanned, inside, roots=roots)).path == "src/pkg/core.py"
+    for uri in (
+        "file:///work/repo-evil/src/pkg/core.py",
+        "file:///work/repo/../repo-evil/src/pkg/core.py",
+        "file:///work/reposrc/pkg/core.py",
+        "file:///work/src/pkg/core.py",
+    ):
+        assert _skip(_route(scanned, _at(scanned, {"uri": uri}), roots=roots)) == (
+            "outside-checkout-root"
+        ), uri
+    for base in ("file:///work/repo-evil/", "file:///work/"):
+        run = {**scanned.run, "originalUriBaseIds": {"EVIL": {"uri": base}}}
+        result = _at(scanned, {"uri": "src/pkg/core.py", "uriBaseId": "EVIL"})
+        assert _skip(_route(scanned, result, run, roots)) == "base-chain-not-at-root", base
 
 
 REFUSED_URIS: tuple[tuple[dict[str, Any], str], ...] = (
@@ -389,10 +408,14 @@ def test_columns_snippet_and_context_are_metadata_outside_the_identity(scanned: 
     region = {"startLine": 2, "startColumn": 1, "endColumn": 6, "snippet": {"text": "OTHER"}}
     detailed = _at(scanned, {"uri": "src/pkg/core.py"}, **region)
     detailed["locations"][0]["physicalLocation"]["contextRegion"] = {"startLine": 1, "endLine": 2}
-    detailed["locations"].append(copy.deepcopy(detailed["locations"][0]))
+    second = copy.deepcopy(detailed["locations"][0])
+    second["physicalLocation"]["artifactLocation"] = {"uri": "tests/test_core.py"}
+    second["physicalLocation"]["region"] = {"startLine": 1}
+    detailed["locations"].append(second)
     outcome = _route(scanned, detailed)
     assert isinstance(plain, ImportedCandidate) and isinstance(outcome, ImportedCandidate)
     assert outcome.candidate_id == plain.candidate_id and outcome.anchor == plain.anchor
+    assert (outcome.anchor.path, outcome.anchor.line_start) == ("src/pkg/core.py", 2)
     metadata = outcome.location.to_dict()
     assert metadata["start_column"] == 1 and metadata["end_column"] == 6
     assert metadata["snippet"] == {"text": "OTHER"} and not metadata["snippet_truncated"]

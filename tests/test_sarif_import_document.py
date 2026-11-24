@@ -89,8 +89,16 @@ def _with(field: str, count: int) -> dict[str, Any]:
         document["runs"] = [copy.deepcopy(run) for _ in range(count)]
     elif field == "results":
         run["results"] = [{} for _ in range(count)]
+    elif field == "rules":
+        run["tool"]["driver"]["rules"] = [{"id": f"r{index}"} for index in range(count)]
     else:
-        run["tool"]["driver"]["rules"] = [{"id": "r"} for _ in range(count)]
+        # The driver holds one rule and two extensions hold the rest, as CodeQL lays them out.
+        run["tool"]["driver"]["rules"] = [{"id": "d"}]
+        half = (count - 1) // 2
+        run["tool"]["extensions"] = [
+            {"name": "queries", "rules": [{"id": f"q{index}"} for index in range(half)]},
+            {"name": "more", "rules": [{"id": f"m{index}"} for index in range(count - 1 - half)]},
+        ]
     return document
 
 
@@ -100,6 +108,7 @@ def _with(field: str, count: int) -> dict[str, Any]:
         ("runs", MAX_RUNS, "too-many-runs"),
         ("results", MAX_RESULTS_PER_RUN, "too-many-results"),
         ("rules", MAX_RULES_PER_RUN, "too-many-rules"),
+        ("extension rules", MAX_RULES_PER_RUN, "too-many-rules"),
     ],
 )
 def test_each_count_limit_admits_its_boundary_and_refuses_one_more(
@@ -150,6 +159,43 @@ def _results_object(document: dict[str, Any]) -> None:
     document["runs"][0]["results"] = {}
 
 
+def _extensions_object(document: dict[str, Any]) -> None:
+    """Replace the first run's tool extensions with an object."""
+    document["runs"][0]["tool"]["extensions"] = {"rules": []}
+
+
+def _extension_not_object(document: dict[str, Any]) -> None:
+    """List a tool extension that is not an object."""
+    document["runs"][0]["tool"]["extensions"] = ["codeql/python-queries"]
+
+
+def _extension_rules_object(document: dict[str, Any]) -> None:
+    """Give a tool extension rules that are not an array."""
+    document["runs"][0]["tool"]["extensions"] = [{"name": "queries", "rules": {"id": "q"}}]
+
+
+def _driver_without_name(document: dict[str, Any]) -> None:
+    """Remove the tool driver's name."""
+    del document["runs"][0]["tool"]["driver"]["name"]
+
+
+def _extension_numeric_version(document: dict[str, Any]) -> None:
+    """Give a tool extension a numeric semantic version."""
+    document["runs"][0]["tool"]["extensions"] = [{"name": "queries", "semanticVersion": 1}]
+
+
+def _driver_null_version(document: dict[str, Any]) -> None:
+    """Give the tool driver an explicit null version."""
+    document["runs"][0]["tool"]["driver"]["version"] = None
+
+
+def _repeated_rule_id(document: dict[str, Any]) -> None:
+    """Repeat one rule id within a single tool extension."""
+    document["runs"][0]["tool"]["extensions"] = [
+        {"name": "queries", "rules": [{"id": "py/x"}, {"name": "gap"}, {"id": "py/x"}]}
+    ]
+
+
 @pytest.mark.parametrize(
     ("alter", "reason"),
     [
@@ -159,6 +205,13 @@ def _results_object(document: dict[str, Any]) -> None:
         (_runs_object, "malformed-run"),
         (_run_without_driver, "malformed-run"),
         (_results_object, "malformed-run"),
+        (_extensions_object, "malformed-run"),
+        (_extension_not_object, "malformed-run"),
+        (_extension_rules_object, "malformed-run"),
+        (_driver_without_name, "malformed-run"),
+        (_extension_numeric_version, "malformed-run"),
+        (_driver_null_version, "malformed-run"),
+        (_repeated_rule_id, "malformed-run"),
     ],
 )
 def test_a_document_that_is_not_sarif_2_1_0_is_refused(
@@ -201,3 +254,19 @@ def test_a_file_that_is_not_strict_json_is_refused(payload: bytes, reason: str) 
     """
     assert _refusal(payload) == reason
     assert str(SarifImportRefused(reason, "x")) == f"{reason}: x"
+
+
+def test_one_rule_id_may_appear_once_in_each_of_several_components() -> None:
+    """The same rule id in the driver and in two extensions is accepted; only a repeat within one is not."""
+    document = _real()
+    tool = document["runs"][0]["tool"]
+    first_id = tool["driver"]["rules"][0]["id"]
+    tool["extensions"] = [
+        {
+            "name": "a",
+            "version": "1",
+            "rules": [{"id": first_id}, {"name": "gap"}, {"name": "gap"}],
+        },
+        {"name": "b", "rules": [{"id": first_id}]},
+    ]
+    assert parse_sarif_document(_bytes(document)).runs[0]["tool"]["extensions"][1]["name"] == "b"

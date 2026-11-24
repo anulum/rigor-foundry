@@ -34,19 +34,17 @@ from urllib.parse import unquote_to_bytes
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
+from .sarif_import_bounds import ResultSkipped, bounded_value, present_field
 from .sarif_import_records import (
     MAX_CONTEXT_REGION_BYTES,
     MAX_SNIPPET_BYTES,
     ImportedCandidate,
-    ImportedRule,
     ImportObservation,
     ImportSkip,
     LocationMetadata,
     PreservedResult,
-    ResultSkipped,
-    _bounded_value,
-    _present,
 )
+from .sarif_import_rules import RunRules
 
 _SCHEME: Final = re.compile(r"([A-Za-z][A-Za-z0-9+.-]*):")
 _DRIVE: Final = re.compile(r"[A-Za-z]:")
@@ -150,10 +148,10 @@ def _metadata(physical: dict[str, Any], region: dict[str, Any], count: int) -> L
     for key in ("startColumn", "endColumn"):
         if key in region and (type(region[key]) is not int or region[key] < 1):
             raise ResultSkipped("malformed-region")
-    snippet = _present(region, "snippet", dict, "malformed-region", None)
-    context = _present(physical, "contextRegion", dict, "malformed-region", None)
-    kept_snippet, snippet_digest, snippet_cut = _bounded_value(snippet, MAX_SNIPPET_BYTES)
-    kept_context, context_digest, context_cut = _bounded_value(context, MAX_CONTEXT_REGION_BYTES)
+    snippet = present_field(region, "snippet", dict, "malformed-region", None)
+    context = present_field(physical, "contextRegion", dict, "malformed-region", None)
+    kept_snippet, snippet_digest, snippet_cut = bounded_value(snippet, MAX_SNIPPET_BYTES)
+    kept_context, context_digest, context_cut = bounded_value(context, MAX_CONTEXT_REGION_BYTES)
     return LocationMetadata(
         start_column=region.get("startColumn"),
         end_column=region.get("endColumn"),
@@ -251,7 +249,7 @@ class RunLocations:
         if "uri" not in entry:
             raise ResultSkipped("base-chain-not-at-root")
         uri = entry["uri"]
-        parent = _present(entry, "uriBaseId", str, "malformed-uri-base", None)
+        parent = present_field(entry, "uriBaseId", str, "malformed-uri-base", None)
         if not isinstance(uri, str) or not uri.endswith("/"):
             raise ResultSkipped("malformed-uri-base")
         absolute = _file_path(uri)
@@ -266,9 +264,9 @@ class RunLocations:
 
     def _artifact_uri(self, artifact: dict[str, Any]) -> tuple[str, str | None]:
         """Return the URI and base id an artifact location names, through ``run.artifacts``."""
-        uri = _present(artifact, "uri", str, "malformed-locations", None)
-        base_id = _present(artifact, "uriBaseId", str, "malformed-locations", None)
-        index = _present(artifact, "index", int, "malformed-locations", -1)
+        uri = present_field(artifact, "uri", str, "malformed-locations", None)
+        base_id = present_field(artifact, "uriBaseId", str, "malformed-locations", None)
+        index = present_field(artifact, "index", int, "malformed-locations", -1)
         if isinstance(index, bool):
             raise ResultSkipped("malformed-locations")
         # SARIF's default index -1 means that the location lists no artifact.
@@ -281,8 +279,8 @@ class RunLocations:
             listed = entry.get("location") if isinstance(entry, dict) else None
             if not isinstance(listed, dict):
                 raise ResultSkipped("malformed-locations")
-            listed_uri = _present(listed, "uri", str, "malformed-locations", None)
-            listed_base = _present(listed, "uriBaseId", str, "malformed-locations", None)
+            listed_uri = present_field(listed, "uri", str, "malformed-locations", None)
+            listed_base = present_field(listed, "uriBaseId", str, "malformed-locations", None)
             if uri is None:
                 uri, base_id = listed_uri, listed_base
             elif (uri, base_id) != (listed_uri, listed_base):
@@ -335,13 +333,13 @@ class RunLocations:
             index out of range or contradicting its URI, a refused URI or base, a path that
             is not one clean tracked regular file, no line region, or a span past the blob.
         """
-        locations = _present(result, "locations", list, "malformed-locations", [])
+        locations = present_field(result, "locations", list, "malformed-locations", [])
         if not locations:
             return None
         first = locations[0]
         if not isinstance(first, dict):
             raise ResultSkipped("malformed-locations")
-        physical = _present(first, "physicalLocation", dict, "malformed-locations", None)
+        physical = present_field(first, "physicalLocation", dict, "malformed-locations", None)
         if physical is None or "artifactLocation" not in physical:
             return None
         artifact = physical["artifactLocation"]
@@ -361,7 +359,7 @@ class RunLocations:
 def route_result(
     producer_id: str,
     result: dict[str, Any],
-    rules: tuple[ImportedRule, ...],
+    rules: RunRules,
     locations: RunLocations,
     *,
     run_index: int,
@@ -375,8 +373,8 @@ def route_result(
         The declared producer slug.
     result : dict[str, Any]
         One ``runs[].results`` entry, verbatim.
-    rules : tuple[ImportedRule, ...]
-        The run's recorded driver rules, in driver order.
+    rules : RunRules
+        The run's recorded rules, per tool component.
     locations : RunLocations
         The run's location resolver.
     run_index : int
