@@ -205,6 +205,26 @@ packages only it needs out of every audited profile instead.
   tag to equal the isolated lock's Semgrep pin, the image to carry a digest,
   and no audited lock to pin Semgrep. Move the image digest and the isolated
   lock in the same change.
+- **The advisories this leaves unaudited.** Each one is named here with its
+  package, the version that the isolated lock pins and a review-by date. The
+  reason is the same for every row: Semgrep releases up to `1.186.0` pin the
+  package to a vulnerable version, and the lock is outside the dependency audit
+  by the owner decision of 2026-11-23. Review every row by its date, or at the
+  next Semgrep release if that comes first. When a compatible Semgrep release
+  resolves an advisory, update the lock and remove its row in the same change.
+  A test refuses a row whose package the isolated lock no longer pins at the
+  listed version, and a row whose review-by date has passed.
+
+  | Advisory | Package | Pinned version | Semgrep | Review by |
+  |---|---|---|---|---|
+  | GHSA-qx49-fqc8-xw99 | mcp | 1.29.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-rwrf-2pqf-9j8j | mcp | 1.29.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-w4fh-qvv9-3v23 | mcp | 1.29.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-5h93-6whr-6q8j | mcp | 1.29.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-84m7-p3x7-pcfv | mcp | 1.29.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-xcq7-p3pf-p88h | opentelemetry-api | 1.37.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-mf5v-w3w3-f6cg | opentelemetry-api | 1.37.0 | 1.184.0 | 2026-12-24 |
+  | GHSA-53pm-wgxf-c6qf | wcmatch | 8.5.2 | 1.184.0 | 2026-12-24 |
 
 The security job uses Python `3.15.2` and installs the hash-locked security and
 test profiles and the isolated Semgrep environment. Before dependency audits,
