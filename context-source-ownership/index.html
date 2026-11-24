@@ -2433,7 +2433,11 @@ a reference valid under a larger budget does not bypass a smaller reader limit.<
 descriptors even when that check refuses. Explicit <code>close()</code> is idempotent;
 later reads, references or snapshot access refuse. Edited, replaced, deleted
 or newly aliased sources and changed parent-directory identities invalidate
-the selection. A new reader of equal bytes has a different selection identity
+the selection. The parent identity binds the directory's complete entry list,
+names and inode numbers, as well as its metadata. An entry added, removed or
+replaced beside the source is therefore refused even when it happens within
+one tick of a coarse filesystem clock, which leaves the directory timestamps
+unchanged. A new reader of equal bytes has a different selection identity
 and cannot stand in for the original retained lifetime.</p>
 <p>These descriptor guarantees require a platform with the existing no-follow
 directory traversal support. An unavailable platform refuses rather than

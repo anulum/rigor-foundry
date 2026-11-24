@@ -1386,6 +1386,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hosted-code-scanning-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosted code-scanning upload
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cwe-taxonomy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2177,6 +2188,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#hosted-code-scanning-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosted code-scanning upload
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cwe-taxonomy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2304,6 +2326,29 @@ lists both cases.</p>
 rule-pack categories in registry order. Every rule relates to its category with
 kind <code>subset</code>. RigorFoundry emits no rule-level <code>security-severity</code>: severity is
 recorded only by a validated review, never by a rule.</p>
+<h2 id="hosted-code-scanning-upload">Hosted code-scanning upload<a class="headerlink" href="#hosted-code-scanning-upload" title="Permanent link">&para;</a></h2>
+<p>The <code>Code scanning</code> workflow (<code>.github/workflows/code-scanning.yml</code>) uploads this
+repository's own audit to GitHub code scanning on every push to <code>main</code>, and
+never on a pull request. Its single job has only <code>contents: read</code> and
+<code>security-events: write</code>. It does not depend on any other job, so no other
+job's result can hide its own. It runs these steps in order:</p>
+<ol>
+<li>Install the hash-locked runtime.</li>
+<li>Run <code>rigor scan</code> on the exact checkout.</li>
+<li>Run <code>python -m tools.check_sarif_upload_checkout</code>. It refuses the upload
+   unless the checkout's <code>HEAD</code> and <code>HEAD^{tree}</code> are the report's <code>head</code> and
+   <code>head_tree</code>, because GitHub fills result fingerprints from the files of the
+   checkout it uploads from.</li>
+<li>Write the GitHub code-scanning profile, which refuses GitHub's upload limits
+   before writing anything.</li>
+<li>Upload the profile with the same pinned <code>upload-sarif</code> action as the
+   Scorecard workflow, in category <code>rigor-foundry</code>.</li>
+</ol>
+<p>The repository tracks no review ledger, so no result is reviewed <code>valid</code> and the
+uploaded profile holds no results. A run therefore opens no alert and proves the
+wiring: GitHub lists a RigorFoundry analysis for the commit in category
+<code>rigor-foundry</code>. Its run properties declare the omitted count of every candidate
+and the digest of the canonical export.</p>
 <h2 id="cwe-taxonomy">CWE taxonomy<a class="headerlink" href="#cwe-taxonomy" title="Permanent link">&para;</a></h2>
 <p>Each run also declares a second taxonomy, <code>CWE</code>. It is pinned to CWE List
 version 5.0 (released 2026-10-28) and holds only the CWE ids that reviewed
