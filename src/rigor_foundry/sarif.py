@@ -16,6 +16,13 @@ from typing import cast
 from .candidate_anchor import Candidate, RepositoryTreeAnchor
 from .models import AuditReport, ReviewRecord
 from .review import validate_reviews
+from .rule_catalogue import (
+    CANDIDATE_NOT_VERDICT,
+    RULE_CATALOGUE_PATH,
+    rule_catalogue_anchor,
+    rule_guidance,
+)
+from .rule_guidance import RuleGuidance
 from .rules import RULES
 from .version import __version__
 
@@ -25,6 +32,7 @@ SARIF_SCHEMA_URI = (
 SARIF_VERSION = "2.1.0"
 
 _DOCUMENTATION_ROOT = "https://github.com/anulum/RIGOR-FOUNDRY"
+CATEGORY_TAXONOMY_NAME = "RigorFoundry rule categories"
 _URI_SAFE_BYTES = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/-._~")
 _SEVERITY_LEVEL = {
     "P0": "error",
@@ -44,19 +52,55 @@ def _artifact_uri(path: str) -> str:
     )
 
 
-def _rule_descriptor(index: int) -> dict[str, object]:
+def _rule_categories() -> tuple[str, ...]:
+    """Return the rule categories in first-registry order, the category taxa order."""
+    return tuple(dict.fromkeys(rule.category for rule in RULES))
+
+
+def _rule_help(summary: str, guidance: RuleGuidance) -> dict[str, str]:
+    """Return the plain-text and Markdown help of one rule from its fixed guidance."""
+    cases = guidance.all_cases()
+    text = [summary]
+    markdown = [summary]
+    for case in cases:
+        when = f"When {case.condition}:\n" if case.condition else ""
+        text.append(f"{when}Why it matters: {case.rationale}\nHow to verify: {case.verification}")
+        markdown.append(
+            (f"**When {case.condition}.**\n\n" if case.condition else "")
+            + f"**Why it matters.** {case.rationale}\n\n**How to verify.** {case.verification}"
+        )
+    markdown.append(CANDIDATE_NOT_VERDICT)
+    return {"text": "\n\n".join(text), "markdown": "\n\n".join(markdown)}
+
+
+def _rule_descriptor(index: int, guidance: RuleGuidance, category_index: int) -> dict[str, object]:
     """Return stable SARIF metadata for one rule-registry position."""
     rule = RULES[index]
     return {
         "id": rule.rule_id,
         "name": rule.rule_id,
         "shortDescription": {"text": rule.summary},
-        "helpUri": f"{_DOCUMENTATION_ROOT}/blob/main/docs/sarif.md#identity-and-anchors",
+        "fullDescription": {"text": " ".join(case.rationale for case in guidance.all_cases())},
+        "help": _rule_help(rule.summary, guidance),
+        "helpUri": (
+            f"{_DOCUMENTATION_ROOT}/blob/main/{RULE_CATALOGUE_PATH}"
+            f"#{rule_catalogue_anchor(rule.rule_id)}"
+        ),
         "properties": {
             "category": rule.category,
             "introduced": rule.introduced,
             "tags": ["rigor-foundry", rule.category],
         },
+        "relationships": [
+            {
+                "target": {
+                    "id": rule.category,
+                    "index": category_index,
+                    "toolComponent": {"name": CATEGORY_TAXONOMY_NAME, "index": 0},
+                },
+                "kinds": ["subset"],
+            }
+        ],
     }
 
 
@@ -177,6 +221,9 @@ def _sarif_document(
         raise ValueError("invalid SARIF reviews: " + "; ".join(errors))
     review_by_candidate = {review.candidate_id: review for review in reviews}
     rule_index = {rule.rule_id: index for index, rule in enumerate(RULES)}
+    guidance = rule_guidance()
+    categories = _rule_categories()
+    category_index = {category: index for index, category in enumerate(categories)}
     results = [
         _result(
             report,
@@ -196,10 +243,24 @@ def _sarif_document(
                         "name": "RigorFoundry",
                         "semanticVersion": __version__,
                         "informationUri": _DOCUMENTATION_ROOT,
-                        "rules": [_rule_descriptor(index) for index in range(len(RULES))],
+                        "rules": [
+                            _rule_descriptor(
+                                index,
+                                guidance[rule.rule_id],
+                                category_index[rule.category],
+                            )
+                            for index, rule in enumerate(RULES)
+                        ],
                     }
                 },
                 "automationDetails": {"id": f"rigor-foundry/{report.report_digest}"},
+                "taxonomies": [
+                    {
+                        "name": CATEGORY_TAXONOMY_NAME,
+                        "informationUri": f"{_DOCUMENTATION_ROOT}/blob/main/{RULE_CATALOGUE_PATH}",
+                        "taxa": [{"id": category, "name": category} for category in categories],
+                    }
+                ],
                 "results": results,
                 "properties": {
                     "rigorFoundry/reportDigest": report.report_digest,

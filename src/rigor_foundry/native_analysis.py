@@ -10,14 +10,91 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "AS006-js-dynamic-code-execution": RuleGuidance(
+            rationale=(
+                "eval and the Function constructor execute a string as code, turning any "
+                "tainted argument into arbitrary execution."
+            ),
+            verification=(
+                "Replace the dynamic evaluation with an explicit parser, a lookup table, "
+                "or a typed dispatch; if evaluation is unavoidable, prove the source is "
+                "a trusted literal."
+            ),
+        ),
+        "AS007-go-command-execution": RuleGuidance(
+            rationale=(
+                "os/exec runs an external command, so a tainted argument can execute an "
+                "unintended program or, with a shell, inject further commands."
+            ),
+            verification=(
+                "Prove every argument is a trusted constant or validated allow-list "
+                "value, pass an explicit argument vector, and never build the command "
+                "from unsanitised input."
+            ),
+        ),
+        "AS008-rust-unsafe-block": RuleGuidance(
+            rationale=(
+                "An unsafe block suspends the compiler's memory-safety guarantees, so a "
+                "mistake inside it can cause undefined behaviour that safe Rust would "
+                "have prevented."
+            ),
+            verification=(
+                "Confirm the block is minimal, documents the invariants it upholds, and "
+                "cannot be replaced by a safe abstraction; record why each unsafe "
+                "operation is sound."
+            ),
+        ),
+        "AS009-c-unsafe-libc": RuleGuidance(
+            rationale=(
+                "gets, the unbounded str/sprintf family, and system/popen are classic "
+                "buffer-overflow and command-injection surfaces when their input is not "
+                "strictly bounded and trusted."
+            ),
+            verification=(
+                "Replace the call with a length-bounded equivalent (fgets, snprintf, "
+                "strncpy with an explicit size) or an argument-vector exec, and prove "
+                "the input is trusted and bounded."
+            ),
+        ),
+        "AS010-julia-unsafe-memory": RuleGuidance(
+            rationale=(
+                "The unsafe_* intrinsics bypass Julia's bounds, type, and "
+                "garbage-collection safety, so a bad pointer or length reads or writes "
+                "arbitrary memory."
+            ),
+            verification=(
+                "Confirm the pointer and length come from a live, correctly typed, "
+                "GC-rooted object, or replace the intrinsic with a bounds-checked array "
+                "or a safe wrapper."
+            ),
+        ),
+        "AS011-shell-eval-execution": RuleGuidance(
+            rationale=(
+                "The shell eval builtin re-parses and executes its argument as a "
+                "command, so any tainted value in that argument becomes an injected "
+                "command."
+            ),
+            verification=(
+                "Remove eval and call the command with an explicit argument vector, or "
+                "prove every interpolated value is a trusted constant."
+            ),
+        ),
+    }
+)
 
 _Matcher = Callable[[Any], "tuple[_NativeRule, str] | None"]
 
@@ -35,50 +112,26 @@ class _NativeRule:
 _JS_DYNAMIC = _NativeRule(
     rule_id="AS006-js-dynamic-code-execution",
     confidence="high",
-    rationale=(
-        "eval and the Function constructor execute a string as code, turning any tainted "
-        "argument into arbitrary execution."
-    ),
-    verification=(
-        "Replace the dynamic evaluation with an explicit parser, a lookup table, or a typed "
-        "dispatch; if evaluation is unavoidable, prove the source is a trusted literal."
-    ),
+    rationale=RULE_GUIDANCE["AS006-js-dynamic-code-execution"].rationale,
+    verification=RULE_GUIDANCE["AS006-js-dynamic-code-execution"].verification,
 )
 _GO_COMMAND = _NativeRule(
     rule_id="AS007-go-command-execution",
     confidence="high",
-    rationale=(
-        "os/exec runs an external command, so a tainted argument can execute an unintended "
-        "program or, with a shell, inject further commands."
-    ),
-    verification=(
-        "Prove every argument is a trusted constant or validated allow-list value, pass an "
-        "explicit argument vector, and never build the command from unsanitised input."
-    ),
+    rationale=RULE_GUIDANCE["AS007-go-command-execution"].rationale,
+    verification=RULE_GUIDANCE["AS007-go-command-execution"].verification,
 )
 _RUST_UNSAFE = _NativeRule(
     rule_id="AS008-rust-unsafe-block",
     confidence="medium",
-    rationale=(
-        "An unsafe block suspends the compiler's memory-safety guarantees, so a mistake inside "
-        "it can cause undefined behaviour that safe Rust would have prevented."
-    ),
-    verification=(
-        "Confirm the block is minimal, documents the invariants it upholds, and cannot be "
-        "replaced by a safe abstraction; record why each unsafe operation is sound."
-    ),
+    rationale=RULE_GUIDANCE["AS008-rust-unsafe-block"].rationale,
+    verification=RULE_GUIDANCE["AS008-rust-unsafe-block"].verification,
 )
 _C_UNSAFE_LIBC = _NativeRule(
     rule_id="AS009-c-unsafe-libc",
     confidence="high",
-    rationale=(
-        "gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow "
-        "and command-injection surfaces when their input is not strictly bounded and trusted."
-    ),
-    verification=(
-        "Replace the call with a length-bounded equivalent (fgets, snprintf, strncpy with an "
-        "explicit size) or an argument-vector exec, and prove the input is trusted and bounded."
-    ),
+    rationale=RULE_GUIDANCE["AS009-c-unsafe-libc"].rationale,
+    verification=RULE_GUIDANCE["AS009-c-unsafe-libc"].verification,
 )
 _UNSAFE_C_FUNCTIONS: frozenset[bytes] = frozenset(
     {b"gets", b"strcpy", b"strcat", b"sprintf", b"vsprintf", b"system", b"popen"}
@@ -86,14 +139,8 @@ _UNSAFE_C_FUNCTIONS: frozenset[bytes] = frozenset(
 _JULIA_UNSAFE = _NativeRule(
     rule_id="AS010-julia-unsafe-memory",
     confidence="medium",
-    rationale=(
-        "The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a "
-        "bad pointer or length reads or writes arbitrary memory."
-    ),
-    verification=(
-        "Confirm the pointer and length come from a live, correctly typed, GC-rooted object, or "
-        "replace the intrinsic with a bounds-checked array or a safe wrapper."
-    ),
+    rationale=RULE_GUIDANCE["AS010-julia-unsafe-memory"].rationale,
+    verification=RULE_GUIDANCE["AS010-julia-unsafe-memory"].verification,
 )
 _UNSAFE_JULIA_FUNCTIONS: frozenset[bytes] = frozenset(
     {
@@ -108,14 +155,8 @@ _UNSAFE_JULIA_FUNCTIONS: frozenset[bytes] = frozenset(
 _SHELL_EVAL = _NativeRule(
     rule_id="AS011-shell-eval-execution",
     confidence="high",
-    rationale=(
-        "The shell eval builtin re-parses and executes its argument as a command, so any tainted "
-        "value in that argument becomes an injected command."
-    ),
-    verification=(
-        "Remove eval and call the command with an explicit argument vector, or prove every "
-        "interpolated value is a trusted constant."
-    ),
+    rationale=RULE_GUIDANCE["AS011-shell-eval-execution"].rationale,
+    verification=RULE_GUIDANCE["AS011-shell-eval-execution"].verification,
 )
 
 

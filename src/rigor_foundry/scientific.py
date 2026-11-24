@@ -11,14 +11,43 @@ from __future__ import annotations
 
 import ast
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal
+from types import MappingProxyType
+from typing import Final, Literal
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path
 from .models import AuditPolicy, Candidate
 from .python_test_functions import collect_test_functions
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "SN001-exact-float-equality-in-test": RuleGuidance(
+            rationale=(
+                "A test compares a direct floating-point literal with exact equality, "
+                "which can hide representation or tolerance assumptions."
+            ),
+            verification=(
+                "Use a justified absolute/relative tolerance or prove exact binary "
+                "identity is intended."
+            ),
+        ),
+        "SN002-unseeded-stochastic-test": RuleGuidance(
+            rationale=(
+                "A supported stochastic API is used before deterministic local seeding, "
+                "so repeated test outcomes may consume different samples."
+            ),
+            verification=(
+                "Seed before the first draw or construct the local generator with a "
+                "seed, then verify deterministic replay."
+            ),
+        ),
+    }
+)
 
 _RANDOM_DRAWS = frozenset(
     {
@@ -272,8 +301,8 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                     "SN001-exact-float-equality-in-test",
                     function.name,
                     len(exact),
-                    "A test compares a direct floating-point literal with exact equality, which can hide representation or tolerance assumptions.",
-                    "Use a justified absolute/relative tolerance or prove exact binary identity is intended.",
+                    RULE_GUIDANCE["SN001-exact-float-equality-in-test"].rationale,
+                    RULE_GUIDANCE["SN001-exact-float-equality-in-test"].verification,
                 )
             )
         unseeded = _unseeded_lines(tree, function)
@@ -284,8 +313,8 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                     "SN002-unseeded-stochastic-test",
                     function.name,
                     len(unseeded),
-                    "A supported stochastic API is used before deterministic local seeding, so repeated test outcomes may consume different samples.",
-                    "Seed before the first draw or construct the local generator with a seed, then verify deterministic replay.",
+                    RULE_GUIDANCE["SN002-unseeded-stochastic-test"].rationale,
+                    RULE_GUIDANCE["SN002-unseeded-stochastic-test"].verification,
                 )
             )
     return tuple(

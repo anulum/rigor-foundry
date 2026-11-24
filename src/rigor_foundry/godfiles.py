@@ -13,13 +13,56 @@ import ast
 import json
 import re
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import PurePosixPath
-from typing import cast
+from types import MappingProxyType
+from typing import Final, cast
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path, suffixes_with
 from .models import AuditPolicy, Candidate
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "GF001-large-responsibility-owner": RuleGuidance(
+            rationale=(
+                "The file exceeds the configured review threshold; line count opens a "
+                "responsibility audit but is not itself a GodFile verdict."
+            ),
+            verification=(
+                "Read the full file, classify each top-level responsibility and direct "
+                "dependency, trace every public consumer and test owner, then record one "
+                "cohesive responsibility with a reopen trigger or split mixed ownership "
+                "behind stable contracts."
+            ),
+        ),
+        "GF002-missing-size-registry": RuleGuidance(
+            rationale="Configured GodFile responsibility evidence cannot be loaded.",
+            verification="Restore the tracked registry and rerun its native strict audit.",
+        ),
+        "GF005-size-decision-drift": RuleGuidance(
+            rationale="A reviewed large-file decision no longer matches the tracked tree.",
+            verification=(
+                "Re-read the complete file, re-evaluate its responsibility/dependencies "
+                "and reopen trigger, then update the registry only after that review."
+            ),
+        ),
+        "GF003-invalid-size-registry": RuleGuidance(
+            rationale="Configured GodFile responsibility evidence is malformed.",
+            verification="Run the repository-native module-size registry parser and repair it.",
+        ),
+        "GF004-incomplete-size-decision": RuleGuidance(
+            rationale="A large-file decision lacks required responsibility evidence.",
+            verification=(
+                "Read the complete owner and record current responsibility, direct "
+                "dependency boundary, exact line count, disposition, and reopen trigger."
+            ),
+        ),
+    }
+)
 
 _CODE_EXTENSIONS = suffixes_with("responsibility")
 
@@ -161,15 +204,8 @@ def _large_file_candidates(
                 symbol="test" if is_test else "source",
                 evidence=evidence,
                 confidence="medium",
-                rationale=(
-                    "The file exceeds the configured review threshold; line count opens a "
-                    "responsibility audit but is not itself a GodFile verdict."
-                ),
-                verification=(
-                    "Read the full file, classify each top-level responsibility and direct dependency, "
-                    "trace every public consumer and test owner, then record one cohesive responsibility "
-                    "with a reopen trigger or split mixed ownership behind stable contracts."
-                ),
+                rationale=RULE_GUIDANCE["GF001-large-responsibility-owner"].rationale,
+                verification=RULE_GUIDANCE["GF001-large-responsibility-owner"].verification,
             )
         )
     return tuple(candidates)
@@ -213,8 +249,8 @@ def _registry_candidates(
                     symbol="",
                     evidence="configured registry is missing or not UTF-8 text",
                     confidence="high",
-                    rationale="Configured GodFile responsibility evidence cannot be loaded.",
-                    verification="Restore the tracked registry and rerun its native strict audit.",
+                    rationale=RULE_GUIDANCE["GF002-missing-size-registry"].rationale,
+                    verification=RULE_GUIDANCE["GF002-missing-size-registry"].verification,
                 )
             )
             continue
@@ -233,8 +269,8 @@ def _registry_candidates(
                     symbol="",
                     evidence=str(exc),
                     confidence="high",
-                    rationale="Configured GodFile responsibility evidence is malformed.",
-                    verification="Run the repository-native module-size registry parser and repair it.",
+                    rationale=RULE_GUIDANCE["GF003-invalid-size-registry"].rationale,
+                    verification=RULE_GUIDANCE["GF003-invalid-size-registry"].verification,
                 )
             )
             continue
@@ -259,11 +295,8 @@ def _registry_candidates(
                         symbol=str(path_value or f"row-{index}"),
                         evidence=f"missing_or_invalid={','.join(missing)}",
                         confidence="high",
-                        rationale="A large-file decision lacks required responsibility evidence.",
-                        verification=(
-                            "Read the complete owner and record current responsibility, direct "
-                            "dependency boundary, exact line count, disposition, and reopen trigger."
-                        ),
+                        rationale=RULE_GUIDANCE["GF004-incomplete-size-decision"].rationale,
+                        verification=RULE_GUIDANCE["GF004-incomplete-size-decision"].verification,
                     )
                 )
                 continue
@@ -300,11 +333,8 @@ def _registry_candidates(
                     symbol=registry_path,
                     evidence=evidence,
                     confidence="high",
-                    rationale="A reviewed large-file decision no longer matches the tracked tree.",
-                    verification=(
-                        "Re-read the complete file, re-evaluate its responsibility/dependencies and "
-                        "reopen trigger, then update the registry only after that review."
-                    ),
+                    rationale=RULE_GUIDANCE["GF005-size-decision-drift"].rationale,
+                    verification=RULE_GUIDANCE["GF005-size-decision-drift"].verification,
                 )
             )
     return tuple(candidates)

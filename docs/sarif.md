@@ -31,6 +31,22 @@ consumer can distinguish scanner evidence from a human evidence decision.
 Severity provenance is `review-record` only when a validated review provides a
 severity.
 
+## Rule help and categories
+
+Every rule descriptor carries the rule summary as `shortDescription`, the
+detector's fixed rationale as `fullDescription`, and `help` with plain-text and
+Markdown forms that add the verification guidance. Each `helpUri` points at the
+rule's own section of the generated [rule catalogue](rule-catalogue.md). The
+guidance is the same fixed text that the detector attaches to every candidate of
+that rule, so the catalogue and the results cannot disagree. Two rules have two
+distinct situations; their full description joins both rationales and their help
+lists both cases.
+
+Each run declares one taxonomy, `RigorFoundry rule categories`, whose taxa are the
+rule-pack categories in registry order. Every rule relates to its category with
+kind `subset`. RigorFoundry emits no rule-level `security-severity`: severity is
+recorded only by a validated review, never by a rule.
+
 ## Identity and anchors
 
 Rule IDs and indices come from the complete versioned RigorFoundry rule pack.

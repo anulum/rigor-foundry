@@ -12,13 +12,43 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
+from collections.abc import Mapping
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path, repository_path_under_roots
 from .models import AuditPolicy, Candidate, Confidence
 from .python_output import bound_target_names, print_lines
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "OP001-print-in-library-code": RuleGuidance(
+            rationale=(
+                "Library code writes directly to process output, bypassing "
+                "caller-controlled observability and output routing."
+            ),
+            verification=(
+                "Replace incidental output with a returned value or structured logger, "
+                "or prove the module is an intentional command boundary."
+            ),
+        ),
+        "OP002-credential-in-log-call": RuleGuidance(
+            rationale=(
+                "A credential-named expression is passed to an import-bound logging call "
+                "and may disclose sensitive material."
+            ),
+            verification=(
+                "Remove or redact the credential value before logging and verify "
+                "captured logs contain only non-sensitive identifiers or digests."
+            ),
+        ),
+    }
+)
 
 _SCRIPT_ROOTS = frozenset({"bin", "scripts", "tools"})
 _CLI_STEMS = frozenset({"__main__", "cli"})
@@ -177,8 +207,8 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
             "OP001-print-in-library-code",
             "print",
             "medium",
-            "Library code writes directly to process output, bypassing caller-controlled observability and output routing.",
-            "Replace incidental output with a returned value or structured logger, or prove the module is an intentional command boundary.",
+            RULE_GUIDANCE["OP001-print-in-library-code"].rationale,
+            RULE_GUIDANCE["OP001-print-in-library-code"].verification,
         )
         for line in print_lines(tree)
     )
@@ -188,8 +218,8 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
             "OP002-credential-in-log-call",
             method,
             "high",
-            "A credential-named expression is passed to an import-bound logging call and may disclose sensitive material.",
-            "Remove or redact the credential value before logging and verify captured logs contain only non-sensitive identifiers or digests.",
+            RULE_GUIDANCE["OP002-credential-in-log-call"].rationale,
+            RULE_GUIDANCE["OP002-credential-in-log-call"].verification,
         )
         for line, method in _log_lines(tree)
     )

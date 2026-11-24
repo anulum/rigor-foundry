@@ -12,11 +12,43 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "DP001-hardcoded-credential": RuleGuidance(
+            rationale=(
+                "A credential-named variable is assigned a string literal, so a secret "
+                "is embedded in tracked source where it cannot be rotated and is exposed "
+                "to everyone with repository read access."
+            ),
+            verification=(
+                "Load the value from an environment variable or secret manager at "
+                "runtime and remove the literal, or confirm it is a non-secret "
+                "placeholder or fixture."
+            ),
+        ),
+        "DP002-embedded-private-key": RuleGuidance(
+            rationale=(
+                "A PEM private-key block is embedded in tracked source, disclosing key "
+                "material to everyone with repository read access."
+            ),
+            verification=(
+                "Remove the key from source, rotate it, and load it at runtime from a "
+                "secret store or an out-of-tree file that is never committed."
+            ),
+        ),
+    }
+)
 
 # A credential-bearing identifier component, bounded so 'secretary' is not 'secret'.
 _SENSITIVE = re.compile(
@@ -70,28 +102,15 @@ _HARDCODED_CREDENTIAL = _Signal(
     rule_id="DP001-hardcoded-credential",
     confidence="medium",
     symbol="assignment",
-    rationale=(
-        "A credential-named variable is assigned a string literal, so a secret is "
-        "embedded in tracked source where it cannot be rotated and is exposed to "
-        "everyone with repository read access."
-    ),
-    verification=(
-        "Load the value from an environment variable or secret manager at runtime and "
-        "remove the literal, or confirm it is a non-secret placeholder or fixture."
-    ),
+    rationale=RULE_GUIDANCE["DP001-hardcoded-credential"].rationale,
+    verification=RULE_GUIDANCE["DP001-hardcoded-credential"].verification,
 )
 _EMBEDDED_PRIVATE_KEY = _Signal(
     rule_id="DP002-embedded-private-key",
     confidence="high",
     symbol="private-key",
-    rationale=(
-        "A PEM private-key block is embedded in tracked source, disclosing key "
-        "material to everyone with repository read access."
-    ),
-    verification=(
-        "Remove the key from source, rotate it, and load it at runtime from a secret "
-        "store or an out-of-tree file that is never committed."
-    ),
+    rationale=RULE_GUIDANCE["DP002-embedded-private-key"].rationale,
+    verification=RULE_GUIDANCE["DP002-embedded-private-key"].verification,
 )
 
 

@@ -9,7 +9,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path, PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .api_compatibility import scan_api_compatibility
 from .application_security import scan_application_security
@@ -39,9 +42,33 @@ from .operations import scan_operations
 from .performance import scan_performance
 from .polyglot_architecture import scan_polyglot_architecture
 from .reliability import scan_reliability
+from .rule_guidance import RuleGuidance
 from .scientific import scan_scientific
 from .supply_chain import scan_supply_chain
 from .test_authenticity import scan_test_authenticity
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "GV001-missing-repository-audit-policy": RuleGuidance(
+            rationale="Repository-specific audit ownership is missing or ambiguous.",
+            verification=(
+                "Read the repository rules and canonical internal TODO, then define the "
+                "exact roots, packages, GodFile registries, and enforcement state without "
+                "copying another project's assumptions."
+            ),
+        ),
+        "GV002-unscanned-tracked-code": RuleGuidance(
+            rationale="A tracked code or test path was outside the scanner's parsed scope.",
+            verification=(
+                "Inspect the Git object and worktree path directly, establish whether it "
+                "is an intentional symlink/submodule/binary/generated owner, and "
+                "configure a specific auditor; a clean claim is forbidden while the path "
+                "remains unexplained."
+            ),
+        ),
+    }
+)
 
 _DEFAULT_POLICY_PATHS = (
     Path("rigor-foundry-policy.json"),
@@ -65,12 +92,8 @@ def _governance_candidate(
         symbol="",
         evidence=evidence,
         confidence="high",
-        rationale="Repository-specific audit ownership is missing or ambiguous.",
-        verification=(
-            "Read the repository rules and canonical internal TODO, then define the exact roots, "
-            "packages, GodFile registries, and enforcement state without copying another project's "
-            "assumptions."
-        ),
+        rationale=RULE_GUIDANCE[rule_id].rationale,
+        verification=RULE_GUIDANCE[rule_id].verification,
     )
 
 
@@ -142,12 +165,8 @@ def _scope_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
                 symbol=item.content_kind,
                 evidence=f"content_kind={item.content_kind}; byte_size={item.byte_size}",
                 confidence="high",
-                rationale="A tracked code or test path was outside the scanner's parsed scope.",
-                verification=(
-                    "Inspect the Git object and worktree path directly, establish whether it is an "
-                    "intentional symlink/submodule/binary/generated owner, and configure a specific "
-                    "auditor; a clean claim is forbidden while the path remains unexplained."
-                ),
+                rationale=RULE_GUIDANCE["GV002-unscanned-tracked-code"].rationale,
+                verification=RULE_GUIDANCE["GV002-unscanned-tracked-code"].verification,
             )
         )
     return tuple(candidates)

@@ -9,10 +9,38 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import CandidateAnchor
 from .models import AUDIT_DOMAINS, AuditPolicy, Candidate
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "GV003-undeclared-audit-domain": RuleGuidance(
+            rationale="Repository-specific audit ownership is missing or ambiguous.",
+            verification=(
+                "Read the repository rules and risk model, then declare the domain "
+                "required or justify not-applicable with repository-specific evidence."
+            ),
+        ),
+        "GV004-uncontrolled-required-domain": RuleGuidance(
+            rationale=(
+                "A required quality domain cannot support a repository conformance claim "
+                "without a portable rule or required native adapter."
+            ),
+            verification=(
+                "Read the domain threat/risk model, wire a real time-bounded repository "
+                "audit or justify not-applicable with repository-specific evidence; do "
+                "not copy a control name that does not exercise this codebase."
+            ),
+        ),
+    }
+)
 
 _POLICY_PATH = "rigor-foundry-policy.json"
 _PORTABLE_CONTROLS = {
@@ -107,11 +135,8 @@ def domain_governance_candidates(
                     symbol=coverage.domain,
                     evidence=f"mandatory audit domain is undeclared: {coverage.domain}",
                     confidence="high",
-                    rationale="Repository-specific audit ownership is missing or ambiguous.",
-                    verification=(
-                        "Read the repository rules and risk model, then declare the domain required "
-                        "or justify not-applicable with repository-specific evidence."
-                    ),
+                    rationale=RULE_GUIDANCE["GV003-undeclared-audit-domain"].rationale,
+                    verification=RULE_GUIDANCE["GV003-undeclared-audit-domain"].verification,
                 )
             )
         elif coverage.applicability == "required" and not coverage.controls:
@@ -125,15 +150,8 @@ def domain_governance_candidates(
                         f"required domain has no active evidence control: {coverage.domain}"
                     ),
                     confidence="high",
-                    rationale=(
-                        "A required quality domain cannot support a repository conformance claim "
-                        "without a portable rule or required native adapter."
-                    ),
-                    verification=(
-                        "Read the domain threat/risk model, wire a real time-bounded repository audit "
-                        "or justify not-applicable with repository-specific evidence; do not copy a "
-                        "control name that does not exercise this codebase."
-                    ),
+                    rationale=RULE_GUIDANCE["GV004-uncontrolled-required-domain"].rationale,
+                    verification=RULE_GUIDANCE["GV004-uncontrolled-required-domain"].verification,
                 )
             )
     return tuple(candidates)

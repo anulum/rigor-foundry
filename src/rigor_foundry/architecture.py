@@ -10,8 +10,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import (
     RepositoryTreeAnchor,
@@ -25,6 +28,65 @@ from .language_capabilities import (
 )
 from .models import AuditPolicy, Candidate
 from .python_architecture_observations import PythonDefinition, observe_python_architecture
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "AR001-first-party-import-cycle": RuleGuidance(
+            rationale=(
+                "A first-party import cycle can invert ownership and obscure initialisation."
+            ),
+            verification=(
+                "Trace runtime import order and public ownership for every edge; dismiss "
+                "only if the cycle is type-only or otherwise absent from the production "
+                "execution graph."
+            ),
+        ),
+        "AR004-executable-facade": RuleGuidance(
+            rationale="A compatibility facade also owns executable function bodies.",
+            verification=(
+                "Classify every body as import/lazy-export plumbing or independent "
+                "execution; extract mixed lifecycle or algorithm ownership behind the "
+                "stable facade."
+            ),
+        ),
+        "AR005-no-module-named-test-owner": RuleGuidance(
+            rationale="The production module has no obvious dedicated module-named test owner.",
+            verification=(
+                "Search integration and public-contract tests for this module's actual "
+                "production surface; either record the named owner or add a dedicated "
+                "real-surface test."
+            ),
+        ),
+        "AR006-duplicate-python-implementation": RuleGuidance(
+            rationale=(
+                "Multiple first-party functions own an exact non-trivial implementation body."
+            ),
+            verification=(
+                "Confirm whether the definitions are intentional independent protocol "
+                "adapters, generated outputs, or duplicated ownership; consolidate only "
+                "when dependencies and public identities permit it."
+            ),
+        ),
+        "AR002-wildcard-import-boundary": RuleGuidance(
+            rationale="A wildcard import hides the explicit API and dependency boundary.",
+            verification=(
+                "Enumerate the intended compatibility exports, downstream consumers, and "
+                "generated API ownership; replace with explicit lazy or static exports "
+                "unless the facade contract is documented and drift-gated."
+            ),
+        ),
+        "AR003-broad-optional-import-boundary": RuleGuidance(
+            rationale="A broad import guard can mask dependency defects as optional absence.",
+            verification=(
+                "Run the real import with the dependency present, absent, and broken "
+                "inside its package; catch only the expected absence and surface nested "
+                "failures."
+            ),
+        ),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -169,11 +231,8 @@ def _cycle_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate, ..
                 symbol=" -> ".join((*component, component[0])),
                 evidence=bounded_candidate_evidence("cycle members", component),
                 confidence="high",
-                rationale="A first-party import cycle can invert ownership and obscure initialisation.",
-                verification=(
-                    "Trace runtime import order and public ownership for every edge; dismiss only if "
-                    "the cycle is type-only or otherwise absent from the production execution graph."
-                ),
+                rationale=RULE_GUIDANCE["AR001-first-party-import-cycle"].rationale,
+                verification=RULE_GUIDANCE["AR001-first-party-import-cycle"].verification,
             )
         )
     return tuple(candidates)
@@ -192,12 +251,8 @@ def _wildcard_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate,
                     symbol=module.name,
                     evidence=evidence,
                     confidence="medium",
-                    rationale="A wildcard import hides the explicit API and dependency boundary.",
-                    verification=(
-                        "Enumerate the intended compatibility exports, downstream consumers, "
-                        "and generated API ownership; replace with explicit lazy or static exports "
-                        "unless the facade contract is documented and drift-gated."
-                    ),
+                    rationale=RULE_GUIDANCE["AR002-wildcard-import-boundary"].rationale,
+                    verification=RULE_GUIDANCE["AR002-wildcard-import-boundary"].verification,
                 )
             )
     return tuple(candidates)
@@ -216,11 +271,10 @@ def _broad_import_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candid
                     symbol=module.name,
                     evidence="import guarded by bare Exception/BaseException handler",
                     confidence="high",
-                    rationale="A broad import guard can mask dependency defects as optional absence.",
-                    verification=(
-                        "Run the real import with the dependency present, absent, and broken inside "
-                        "its package; catch only the expected absence and surface nested failures."
-                    ),
+                    rationale=RULE_GUIDANCE["AR003-broad-optional-import-boundary"].rationale,
+                    verification=RULE_GUIDANCE[
+                        "AR003-broad-optional-import-boundary"
+                    ].verification,
                 )
             )
     return tuple(candidates)
@@ -249,11 +303,8 @@ def _facade_candidates(modules: tuple[_PythonModule, ...]) -> tuple[Candidate, .
                 symbol=f"{module.name}; functions={len(module.definitions)}",
                 evidence=first.name,
                 confidence="medium",
-                rationale="A compatibility facade also owns executable function bodies.",
-                verification=(
-                    "Classify every body as import/lazy-export plumbing or independent execution; "
-                    "extract mixed lifecycle or algorithm ownership behind the stable facade."
-                ),
+                rationale=RULE_GUIDANCE["AR004-executable-facade"].rationale,
+                verification=RULE_GUIDANCE["AR004-executable-facade"].verification,
             )
         )
     return tuple(candidates)
@@ -303,11 +354,8 @@ def _ownership_candidates(
                 symbol=module.name,
                 evidence=f"no tracked test stem matches {pure.stem}",
                 confidence="low",
-                rationale="The production module has no obvious dedicated module-named test owner.",
-                verification=(
-                    "Search integration and public-contract tests for this module's actual production "
-                    "surface; either record the named owner or add a dedicated real-surface test."
-                ),
+                rationale=RULE_GUIDANCE["AR005-no-module-named-test-owner"].rationale,
+                verification=RULE_GUIDANCE["AR005-no-module-named-test-owner"].verification,
             )
         )
     return tuple(candidates)
@@ -348,12 +396,8 @@ def _duplicate_definition_candidates(
                     locations,
                 ),
                 confidence="medium",
-                rationale="Multiple first-party functions own an exact non-trivial implementation body.",
-                verification=(
-                    "Confirm whether the definitions are intentional independent protocol adapters, "
-                    "generated outputs, or duplicated ownership; consolidate only when dependencies "
-                    "and public identities permit it."
-                ),
+                rationale=RULE_GUIDANCE["AR006-duplicate-python-implementation"].rationale,
+                verification=RULE_GUIDANCE["AR006-duplicate-python-implementation"].verification,
             )
         )
     return tuple(candidates)

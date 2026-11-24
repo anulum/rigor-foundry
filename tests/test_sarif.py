@@ -11,13 +11,20 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from repository_audit_git_repository import GitRepository
 
 import rigor_foundry
 from rigor_foundry.models import AuditReport, ReviewRecord, reviews_to_json
+from rigor_foundry.rule_catalogue import (
+    CANDIDATE_NOT_VERDICT,
+    RULE_CATALOGUE_PATH,
+    rule_guidance,
+)
 from rigor_foundry.rules import RULES
+from rigor_foundry.sarif import CATEGORY_TAXONOMY_NAME
 
 
 def _repository(path: Path) -> GitRepository:
@@ -96,10 +103,10 @@ def test_public_export_preserves_candidate_and_every_review_state(tmp_path: Path
     assert [rule["id"] for rule in run["tool"]["driver"]["rules"]] == [
         rule.rule_id for rule in RULES
     ]
-    assert all(
-        rule["helpUri"].endswith("docs/sarif.md#identity-and-anchors")
-        for rule in run["tool"]["driver"]["rules"]
-    )
+    assert [rule["helpUri"] for rule in run["tool"]["driver"]["rules"]] == [
+        f"https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#{rule.rule_id.lower()}"
+        for rule in RULES
+    ]
     assert run["properties"]["rigorFoundry/branch"] == report.branch
     results = run["results"]
     assert len(results) == len(report.candidates)
@@ -288,3 +295,82 @@ def test_cli_exports_stdout_and_explicit_file_from_real_report(tmp_path: Path) -
     )
     assert missing_parent.returncode == 2
     assert "output parent does not exist" in missing_parent.stderr
+
+
+def _exported_rules(tmp_path: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Export a real scan and return its rule descriptors and run."""
+    report = rigor_foundry.scan_repository(
+        _repository(tmp_path / "repository").root,
+        Path("rigor-foundry-policy.json"),
+    )
+    run = json.loads(rigor_foundry.report_sarif(report))["runs"][0]
+    return run["tool"]["driver"]["rules"], run
+
+
+def test_every_rule_carries_github_required_help_within_its_caps(tmp_path: Path) -> None:
+    """Each rule has non-empty descriptions and help, within GitHub's documented caps.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real Git repository allocation.
+    """
+    rules, _ = _exported_rules(tmp_path)
+    catalogue = (Path(__file__).resolve().parents[1] / RULE_CATALOGUE_PATH).read_text(
+        encoding="utf-8"
+    )
+    anchors = {line[4:].lower() for line in catalogue.splitlines() if line.startswith("### ")}
+    for rule in rules:
+        assert 0 < len(rule["name"]) <= 255
+        for field in ("shortDescription", "fullDescription"):
+            assert 0 < len(rule[field]["text"]) <= 1024
+        assert rule["help"]["text"].startswith(rule["shortDescription"]["text"])
+        assert "How to verify: " in rule["help"]["text"]
+        assert rule["help"]["markdown"].endswith(CANDIDATE_NOT_VERDICT)
+        assert rule["helpUri"].rsplit("#", 1)[1] in anchors
+
+
+def test_every_rule_is_a_subset_of_exactly_its_declared_category(tmp_path: Path) -> None:
+    """The category taxonomy lists each category once and every rule relates to its own.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real Git repository allocation.
+    """
+    rules, run = _exported_rules(tmp_path)
+    (taxonomy,) = run["taxonomies"]
+    assert taxonomy["name"] == CATEGORY_TAXONOMY_NAME
+    taxa = [taxon["id"] for taxon in taxonomy["taxa"]]
+    assert taxa == list(dict.fromkeys(rule.category for rule in RULES))
+    for rule, registered in zip(rules, RULES, strict=True):
+        (relationship,) = rule["relationships"]
+        assert relationship["kinds"] == ["subset"]
+        target = relationship["target"]
+        assert target["id"] == registered.category == taxa[target["index"]]
+        assert target["toolComponent"] == {"name": CATEGORY_TAXONOMY_NAME, "index": 0}
+
+
+def test_both_multi_case_rules_stay_within_the_caps_and_label_each_situation(
+    tmp_path: Path,
+) -> None:
+    """AA001 and CR004 join two rationales yet stay within 1024 characters, each case labelled.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real Git repository allocation.
+    """
+    rules, _ = _exported_rules(tmp_path)
+    by_id = {rule["id"]: rule for rule in rules}
+    guidance = rule_guidance()
+    for rule_id in ("AA001-unbound-api-manifest", "CR004-untracked-reporting-timeline"):
+        rule = by_id[rule_id]
+        cases = guidance[rule_id].all_cases()
+        assert len(cases) == 2
+        assert len(rule["fullDescription"]["text"]) <= 1024
+        assert len(rule["shortDescription"]["text"]) <= 1024
+        assert rule["fullDescription"]["text"] == " ".join(case.rationale for case in cases)
+        for case in cases:
+            assert f"When {case.condition}:" in rule["help"]["text"]
+            assert f"**When {case.condition}.**" in rule["help"]["markdown"]

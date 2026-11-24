@@ -11,12 +11,45 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "DK001-unpinned-base-image": RuleGuidance(
+            rationale=(
+                "A base image referenced only by tag is mutable, so the resolved image "
+                "can change under the same Dockerfile and is never verified against a "
+                "known digest."
+            ),
+            verification=(
+                "Pin the base image to an immutable `@sha256:` digest (for example "
+                "`python:3.12-slim@sha256:...`), or justify why a moving tag is required."
+            ),
+        ),
+        "DK002-root-runtime-user": RuleGuidance(
+            rationale=(
+                "The final image stage sets no non-root USER, so the container runs as "
+                "root and a process escape keeps full root authority inside the "
+                "namespace."
+            ),
+            verification=(
+                "Add a `USER` directive selecting an unprivileged account (and create it "
+                "if needed) as the last identity in the runtime stage, or justify the "
+                "root run."
+            ),
+        ),
+    }
+)
 
 # A reproducible base image is pinned by an immutable content digest.
 _DIGEST = re.compile(r"@sha256:[0-9a-f]{64}\b")
@@ -39,27 +72,15 @@ _UNPINNED_BASE = _Signal(
     rule_id="DK001-unpinned-base-image",
     confidence="high",
     symbol="base-image",
-    rationale=(
-        "A base image referenced only by tag is mutable, so the resolved image can "
-        "change under the same Dockerfile and is never verified against a known digest."
-    ),
-    verification=(
-        "Pin the base image to an immutable `@sha256:` digest (for example "
-        "`python:3.12-slim@sha256:...`), or justify why a moving tag is required."
-    ),
+    rationale=RULE_GUIDANCE["DK001-unpinned-base-image"].rationale,
+    verification=RULE_GUIDANCE["DK001-unpinned-base-image"].verification,
 )
 _ROOT_RUNTIME = _Signal(
     rule_id="DK002-root-runtime-user",
     confidence="high",
     symbol="runtime-user",
-    rationale=(
-        "The final image stage sets no non-root USER, so the container runs as root "
-        "and a process escape keeps full root authority inside the namespace."
-    ),
-    verification=(
-        "Add a `USER` directive selecting an unprivileged account (and create it if "
-        "needed) as the last identity in the runtime stage, or justify the root run."
-    ),
+    rationale=RULE_GUIDANCE["DK002-root-runtime-user"].rationale,
+    verification=RULE_GUIDANCE["DK002-root-runtime-user"].verification,
 )
 
 

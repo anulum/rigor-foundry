@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import posixpath
 import re
+from collections.abc import Mapping
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import (
     RepositoryTreeAnchor,
@@ -27,6 +30,29 @@ from .language_capabilities import (
     suffixes_with,
 )
 from .models import AuditPolicy, Candidate
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "AR007-relative-dependency-cycle": RuleGuidance(
+            rationale="Relative dependencies form a non-trivial cross-file cycle.",
+            verification=(
+                "Trace build/runtime direction and generated ownership for every edge; "
+                "break mixed lifecycle or inverted dependencies while preserving public "
+                "API/ABI."
+            ),
+        ),
+        "AR008-no-polyglot-test-owner": RuleGuidance(
+            rationale="The production owner has no obvious dedicated source-named test surface.",
+            verification=(
+                "Trace language-native unit tests and cross-language parity/integration "
+                "tests; record the real owner or add a dedicated public ABI, FFI, or "
+                "executable contract."
+            ),
+        ),
+    }
+)
 
 _SOURCE_EXTENSIONS = suffixes_with("polyglot")
 
@@ -148,11 +174,8 @@ def _cycle_candidates(inventory: GitInventory) -> tuple[Candidate, ...]:
                 symbol=" -> ".join((*component, component[0])),
                 evidence=bounded_candidate_evidence("cycle members", component),
                 confidence="medium",
-                rationale="Relative dependencies form a non-trivial cross-file cycle.",
-                verification=(
-                    "Trace build/runtime direction and generated ownership for every edge; break "
-                    "mixed lifecycle or inverted dependencies while preserving public API/ABI."
-                ),
+                rationale=RULE_GUIDANCE["AR007-relative-dependency-cycle"].rationale,
+                verification=RULE_GUIDANCE["AR007-relative-dependency-cycle"].verification,
             )
         )
     return tuple(candidates)
@@ -204,11 +227,8 @@ def _ownership_candidates(
                 symbol=pure.stem,
                 evidence=f"no tracked non-Python test stem matches {pure.stem}",
                 confidence="low",
-                rationale="The production owner has no obvious dedicated source-named test surface.",
-                verification=(
-                    "Trace language-native unit tests and cross-language parity/integration tests; "
-                    "record the real owner or add a dedicated public ABI, FFI, or executable contract."
-                ),
+                rationale=RULE_GUIDANCE["AR008-no-polyglot-test-owner"].rationale,
+                verification=RULE_GUIDANCE["AR008-no-polyglot-test-owner"].verification,
             )
         )
     return tuple(candidates)

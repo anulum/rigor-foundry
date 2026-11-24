@@ -11,14 +11,64 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import Candidate
+from .rule_guidance import RuleGuidance
 from .workflow_expressions import has_untrusted_run_interpolation, selects_pull_request_code
 from .workflow_yaml import WorkflowFormatError, WorkflowValue, parse_workflow_yaml
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "GV006-unscanned-github-actions": RuleGuidance(
+            rationale="A tracked GitHub Actions owner could not be completely analysed.",
+            verification=(
+                "Read the exact tracked blob, resolve the bounded parser or structural "
+                "limitation, and rerun. An unexplained incomplete owner cannot support a "
+                "clean claim."
+            ),
+        ),
+        "GA001-unpinned-action-reference": RuleGuidance(
+            rationale=(
+                "An executable action or reusable workflow reference lacks a full commit "
+                "or image digest."
+            ),
+            verification=(
+                "Inspect the action owner and exact upstream object, then pin a reviewed "
+                "full commit SHA or Docker SHA-256 digest. Local repository actions do "
+                "not need external revision pins."
+            ),
+        ),
+        "GA002-run-context-interpolation": RuleGuidance(
+            rationale=(
+                "A run script directly interpolates event data, a branch name or an input."
+            ),
+            verification=(
+                "Trace the exact trigger and value into the generated script. Prefer an "
+                "intermediate environment variable with shell-appropriate quoting. This "
+                "signal is not an exploit proof."
+            ),
+        ),
+        "GA003-pull-request-target-checkout": RuleGuidance(
+            rationale=(
+                "A pull_request_target checkout selects PR code or an unresolved dynamic source."
+            ),
+            verification=(
+                "Review token permissions, secrets, downstream execution and the "
+                "checkout version's fork protections, including "
+                "allow-unsafe-pr-checkout. Prefer trusted base checkout; this "
+                "configuration candidate does not prove that untrusted code was executed."
+            ),
+        ),
+    }
+)
 
 _ACTION_PIN = re.compile(
     r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_./-]+)?@[0-9a-fA-F]{40}\Z"
@@ -26,24 +76,6 @@ _ACTION_PIN = re.compile(
 _DOCKER_PIN = re.compile(r"docker://[^\s@]+@sha256:[0-9a-f]{64}\Z")
 _CHECKOUT = re.compile(r"actions/checkout@", re.IGNORECASE)
 MAX_ACTION_EXECUTION_POSITIONS = 4_096
-_RULES = {
-    "GA001-unpinned-action-reference": (
-        "An executable action or reusable workflow reference lacks a full commit or image digest.",
-        "Inspect the action owner and exact upstream object, then pin a reviewed full commit SHA "
-        "or Docker SHA-256 digest. Local repository actions do not need external revision pins.",
-    ),
-    "GA002-run-context-interpolation": (
-        "A run script directly interpolates event data, a branch name or an input.",
-        "Trace the exact trigger and value into the generated script. Prefer an intermediate "
-        "environment variable with shell-appropriate quoting. This signal is not an exploit proof.",
-    ),
-    "GA003-pull-request-target-checkout": (
-        "A pull_request_target checkout selects PR code or an unresolved dynamic source.",
-        "Review token permissions, secrets, downstream execution and the checkout version's fork "
-        "protections, including allow-unsafe-pr-checkout. Prefer trusted base checkout; this "
-        "configuration candidate does not prove that untrusted code was executed.",
-    ),
-}
 
 
 @dataclass
@@ -66,7 +98,7 @@ def _source_candidate(
     symbol: str,
 ) -> Candidate:
     """Bind a security signal to exact blob lines with digest-only evidence."""
-    rationale, verification = _RULES[rule]
+    guidance = RULE_GUIDANCE[rule]
     lines = (item.text or "").splitlines(keepends=True)
     span = "".join(lines[value.line - 1 : value.end_line]).encode("utf-8")
     return Candidate.build(
@@ -76,8 +108,8 @@ def _source_candidate(
         symbol=symbol,
         evidence=f"file_sha256={item.content_digest}; span_sha256={hashlib.sha256(span).hexdigest()}",
         confidence="medium",
-        rationale=rationale,
-        verification=verification,
+        rationale=guidance.rationale,
+        verification=guidance.verification,
     )
 
 
@@ -97,9 +129,8 @@ def _unscanned(
         symbol=error.reason,
         evidence=f"file_sha256={item.content_digest}; reason={error.reason}",
         confidence="high",
-        rationale="A tracked GitHub Actions owner could not be completely analysed.",
-        verification="Read the exact tracked blob, resolve the bounded parser or structural "
-        "limitation, and rerun. An unexplained incomplete owner cannot support a clean claim.",
+        rationale=RULE_GUIDANCE["GV006-unscanned-github-actions"].rationale,
+        verification=RULE_GUIDANCE["GV006-unscanned-github-actions"].verification,
     )
 
 

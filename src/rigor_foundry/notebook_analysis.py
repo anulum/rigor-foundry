@@ -13,9 +13,11 @@ import ast
 import hashlib
 import json
 from bisect import bisect_left
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
-from typing import NoReturn, cast
+from types import MappingProxyType
+from typing import Final, NoReturn, cast
 
 from .application_security import scan_application_security
 from .candidate_anchor import TrackedBlobAnchor
@@ -25,8 +27,26 @@ from .models import AuditPolicy, Candidate
 from .operations import scan_operations
 from .performance import scan_performance
 from .reliability import scan_reliability
+from .rule_guidance import RuleGuidance
 from .scientific import scan_scientific
 from .test_authenticity import _infer_packages, _python_candidates
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "GV005-unscanned-jupyter-notebook": RuleGuidance(
+            rationale=(
+                "A tracked Jupyter notebook could not be completely projected into the "
+                "bounded Python-AST analysis surface."
+            ),
+            verification=(
+                "Open the exact tracked blob, validate nbformat 4 and an unambiguous "
+                "Python language declaration, repair malformed or unsupported cells, and "
+                "rerun the read-only scan."
+            ),
+        ),
+    }
+)
 
 NOTEBOOK_SUFFIXES = frozenset({".ipynb"})
 MAX_NOTEBOOK_CELLS = 1_024
@@ -423,14 +443,8 @@ def _issue_candidate(item: TrackedFile, error: _NotebookFormatError) -> Candidat
             f"notebook_line_sha256={_span_digest(item, line, line)}; reason={error.reason}"
         ),
         confidence="high",
-        rationale=(
-            "A tracked Jupyter notebook could not be completely projected into the bounded "
-            "Python-AST analysis surface."
-        ),
-        verification=(
-            "Open the exact tracked blob, validate nbformat 4 and an unambiguous Python language "
-            "declaration, repair malformed or unsupported cells, and rerun the read-only scan."
-        ),
+        rationale=RULE_GUIDANCE["GV005-unscanned-jupyter-notebook"].rationale,
+        verification=RULE_GUIDANCE["GV005-unscanned-jupyter-notebook"].verification,
     )
 
 

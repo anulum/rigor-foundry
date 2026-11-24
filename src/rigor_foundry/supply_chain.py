@@ -11,12 +11,46 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "SC001-unhashed-pinned-requirement": RuleGuidance(
+            rationale=(
+                "A hash-pinned lock file records integrity digests for every dependency, "
+                "but this pinned requirement carries none, so its artefact is installed "
+                "without verification against tampering or index substitution."
+            ),
+            verification=(
+                "Recompile the lock with hashes (for example `pip-compile "
+                "--generate-hashes`) so every pinned requirement carries a `--hash=` "
+                "digest, or justify why this dependency is exempt."
+            ),
+        ),
+        "SC002-vcs-url-requirement": RuleGuidance(
+            rationale=(
+                "A dependency installed directly from a VCS checkout or a URL bypasses "
+                "the package index and hash pinning, so the resolved artefact is mutable "
+                "and unverified."
+            ),
+            verification=(
+                "Pin the dependency to an immutable released version from the index with "
+                "a recorded hash, or vendor and audit the exact revision if a direct "
+                "source is genuinely required."
+            ),
+        ),
+    }
+)
 
 _REQUIREMENT_SUFFIXES: frozenset[str] = frozenset({".txt", ".in"})
 # A pinned requirement names a distribution and an exact '==' or '===' version.
@@ -43,31 +77,15 @@ _UNHASHED_PIN = _Signal(
     rule_id="SC001-unhashed-pinned-requirement",
     confidence="high",
     symbol="pinned-requirement",
-    rationale=(
-        "A hash-pinned lock file records integrity digests for every dependency, but "
-        "this pinned requirement carries none, so its artefact is installed without "
-        "verification against tampering or index substitution."
-    ),
-    verification=(
-        "Recompile the lock with hashes (for example `pip-compile --generate-hashes`) "
-        "so every pinned requirement carries a `--hash=` digest, or justify why this "
-        "dependency is exempt."
-    ),
+    rationale=RULE_GUIDANCE["SC001-unhashed-pinned-requirement"].rationale,
+    verification=RULE_GUIDANCE["SC001-unhashed-pinned-requirement"].verification,
 )
 _VCS_URL = _Signal(
     rule_id="SC002-vcs-url-requirement",
     confidence="high",
     symbol="vcs-url-requirement",
-    rationale=(
-        "A dependency installed directly from a VCS checkout or a URL bypasses the "
-        "package index and hash pinning, so the resolved artefact is mutable and "
-        "unverified."
-    ),
-    verification=(
-        "Pin the dependency to an immutable released version from the index with a "
-        "recorded hash, or vendor and audit the exact revision if a direct source is "
-        "genuinely required."
-    ),
+    rationale=RULE_GUIDANCE["SC002-vcs-url-requirement"].rationale,
+    verification=RULE_GUIDANCE["SC002-vcs-url-requirement"].verification,
 )
 
 

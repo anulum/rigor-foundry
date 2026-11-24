@@ -12,14 +12,53 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .audit_primitives import canonical_digest, require_mapping, require_string
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import repository_path_under_roots
 from .models import AuditPolicy, Candidate
+from .rule_guidance import RuleGuidance, RuleGuidanceCase
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "AA001-unbound-api-manifest": RuleGuidance(
+            condition="the declared public surface is not bound by the manifest",
+            rationale=(
+                "A declared Python public surface is not bound exactly by the tracked "
+                "API manifest, so compatibility review cannot distinguish an intentional "
+                "API edit from drift."
+            ),
+            verification=(
+                "Review the declared names and downstream compatibility contract, then "
+                "update rigor-public-api.json only when the exact public-surface change "
+                "is intentional; do not infer a breaking change from unrelated source "
+                "edits."
+            ),
+            cases=(
+                RuleGuidanceCase(
+                    condition="the manifest is malformed or records a surface with no declaration",
+                    rationale=(
+                        "The tracked public API manifest is malformed or retains a surface with "
+                        "no matching literal declaration, so it cannot bind the repository's "
+                        "declared API state."
+                    ),
+                    verification=(
+                        "Validate the versioned manifest schema and compare every recorded path "
+                        "with its exact module-level __all__; remove or update a row only after "
+                        "compatibility review."
+                    ),
+                ),
+            ),
+        ),
+    }
+)
 
 API_MANIFEST_PATH = "rigor-public-api.json"
 API_MANIFEST_SCHEMA_VERSION = "1.0"
@@ -354,15 +393,8 @@ def _candidate(
         symbol=surface.item.path,
         evidence="; ".join(f"{name}={value}" for name, value in sorted(fields.items())),
         confidence="high",
-        rationale=(
-            "A declared Python public surface is not bound exactly by the tracked API manifest, "
-            "so compatibility review cannot distinguish an intentional API edit from drift."
-        ),
-        verification=(
-            "Review the declared names and downstream compatibility contract, then update "
-            "rigor-public-api.json only when the exact public-surface change is intentional; "
-            "do not infer a breaking change from unrelated source edits."
-        ),
+        rationale=RULE_GUIDANCE["AA001-unbound-api-manifest"].rationale,
+        verification=RULE_GUIDANCE["AA001-unbound-api-manifest"].verification,
     )
 
 
@@ -395,14 +427,8 @@ def _manifest_candidate(
         symbol=symbol,
         evidence="; ".join(f"{name}={value}" for name, value in sorted(fields.items())),
         confidence="high",
-        rationale=(
-            "The tracked public API manifest is malformed or retains a surface with no matching "
-            "literal declaration, so it cannot bind the repository's declared API state."
-        ),
-        verification=(
-            "Validate the versioned manifest schema and compare every recorded path with its exact "
-            "module-level __all__; remove or update a row only after compatibility review."
-        ),
+        rationale=RULE_GUIDANCE["AA001-unbound-api-manifest"].cases[0].rationale,
+        verification=RULE_GUIDANCE["AA001-unbound-api-manifest"].cases[0].verification,
     )
 
 

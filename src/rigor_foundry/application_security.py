@@ -11,11 +11,89 @@ from __future__ import annotations
 
 import ast
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "AS001-dynamic-code-execution": RuleGuidance(
+            rationale=(
+                "eval and exec run arbitrary code and turn any tainted argument into execution."
+            ),
+            verification=(
+                "Trace the argument to a trusted literal or a validated allow-list; "
+                "otherwise replace the call with an explicit parser, dispatch table, or "
+                "sandboxed evaluator."
+            ),
+        ),
+        "AS002-shell-command-execution": RuleGuidance(
+            rationale=(
+                "A shell command surface lets a tainted argument inject additional commands."
+            ),
+            verification=(
+                "Pass an argument vector without a shell (shell=False, or subprocess "
+                "with a list), or prove every interpolated value is a trusted constant."
+            ),
+        ),
+        "AS003-unsafe-deserialization": RuleGuidance(
+            rationale=(
+                "pickle and the default yaml.load reconstruct arbitrary objects from their input."
+            ),
+            verification=(
+                "Deserialize only trusted local data, or switch to a bounded safe format "
+                "(yaml.safe_load, JSON, or a schema-validated parser) for any externally "
+                "sourced bytes."
+            ),
+        ),
+        "AS004-weak-hash-primitive": RuleGuidance(
+            rationale=(
+                "md5 and sha1 are not collision resistant and must not back a security decision."
+            ),
+            verification=(
+                "Confirm the digest is a non-security checksum; otherwise move to "
+                "SHA-256 or a keyed MAC and record why the primitive is acceptable."
+            ),
+        ),
+        "AS005-insecure-temporary-file": RuleGuidance(
+            rationale=(
+                "tempfile.mktemp returns a name with a race between the check and the later open."
+            ),
+            verification=(
+                "Use tempfile.mkstemp or NamedTemporaryFile, which create the file "
+                "atomically with a bound descriptor."
+            ),
+        ),
+        "AS012-disabled-tls-verification": RuleGuidance(
+            rationale=(
+                "verify=False disables certificate verification, so a network attacker "
+                "can present any certificate and read or alter the traffic."
+            ),
+            verification=(
+                "Restore verification (verify=True or a trusted CA bundle); if a "
+                "self-signed host is truly required, pin its certificate instead of "
+                "disabling verification."
+            ),
+        ),
+        "AS013-insecure-ssl-context": RuleGuidance(
+            rationale=(
+                "ssl._create_unverified_context returns a context that accepts any "
+                "certificate, so the peer is never authenticated."
+            ),
+            verification=(
+                "Use ssl.create_default_context, or a context with an explicit trusted "
+                "CA, so the peer certificate is verified."
+            ),
+        ),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -31,71 +109,44 @@ class _Signal:
 _DYNAMIC_EXEC = _Signal(
     rule_id="AS001-dynamic-code-execution",
     confidence="high",
-    rationale="eval and exec run arbitrary code and turn any tainted argument into execution.",
-    verification=(
-        "Trace the argument to a trusted literal or a validated allow-list; otherwise replace the "
-        "call with an explicit parser, dispatch table, or sandboxed evaluator."
-    ),
+    rationale=RULE_GUIDANCE["AS001-dynamic-code-execution"].rationale,
+    verification=RULE_GUIDANCE["AS001-dynamic-code-execution"].verification,
 )
 _SHELL_EXEC = _Signal(
     rule_id="AS002-shell-command-execution",
     confidence="high",
-    rationale="A shell command surface lets a tainted argument inject additional commands.",
-    verification=(
-        "Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove "
-        "every interpolated value is a trusted constant."
-    ),
+    rationale=RULE_GUIDANCE["AS002-shell-command-execution"].rationale,
+    verification=RULE_GUIDANCE["AS002-shell-command-execution"].verification,
 )
 _UNSAFE_DESERIALIZE = _Signal(
     rule_id="AS003-unsafe-deserialization",
     confidence="high",
-    rationale="pickle and the default yaml.load reconstruct arbitrary objects from their input.",
-    verification=(
-        "Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, "
-        "JSON, or a schema-validated parser) for any externally sourced bytes."
-    ),
+    rationale=RULE_GUIDANCE["AS003-unsafe-deserialization"].rationale,
+    verification=RULE_GUIDANCE["AS003-unsafe-deserialization"].verification,
 )
 _WEAK_HASH = _Signal(
     rule_id="AS004-weak-hash-primitive",
     confidence="low",
-    rationale="md5 and sha1 are not collision resistant and must not back a security decision.",
-    verification=(
-        "Confirm the digest is a non-security checksum; otherwise move to SHA-256 or a keyed MAC and "
-        "record why the primitive is acceptable."
-    ),
+    rationale=RULE_GUIDANCE["AS004-weak-hash-primitive"].rationale,
+    verification=RULE_GUIDANCE["AS004-weak-hash-primitive"].verification,
 )
 _INSECURE_TEMP = _Signal(
     rule_id="AS005-insecure-temporary-file",
     confidence="high",
-    rationale="tempfile.mktemp returns a name with a race between the check and the later open.",
-    verification=(
-        "Use tempfile.mkstemp or NamedTemporaryFile, which create the file atomically with a bound "
-        "descriptor."
-    ),
+    rationale=RULE_GUIDANCE["AS005-insecure-temporary-file"].rationale,
+    verification=RULE_GUIDANCE["AS005-insecure-temporary-file"].verification,
 )
 _DISABLED_TLS = _Signal(
     rule_id="AS012-disabled-tls-verification",
     confidence="high",
-    rationale=(
-        "verify=False disables certificate verification, so a network attacker can present any "
-        "certificate and read or alter the traffic."
-    ),
-    verification=(
-        "Restore verification (verify=True or a trusted CA bundle); if a self-signed host is truly "
-        "required, pin its certificate instead of disabling verification."
-    ),
+    rationale=RULE_GUIDANCE["AS012-disabled-tls-verification"].rationale,
+    verification=RULE_GUIDANCE["AS012-disabled-tls-verification"].verification,
 )
 _INSECURE_SSL = _Signal(
     rule_id="AS013-insecure-ssl-context",
     confidence="high",
-    rationale=(
-        "ssl._create_unverified_context returns a context that accepts any certificate, so the peer "
-        "is never authenticated."
-    ),
-    verification=(
-        "Use ssl.create_default_context, or a context with an explicit trusted CA, so the peer "
-        "certificate is verified."
-    ),
+    rationale=RULE_GUIDANCE["AS013-insecure-ssl-context"].rationale,
+    verification=RULE_GUIDANCE["AS013-insecure-ssl-context"].verification,
 )
 
 

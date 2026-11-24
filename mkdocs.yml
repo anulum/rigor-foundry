@@ -94,6 +94,7 @@ nav:
   - Performance and reproducibility rules: performance-reproducibility-rules.md
   - API and schema compatibility rules: api-compatibility-rules.md
   - SARIF export: sarif.md
+  - Rule catalogue: rule-catalogue.md
   - Compliance maps and OSCAL: compliance-maps.md
   - Assisted-review drafting: assisted-review.md
   - Claim isolation and fleet views: claim-isolation.md

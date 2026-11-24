@@ -11,14 +11,35 @@ from __future__ import annotations
 
 import ast
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal
+from types import MappingProxyType
+from typing import Final, Literal
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path
 from .models import AuditPolicy, Candidate
 from .python_test_functions import collect_test_functions
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "PR001-wall-clock-in-test": RuleGuidance(
+            rationale=(
+                "A test assertion reads a process wall clock without a recognised local "
+                "freeze or dominating monkeypatch, so scheduling and clock movement can "
+                "change its result."
+            ),
+            verification=(
+                "Inject or freeze the clock at the assertion boundary, then replay the "
+                "test with the exact controlled timestamp; retain a live-clock assertion "
+                "only with bounded timing evidence and an explicit review."
+            ),
+        ),
+    }
+)
 
 _Semantic = Literal[
     "time-module",
@@ -546,16 +567,8 @@ def _file_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                 symbol=function.name,
                 evidence=_line_evidence(item, line, findings),
                 confidence="high",
-                rationale=(
-                    "A test assertion reads a process wall clock without a recognised local "
-                    "freeze or dominating monkeypatch, so scheduling and clock movement can "
-                    "change its result."
-                ),
-                verification=(
-                    "Inject or freeze the clock at the assertion boundary, then replay the test "
-                    "with the exact controlled timestamp; retain a live-clock assertion only "
-                    "with bounded timing evidence and an explicit review."
-                ),
+                rationale=RULE_GUIDANCE["PR001-wall-clock-in-test"].rationale,
+                verification=RULE_GUIDANCE["PR001-wall-clock-in-test"].verification,
             )
         )
     return tuple(candidates)

@@ -62,6 +62,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Give every SARIF rule a full description, plain-text and Markdown help and a
+  per-rule help link, all from the fixed rationale and verification guidance
+  each detector already attaches to its candidates. A generated rule catalogue
+  page documents all registered rules, and SARIF runs carry a RigorFoundry rule
+  category taxonomy that every rule relates to as a subset.
+
 - Provisional `rigor scan-revision --root PATH FULL_COMMIT_ID` and
   `scan_repository(revision=...)` scan the tracked bytes of an exact local SHA-1
   or SHA-256 commit in an isolated detached checkout. Declared ignored-file

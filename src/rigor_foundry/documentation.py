@@ -12,14 +12,47 @@ from __future__ import annotations
 import hashlib
 import re
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .audit_primitives import require_mapping, require_string
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import repository_path_under_roots, suffixes_with
 from .models import AuditPolicy, Candidate
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "DC001-missing-license-header": RuleGuidance(
+            rationale=(
+                "A tracked source owner has no SPDX licence identifier in its leading "
+                "header, so automated licence inventory cannot establish its declared "
+                "licence."
+            ),
+            verification=(
+                "Confirm the file's intended licence with the repository owner, then add "
+                "the exact SPDX-License-Identifier header or record why the source is "
+                "separately licensed."
+            ),
+        ),
+        "DC002-doc-version-drift": RuleGuidance(
+            rationale=(
+                "A public README or documentation page names an explicit package version "
+                "that differs from the repository's static PEP 621 project version."
+            ),
+            verification=(
+                "Compare the statement with pyproject.toml [project].version, update "
+                "current installation or compatibility guidance, or move genuinely "
+                "historical text to a changelog or release-note surface."
+            ),
+        ),
+    }
+)
 
 _SPDX_MARKER = "SPDX-License-" + "Identifier:"
 _HEADER_LINE_LIMIT = 5
@@ -79,14 +112,8 @@ def _source_candidate(item: TrackedFile, policy: AuditPolicy) -> Candidate | Non
         symbol="spdx-license-header",
         evidence=_line_evidence(item, 1),
         confidence="high",
-        rationale=(
-            "A tracked source owner has no SPDX licence identifier in its leading header, "
-            "so automated licence inventory cannot establish its declared licence."
-        ),
-        verification=(
-            "Confirm the file's intended licence with the repository owner, then add the exact "
-            "SPDX-License-Identifier header or record why the source is separately licensed."
-        ),
+        rationale=RULE_GUIDANCE["DC001-missing-license-header"].rationale,
+        verification=RULE_GUIDANCE["DC001-missing-license-header"].verification,
     )
 
 
@@ -161,15 +188,8 @@ def _documentation_candidates(
                 package_name=identity.name,
             ),
             confidence="high",
-            rationale=(
-                "A public README or documentation page names an explicit package version that "
-                "differs from the repository's static PEP 621 project version."
-            ),
-            verification=(
-                "Compare the statement with pyproject.toml [project].version, update current "
-                "installation or compatibility guidance, or move genuinely historical text to "
-                "a changelog or release-note surface."
-            ),
+            rationale=RULE_GUIDANCE["DC002-doc-version-drift"].rationale,
+            verification=RULE_GUIDANCE["DC002-doc-version-drift"].verification,
         )
         for line in stale_lines
     )

@@ -12,13 +12,113 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .language_capabilities import is_test_path
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "TA001-test-double": RuleGuidance(
+            rationale=(
+                "A test double may replace the production boundary that the test claims to prove."
+            ),
+            verification=(
+                "Trace the test from its public API, CLI, adapter, or workflow entry "
+                "point; verify that the substituted object is an approved "
+                "protocol-faithful external fixture and that the production adapter and "
+                "validation path still execute."
+            ),
+        ),
+        "TA002-synthetic-fixture": RuleGuidance(
+            rationale=(
+                "Synthetic naming can identify fixtures that do not represent a real contract."
+            ),
+            verification=(
+                "Compare the fixture with the repository schema, external protocol, "
+                "recorded artefact, or documented domain example and prove which "
+                "production boundary consumes it."
+            ),
+        ),
+        "TA003-skip-or-xfail": RuleGuidance(
+            rationale="A conditional or ignored test can hide an unverified production path.",
+            verification=(
+                "Reproduce the dependency or hardware boundary, verify the gate is "
+                "explicit and fail-closed, and identify the separate real integration "
+                "job or evidence path that executes the contract."
+            ),
+        ),
+        "TA004-coverage-exclusion": RuleGuidance(
+            rationale="Coverage exclusions can conceal reachable error or integration paths.",
+            verification=(
+                "Prove the branch is structurally unreachable on every supported runtime "
+                "or replace the exclusion with a real error-path or matrix test."
+            ),
+        ),
+        "TA005-lint-suppression": RuleGuidance(
+            rationale="A local suppression may hide a policy or security defect.",
+            verification=(
+                "Run the owning analyser without the suppression, establish the exact "
+                "diagnostic, and verify a tracked, source-specific justification or "
+                "remove the suppression."
+            ),
+        ),
+        "TA006-type-suppression": RuleGuidance(
+            rationale="A type suppression can hide a broken production or test contract.",
+            verification=(
+                "Run strict typing on the owning module, confirm the exact error code "
+                "and external typing boundary, then replace the suppression or document "
+                "the narrow tracked reason."
+            ),
+        ),
+        "TA007-module-injection": RuleGuidance(
+            rationale=(
+                "Module injection can bypass import, packaging, or optional-dependency wiring."
+            ),
+            verification=(
+                "Execute the real package or direct-script import path in a clean "
+                "subprocess and prove the same packaging and dependency boundary without "
+                "replacing module resolution."
+            ),
+        ),
+        "TA008-coverage-bucket-name": RuleGuidance(
+            rationale="The test owner name suggests a cross-module coverage bucket.",
+            verification=(
+                "Map every test to one production module or one named integration "
+                "contract and split unrelated behaviours into their owning test surfaces."
+            ),
+        ),
+        "TA010-smoke-only-test": RuleGuidance(
+            rationale=(
+                "The test exposes no local assertion, exception, or behavioural helper call."
+            ),
+            verification=(
+                "Identify the observable production regression this test catches and add "
+                "an explicit result, state, persistence, error, or integration contract."
+            ),
+        ),
+        "TA011-private-production-surface": RuleGuidance(
+            rationale="The test directly reaches an underscored first-party production surface.",
+            verification=(
+                "Run the behaviour through the public API, CLI, adapter, pipeline, or "
+                "documented internal contract and prove that the private call is not "
+                "bypassing that boundary."
+            ),
+        ),
+        "TA009-unparseable-python-test": RuleGuidance(
+            rationale="An unparseable tracked test cannot be structurally audited.",
+            verification="Run the supported Python parser and repair or remove stale test code.",
+        ),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -41,23 +141,16 @@ _TEST_DOUBLE_RULE = _TextRule(
         r"sinon\.(?:mock|stub|spy)|mockall)"
     ),
     confidence="high",
-    rationale=("A test double may replace the production boundary that the test claims to prove."),
-    verification=(
-        "Trace the test from its public API, CLI, adapter, or workflow entry point; verify that "
-        "the substituted object is an approved protocol-faithful external fixture and that the "
-        "production adapter and validation path still execute."
-    ),
+    rationale=RULE_GUIDANCE["TA001-test-double"].rationale,
+    verification=RULE_GUIDANCE["TA001-test-double"].verification,
 )
 
 _SYNTHETIC_RULE = _TextRule(
     rule_id="TA002-synthetic-fixture",
     expression=re.compile(r"\b(?:fake|faker|mocked|stub|dummy|toy)[A-Za-z0-9_]*\b", re.IGNORECASE),
     confidence="medium",
-    rationale="Synthetic naming can identify fixtures that do not represent a real contract.",
-    verification=(
-        "Compare the fixture with the repository schema, external protocol, recorded artefact, or "
-        "documented domain example and prove which production boundary consumes it."
-    ),
+    rationale=RULE_GUIDANCE["TA002-synthetic-fixture"].rationale,
+    verification=RULE_GUIDANCE["TA002-synthetic-fixture"].verification,
 )
 
 _SKIP_RULE = _TextRule(
@@ -68,11 +161,8 @@ _SKIP_RULE = _TextRule(
         r"\b(?:describe|it|test)\.skip\s*\(|\bt\.Skip\s*\()"
     ),
     confidence="high",
-    rationale="A conditional or ignored test can hide an unverified production path.",
-    verification=(
-        "Reproduce the dependency or hardware boundary, verify the gate is explicit and fail-closed, "
-        "and identify the separate real integration job or evidence path that executes the contract."
-    ),
+    rationale=RULE_GUIDANCE["TA003-skip-or-xfail"].rationale,
+    verification=RULE_GUIDANCE["TA003-skip-or-xfail"].verification,
 )
 
 _COVERAGE_RULE = _TextRule(
@@ -81,44 +171,32 @@ _COVERAGE_RULE = _TextRule(
         r"(?:pragma:\s*no cover|coverage:\s*ignore|istanbul\s+ignore|c8\s+ignore|lcov_excl)"
     ),
     confidence="high",
-    rationale="Coverage exclusions can conceal reachable error or integration paths.",
-    verification=(
-        "Prove the branch is structurally unreachable on every supported runtime or replace the "
-        "exclusion with a real error-path or matrix test."
-    ),
+    rationale=RULE_GUIDANCE["TA004-coverage-exclusion"].rationale,
+    verification=RULE_GUIDANCE["TA004-coverage-exclusion"].verification,
 )
 
 _LINT_RULE = _TextRule(
     rule_id="TA005-lint-suppression",
     expression=re.compile(r"(?:#\s*noqa\b|eslint-disable|ruff:\s*noqa|#\s*nosec\b)"),
     confidence="medium",
-    rationale="A local suppression may hide a policy or security defect.",
-    verification=(
-        "Run the owning analyser without the suppression, establish the exact diagnostic, and verify "
-        "a tracked, source-specific justification or remove the suppression."
-    ),
+    rationale=RULE_GUIDANCE["TA005-lint-suppression"].rationale,
+    verification=RULE_GUIDANCE["TA005-lint-suppression"].verification,
 )
 
 _TYPE_RULE = _TextRule(
     rule_id="TA006-type-suppression",
     expression=re.compile(r"#\s*type:\s*ignore\b|@ts-ignore|@ts-expect-error"),
     confidence="medium",
-    rationale="A type suppression can hide a broken production or test contract.",
-    verification=(
-        "Run strict typing on the owning module, confirm the exact error code and external typing "
-        "boundary, then replace the suppression or document the narrow tracked reason."
-    ),
+    rationale=RULE_GUIDANCE["TA006-type-suppression"].rationale,
+    verification=RULE_GUIDANCE["TA006-type-suppression"].verification,
 )
 
 _MODULE_INJECTION_RULE = _TextRule(
     rule_id="TA007-module-injection",
     expression=re.compile(r"(?:sys\.modules\s*\[|require\.cache|moduleNameMapper)"),
     confidence="high",
-    rationale="Module injection can bypass import, packaging, or optional-dependency wiring.",
-    verification=(
-        "Execute the real package or direct-script import path in a clean subprocess and prove the "
-        "same packaging and dependency boundary without replacing module resolution."
-    ),
+    rationale=RULE_GUIDANCE["TA007-module-injection"].rationale,
+    verification=RULE_GUIDANCE["TA007-module-injection"].verification,
 )
 
 _TEXT_RULES = (
@@ -206,11 +284,8 @@ def _text_candidates(item: TrackedFile, policy: AuditPolicy) -> tuple[Candidate,
                 symbol=PurePosixPath(item.path).stem,
                 evidence=PurePosixPath(item.path).name,
                 confidence="high",
-                rationale="The test owner name suggests a cross-module coverage bucket.",
-                verification=(
-                    "Map every test to one production module or one named integration contract and "
-                    "split unrelated behaviours into their owning test surfaces."
-                ),
+                rationale=RULE_GUIDANCE["TA008-coverage-bucket-name"].rationale,
+                verification=RULE_GUIDANCE["TA008-coverage-bucket-name"].verification,
             )
         )
     return tuple(candidates)
@@ -314,8 +389,8 @@ def _python_candidates(
                 symbol="",
                 evidence=str(exc.msg),
                 confidence="high",
-                rationale="An unparseable tracked test cannot be structurally audited.",
-                verification="Run the supported Python parser and repair or remove stale test code.",
+                rationale=RULE_GUIDANCE["TA009-unparseable-python-test"].rationale,
+                verification=RULE_GUIDANCE["TA009-unparseable-python-test"].verification,
             ),
         )
     candidates: list[Candidate] = []
@@ -334,11 +409,8 @@ def _python_candidates(
                 symbol=function.name,
                 evidence=_line_evidence(item, function.lineno),
                 confidence="medium",
-                rationale="The test exposes no local assertion, exception, or behavioural helper call.",
-                verification=(
-                    "Identify the observable production regression this test catches and add an "
-                    "explicit result, state, persistence, error, or integration contract."
-                ),
+                rationale=RULE_GUIDANCE["TA010-smoke-only-test"].rationale,
+                verification=RULE_GUIDANCE["TA010-smoke-only-test"].verification,
             )
         )
     private_nodes = _private_surface_nodes(tree, packages)
@@ -352,11 +424,8 @@ def _python_candidates(
                 symbol=f"{symbol}; occurrences={len(private_nodes)}",
                 evidence=_line_evidence(item, line, occurrences=len(private_nodes)),
                 confidence="high",
-                rationale="The test directly reaches an underscored first-party production surface.",
-                verification=(
-                    "Run the behaviour through the public API, CLI, adapter, pipeline, or documented "
-                    "internal contract and prove that the private call is not bypassing that boundary."
-                ),
+                rationale=RULE_GUIDANCE["TA011-private-production-surface"].rationale,
+                verification=RULE_GUIDANCE["TA011-private-production-surface"].verification,
             )
         )
     return tuple(candidates)

@@ -11,11 +11,41 @@ from __future__ import annotations
 
 import ast
 import hashlib
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
+from typing import Final
 
 from .candidate_anchor import TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .models import AuditPolicy, Candidate, Confidence
+from .rule_guidance import RuleGuidance
+
+# Fixed rule guidance, the single source for the candidates below and the rule catalogue.
+RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
+    {
+        "RL001-bare-except": RuleGuidance(
+            rationale=(
+                "A bare except catches every exception, including SystemExit and "
+                "KeyboardInterrupt, so it hides real failures and blocks interruption."
+            ),
+            verification=(
+                "Catch the specific exception types the block can actually handle, or "
+                "re-raise after recording context; never swallow BaseException silently."
+            ),
+        ),
+        "RL002-mutable-default-argument": RuleGuidance(
+            rationale=(
+                "A mutable default argument is created once and shared across every "
+                "call, so state leaks between invocations."
+            ),
+            verification=(
+                "Default the parameter to None and create the list, dict, or set inside "
+                "the function body, or confirm the shared instance is genuinely intended."
+            ),
+        ),
+    }
+)
 
 _MUTABLE_BUILTINS: frozenset[str] = frozenset({"list", "dict", "set"})
 
@@ -33,26 +63,14 @@ class _Signal:
 _BARE_EXCEPT = _Signal(
     rule_id="RL001-bare-except",
     confidence="high",
-    rationale=(
-        "A bare except catches every exception, including SystemExit and "
-        "KeyboardInterrupt, so it hides real failures and blocks interruption."
-    ),
-    verification=(
-        "Catch the specific exception types the block can actually handle, or re-raise after "
-        "recording context; never swallow BaseException silently."
-    ),
+    rationale=RULE_GUIDANCE["RL001-bare-except"].rationale,
+    verification=RULE_GUIDANCE["RL001-bare-except"].verification,
 )
 _MUTABLE_DEFAULT = _Signal(
     rule_id="RL002-mutable-default-argument",
     confidence="high",
-    rationale=(
-        "A mutable default argument is created once and shared across every call, so state "
-        "leaks between invocations."
-    ),
-    verification=(
-        "Default the parameter to None and create the list, dict, or set inside the function "
-        "body, or confirm the shared instance is genuinely intended."
-    ),
+    rationale=RULE_GUIDANCE["RL002-mutable-default-argument"].rationale,
+    verification=RULE_GUIDANCE["RL002-mutable-default-argument"].verification,
 )
 
 
