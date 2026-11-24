@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import os
 import stat
+from collections.abc import Iterable
 from pathlib import Path
 from types import TracebackType
 from typing import cast
@@ -21,6 +22,26 @@ from .audit_primitives import canonical_digest, require_integer
 from .model_primitives import require_digest
 from .policy_read_budget import PolicyReadBudget1
 from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
+
+
+def entry_list_digest(entries: Iterable[tuple[bytes, int]]) -> str:
+    """Return the SHA-256 of directory entries, sorted by name whatever order they come in.
+
+    Parameters
+    ----------
+    entries : Iterable[tuple[bytes, int]]
+        Each entry's name bytes and inode number, in any order.
+
+    Returns
+    -------
+    str
+        The hexadecimal SHA-256 of every length-prefixed name and its inode number, in name
+        order.
+    """
+    digest = hashlib.sha256()
+    for name, inode in sorted(entries):
+        digest.update(len(name).to_bytes(8, "big") + name + inode.to_bytes(8, "big"))
+    return digest.hexdigest()
 
 
 def directory_entry_digest(descriptor: int) -> str:
@@ -33,13 +54,15 @@ def directory_entry_digest(descriptor: int) -> str:
     Parameters
     ----------
     descriptor : int
-        An open directory descriptor. It is listed through a duplicate, so its own use is
-        unaffected.
+        An open directory descriptor. CPython's ``os.scandir`` lists it through a duplicate
+        descriptor, which shares the directory offset, and rewinds that offset when the
+        iterator closes. The ``with`` block always closes the iterator, so consecutive
+        listings through one descriptor see the whole directory.
 
     Returns
     -------
     str
-        The hexadecimal SHA-256 of every entry's name bytes and inode number, in name order.
+        The :func:`entry_list_digest` of every entry's name bytes and inode number.
 
     Raises
     ------
@@ -47,11 +70,8 @@ def directory_entry_digest(descriptor: int) -> str:
         If the directory cannot be listed through the descriptor.
     """
     with os.scandir(descriptor) as entries:
-        listed = sorted((os.fsencode(entry.name), entry.inode()) for entry in entries)
-    digest = hashlib.sha256()
-    for name, inode in listed:
-        digest.update(len(name).to_bytes(8, "big") + name + inode.to_bytes(8, "big"))
-    return digest.hexdigest()
+        listed = [(os.fsencode(entry.name), entry.inode()) for entry in entries]
+    return entry_list_digest(listed)
 
 
 def parent_directory_identity(descriptor: int) -> tuple[int | str, ...]:

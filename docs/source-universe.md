@@ -39,7 +39,11 @@ raw file and its parent directory through use and closing checks. The host
 already owns access; opaque universe locators never become file paths.
 The parent identity binds the directory's complete entry list as well as its
 metadata, so an entry change beside the source is refused even within one tick
-of a coarse filesystem clock.
+of a coarse filesystem clock. The entry list binds the directory's namespace,
+each name to its inode number, and nothing else. A sibling unlinked and
+recreated within one tick can get its inode number back on ext4, and then the
+list is unchanged. A sibling's content is bound only by its own source, never by
+this digest.
 
 ```python
 from rigor_foundry.retained_policy_source import RetainedPolicySource

@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import hashlib
+import itertools
 import os
 from pathlib import Path
 from typing import cast
@@ -21,6 +22,7 @@ from rigor_foundry.policy_read_budget import PolicyReadBudget1
 from rigor_foundry.retained_policy_source import (
     RetainedPolicySource,
     directory_entry_digest,
+    entry_list_digest,
     parent_directory_identity,
 )
 from rigor_foundry.stable_reads import StableReadError, open_directory_no_follow
@@ -239,3 +241,43 @@ def test_parent_identity_binds_metadata_and_entry_names_and_inodes(tmp_path: Pat
     finally:
         os.close(first)
         os.close(second)
+
+
+def test_the_entry_digest_sorts_names_whatever_order_they_are_listed_in() -> None:
+    """Every permutation of the same entries gives one digest, fixed by the sorted encoding."""
+    entries = [(b"b", 7), (b"a", 9), (b"ab", 3)]
+    expected = hashlib.sha256(
+        b"".join(
+            len(name).to_bytes(8, "big") + name + inode.to_bytes(8, "big")
+            for name, inode in sorted(entries)
+        )
+    ).hexdigest()
+    assert {entry_list_digest(order) for order in itertools.permutations(entries)} == {expected}
+    assert entry_list_digest([(b"a", 9), (b"b", 8), (b"ab", 3)]) != expected
+
+
+def test_consecutive_digests_through_one_descriptor_see_the_whole_directory(
+    tmp_path: Path,
+) -> None:
+    """Listing through a shared offset never shortens a later listing of the same descriptor.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real directory.
+    """
+    root = tmp_path / "directory"
+    root.mkdir()
+    for index in range(64):
+        (root / f"entry-{index:02d}").write_bytes(b"x")
+    descriptor = open_directory_no_follow(root)
+    fresh = open_directory_no_follow(root)
+    try:
+        digests = [directory_entry_digest(descriptor) for _ in range(3)]
+        assert digests == [directory_entry_digest(fresh)] * 3
+        with os.scandir(root) as listed:
+            pairs = [(os.fsencode(entry.name), entry.inode()) for entry in listed]
+        assert len(pairs) == 64 and digests[0] == entry_list_digest(pairs)
+    finally:
+        os.close(descriptor)
+        os.close(fresh)
