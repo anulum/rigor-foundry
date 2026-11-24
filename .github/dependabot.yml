@@ -41,4 +41,9 @@ updates:
       time: "05:00"
       timezone: Europe/Zurich
     open-pull-requests-limit: 3
+    # The image follows the interpreter line that CI tests; a new Python line is a
+    # deliberate change with its own test matrix, so only digest and patch refreshes come here.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     labels: [dependencies, container]
