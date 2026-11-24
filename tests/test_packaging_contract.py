@@ -303,8 +303,22 @@ def test_ci_grants_user_namespaces_only_to_bubblewrap() -> None:
     assert "/tmp/rigor-wheel/bin/rigor scan --root ." in workflow
     assert "/tmp/rigor-wheel/bin/rigor sarif --report /tmp/rigor-adopter-report.json" in workflow
     assert 'document["version"] == "2.1.0"' in workflow
-    assert '"$(python -m tools.sarif_schema_pin sha256)" /tmp/sarif-schema-2.1.0.json' in workflow
-    assert '"$(python -m tools.sarif_schema_pin url)"' in workflow
+    (smoke,) = (
+        step["run"]
+        for job in jobs.values()
+        for step in job.get("steps", [])
+        if step.get("name") == "Smoke installed wheel outside checkout"
+    )
+    leave_checkout = smoke.index("\ncd /tmp\n")
+    for pin in (
+        'schema_url="$(python -m tools.sarif_schema_pin url)"',
+        'schema_sha256="$(python -m tools.sarif_schema_pin sha256)"',
+    ):
+        # The pin is a checkout tool: it must be read before the step leaves the checkout.
+        assert smoke.index(pin) < leave_checkout
+    assert '--output /tmp/sarif-schema-2.1.0.json "$schema_url"' in smoke
+    assert '"$schema_sha256" /tmp/sarif-schema-2.1.0.json | sha256sum --check --strict' in smoke
+    assert smoke.count("tools.sarif_schema_pin") == 2
     assert "Draft4Validator(schema).validate(document)" in workflow
     assert "stat -c '%a' docs/internal/TODO.md" in workflow
     assert "test ! -e docs/internal/reviews.json" in workflow
