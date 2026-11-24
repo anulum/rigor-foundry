@@ -23,6 +23,7 @@ from rigor_foundry.sarif_import_records import (
     ImportedRule,
     ImportObservation,
     ImportSkip,
+    LocationMetadata,
     PreservedResult,
 )
 from rigor_foundry.sarif_import_report import (
@@ -59,6 +60,7 @@ def _records() -> tuple[tuple[ImportedCandidate, ...], ImportObservation, Import
                     content_sha256="b" * 64,
                 ),
                 item,
+                LocationMetadata(None, None, None, None, False, None, None, False, 1),
             )
             for item in preserved
             if item.is_candidate_kind

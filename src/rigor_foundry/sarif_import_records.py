@@ -11,6 +11,10 @@ An imported result keeps the producer's own words: its level, kind, baseline sta
 suppressions, fingerprints and properties are recorded verbatim within fixed bounds, and
 what does not fit is kept by digest. Nothing is mapped onto RigorFoundry severity,
 confidence or category, and every imported candidate stays ``unreviewed``.
+
+One rule governs every result field read here: an absent field takes its SARIF default,
+and a present field must have its SARIF type, or the result is skipped with a reason. An
+explicit JSON ``null`` is present, so it is skipped wherever SARIF names a type.
 """
 
 from __future__ import annotations
@@ -33,6 +37,8 @@ MAX_PROPERTIES_BYTES: Final = 16 * 1024
 MAX_FINGERPRINT_BYTES: Final = 4 * 1024
 MAX_TAGS: Final = 32
 MAX_TAG_BYTES: Final = 64
+MAX_SNIPPET_BYTES: Final = 2 * 1024
+MAX_CONTEXT_REGION_BYTES: Final = 4 * 1024
 _PRODUCER_ID: Final = re.compile(r"[a-z][a-z0-9-]{0,31}")
 
 
@@ -70,6 +76,26 @@ def _bounded_value(value: object, limit: int) -> tuple[object | None, str, bool]
     if len(_json_bytes(value)) <= limit:
         return value, digest, False
     return None, digest, True
+
+
+def _present(record: dict[str, Any], key: str, expected: type, reason: str, default: Any) -> Any:
+    """Return one field, its SARIF default when absent, or skip the result when mistyped."""
+    if key not in record:
+        return default
+    value = record[key]
+    if not isinstance(value, expected):
+        raise ResultSkipped(reason)
+    return value
+
+
+def _suppression(item: object) -> tuple[str | None, str | None]:
+    """Return one suppression's status and kind, skipping the result if either is mistyped."""
+    if not isinstance(item, dict):
+        raise ResultSkipped("malformed-suppressions")
+    return (
+        _present(item, "status", str, "malformed-suppressions", None),
+        _present(item, "kind", str, "malformed-suppressions", None),
+    )
 
 
 def require_producer_id(value: object) -> str:
@@ -266,22 +292,37 @@ class PreservedResult:
         Raises
         ------
         ResultSkipped
-            With ``result-without-rule`` if neither ``ruleId`` nor ``rule.index`` is given,
-            ``rule-index-out-of-range`` if the index names no rule,
-            ``rule-id-index-mismatch`` if both are given and disagree, ``missing-message`` if
-            the result has no message text, ``malformed-kind`` or ``malformed-level`` if
-            either is present but not a string, or ``unknown-kind`` if the kind is neither a
-            candidate nor an observation kind. An absent kind is SARIF's default ``fail``.
+            With ``result-without-rule`` if no rule id (``ruleId`` or ``rule.id``) and no rule
+            index (``ruleIndex`` or ``rule.index``) is given, ``rule-index-out-of-range`` if the
+            index names no rule, ``rule-id-index-mismatch`` if an id and an index disagree,
+            ``rule-id-mismatch`` or ``rule-index-mismatch`` if the result-level and the
+            ``rule`` reference forms disagree, ``missing-message`` if the result has no
+            message text, ``unknown-kind`` if the kind is neither a candidate nor an
+            observation kind, or ``malformed-<field>`` if a present field is mistyped, an
+            explicit ``null`` included. An absent kind is SARIF's default ``fail``.
         """
-        rule_reference = result.get("rule")
-        raw_index = rule_reference.get("index") if isinstance(rule_reference, dict) else None
-        index = raw_index if type(raw_index) is int else None
-        source = result.get("ruleId")
-        if source is None and isinstance(rule_reference, dict):
-            source = rule_reference.get("id")
+        reference = _present(result, "rule", dict, "malformed-rule-reference", {})
+        index = _present(result, "ruleIndex", int, "malformed-rule-reference", None)
+        referenced_index = _present(reference, "index", int, "malformed-rule-reference", None)
+        if isinstance(index, bool) or isinstance(referenced_index, bool):
+            raise ResultSkipped("malformed-rule-reference")
+        # SARIF's default index -1 means that no index is given.
+        index, referenced_index = (
+            None if item == -1 else item for item in (index, referenced_index)
+        )
+        if None not in (index, referenced_index) and index != referenced_index:
+            raise ResultSkipped("rule-index-mismatch")
+        index = referenced_index if index is None else index
+        source = _present(result, "ruleId", str, "malformed-rule-id", None)
+        referenced = _present(reference, "id", str, "malformed-rule-id", None)
+        if "" in (source, referenced):
+            raise ResultSkipped("malformed-rule-id")
+        if None not in (source, referenced) and source != referenced:
+            raise ResultSkipped("rule-id-mismatch")
+        source = referenced if source is None else source
         if index is not None and not 0 <= index < len(rules):
             raise ResultSkipped("rule-index-out-of-range")
-        if isinstance(source, str) and source:
+        if source is not None:
             rule_id = imported_rule_id(producer_id, source)
             if index is not None and rules[index].rule_id != rule_id:
                 raise ResultSkipped("rule-id-index-mismatch")
@@ -294,32 +335,26 @@ class PreservedResult:
         if not isinstance(full_text, str):
             raise ResultSkipped("missing-message")
         text, truncated = _bounded_text(full_text, MAX_MESSAGE_BYTES)
-        kind = result.get("kind", "fail")
-        if not isinstance(kind, str):
-            raise ResultSkipped("malformed-kind")
+        kind = _present(result, "kind", str, "malformed-kind", "fail")
         if kind not in CANDIDATE_KINDS | OBSERVATION_KINDS:
             raise ResultSkipped("unknown-kind")
-        level = result.get("level")
-        if level is not None and not isinstance(level, str):
-            raise ResultSkipped("malformed-level")
-        baseline = result.get("baselineState")
-        suppressions = result.get("suppressions")
-        kept_suppressions = tuple(
-            (
-                item.get("status") if isinstance(item.get("status"), str) else None,
-                item.get("kind") if isinstance(item.get("kind"), str) else None,
-            )
-            for item in (suppressions if isinstance(suppressions, list) else [])
-            if isinstance(item, dict)
+        level = _present(result, "level", str, "malformed-level", None)
+        baseline = _present(result, "baselineState", str, "malformed-baseline-state", None)
+        suppressions = tuple(
+            _suppression(item)
+            for item in _present(result, "suppressions", list, "malformed-suppressions", [])
         )
         partial, partial_digest, _ = _bounded_value(
-            result.get("partialFingerprints", {}), MAX_FINGERPRINT_BYTES
+            _present(result, "partialFingerprints", dict, "malformed-fingerprints", {}),
+            MAX_FINGERPRINT_BYTES,
         )
         fingerprints, fingerprints_digest, _ = _bounded_value(
-            result.get("fingerprints", {}), MAX_FINGERPRINT_BYTES
+            _present(result, "fingerprints", dict, "malformed-fingerprints", {}),
+            MAX_FINGERPRINT_BYTES,
         )
         properties, properties_digest, properties_cut = _bounded_value(
-            result.get("properties", {}), MAX_PROPERTIES_BYTES
+            _present(result, "properties", dict, "malformed-properties", {}),
+            MAX_PROPERTIES_BYTES,
         )
         return cls(
             run_index=run_index,
@@ -331,8 +366,8 @@ class PreservedResult:
             message_truncated=truncated,
             level=level,
             kind=kind,
-            baseline_state=baseline if isinstance(baseline, str) else None,
-            suppressions=kept_suppressions,
+            baseline_state=baseline,
+            suppressions=suppressions,
             partial_fingerprints=cast(dict[str, object], partial)
             if isinstance(partial, dict)
             else None,
@@ -382,18 +417,52 @@ class PreservedResult:
 
 
 @dataclass(frozen=True)
+class LocationMetadata:
+    """Where within its anchored lines a result points: kept beside the anchor, never in it."""
+
+    start_column: int | None
+    end_column: int | None
+    snippet: dict[str, object] | None
+    snippet_sha256: str | None
+    snippet_truncated: bool
+    context_region: dict[str, object] | None
+    context_region_sha256: str | None
+    context_region_truncated: bool
+    location_count: int
+
+    def to_dict(self) -> dict[str, object]:
+        """Serialise the location metadata."""
+        return {
+            "start_column": self.start_column,
+            "end_column": self.end_column,
+            "snippet": self.snippet,
+            "snippet_sha256": self.snippet_sha256,
+            "snippet_truncated": self.snippet_truncated,
+            "context_region": self.context_region,
+            "context_region_sha256": self.context_region_sha256,
+            "context_region_truncated": self.context_region_truncated,
+            "location_count": self.location_count,
+        }
+
+
+@dataclass(frozen=True)
 class ImportedCandidate:
     """One anchored third-party finding, kept as an ``unreviewed`` candidate and never judged."""
 
     candidate_id: str
     producer_id: str
     anchor: TrackedBlobAnchor
+    location: LocationMetadata
     result: PreservedResult
     state: str = IMPORT_STATE
 
     @classmethod
     def build(
-        cls, producer_id: str, anchor: TrackedBlobAnchor, result: PreservedResult
+        cls,
+        producer_id: str,
+        anchor: TrackedBlobAnchor,
+        result: PreservedResult,
+        location: LocationMetadata,
     ) -> ImportedCandidate:
         """Bind one candidate kind result to its tracked-blob anchor.
 
@@ -405,6 +474,8 @@ class ImportedCandidate:
             The exact tracked blob span the result names.
         result : PreservedResult
             The preserved result of a candidate kind.
+        location : LocationMetadata
+            Columns, snippet and context region, which stay outside the identity.
 
         Returns
         -------
@@ -428,7 +499,7 @@ class ImportedCandidate:
             "message_text_sha256": result.message_text_sha256,
             "partial_fingerprints_sha256": result.partial_fingerprints_sha256,
         }
-        return cls(canonical_digest(identity), producer_id, anchor, result)
+        return cls(canonical_digest(identity), producer_id, anchor, location, result)
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the candidate."""
@@ -437,6 +508,7 @@ class ImportedCandidate:
             "producer_id": self.producer_id,
             "state": self.state,
             "anchor": self.anchor.to_dict(),
+            "location": self.location.to_dict(),
             "result": self.result.to_dict(),
         }
 

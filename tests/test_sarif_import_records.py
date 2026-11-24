@@ -26,6 +26,7 @@ from rigor_foundry.sarif_import_records import (
     MAX_TAGS,
     ImportedCandidate,
     ImportedRule,
+    LocationMetadata,
     PreservedResult,
     ResultSkipped,
     anchor_from_record,
@@ -42,6 +43,7 @@ ANCHOR = TrackedBlobAnchor(
     blob_oid="a" * 40,
     content_sha256="b" * 64,
 )
+NO_DETAIL = LocationMetadata(None, None, None, None, False, None, None, False, 1)
 
 
 def _run() -> dict[str, Any]:
@@ -106,12 +108,12 @@ def test_a_result_keeps_the_producers_words_verbatim_and_never_maps_them() -> No
     result.update(
         level="error",
         baselineState="new",
-        suppressions=[{"status": "accepted", "kind": "inSource"}, "junk"],
+        suppressions=[{"status": "accepted", "kind": "inSource"}, {"kind": "external"}],
         partialFingerprints={"primaryLocationLineHash": "abc:1"},
     )
     preserved = _preserved(result)
     assert (preserved.level, preserved.kind, preserved.baseline_state) == ("error", "fail", "new")
-    assert preserved.suppressions == (("accepted", "inSource"),)
+    assert preserved.suppressions == (("accepted", "inSource"), (None, "external"))
     assert preserved.partial_fingerprints == {"primaryLocationLineHash": "abc:1"}
     assert preserved.rule_id == f"ext:semgrep:{result['ruleId']}"
     assert preserved.is_candidate_kind
@@ -132,7 +134,7 @@ def test_a_non_finding_kind_is_an_observation_not_a_candidate(kind: str) -> None
     preserved = _preserved({**_run()["results"][0], "kind": kind})
     assert not preserved.is_candidate_kind
     with pytest.raises(ValueError, match="is an observation, not a candidate"):
-        ImportedCandidate.build("semgrep", ANCHOR, preserved)
+        ImportedCandidate.build("semgrep", ANCHOR, preserved, NO_DETAIL)
 
 
 def test_a_long_message_and_large_properties_keep_their_digests() -> None:
@@ -152,11 +154,21 @@ def test_a_long_message_and_large_properties_keep_their_digests() -> None:
 
 def test_a_result_names_its_rule_by_id_or_index_and_is_skipped_otherwise() -> None:
     """A rule index alone resolves; a missing, out-of-range or contradicting reference is skipped."""
-    base = {key: value for key, value in _run()["results"][0].items() if key != "ruleId"}
-    by_index = _preserved({**base, "rule": {"index": 1}})
-    assert by_index.rule_id == _rules()[1].rule_id and by_index.rule_index == 1
+    real = _run()["results"][0]
+    assert _preserved(real).rule_index == real["ruleIndex"]
+    base = {key: value for key, value in real.items() if key not in {"ruleId", "ruleIndex"}}
+    for indexed in (
+        {**base, "rule": {"index": 1}},
+        {**base, "ruleIndex": 1},
+        {**base, "ruleIndex": 1, "rule": {"index": 1}},
+        {**base, "ruleIndex": -1, "rule": {"index": 1}},
+        {**base, "ruleIndex": 1, "rule": {"index": -1}},
+    ):
+        by_index = _preserved(indexed)
+        assert by_index.rule_id == _rules()[1].rule_id and by_index.rule_index == 1
     for result, reason in (
         (base, "result-without-rule"),
+        ({**base, "ruleIndex": -1}, "result-without-rule"),
         ({**base, "rule": {"index": len(_rules())}}, "rule-index-out-of-range"),
         ({**base, "ruleId": "other", "rule": {"index": 0}}, "rule-id-index-mismatch"),
     ):
@@ -170,12 +182,18 @@ def test_a_result_names_its_rule_by_id_or_index_and_is_skipped_otherwise() -> No
 def test_a_candidate_id_binds_partial_fingerprints_but_not_producer_fingerprints() -> None:
     """The id follows rule, anchor, message and partial fingerprints, and ignores ``fingerprints``."""
     result = _run()["results"][0]
-    first = ImportedCandidate.build("semgrep", ANCHOR, _preserved(result))
+    first = ImportedCandidate.build("semgrep", ANCHOR, _preserved(result), NO_DETAIL)
     same = ImportedCandidate.build(
-        "semgrep", ANCHOR, _preserved({**result, "fingerprints": {"other/v9": "zzz"}})
+        "semgrep",
+        ANCHOR,
+        _preserved({**result, "fingerprints": {"other/v9": "zzz"}}),
+        NO_DETAIL,
     )
     moved = ImportedCandidate.build(
-        "semgrep", ANCHOR, _preserved({**result, "partialFingerprints": {"hash": "1"}})
+        "semgrep",
+        ANCHOR,
+        _preserved({**result, "partialFingerprints": {"hash": "1"}}),
+        NO_DETAIL,
     )
     assert first.candidate_id == same.candidate_id != moved.candidate_id
     assert first.to_dict()["state"] == "unreviewed"
@@ -201,7 +219,7 @@ def test_building_import_records_never_changes_the_rule_registry() -> None:
     digest, registered = rule_pack_digest(), dict(RULES_BY_ID)
     rules = _rules()
     built = [
-        ImportedCandidate.build("semgrep", ANCHOR, preserved)
+        ImportedCandidate.build("semgrep", ANCHOR, preserved, NO_DETAIL)
         for preserved in map(_preserved, _run()["results"])
         if preserved.is_candidate_kind
     ]
@@ -217,14 +235,32 @@ def test_building_import_records_never_changes_the_rule_registry() -> None:
         ({"kind": None}, "malformed-kind"),
         ({"kind": "bogus"}, "unknown-kind"),
         ({"level": 3}, "malformed-level"),
+        ({"level": None}, "malformed-level"),
+        ({"baselineState": None}, "malformed-baseline-state"),
+        ({"suppressions": {"kind": "inSource"}}, "malformed-suppressions"),
+        ({"suppressions": ["junk"]}, "malformed-suppressions"),
+        ({"suppressions": [{"kind": None}]}, "malformed-suppressions"),
+        ({"suppressions": [{"kind": "inSource", "status": 1}]}, "malformed-suppressions"),
+        ({"partialFingerprints": ["a"]}, "malformed-fingerprints"),
+        ({"fingerprints": None}, "malformed-fingerprints"),
+        ({"properties": "tags"}, "malformed-properties"),
         ({"message": {"id": "default"}}, "missing-message"),
         ({"message": "text"}, "missing-message"),
+        ({"rule": "x"}, "malformed-rule-reference"),
+        ({"ruleIndex": "0"}, "malformed-rule-reference"),
+        ({"ruleIndex": True}, "malformed-rule-reference"),
+        ({"rule": {"index": False}}, "malformed-rule-reference"),
+        ({"ruleIndex": 0, "rule": {"index": 1}}, "rule-index-mismatch"),
+        ({"ruleId": 5}, "malformed-rule-id"),
+        ({"ruleId": ""}, "malformed-rule-id"),
+        ({"rule": {"id": ""}}, "malformed-rule-id"),
+        ({"rule": {"id": "other"}}, "rule-id-mismatch"),
     ],
 )
 def test_a_malformed_or_unknown_kind_level_or_message_is_skipped(
     change: dict[str, object], reason: str
 ) -> None:
-    """A kind or level that is not a string, an unknown kind or no message text is skipped.
+    """A present field of the wrong type, ``null`` included, or contradicting forms are skipped.
 
     Parameters
     ----------
