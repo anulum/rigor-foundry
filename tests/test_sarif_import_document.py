@@ -189,6 +189,27 @@ def _driver_null_version(document: dict[str, Any]) -> None:
     document["runs"][0]["tool"]["driver"]["version"] = None
 
 
+def _repeated_component(document: dict[str, Any]) -> None:
+    """List two tool extensions with the same name and version."""
+    document["runs"][0]["tool"]["extensions"] = [
+        {"name": "pack/a", "semanticVersion": "1.0.0", "rules": [{"id": "py/x"}]},
+        {"name": "pack/a", "semanticVersion": "1.0.0", "rules": [{"id": "py/y"}]},
+    ]
+
+
+def _extension_named_as_the_driver(document: dict[str, Any]) -> None:
+    """List an extension with the driver's own name and version."""
+    driver = document["runs"][0]["tool"]["driver"]
+    document["runs"][0]["tool"]["extensions"] = [
+        {"name": driver["name"], "semanticVersion": driver["semanticVersion"]}
+    ]
+
+
+def _unversioned_twins(document: dict[str, Any]) -> None:
+    """List two unversioned tool extensions with the same name."""
+    document["runs"][0]["tool"]["extensions"] = [{"name": "pack"}, {"name": "pack"}]
+
+
 def _repeated_rule_id(document: dict[str, Any]) -> None:
     """Repeat one rule id within a single tool extension."""
     document["runs"][0]["tool"]["extensions"] = [
@@ -212,6 +233,9 @@ def _repeated_rule_id(document: dict[str, Any]) -> None:
         (_extension_numeric_version, "malformed-run"),
         (_driver_null_version, "malformed-run"),
         (_repeated_rule_id, "malformed-run"),
+        (_repeated_component, "malformed-run"),
+        (_extension_named_as_the_driver, "malformed-run"),
+        (_unversioned_twins, "malformed-run"),
     ],
 )
 def test_a_document_that_is_not_sarif_2_1_0_is_refused(
@@ -270,3 +294,14 @@ def test_one_rule_id_may_appear_once_in_each_of_several_components() -> None:
         {"name": "b", "rules": [{"id": first_id}]},
     ]
     assert parse_sarif_document(_bytes(document)).runs[0]["tool"]["extensions"][1]["name"] == "b"
+
+
+def test_one_component_name_may_appear_with_different_versions() -> None:
+    """Two extensions of one name but different versions, or a version only one states, are accepted."""
+    document = _real()
+    document["runs"][0]["tool"]["extensions"] = [
+        {"name": "pack/a", "semanticVersion": "1.0.0"},
+        {"name": "pack/a", "version": "1.0.1"},
+        {"name": "pack/a"},
+    ]
+    assert len(parse_sarif_document(_bytes(document)).runs[0]["tool"]["extensions"]) == 3

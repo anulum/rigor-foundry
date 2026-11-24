@@ -111,6 +111,12 @@ def _component_rules(component: dict[str, Any]) -> int:
     return len(rules)
 
 
+def _component_identity(component: dict[str, Any]) -> tuple[str, str | None]:
+    """Return the name and version that identify one checked tool component."""
+    semantic = component.get("semanticVersion")
+    return component["name"], semantic if semantic is not None else component.get("version")
+
+
 def _limit(count: int, label: str, limit: int, reason: str) -> None:
     """Refuse the file when one counted run field holds more items than allowed."""
     if count > limit:
@@ -137,7 +143,8 @@ def parse_sarif_document(payload: bytes) -> SarifDocument:
         ``too-deep``, ``not-sarif-2.1.0``, ``malformed-run``, ``too-many-runs``,
         ``too-many-results`` or ``too-many-rules``. The rules limit counts the rules of the
         driver and of every tool extension together. A tool component without a name, with
-        a version that is not a string, or repeating a rule id is a ``malformed-run``.
+        a version that is not a string, or repeating a rule id is a ``malformed-run``, and so
+        are two components of one run with the same name and version.
     """
     if len(payload) > MAX_SARIF_BYTES:
         raise SarifImportRefused(
@@ -175,4 +182,10 @@ def parse_sarif_document(payload: bytes) -> SarifDocument:
         # A run's rules live in its driver and in every extension, and all of them count.
         rules = sum(_component_rules(component) for component in (driver, *extensions))
         _limit(rules, "rules", MAX_RULES_PER_RUN, "too-many-rules")
+        # A candidate names its rule's component by name and version, so they must be unique.
+        identities = [_component_identity(component) for component in (driver, *extensions)]
+        if len(identities) != len(set(identities)):
+            raise SarifImportRefused(
+                "malformed-run", "two tool components share a name and version"
+            )
     return SarifDocument(decoded, tuple(runs))
