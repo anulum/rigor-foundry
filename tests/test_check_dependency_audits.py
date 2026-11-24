@@ -80,6 +80,26 @@ def test_actual_repository_enrols_every_lock(audit_root: Path) -> None:
     assert dependency_audit_errors(audit_root) == []
 
 
+def test_an_unmutated_rewrite_of_the_audit_workflow_is_accepted(audit_root: Path) -> None:
+    """The rewrite that every mutation case uses changes nothing the guard reads.
+
+    The mutation cases rewrite the Security workflow with ``yaml.safe_dump``, which sorts
+    keys and reflows the text. The guard also reads that workflow as text, so the same
+    rewrite without a mutation must stay accepted. Otherwise a mutation case could pass
+    because of the rewrite instead of the mutation.
+
+    Parameters
+    ----------
+    audit_root : Path
+        Independent Git worktree containing the actual locks and workflows.
+    """
+    path = audit_root / ".github/workflows/security.yml"
+    original = path.read_text()
+    path.write_text(yaml.safe_dump(yaml.safe_load(original)))
+    assert path.read_text() != original
+    assert dependency_audit_errors(audit_root) == []
+
+
 @pytest.mark.parametrize("lock", [*PYTHON_LOCKS, SEMGREP_LOCK, NODE_LOCK])
 def test_missing_and_linked_locks_refuse(audit_root: Path, lock: str) -> None:
     """Removing or linking an enrolled lock cannot erase its audit obligation.
