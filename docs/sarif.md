@@ -47,6 +47,31 @@ rule-pack categories in registry order. Every rule relates to its category with
 kind `subset`. RigorFoundry emits no rule-level `security-severity`: severity is
 recorded only by a validated review, never by a rule.
 
+## Hosted code-scanning upload
+
+The `Code scanning` workflow (`.github/workflows/code-scanning.yml`) uploads this
+repository's own audit to GitHub code scanning on every push to `main`, and
+never on a pull request. Its single job has only `contents: read` and
+`security-events: write`. It does not depend on any other job, so no other
+job's result can hide its own. It runs these steps in order:
+
+1. Install the hash-locked runtime.
+2. Run `rigor scan` on the exact checkout.
+3. Run `python -m tools.check_sarif_upload_checkout`. It refuses the upload
+   unless the checkout's `HEAD` and `HEAD^{tree}` are the report's `head` and
+   `head_tree`, because GitHub fills result fingerprints from the files of the
+   checkout it uploads from.
+4. Write the GitHub code-scanning profile, which refuses GitHub's upload limits
+   before writing anything.
+5. Upload the profile with the same pinned `upload-sarif` action as the
+   Scorecard workflow, in category `rigor-foundry`.
+
+The repository tracks no review ledger, so no result is reviewed `valid` and the
+uploaded profile holds no results. A run therefore opens no alert and proves the
+wiring: GitHub lists a RigorFoundry analysis for the commit in category
+`rigor-foundry`. Its run properties declare the omitted count of every candidate
+and the digest of the canonical export.
+
 ## CWE taxonomy
 
 Each run also declares a second taxonomy, `CWE`. It is pinned to CWE List

@@ -30,7 +30,7 @@ def test_complete_actual_inventory_and_normal_action_guard() -> None:
     assert ci_workflow_errors() == []
     assert action_pin_errors() == []
     inventory = json.loads((ROOT / ".github/ci-workflows.json").read_text())
-    assert len(inventory["workflows"]) == 18
+    assert len(inventory["workflows"]) == 19
     for relative, record in inventory["workflows"].items():
         assert record["jobs"] == list(read_workflow(ROOT / relative)["jobs"])
         assert record["owner"] == "@anulum"

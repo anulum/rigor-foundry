@@ -57,6 +57,13 @@
         "ci-gate"
       ]
     },
+    ".github/workflows/code-scanning.yml": {
+      "owner": "@anulum",
+      "category": "security",
+      "jobs": [
+        "upload"
+      ]
+    },
     ".github/workflows/codeql.yml": {
       "owner": "@anulum",
       "category": "security",

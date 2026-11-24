@@ -76,6 +76,11 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   page documents all registered rules, and SARIF runs carry a RigorFoundry rule
   category taxonomy that every rule relates to as a subset.
 
+- A `Code scanning` workflow uploads the repository's own audit to GitHub code
+  scanning on every push to `main`, through the GitHub code-scanning profile in
+  category `rigor-foundry`. It refuses an upload from a checkout that is not the
+  commit the report describes.
+
 - SARIF runs carry a CWE taxonomy pinned to CWE List 5.0. 23 rules relate to
   one CWE entry each, with kind `relevant` and never `equal`: the rule marks a
   surface related to the weakness and does not prove it. Each mapping is a
