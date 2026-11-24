@@ -4166,6 +4166,11 @@
 rationale and verification guidance each detector attaches to its candidates. SARIF rule
 <code>helpUri</code> values point at these sections.</p>
 <p>A RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.</p>
+<p>A rule with a reviewed CWE mapping names the CWE 5.0 entry its candidates are
+relevant to, with the reviewed justification. SARIF relates the rule to that entry with
+kind <code>relevant</code>, never <code>equal</code>: the rule marks a surface related to the weakness
+and does not prove it. 23 rules are mapped; an unmapped rule claims no CWE.
+CWE is a trademark of The MITRE Corporation.</p>
 <h2 id="test-authenticity">test-authenticity<a class="headerlink" href="#test-authenticity" title="Permanent link">&para;</a></h2>
 <h3 id="ta001-test-double">TA001-test-double<a class="headerlink" href="#ta001-test-double" title="Permanent link">&para;</a></h3>
 <p>Test-double API or fixture signal.</p>
@@ -4324,36 +4329,43 @@ rationale and verification guidance each detector attaches to its candidates. SA
 <h3 id="as001-dynamic-code-execution">AS001-dynamic-code-execution<a class="headerlink" href="#as001-dynamic-code-execution" title="Permanent link">&para;</a></h3>
 <p>Dynamic code execution through eval or exec.</p>
 <p>Introduced in rigor-foundry/1.2.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/95.html">CWE-95</a> (relevant). The rule marks a Python eval or exec call, the dynamic evaluation call through which unneutralised input can execute as code, as CWE-95 describes.</p>
 <p><strong>Why it matters.</strong> eval and exec run arbitrary code and turn any tainted argument into execution.</p>
 <p><strong>How to verify.</strong> Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator.</p>
 <h3 id="as002-shell-command-execution">AS002-shell-command-execution<a class="headerlink" href="#as002-shell-command-execution" title="Permanent link">&para;</a></h3>
 <p>Shell command execution surface via shell=True, os.system, or os.popen.</p>
 <p>Introduced in rigor-foundry/1.2.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/78.html">CWE-78</a> (relevant). The rule marks shell=True, os.system or os.popen, surfaces where an OS command is built from input whose special elements may not be neutralised, as CWE-78 describes.</p>
 <p><strong>Why it matters.</strong> A shell command surface lets a tainted argument inject additional commands.</p>
 <p><strong>How to verify.</strong> Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant.</p>
 <h3 id="as003-unsafe-deserialization">AS003-unsafe-deserialization<a class="headerlink" href="#as003-unsafe-deserialization" title="Permanent link">&para;</a></h3>
 <p>Unsafe deserialization via pickle or an unbounded yaml.load.</p>
 <p>Introduced in rigor-foundry/1.2.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/502.html">CWE-502</a> (relevant). The rule marks pickle or an unbounded yaml.load, which turn untrusted bytes into live objects, a surface CWE-502 is relevant to.</p>
 <p><strong>Why it matters.</strong> pickle and the default yaml.load reconstruct arbitrary objects from their input.</p>
 <p><strong>How to verify.</strong> Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes.</p>
 <h3 id="as004-weak-hash-primitive">AS004-weak-hash-primitive<a class="headerlink" href="#as004-weak-hash-primitive" title="Permanent link">&para;</a></h3>
 <p>Weak hash primitive md5 or sha1 in a possible security context.</p>
 <p>Introduced in rigor-foundry/1.2.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/328.html">CWE-328</a> (relevant). The rule marks md5 or sha1 in a possible security context, hash algorithms whose digests do not meet the security expectations CWE-328 describes.</p>
 <p><strong>Why it matters.</strong> md5 and sha1 are not collision resistant and must not back a security decision.</p>
 <p><strong>How to verify.</strong> Confirm the digest is a non-security checksum; otherwise move to SHA-256 or a keyed MAC and record why the primitive is acceptable.</p>
 <h3 id="as005-insecure-temporary-file">AS005-insecure-temporary-file<a class="headerlink" href="#as005-insecure-temporary-file" title="Permanent link">&para;</a></h3>
 <p>Insecure temporary file creation through tempfile.mktemp.</p>
 <p>Introduced in rigor-foundry/1.2.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/367.html">CWE-367</a> (relevant). The rule marks tempfile.mktemp, which checks that a name is free before the caller creates the file, so the file's state can change between that check and its use, as CWE-367 describes.</p>
 <p><strong>Why it matters.</strong> tempfile.mktemp returns a name with a race between the check and the later open.</p>
 <p><strong>How to verify.</strong> Use tempfile.mkstemp or NamedTemporaryFile, which create the file atomically with a bound descriptor.</p>
 <h3 id="as006-js-dynamic-code-execution">AS006-js-dynamic-code-execution<a class="headerlink" href="#as006-js-dynamic-code-execution" title="Permanent link">&para;</a></h3>
 <p>Native JavaScript or TypeScript dynamic code execution via eval or Function.</p>
 <p>Introduced in rigor-foundry/1.3.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/95.html">CWE-95</a> (relevant). The rule marks a JavaScript or TypeScript eval or Function call, a dynamic evaluation call through which unneutralised input can execute as code, as CWE-95 describes.</p>
 <p><strong>Why it matters.</strong> eval and the Function constructor execute a string as code, turning any tainted argument into arbitrary execution.</p>
 <p><strong>How to verify.</strong> Replace the dynamic evaluation with an explicit parser, a lookup table, or a typed dispatch; if evaluation is unavoidable, prove the source is a trusted literal.</p>
 <h3 id="as007-go-command-execution">AS007-go-command-execution<a class="headerlink" href="#as007-go-command-execution" title="Permanent link">&para;</a></h3>
 <p>Native Go external command execution via os/exec Command or CommandContext.</p>
 <p>Introduced in rigor-foundry/1.4.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/78.html">CWE-78</a> (relevant). The rule marks Go os/exec Command or CommandContext, where an OS command can be built from externally influenced input, as CWE-78 describes.</p>
 <p><strong>Why it matters.</strong> os/exec runs an external command, so a tainted argument can execute an unintended program or, with a shell, inject further commands.</p>
 <p><strong>How to verify.</strong> Prove every argument is a trusted constant or validated allow-list value, pass an explicit argument vector, and never build the command from unsanitised input.</p>
 <h3 id="as008-rust-unsafe-block">AS008-rust-unsafe-block<a class="headerlink" href="#as008-rust-unsafe-block" title="Permanent link">&para;</a></h3>
@@ -4364,32 +4376,38 @@ rationale and verification guidance each detector attaches to its candidates. SA
 <h3 id="as009-c-unsafe-libc">AS009-c-unsafe-libc<a class="headerlink" href="#as009-c-unsafe-libc" title="Permanent link">&para;</a></h3>
 <p>Native C or C++ call to an unbounded or command-executing libc function.</p>
 <p>Introduced in rigor-foundry/1.5.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/676.html">CWE-676</a> (relevant). The rule marks C library calls with no bound on their writes, or that run a command, a surface CWE-676 is relevant to.</p>
 <p><strong>Why it matters.</strong> gets, the unbounded str/sprintf family, and system/popen are classic buffer-overflow and command-injection surfaces when their input is not strictly bounded and trusted.</p>
 <p><strong>How to verify.</strong> Replace the call with a length-bounded equivalent (fgets, snprintf, strncpy with an explicit size) or an argument-vector exec, and prove the input is trusted and bounded.</p>
 <h3 id="as010-julia-unsafe-memory">AS010-julia-unsafe-memory<a class="headerlink" href="#as010-julia-unsafe-memory" title="Permanent link">&para;</a></h3>
 <p>Native Julia unsafe_* intrinsic that bypasses bounds, type, and GC safety.</p>
 <p>Introduced in rigor-foundry/1.6.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/676.html">CWE-676</a> (relevant). The rule marks Julia unsafe_* intrinsics, which bypass bounds, type and garbage-collector checks, a surface CWE-676 is relevant to.</p>
 <p><strong>Why it matters.</strong> The unsafe_* intrinsics bypass Julia's bounds, type, and garbage-collection safety, so a bad pointer or length reads or writes arbitrary memory.</p>
 <p><strong>How to verify.</strong> Confirm the pointer and length come from a live, correctly typed, GC-rooted object, or replace the intrinsic with a bounds-checked array or a safe wrapper.</p>
 <h3 id="as011-shell-eval-execution">AS011-shell-eval-execution<a class="headerlink" href="#as011-shell-eval-execution" title="Permanent link">&para;</a></h3>
 <p>Native shell eval builtin that re-parses its argument as a command.</p>
 <p>Introduced in rigor-foundry/1.6.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/78.html">CWE-78</a> (relevant). The rule marks a shell eval builtin, which re-parses its argument as an OS command so that unneutralised special elements change the command, as CWE-78 describes.</p>
 <p><strong>Why it matters.</strong> The shell eval builtin re-parses and executes its argument as a command, so any tainted value in that argument becomes an injected command.</p>
 <p><strong>How to verify.</strong> Remove eval and call the command with an explicit argument vector, or prove every interpolated value is a trusted constant.</p>
 <h3 id="as012-disabled-tls-verification">AS012-disabled-tls-verification<a class="headerlink" href="#as012-disabled-tls-verification" title="Permanent link">&para;</a></h3>
 <p>Python call that disables TLS certificate verification via verify=False.</p>
 <p>Introduced in rigor-foundry/1.7.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/295.html">CWE-295</a> (relevant). The rule marks verify=False, which disables certificate validation, the weakness CWE-295 describes.</p>
 <p><strong>Why it matters.</strong> verify=False disables certificate verification, so a network attacker can present any certificate and read or alter the traffic.</p>
 <p><strong>How to verify.</strong> Restore verification (verify=True or a trusted CA bundle); if a self-signed host is truly required, pin its certificate instead of disabling verification.</p>
 <h3 id="as013-insecure-ssl-context">AS013-insecure-ssl-context<a class="headerlink" href="#as013-insecure-ssl-context" title="Permanent link">&para;</a></h3>
 <p>Python use of ssl._create_unverified_context, which authenticates no peer.</p>
 <p>Introduced in rigor-foundry/1.7.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/295.html">CWE-295</a> (relevant). The rule marks ssl._create_unverified_context, whose context does not validate certificates, the weakness CWE-295 describes.</p>
 <p><strong>Why it matters.</strong> ssl._create_unverified_context returns a context that accepts any certificate, so the peer is never authenticated.</p>
 <p><strong>How to verify.</strong> Use ssl.create_default_context, or a context with an explicit trusted CA, so the peer certificate is verified.</p>
 <h2 id="reliability">reliability<a class="headerlink" href="#reliability" title="Permanent link">&para;</a></h2>
 <h3 id="rl001-bare-except">RL001-bare-except<a class="headerlink" href="#rl001-bare-except" title="Permanent link">&para;</a></h3>
 <p>Bare except clause that catches every exception and hides real failures.</p>
 <p>Introduced in rigor-foundry/1.8.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/396.html">CWE-396</a> (relevant). The rule marks a bare except clause, a catch for a generic exception as CWE-396 describes.</p>
 <p><strong>Why it matters.</strong> A bare except catches every exception, including SystemExit and KeyboardInterrupt, so it hides real failures and blocks interruption.</p>
 <p><strong>How to verify.</strong> Catch the specific exception types the block can actually handle, or re-raise after recording context; never swallow BaseException silently.</p>
 <h3 id="rl002-mutable-default-argument">RL002-mutable-default-argument<a class="headerlink" href="#rl002-mutable-default-argument" title="Permanent link">&para;</a></h3>
@@ -4401,33 +4419,39 @@ rationale and verification guidance each detector attaches to its candidates. SA
 <h3 id="sc001-unhashed-pinned-requirement">SC001-unhashed-pinned-requirement<a class="headerlink" href="#sc001-unhashed-pinned-requirement" title="Permanent link">&para;</a></h3>
 <p>Pinned requirement in a hash-mode lock file carries no integrity hash.</p>
 <p>Introduced in rigor-foundry/1.9.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/494.html">CWE-494</a> (relevant). The rule marks a pinned requirement without an integrity hash, so the installer downloads and runs code without verifying its integrity, as CWE-494 describes.</p>
 <p><strong>Why it matters.</strong> A hash-pinned lock file records integrity digests for every dependency, but this pinned requirement carries none, so its artefact is installed without verification against tampering or index substitution.</p>
 <p><strong>How to verify.</strong> Recompile the lock with hashes (for example <code>pip-compile --generate-hashes</code>) so every pinned requirement carries a <code>--hash=</code> digest, or justify why this dependency is exempt.</p>
 <h3 id="sc002-vcs-url-requirement">SC002-vcs-url-requirement<a class="headerlink" href="#sc002-vcs-url-requirement" title="Permanent link">&para;</a></h3>
 <p>Dependency installed from a VCS checkout or URL, bypassing index hash pinning.</p>
 <p>Introduced in rigor-foundry/1.9.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/494.html">CWE-494</a> (relevant). The rule marks a dependency installed from a VCS checkout or URL, which bypasses index hash pinning, so the installed code's integrity is not verified, as CWE-494 describes.</p>
 <p><strong>Why it matters.</strong> A dependency installed directly from a VCS checkout or a URL bypasses the package index and hash pinning, so the resolved artefact is mutable and unverified.</p>
 <p><strong>How to verify.</strong> Pin the dependency to an immutable released version from the index with a recorded hash, or vendor and audit the exact revision if a direct source is genuinely required.</p>
 <h2 id="container">container<a class="headerlink" href="#container" title="Permanent link">&para;</a></h2>
 <h3 id="dk001-unpinned-base-image">DK001-unpinned-base-image<a class="headerlink" href="#dk001-unpinned-base-image" title="Permanent link">&para;</a></h3>
 <p>Dockerfile base image referenced by a mutable tag with no immutable digest.</p>
 <p>Introduced in rigor-foundry/1.10.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/494.html">CWE-494</a> (relevant). The rule marks a base image referenced by a mutable tag with no digest, so the pulled image's integrity is not verified, as CWE-494 describes.</p>
 <p><strong>Why it matters.</strong> A base image referenced only by tag is mutable, so the resolved image can change under the same Dockerfile and is never verified against a known digest.</p>
 <p><strong>How to verify.</strong> Pin the base image to an immutable <code>@sha256:</code> digest (for example <code>python:3.12-slim@sha256:...</code>), or justify why a moving tag is required.</p>
 <h3 id="dk002-root-runtime-user">DK002-root-runtime-user<a class="headerlink" href="#dk002-root-runtime-user" title="Permanent link">&para;</a></h3>
 <p>Dockerfile runtime stage sets no non-root USER, so the container runs as root.</p>
 <p>Introduced in rigor-foundry/1.10.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/250.html">CWE-250</a> (relevant). The rule marks a runtime stage with no non-root USER, so the container runs with more privilege than it needs, as CWE-250 describes.</p>
 <p><strong>Why it matters.</strong> The final image stage sets no non-root USER, so the container runs as root and a process escape keeps full root authority inside the namespace.</p>
 <p><strong>How to verify.</strong> Add a <code>USER</code> directive selecting an unprivileged account (and create it if needed) as the last identity in the runtime stage, or justify the root run.</p>
 <h2 id="data-privacy">data-privacy<a class="headerlink" href="#data-privacy" title="Permanent link">&para;</a></h2>
 <h3 id="dp001-hardcoded-credential">DP001-hardcoded-credential<a class="headerlink" href="#dp001-hardcoded-credential" title="Permanent link">&para;</a></h3>
 <p>Credential-named variable assigned a string literal secret in tracked source.</p>
 <p>Introduced in rigor-foundry/1.11.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/798.html">CWE-798</a> (relevant). The rule marks a credential-named variable assigned a literal secret, a hard-coded credential as CWE-798 describes.</p>
 <p><strong>Why it matters.</strong> A credential-named variable is assigned a string literal, so a secret is embedded in tracked source where it cannot be rotated and is exposed to everyone with repository read access.</p>
 <p><strong>How to verify.</strong> Load the value from an environment variable or secret manager at runtime and remove the literal, or confirm it is a non-secret placeholder or fixture.</p>
 <h3 id="dp002-embedded-private-key">DP002-embedded-private-key<a class="headerlink" href="#dp002-embedded-private-key" title="Permanent link">&para;</a></h3>
 <p>PEM private-key block embedded in tracked source, disclosing key material.</p>
 <p>Introduced in rigor-foundry/1.11.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/321.html">CWE-321</a> (relevant). The rule marks an embedded PEM private-key block, a hard-coded cryptographic key as CWE-321 describes.</p>
 <p><strong>Why it matters.</strong> A PEM private-key block is embedded in tracked source, disclosing key material to everyone with repository read access.</p>
 <p><strong>How to verify.</strong> Remove the key from source, rotate it, and load it at runtime from a secret store or an out-of-tree file that is never committed.</p>
 <h2 id="documentation">documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
@@ -4461,6 +4485,7 @@ rationale and verification guidance each detector attaches to its candidates. SA
 <h3 id="op002-credential-in-log-call">OP002-credential-in-log-call<a class="headerlink" href="#op002-credential-in-log-call" title="Permanent link">&para;</a></h3>
 <p>Import-bound logging call receives a credential-named expression.</p>
 <p>Introduced in rigor-foundry/1.14.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/532.html">CWE-532</a> (relevant). The rule marks a logging call that receives a credential-named expression, writing sensitive information to a log, as CWE-532 describes.</p>
 <p><strong>Why it matters.</strong> A credential-named expression is passed to an import-bound logging call and may disclose sensitive material.</p>
 <p><strong>How to verify.</strong> Remove or redact the credential value before logging and verify captured logs contain only non-sensitive identifiers or digests.</p>
 <h2 id="performance">performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
@@ -4514,16 +4539,19 @@ rationale and verification guidance each detector attaches to its candidates. SA
 <h3 id="ga001-unpinned-action-reference">GA001-unpinned-action-reference<a class="headerlink" href="#ga001-unpinned-action-reference" title="Permanent link">&para;</a></h3>
 <p>Executable action or reusable workflow reference lacks an immutable pin.</p>
 <p>Introduced in rigor-foundry/1.19.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/829.html">CWE-829</a> (relevant). The rule marks an action or reusable workflow reference without an immutable pin, which includes executable functionality from outside the intended control sphere, as CWE-829 describes.</p>
 <p><strong>Why it matters.</strong> An executable action or reusable workflow reference lacks a full commit or image digest.</p>
 <p><strong>How to verify.</strong> Inspect the action owner and exact upstream object, then pin a reviewed full commit SHA or Docker SHA-256 digest. Local repository actions do not need external revision pins.</p>
 <h3 id="ga002-run-context-interpolation">GA002-run-context-interpolation<a class="headerlink" href="#ga002-run-context-interpolation" title="Permanent link">&para;</a></h3>
 <p>Run script directly interpolates untrusted event, branch or input data.</p>
 <p>Introduced in rigor-foundry/1.19.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/94.html">CWE-94</a> (relevant). The rule marks a run script that interpolates untrusted event, branch or input data into generated code without neutralisation, as CWE-94 describes.</p>
 <p><strong>Why it matters.</strong> A run script directly interpolates event data, a branch name or an input.</p>
 <p><strong>How to verify.</strong> Trace the exact trigger and value into the generated script. Prefer an intermediate environment variable with shell-appropriate quoting. This signal is not an exploit proof.</p>
 <h3 id="ga003-pull-request-target-checkout">GA003-pull-request-target-checkout<a class="headerlink" href="#ga003-pull-request-target-checkout" title="Permanent link">&para;</a></h3>
 <p>Target-event checkout selects PR code or an unresolved dynamic source.</p>
 <p>Introduced in rigor-foundry/1.19.0.</p>
+<p><strong>Related weakness.</strong> <a href="https://cwe.mitre.org/data/definitions/829.html">CWE-829</a> (relevant). The rule marks a pull_request_target checkout of PR code, which brings functionality from an untrusted control sphere into a trusted context, as CWE-829 describes.</p>
 <p><strong>Why it matters.</strong> A pull_request_target checkout selects PR code or an unresolved dynamic source.</p>
 <p><strong>How to verify.</strong> Review token permissions, secrets, downstream execution and the checkout version's fork protections, including allow-unsafe-pr-checkout. Prefer trusted base checkout; this configuration candidate does not prove that untrusted code was executed.</p>
 

@@ -2765,11 +2765,14 @@ introduces a candidate, without hiding the full-tree report. <code>REF</code> is
 as a plain Git revision (a leading dash can never reach Git as a flag), and the
 diff runs through the same trusted, provenance-bound Git executable as the scan.</p>
 <h2 id="sarif-export">SARIF export<a class="headerlink" href="#sarif-export" title="Permanent link">&para;</a></h2>
-<p><code>rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]</code>
-verifies the report and optional review ledger before emitting deterministic
-SARIF 2.1.0. Without <code>--output</code>, JSON is written to stdout. An explicit output
-parent must already exist. Export is read-only and includes every candidate;
-see <a href="../sarif/">SARIF export</a> for the state mapping and anchor contract.</p>
+<p><code>rigor sarif --report REPORT [--review REVIEWS] [--output RESULTS.sarif]
+[--profile github-code-scanning]</code> verifies the report and optional review ledger
+before emitting deterministic SARIF 2.1.0. Without <code>--output</code>, JSON is written to
+stdout. An explicit output parent must already exist. The default export is
+read-only and includes every candidate. <code>--profile github-code-scanning</code> emits
+only reviewed <code>valid</code> results, declares what it omitted, and refuses GitHub's
+upload limits before writing anything; see <a href="../sarif/">SARIF export</a> for the state
+mapping, the anchor contract and the profile.</p>
 <h2 id="content-addressed-report-differences">Content-addressed report differences<a class="headerlink" href="#content-addressed-report-differences" title="Permanent link">&para;</a></h2>
 <p><code>rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]</code>
 loads and verifies both historical reports, partitions exact candidate

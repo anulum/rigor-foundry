@@ -2265,6 +2265,10 @@ evidence reference and assessment consumers remain unchanged.</p>
 <p><code>PolicyHold1</code> is separately version-pinned provisional at <code>1.0</code>. Its exact
 seven-field declaration preserves bounded hold provenance; parsing does not
 authenticate applicability, clear a hold or admit a selected policy.</p>
+<p>The packaged reviewed CWE mapping, <code>cwe_mapping.json</code>, is separately version-pinned
+provisional at <code>1.0</code>. Only RigorFoundry's own loader reads it, and it does not extend
+the frozen manifest. The <a href="../sarif/">SARIF export</a> that carries its CWE taxonomy keeps
+SARIF version <code>2.1.0</code>.</p>
 <p><code>ExtractorRegistryV3</code> and <code>EffectOperationsV3</code> are separately version-pinned
 provisional at <code>3.0</code>. Their complete candidate metadata does not add a supported
 effect handler or change original v2 catalogues, digests or selected consumers.</p>
