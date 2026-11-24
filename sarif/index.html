@@ -16,7 +16,7 @@
         <link rel="prev" href="../api-compatibility-rules/">
       
       
-        <link rel="next" href="../compliance-maps/">
+        <link rel="next" href="../rule-catalogue/">
       
       
         
@@ -1375,6 +1375,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rule-help-and-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule help and categories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#identity-and-anchors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1389,6 +1400,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2106,6 +2144,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rule-help-and-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule help and categories
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#identity-and-anchors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2198,6 +2247,19 @@ Duplicate, incomplete, foreign, or stale review records fail closed. Omitting
 consumer can distinguish scanner evidence from a human evidence decision.
 Severity provenance is <code>review-record</code> only when a validated review provides a
 severity.</p>
+<h2 id="rule-help-and-categories">Rule help and categories<a class="headerlink" href="#rule-help-and-categories" title="Permanent link">&para;</a></h2>
+<p>Every rule descriptor carries the rule summary as <code>shortDescription</code>, the
+detector's fixed rationale as <code>fullDescription</code>, and <code>help</code> with plain-text and
+Markdown forms that add the verification guidance. Each <code>helpUri</code> points at the
+rule's own section of the generated <a href="../rule-catalogue/">rule catalogue</a>. The
+guidance is the same fixed text that the detector attaches to every candidate of
+that rule, so the catalogue and the results cannot disagree. Two rules have two
+distinct situations; their full description joins both rationales and their help
+lists both cases.</p>
+<p>Each run declares one taxonomy, <code>RigorFoundry rule categories</code>, whose taxa are the
+rule-pack categories in registry order. Every rule relates to its category with
+kind <code>subset</code>. RigorFoundry emits no rule-level <code>security-severity</code>: severity is
+recorded only by a validated review, never by a rule.</p>
 <h2 id="identity-and-anchors">Identity and anchors<a class="headerlink" href="#identity-and-anchors" title="Permanent link">&para;</a></h2>
 <p>Rule IDs and indices come from the complete versioned RigorFoundry rule pack.
 The content-addressed candidate ID is exported as the exact <code>rigorFoundry/v1</code>
