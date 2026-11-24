@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import io
 import runpy
 import subprocess
+import tarfile
 from pathlib import Path
 
 import pytest
 
+from tools._repository import read_text
 from tools.check_secrets import main, secret_errors
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -208,29 +211,95 @@ def test_secret_guard_module_entrypoint(
     assert output.err == ""
 
 
+def _tracked_gzip_fixtures() -> list[Path]:
+    """Return every tracked gzip file, exactly as Git lists it."""
+    listed = subprocess.run(
+        ["git", "ls-files", "-z", "--", "*.gz"], cwd=ROOT, check=True, capture_output=True
+    ).stdout
+    return [Path(name) for name in listed.decode("utf-8").split("\0") if name]
+
+
+def _materialise(source: Path, relative: Path, root: Path) -> list[Path]:
+    """Write one gzip file's decompressed bytes, or each member of its tar, under ``root``.
+
+    Parameters
+    ----------
+    source : Path
+        The gzip file to read.
+    relative : Path
+        Its repository-relative path, which names the written target.
+    root : Path
+        The repository receiving the decompressed content.
+
+    Returns
+    -------
+    list[Path]
+        Every written file, relative to ``root``.
+    """
+    payload = gzip.decompress(source.read_bytes())
+    target = relative.with_suffix("")
+    if relative.name.endswith(".tar.gz"):
+        with tarfile.open(fileobj=io.BytesIO(payload)) as archive:
+            members = [member for member in archive.getmembers() if member.isfile()]
+            archive.extractall(root / target, members=members, filter="data")
+        return [target / member.name for member in members]
+    (root / target).parent.mkdir(parents=True, exist_ok=True)
+    (root / target).write_bytes(payload)
+    return [target]
+
+
 def test_compressed_fixtures_are_scanned_as_their_decompressed_bytes(tmp_path: Path) -> None:
-    """The guard reads text only, so every tracked gzip fixture is scanned decompressed here.
+    """The guard reads text only, so every tracked gzip and tar member is scanned decompressed.
 
     Parameters
     ----------
     tmp_path : Path
         Repository receiving the decompressed fixtures.
     """
-    fixtures = sorted((ROOT / "tests/fixtures").rglob("*.gz"))
-    names = {fixture.name for fixture in fixtures}
+    fixtures = _tracked_gzip_fixtures()
     assert {
-        "codeql-2.26.0-actions-analysis-1496041210.sarif.gz",
-        "codeql-2.27.2-actions-analysis-2237134604.sarif.gz",
-        "sigstore-public-root.json.gz",
-    } <= names
+        Path("tests/fixtures/provenance/sampleproject-4.0.0.tar.gz"),
+        Path("tests/fixtures/sarif_import/codeql-2.26.0-actions-analysis-1496041210.sarif.gz"),
+        Path("tests/fixtures/sarif_import/codeql-2.27.2-actions-analysis-2237134604.sarif.gz"),
+    } <= set(fixtures)
     _initialize_repository(tmp_path)
-    for fixture in fixtures:
-        target = tmp_path / fixture.relative_to(ROOT).with_suffix("")
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(gzip.decompress(fixture.read_bytes()))
-    assert secret_errors(tmp_path) == []
-    planted = tmp_path / "tests/fixtures/sarif_import/planted.sarif"
-    planted.write_text(_aws_access_key(), encoding="utf-8")
-    assert secret_errors(tmp_path) == [
-        f"path-sha256:{_path_digest('tests/fixtures/sarif_import/planted.sarif')}:1: aws-access-key"
+    written = [
+        path for fixture in fixtures for path in _materialise(ROOT / fixture, fixture, tmp_path)
     ]
+    assert len(written) > len(fixtures)
+    assert all(read_text(path, tmp_path) is not None for path in written)
+    assert secret_errors(tmp_path) == []
+
+
+def test_a_secret_inside_a_gzip_file_or_a_tar_member_is_found(tmp_path: Path) -> None:
+    """A value planted through the same gzip and tar route is reported for each file.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned allocation for the planted archives and the scanned repository.
+    """
+    sources = tmp_path / "sources"
+    sources.mkdir()
+    (sources / "planted.sarif.gz").write_bytes(gzip.compress(_aws_access_key().encode()))
+    member = io.BytesIO()
+    with tarfile.open(fileobj=member, mode="w") as archive:
+        data = _aws_access_key().encode()
+        info = tarfile.TarInfo("package/settings.txt")
+        info.size = len(data)
+        archive.addfile(info, io.BytesIO(data))
+    (sources / "planted.tar.gz").write_bytes(gzip.compress(member.getvalue()))
+    repository = tmp_path / "repository"
+    _initialize_repository(repository)
+    written = [
+        path
+        for name in ("planted.sarif.gz", "planted.tar.gz")
+        for path in _materialise(sources / name, Path("fixtures") / name, repository)
+    ]
+    assert sorted(path.as_posix() for path in written) == [
+        "fixtures/planted.sarif",
+        "fixtures/planted.tar/package/settings.txt",
+    ]
+    assert secret_errors(repository) == sorted(
+        f"path-sha256:{_path_digest(path.as_posix())}:1: aws-access-key" for path in written
+    )

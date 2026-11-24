@@ -46,7 +46,7 @@ def import_sarif(
     inventory : GitInventory
         The verified inventory of the commit the file describes.
     head : str | None
-        The commit the operator names, required when no run states a ``revisionId``.
+        The commit the operator names, required when any run states no ``revisionId``.
     checkout_root : str | None
         The absolute path at which the producer saw the checkout, if it differs from the
         inventory's root. Absolute ``file:`` URIs resolve only below it.

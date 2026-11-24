@@ -27,7 +27,7 @@ from .audit_primitives import canonical_digest
 from .sarif_import_document import SarifDocument, SarifImportRefused
 
 SELF_DRIVER_NAME: Final = "RigorFoundry"
-_VERSION: Final = re.compile(r"(0|[1-9][0-9]*)\.[0-9]+(?:\.[0-9]+)?(?:[-+][0-9A-Za-z.+-]*)?")
+_VERSION: Final = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
 _OBJECT_ID: Final = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 
 
@@ -39,8 +39,14 @@ class ImportProducer:
     driver_names: frozenset[str]
     version_field: Literal["semanticVersion", "version"]
     supported_majors: frozenset[int]
+    supported_zero_minors: frozenset[int]
     schema_uris: frozenset[str]
     root_base_ids: frozenset[str]
+
+    def __post_init__(self) -> None:
+        """Require measured minors exactly when major version zero is supported."""
+        if (0 in self.supported_majors) != bool(self.supported_zero_minors):
+            raise ValueError("a major-zero producer declares its measured minors, and only it")
 
     def to_dict(self) -> dict[str, object]:
         """Serialise the declaration in a stable order."""
@@ -49,6 +55,7 @@ class ImportProducer:
             "driver_names": sorted(self.driver_names),
             "version_field": self.version_field,
             "supported_majors": sorted(self.supported_majors),
+            "supported_zero_minors": sorted(self.supported_zero_minors),
             "schema_uris": sorted(self.schema_uris),
             "root_base_ids": sorted(self.root_base_ids),
         }
@@ -67,6 +74,7 @@ PRODUCERS: Final[Mapping[str, ImportProducer]] = MappingProxyType(
             driver_names=frozenset({"CodeQL"}),
             version_field="semanticVersion",
             supported_majors=frozenset({2}),
+            supported_zero_minors=frozenset(),
             schema_uris=frozenset(
                 {
                     "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
@@ -80,6 +88,7 @@ PRODUCERS: Final[Mapping[str, ImportProducer]] = MappingProxyType(
             driver_names=frozenset({"Semgrep OSS"}),
             version_field="semanticVersion",
             supported_majors=frozenset({1}),
+            supported_zero_minors=frozenset(),
             schema_uris=frozenset(
                 {
                     "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json"
@@ -93,6 +102,8 @@ PRODUCERS: Final[Mapping[str, ImportProducer]] = MappingProxyType(
             driver_names=frozenset({"Trivy"}),
             version_field="version",
             supported_majors=frozenset({0}),
+            # Under major zero any minor may change the format, so only the measured 0.76.
+            supported_zero_minors=frozenset({76}),
             schema_uris=frozenset(
                 {
                     "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json"
@@ -131,13 +142,17 @@ def identify_producer(document: SarifDocument, producer_id: str) -> ProducerIden
     Raises
     ------
     SarifImportRefused
-        With ``unknown-producer``, ``self-import``, ``unsupported-schema``,
-        ``driver-not-declared``, ``missing-version``, ``unsupported-version``,
-        ``unsupported-major`` or ``mixed-producer-runs``.
+        With ``unknown-producer``, ``no-runs``, ``self-import``, ``unsupported-schema``,
+        ``driver-not-declared``, ``missing-version``, ``unsupported-version`` (anything but
+        exactly ``MAJOR.MINOR.PATCH`` without leading zeros), ``unsupported-major``,
+        ``unsupported-minor`` (a major-zero minor that was not measured) or
+        ``mixed-producer-runs``.
     """
     producer = PRODUCERS.get(producer_id)
     if producer is None:
         raise SarifImportRefused("unknown-producer", "the producer has no declaration")
+    if not document.runs:
+        raise SarifImportRefused("no-runs", "a file without runs claims no producer")
     # RigorFoundry's own output is refused as such, whichever producer is declared for it.
     if any(run["tool"]["driver"]["name"] == SELF_DRIVER_NAME for run in document.runs):
         raise SarifImportRefused("self-import", "RigorFoundry's own SARIF is not imported")
@@ -162,8 +177,13 @@ def _driver_identity(producer: ImportProducer, run: dict[str, Any]) -> tuple[str
     match = _VERSION.fullmatch(version)
     if match is None:
         raise SarifImportRefused("unsupported-version", "the driver version is not a release")
-    if int(match.group(1)) not in producer.supported_majors:
+    major, minor = int(match.group(1)), int(match.group(2))
+    if major not in producer.supported_majors:
         raise SarifImportRefused("unsupported-major", "the driver's major version is not declared")
+    if major == 0 and minor not in producer.supported_zero_minors:
+        raise SarifImportRefused(
+            "unsupported-minor", "this major-zero minor version is not declared"
+        )
     return name, version
 
 
@@ -177,7 +197,7 @@ def bind_head(document: SarifDocument, inventory_head: str, operator_head: str |
     inventory_head : str
         ``HEAD`` of the verified inventory that locations resolve against.
     operator_head : str | None
-        The commit the operator names, required when no run states a ``revisionId``.
+        The commit the operator names, required when any run states no ``revisionId``.
 
     Returns
     -------
@@ -190,24 +210,31 @@ def bind_head(document: SarifDocument, inventory_head: str, operator_head: str |
         With ``malformed-version-control``, ``revision-mismatch``, ``head-mismatch`` or
         ``head-required``.
     """
-    revisions: set[str] = set()
     for run in document.runs:
-        provenance = run.get("versionControlProvenance", [])
-        if not isinstance(provenance, list) or not all(
-            isinstance(entry, dict) for entry in provenance
-        ):
-            raise SarifImportRefused("malformed-version-control", "provenance must be objects")
-        for entry in provenance:
-            if "revisionId" not in entry:
-                continue
-            revision = entry["revisionId"]
-            if not isinstance(revision, str) or _OBJECT_ID.fullmatch(revision) is None:
-                raise SarifImportRefused("malformed-version-control", "a revision is not an oid")
-            revisions.add(revision)
-    if revisions - {inventory_head}:
-        raise SarifImportRefused("revision-mismatch", "the file describes another commit")
+        revisions = _run_revisions(run)
+        if revisions - {inventory_head}:
+            raise SarifImportRefused("revision-mismatch", "the file describes another commit")
+        # Each run is bound by its own revision, or else by the head the operator names.
+        if not revisions and operator_head is None:
+            raise SarifImportRefused("head-required", "a run states no revision; name the head")
     if operator_head is not None and operator_head != inventory_head:
         raise SarifImportRefused("head-mismatch", "the named head is not the inventory's head")
-    if not revisions and operator_head is None:
-        raise SarifImportRefused("head-required", "no revision is stated; name the head")
     return inventory_head
+
+
+def _run_revisions(run: dict[str, Any]) -> set[str]:
+    """Return the commit object ids that one run's version-control provenance states."""
+    provenance = run.get("versionControlProvenance", [])
+    if not isinstance(provenance, list) or not all(
+        isinstance(entry, dict) for entry in provenance
+    ):
+        raise SarifImportRefused("malformed-version-control", "provenance must be objects")
+    revisions: set[str] = set()
+    for entry in provenance:
+        if "revisionId" not in entry:
+            continue
+        revision = entry["revisionId"]
+        if not isinstance(revision, str) or _OBJECT_ID.fullmatch(revision) is None:
+            raise SarifImportRefused("malformed-version-control", "a revision is not an oid")
+        revisions.add(revision)
+    return revisions

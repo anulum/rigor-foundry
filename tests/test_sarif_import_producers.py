@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import gzip
 import json
 from collections.abc import Callable
@@ -27,6 +28,7 @@ from rigor_foundry.sarif_import_document import (
 from rigor_foundry.sarif_import_producers import (
     PRODUCERS,
     SELF_DRIVER_NAME,
+    ImportProducer,
     bind_head,
     identify_producer,
 )
@@ -105,11 +107,20 @@ def test_each_real_file_is_identified_as_its_declared_producer(
         }
 
 
-def test_every_declaration_has_its_own_stable_digest() -> None:
-    """The declarations are distinct, and each digest is fixed by its fields."""
-    digests = {producer.declaration_digest for producer in PRODUCERS.values()}
-    assert len(digests) == 3
-    assert all(len(digest) == 64 for digest in digests)
+DECLARATION_DIGESTS = {
+    "codeql": "c822dd62c943962254528d85f53f01bd4d5b0f759c94a634e6c4dbc9087d5d87",
+    "semgrep": "704ff8c157d0a8f9bf710249654db4779ccb65ad4e268f48f5e7a438bfda053d",
+    "trivy": "40f563e5e55d620a4cd0a49461b6b4afb77061ca73829972ffcdfc2af658cd4f",
+}
+
+
+def test_every_declaration_digest_covers_every_field_and_is_pinned() -> None:
+    """Each serialised declaration names every field, and any change of one is a visible diff."""
+    fields = {field.name for field in dataclasses.fields(ImportProducer)}
+    for producer_id, producer in PRODUCERS.items():
+        assert set(producer.to_dict()) == fields
+        assert producer.declaration_digest == DECLARATION_DIGESTS[producer_id]
+    assert PRODUCERS["trivy"].to_dict()["supported_zero_minors"] == [76]
     assert PRODUCERS["semgrep"].to_dict()["root_base_ids"] == ["%SRCROOT%"]
     assert PRODUCERS["trivy"].to_dict()["root_base_ids"] == ["ROOTPATH"]
     assert PRODUCERS["codeql"].to_dict()["root_base_ids"] == []
@@ -121,6 +132,46 @@ def test_rigor_foundrys_own_export_is_refused_as_a_self_import() -> None:
     assert own.runs[0]["tool"]["driver"]["name"] == SELF_DRIVER_NAME
     for producer_id in PRODUCERS:
         assert _refusal(partial(identify_producer, own, producer_id)) == "self-import"
+
+
+def test_a_later_rigor_foundry_run_is_refused_as_a_self_import() -> None:
+    """A Semgrep file whose second run is RigorFoundry's own is refused as a self-import."""
+    (own_run,) = json.loads(OWN.read_text(encoding="utf-8"))["runs"]
+
+    def append_own(document: dict[str, Any]) -> None:
+        document["runs"].append(own_run)
+
+    mixed = _variant(SEMGREP, append_own)
+    assert mixed.runs[0]["tool"]["driver"]["name"] == "Semgrep OSS"
+    assert _refusal(lambda: identify_producer(mixed, "semgrep")) == "self-import"
+
+
+def test_a_file_without_runs_claims_no_producer() -> None:
+    """Zero runs is refused as such, never as mixed runs."""
+    schema = next(iter(PRODUCERS["codeql"].schema_uris))
+    empty = parse_sarif_document(
+        json.dumps({"version": "2.1.0", "$schema": schema, "runs": []}).encode()
+    )
+    assert _refusal(lambda: identify_producer(empty, "codeql")) == "no-runs"
+
+
+@pytest.mark.parametrize(
+    ("majors", "minors"), [(frozenset({0}), frozenset()), (frozenset({1}), frozenset({3}))]
+)
+def test_minors_are_declared_exactly_for_a_major_zero_producer(
+    majors: frozenset[int], minors: frozenset[int]
+) -> None:
+    """A major-zero declaration without measured minors, or minors without major zero, is refused.
+
+    Parameters
+    ----------
+    majors : frozenset[int]
+        The declared majors.
+    minors : frozenset[int]
+        The declared major-zero minors.
+    """
+    with pytest.raises(ValueError, match="major-zero producer declares its measured minors"):
+        ImportProducer("t", frozenset({"T"}), "version", majors, minors, frozenset(), frozenset())
 
 
 def _driver(**changes: Any) -> Callable[[dict[str, Any]], None]:
@@ -165,12 +216,20 @@ IDENTITY_REFUSALS: tuple[tuple[Path, str, Callable[[dict[str, Any]], None], str]
     (SEMGREP, "semgrep", _driver(name="Semgrep Pro"), "driver-not-declared"),
     (SEMGREP, "semgrep", _driver(semanticVersion="2.0.0"), "unsupported-major"),
     (TRIVY, "trivy", _driver(version="1.0.0"), "unsupported-major"),
+    (TRIVY, "trivy", _driver(version="0.77.0"), "unsupported-minor"),
+    (TRIVY, "trivy", _driver(version="0.75.9"), "unsupported-minor"),
     (CODEQL, "codeql", _driver(semanticVersion="3.0.0"), "unsupported-major"),
     (SEMGREP, "semgrep", _driver(semanticVersion=None), "missing-version"),
     (TRIVY, "trivy", _driver(version=None, semanticVersion="0.76.2"), "missing-version"),
     (SEMGREP, "semgrep", _driver(semanticVersion="latest"), "unsupported-version"),
     (SEMGREP, "semgrep", _driver(semanticVersion="v1.186.0"), "unsupported-version"),
     (SEMGREP, "semgrep", _driver(semanticVersion="01.186.0"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.186"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.02.3"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.186.03"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.186.0-rc1"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.186.0+build"), "unsupported-version"),
+    (SEMGREP, "semgrep", _driver(semanticVersion="1.186.0-"), "unsupported-version"),
     (SEMGREP, "semgrep", _second_run("1.185.0"), "mixed-producer-runs"),
     (SEMGREP, "semgrep", _schema(None), "unsupported-schema"),
     (
@@ -217,6 +276,19 @@ def test_a_stated_revision_binds_the_import_to_that_commit() -> None:
     assert _refusal(lambda: bind_head(codeql, OTHER_HEAD, None)) == "revision-mismatch"
     assert _refusal(lambda: bind_head(codeql, OTHER_HEAD, OTHER_HEAD)) == "revision-mismatch"
     assert _refusal(lambda: bind_head(codeql, CODEQL_REVISION, OTHER_HEAD)) == "head-mismatch"
+
+
+def test_every_run_is_bound_by_its_own_revision_or_by_the_named_head() -> None:
+    """A second run without a revision needs the named head even when the first states one."""
+
+    def second_run_without_revision(document: dict[str, Any]) -> None:
+        run = copy.deepcopy(document["runs"][0])
+        del run["versionControlProvenance"]
+        document["runs"].append(run)
+
+    two_runs = _variant(CODEQL, second_run_without_revision)
+    assert _refusal(lambda: bind_head(two_runs, CODEQL_REVISION, None)) == "head-required"
+    assert bind_head(two_runs, CODEQL_REVISION, CODEQL_REVISION) == CODEQL_REVISION
 
 
 @pytest.mark.parametrize("path", [SEMGREP, TRIVY])
