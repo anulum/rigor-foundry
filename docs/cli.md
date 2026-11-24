@@ -262,7 +262,8 @@ undeclared producer or from RigorFoundry itself, or describes another commit.
 `--head` is required when any run states no `revisionId`. Each result becomes
 an `unreviewed` candidate anchored to a clean tracked blob of the checkout, an
 observation, or a skip with its reason. `--require-all-anchored` exits 1 after
-writing the report when any result was skipped. The audit report, the rule
+writing the report when any result was skipped or any finding stayed
+unanchored for lack of a physical location. The audit report, the rule
 registry and the SARIF export never change; see
 [Third-party SARIF import](sarif.md#third-party-sarif-import).
 

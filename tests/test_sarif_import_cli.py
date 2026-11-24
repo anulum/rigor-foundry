@@ -180,3 +180,48 @@ def test_an_undeclared_producer_is_refused_by_the_parser(
     with pytest.raises(SystemExit) as exited:
         main(_arguments(checkout, SEMGREP, "bandit", tmp_path / "report.json"))
     assert exited.value.code == 2
+
+
+def test_require_all_anchored_also_refuses_an_unanchored_finding(
+    checkout: GitRepository, tmp_path: Path
+) -> None:
+    """A finding without a physical location is observed, not anchored, so strict mode exits 1.
+
+    Parameters
+    ----------
+    checkout : GitRepository
+        The producer repository.
+    tmp_path : Path
+        Owned file allocation.
+    """
+    document = json.loads(SEMGREP.read_bytes())
+    del document["runs"][0]["results"][0]["locations"]
+    unanchored = tmp_path / "unanchored.sarif"
+    unanchored.write_text(json.dumps(document), encoding="utf-8")
+    head = _head(checkout)
+    lenient, strict = tmp_path / "lenient.json", tmp_path / "strict.json"
+    assert main([*_arguments(checkout, unanchored, "semgrep", lenient), "--head", head]) == 0
+    arguments = [*_arguments(checkout, unanchored, "semgrep", strict), "--head", head]
+    assert main([*arguments, "--require-all-anchored"]) == 1
+    report = read_import_report(strict)
+    assert report["counts"] == {"imported_candidates": 0, "observations": 1, "skipped": 0}
+
+
+def test_the_git_trust_options_reach_the_inventory(
+    checkout: GitRepository, tmp_path: Path
+) -> None:
+    """A Git version floor above the installed Git refuses the checkout before anything is written.
+
+    Parameters
+    ----------
+    checkout : GitRepository
+        The producer repository.
+    tmp_path : Path
+        Owned output allocation.
+    """
+    output = tmp_path / "import-report.json"
+    floor = ["--git-min-version", "999.0.0", "--git-max-version-exclusive", "1000.0.0"]
+    arguments = [*_arguments(checkout, SEMGREP, "semgrep", output), "--head", _head(checkout)]
+    assert main([*arguments, *floor]) == 2
+    assert not output.exists()
+    assert main(arguments) == 0 and output.exists()

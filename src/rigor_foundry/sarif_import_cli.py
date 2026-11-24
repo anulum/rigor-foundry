@@ -49,7 +49,8 @@ def _run(
         "report_digest": report.report_digest,
     }
     print(json.dumps(summary, sort_keys=True))
-    return int(bool(args.require_all_anchored and report.skipped))
+    unanchored = any(item.reason == "unanchored" for item in report.observations)
+    return int(bool(args.require_all_anchored and (report.skipped or unanchored)))
 
 
 def add_import_sarif_command(
@@ -89,7 +90,7 @@ def add_import_sarif_command(
     command.add_argument(
         "--require-all-anchored",
         action="store_true",
-        help="Exit 1 after writing the report if any result was skipped.",
+        help="Exit 1 after writing the report if a result was skipped or a finding is unanchored.",
     )
     command.add_argument(
         "--output",

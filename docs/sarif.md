@@ -165,8 +165,9 @@ and the SARIF export stay byte-identical.
 - **Preservation.** Level, kind, baseline state, suppressions, fingerprints and
   properties are kept verbatim within fixed bounds, and by digest beyond them.
   Nothing is mapped onto RigorFoundry severity, confidence or category. A field
-  of the wrong SARIF type, `null` included, skips its result with a reason, and
-  `--require-all-anchored` exits 1 when any result was skipped.
+  of the wrong SARIF type, `null` included, skips its result with a reason.
+  `--require-all-anchored` exits 1 when any result was skipped or any finding is
+  an unanchored observation.
 - **Provenance.** Every import is `declared`: the producer identity is the
   file's own claim, recorded with the driver name and version it states. Imports
   bound to an executed adapter-profile run are not available yet.
