@@ -246,3 +246,33 @@ def test_invalid_budget_and_reference_refuse_before_opening(tmp_path: Path) -> N
         RetainedContextSource(
             path, reference=cast(TypedObjectRef1, {}), raw_digest="a" * 64, budget=budget()
         )
+
+
+@pytest.mark.parametrize("change", ["removed", "replaced"])
+def test_removed_or_replaced_sibling_entry_refuses_and_releases(
+    tmp_path: Path, change: str
+) -> None:
+    """Removing a sibling entry, or replacing it under the same name, invalidates the lease.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real source directory.
+    change : str
+        The sibling entry removed, or replaced under its own name by a new inode.
+    """
+    path, ref, digest = source_file(tmp_path / "source")
+    sibling = path.parent / "sibling"
+    sibling.write_bytes(b"sibling")
+    lease = RetainedContextSource(path, reference=ref, raw_digest=digest, budget=budget())
+    if change == "removed":
+        sibling.unlink()
+    else:
+        replacement = path.parent / "replacement"
+        replacement.write_bytes(b"sibling")
+        replacement.replace(sibling)
+    with pytest.raises(ValueError, match="context source directory identity changed"):
+        lease.read()
+    with pytest.raises(ValueError, match="identity changed"):
+        lease.close()
+    assert source_handles(path.parent) == 0

@@ -37,6 +37,9 @@ Explicit policy parser budgets do not rewrite those embedded original limits.
 `retained_policy_source.RetainedPolicySource` holds an independently selected
 raw file and its parent directory through use and closing checks. The host
 already owns access; opaque universe locators never become file paths.
+The parent identity binds the directory's complete entry list as well as its
+metadata, so an entry change beside the source is refused even within one tick
+of a coarse filesystem clock.
 
 ```python
 from rigor_foundry.retained_policy_source import RetainedPolicySource

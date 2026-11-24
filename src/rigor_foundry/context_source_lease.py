@@ -23,6 +23,7 @@ from .model_primitives import require_digest
 from .policy_read_budget import PolicyReadBudget1
 from .policy_source_reads import parse_policy_document_payload
 from .project_registry_models import ProjectRegistry
+from .retained_policy_source import parent_directory_identity
 from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 from .typed_object_reference import TypedObjectRef1
 
@@ -73,7 +74,7 @@ class RetainedContextSource:
             if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
                 raise ValueError("context source must be a single-link regular file")
             self._file_identity = _identity(metadata)
-            self._parent_identity = _identity(os.fstat(self._parent))
+            self._parent_identity = parent_directory_identity(self._parent)
             self._selection_id = uuid4().hex
             self._snapshot_id = canonical_digest(
                 {
@@ -109,8 +110,8 @@ class RetainedContextSource:
         parent = open_directory_no_follow(self._path.parent)
         try:
             if (
-                _identity(os.fstat(parent)) != self._parent_identity
-                or _identity(os.fstat(self._parent)) != self._parent_identity
+                parent_directory_identity(parent) != self._parent_identity
+                or parent_directory_identity(self._parent) != self._parent_identity
             ):
                 raise ValueError("context source directory identity changed")
             if (

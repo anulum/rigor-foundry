@@ -15,6 +15,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Retained policy and context sources now bind their parent directory's
+  complete entry list, names and inode numbers, as well as its metadata. On hosts
+  with coarse directory timestamps, such as Linux kernels without multigrain
+  timestamps, an entry added, removed or replaced beside the source within one
+  clock tick left the directory metadata unchanged and was not refused.
+
 - Refuse a symbolic-link or non-directory internal record lock parent with the
   intended validation error. Linux reports a symbolic-link parent opened as a
   directory as ENOTDIR, so callers received NotADirectoryError instead of

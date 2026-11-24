@@ -23,6 +23,59 @@ from .policy_read_budget import PolicyReadBudget1
 from .stable_reads import open_directory_no_follow, read_stable_regular_file_at
 
 
+def directory_entry_digest(descriptor: int) -> str:
+    """Return the SHA-256 of one open directory's complete entry list.
+
+    Directory timestamps come from a coarse kernel clock on many hosts, so an entry added,
+    removed or replaced within one clock tick can leave every ``stat`` field of the directory
+    unchanged. The sorted entry names and inode numbers bind the entries themselves.
+
+    Parameters
+    ----------
+    descriptor : int
+        An open directory descriptor. It is listed through a duplicate, so its own use is
+        unaffected.
+
+    Returns
+    -------
+    str
+        The hexadecimal SHA-256 of every entry's name bytes and inode number, in name order.
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be listed through the descriptor.
+    """
+    with os.scandir(descriptor) as entries:
+        listed = sorted((os.fsencode(entry.name), entry.inode()) for entry in entries)
+    digest = hashlib.sha256()
+    for name, inode in listed:
+        digest.update(len(name).to_bytes(8, "big") + name + inode.to_bytes(8, "big"))
+    return digest.hexdigest()
+
+
+def parent_directory_identity(descriptor: int) -> tuple[int | str, ...]:
+    """Return a retained parent directory's stability identity and complete entry list.
+
+    Parameters
+    ----------
+    descriptor : int
+        An open descriptor of the retained source's parent directory.
+
+    Returns
+    -------
+    tuple[int | str, ...]
+        The directory's ``stat`` stability fields followed by its entry digest, so a changed
+        entry is seen even when a coarse clock leaves the directory timestamps unchanged.
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be examined through the descriptor.
+    """
+    return (*_identity(os.fstat(descriptor)), directory_entry_digest(descriptor))
+
+
 def _identity(metadata: os.stat_result) -> tuple[int, ...]:
     """Bind the complete retained file or directory stability identity."""
     return (
@@ -90,7 +143,7 @@ class RetainedPolicySource:
             if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
                 raise ValueError("policy source must be a single-link regular file")
             self._file_identity = _identity(metadata)
-            self._parent_identity = _identity(os.fstat(self._parent))
+            self._parent_identity = parent_directory_identity(self._parent)
             self._snapshot_id = canonical_digest(
                 {
                     "selection_id": uuid4().hex,
@@ -125,8 +178,8 @@ class RetainedPolicySource:
         parent = open_directory_no_follow(self._path.parent)
         try:
             if (
-                _identity(os.fstat(parent)) != self._parent_identity
-                or _identity(os.fstat(self._parent)) != self._parent_identity
+                parent_directory_identity(parent) != self._parent_identity
+                or parent_directory_identity(self._parent) != self._parent_identity
             ):
                 raise ValueError("policy source directory identity changed")
             if (

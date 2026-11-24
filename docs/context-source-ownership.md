@@ -122,7 +122,11 @@ The context manager repeats the complete check at closure and releases owned
 descriptors even when that check refuses. Explicit `close()` is idempotent;
 later reads, references or snapshot access refuse. Edited, replaced, deleted
 or newly aliased sources and changed parent-directory identities invalidate
-the selection. A new reader of equal bytes has a different selection identity
+the selection. The parent identity binds the directory's complete entry list,
+names and inode numbers, as well as its metadata. An entry added, removed or
+replaced beside the source is therefore refused even when it happens within
+one tick of a coarse filesystem clock, which leaves the directory timestamps
+unchanged. A new reader of equal bytes has a different selection identity
 and cannot stand in for the original retained lifetime.
 
 These descriptor guarantees require a platform with the existing no-follow

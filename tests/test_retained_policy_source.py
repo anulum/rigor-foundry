@@ -18,8 +18,12 @@ import pytest
 from test_context_owner_implementation import implementation_budget
 
 from rigor_foundry.policy_read_budget import PolicyReadBudget1
-from rigor_foundry.retained_policy_source import RetainedPolicySource
-from rigor_foundry.stable_reads import StableReadError
+from rigor_foundry.retained_policy_source import (
+    RetainedPolicySource,
+    directory_entry_digest,
+    parent_directory_identity,
+)
+from rigor_foundry.stable_reads import StableReadError, open_directory_no_follow
 
 
 def retained(path: Path, payload: bytes, **changes: int) -> RetainedPolicySource:
@@ -140,3 +144,98 @@ def test_exact_original_count_digest_and_explicit_limits_refuse(tmp_path: Path) 
         RetainedPolicySource(
             path, byte_digest="invalid", byte_count=8, budget=implementation_budget()
         )
+
+
+_STAT_FIELDS = (
+    "st_dev",
+    "st_ino",
+    "st_mode",
+    "st_nlink",
+    "st_uid",
+    "st_gid",
+    "st_size",
+    "st_mtime_ns",
+    "st_ctime_ns",
+)
+
+
+def _change_sibling(root: Path, change: str) -> None:
+    """Change one directory entry beside the retained source without touching the source."""
+    if change == "added":
+        (root / "added").write_bytes(b"new directory state")
+    elif change == "removed":
+        (root / "sibling").unlink()
+    else:
+        replacement = root / "replacement"
+        replacement.write_bytes(b"sibling")
+        replacement.replace(root / "sibling")
+
+
+@pytest.mark.parametrize("change", ["added", "removed", "replaced"])
+def test_every_sibling_entry_change_refuses_even_within_one_clock_tick(
+    tmp_path: Path, change: str
+) -> None:
+    """An entry change right after selection refuses on every attempt, whatever the clock grain.
+
+    A coarse directory timestamp can leave every parent ``stat`` field unchanged when an entry
+    changes in the same clock tick as the selection. A replaced sibling keeps the same names.
+    The bound entry list still differs, so each of the attempts must refuse.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real directories, one per attempt.
+    change : str
+        The entry added, removed, or replaced under the same name.
+    """
+    for attempt in range(64):
+        root = tmp_path / f"source-{attempt}"
+        root.mkdir()
+        (root / "sibling").write_bytes(b"sibling")
+        path = root / "original.bin"
+        path.write_bytes(b"original")
+        source = retained(path, b"original")
+        _change_sibling(root, change)
+        with pytest.raises(ValueError, match="policy source directory identity changed"):
+            source.read()
+        with pytest.raises(ValueError, match="identity changed"):
+            source.close()
+        source.close()
+
+
+def test_parent_identity_binds_metadata_and_entry_names_and_inodes(tmp_path: Path) -> None:
+    """The parent identity is equal through any descriptor and changes with any name or inode.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned real directory.
+    """
+    root = tmp_path / "directory"
+    root.mkdir()
+    (root / "a").write_bytes(b"a")
+    first = open_directory_no_follow(root)
+    second = open_directory_no_follow(root)
+    try:
+        before = directory_entry_digest(first)
+        assert directory_entry_digest(second) == before == directory_entry_digest(first)
+        identity = parent_directory_identity(first)
+        assert identity == parent_directory_identity(second)
+        assert identity[-1] == before
+        assert identity[:-1] == (*(getattr(os.fstat(first), field) for field in _STAT_FIELDS),)
+        replacement = root / "b"
+        replacement.write_bytes(b"a")
+        assert directory_entry_digest(first) != before
+        replacement.replace(root / "a")
+        replaced = directory_entry_digest(second)
+        assert replaced != before
+        with os.scandir(root) as entries:
+            (entry,) = list(entries)
+        expected = hashlib.sha256(
+            (1).to_bytes(8, "big") + b"a" + entry.inode().to_bytes(8, "big")
+        ).hexdigest()
+        assert replaced == expected
+        assert parent_directory_identity(first)[-1] == replaced
+    finally:
+        os.close(first)
+        os.close(second)
