@@ -252,6 +252,20 @@ only reviewed `valid` results, declares what it omitted, and refuses GitHub's
 upload limits before writing anything; see [SARIF export](sarif.md) for the state
 mapping, the anchor contract and the profile.
 
+## Third-party SARIF import (provisional)
+
+`rigor import-sarif --sarif FILE --producer {codeql,semgrep,trivy} --root CHECKOUT
+--output REPORT.json [--head OID] [--checkout-root PATH] [--require-all-anchored]`
+imports one declared producer's SARIF 2.1.0 file into a separate import report.
+The file is refused as a whole if it exceeds a whole-file limit, comes from an
+undeclared producer or from RigorFoundry itself, or describes another commit.
+`--head` is required when any run states no `revisionId`. Each result becomes
+an `unreviewed` candidate anchored to a clean tracked blob of the checkout, an
+observation, or a skip with its reason. `--require-all-anchored` exits 1 after
+writing the report when any result was skipped. The audit report, the rule
+registry and the SARIF export never change; see
+[Third-party SARIF import](sarif.md#third-party-sarif-import).
+
 ## Content-addressed report differences
 
 `rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]`

@@ -44,6 +44,19 @@ PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
             "--policy",
             "--root",
         ),
+        "import-sarif": _command(
+            "--checkout-root",
+            "--git-executable",
+            "--git-max-version-exclusive",
+            "--git-min-version",
+            "--git-trust-root",
+            "--head",
+            "--output",
+            "--producer",
+            "--require-all-anchored",
+            "--root",
+            "--sarif",
+        ),
         "policy-check": _command("--policy", "--root"),
         "scan-provenance": _command(
             "--output", "--policy", "--profile", "--profile-sha256", "--root"

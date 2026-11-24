@@ -62,6 +62,7 @@ from .rule_maturity_manifest import evaluate_rule_maturity_manifest
 from .safe_output import write_new_output
 from .sarif import report_sarif
 from .sarif_github_profile import GITHUB_CODE_SCANNING_PROFILE
+from .sarif_import_cli import add_import_sarif_command
 from .scanner import scan_repository
 from .source_provenance_cli import add_source_provenance_commands
 from .stable_contract import stable_contract_manifest
@@ -671,6 +672,7 @@ def _parser() -> argparse.ArgumentParser:
     add_offline_verify_command(subparsers)
     add_cra_commands(subparsers)
     add_doctor_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
+    add_import_sarif_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
     return parser
 
 

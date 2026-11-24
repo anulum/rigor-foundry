@@ -87,6 +87,14 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   category `rigor-foundry`. It refuses an upload from a checkout that is not the
   commit the report describes.
 
+- `rigor import-sarif` imports one SARIF 2.1.0 file from a declared CodeQL,
+  Semgrep or Trivy producer into a separate `rigor.import-report.v1` report. The
+  import is bound to one commit and enforces whole-file limits. Each result
+  becomes an `unreviewed` candidate anchored to a clean tracked blob, an
+  observation, or a skip with its reason. Imported rules live in their own
+  `ext:<producer>:` namespace. The audit report, the rule registry and the SARIF
+  export are unchanged. The command is provisional.
+
 - SARIF runs carry a CWE taxonomy pinned to CWE List 5.0. 23 rules relate to
   one CWE entry each, with kind `relevant` and never `equal`: the rule marks a
   surface related to the weakness and does not prove it. Each mapping is a

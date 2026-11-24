@@ -126,3 +126,47 @@ The schema URI is exported as `SARIF_SCHEMA_URI`; its current value identifies
 the OASIS SARIF 2.1.0 Errata 01 JSON schema. `report_sarif` and the schema/version
 constants are provisional package-level APIs. Their lifecycle is independent
 of the stable SARIF wire contract; see [Public API stability](api-stability.md).
+
+## Third-party SARIF import
+
+`rigor import-sarif` imports one SARIF 2.1.0 file from a declared producer into
+an import report, schema `rigor.import-report.v1`. It is separate from the audit
+report. Imported findings stay `unreviewed` candidates: nothing in the import
+adjudicates them, and the audit report, the rule registry, the rule-pack digest
+and the SARIF export stay byte-identical.
+
+- **Declared producers.** CodeQL, Semgrep and Trivy are declared in code, each by
+  the driver name, version field, supported versions, exact `$schema` URI and root
+  `uriBaseId` that its real output uses. A version must be exactly
+  `MAJOR.MINOR.PATCH` with no leading zero. Its major must be declared, and a
+  major-zero producer declares its supported minors instead, since any 0.x minor
+  may change the format: Trivy 0.76 only. A file from another producer, with
+  another driver, schema or version, or claiming different drivers in different
+  runs is refused as a whole. RigorFoundry's own SARIF, in any run, is refused as
+  a self-import.
+- **One commit.** Every `versionControlProvenance[].revisionId` of every run must
+  equal the checkout's HEAD. When any run states none, `--head` must name that
+  HEAD.
+- **Whole-file limits.** The import refuses a file over 32 MiB, one that is not
+  strict JSON (duplicate keys and non-finite numbers included), nesting deeper
+  than 64, more than 8 runs, more than 100,000 results in a run, or more than
+  20,000 rules across a run's driver and tool extensions.
+- **Rules.** Imported rules live in their own `ext:<producer>:<ruleId>`
+  namespace, per tool component, so rules kept in a query-pack extension resolve
+  through `rule.toolComponent.index`. A candidate identifier binds the producer,
+  the rule, the rule's component name and version, the anchor, the message digest
+  and the partial fingerprints. A producer's own `fingerprints` are kept as data.
+- **Locations.** A relative URI, a URI under a declared root `uriBaseId`, or an
+  absolute `file:` URI under the checkout (or `--checkout-root`) must resolve,
+  after decoding exactly once, to one clean tracked blob, compared exactly and
+  never through a symbolic link. The `startLine` to `endLine` span becomes the
+  anchor. A result without a physical artifact location is an unanchored
+  observation, and a non-finding `kind` is an observation wherever it points.
+- **Preservation.** Level, kind, baseline state, suppressions, fingerprints and
+  properties are kept verbatim within fixed bounds, and by digest beyond them.
+  Nothing is mapped onto RigorFoundry severity, confidence or category. A field
+  of the wrong SARIF type, `null` included, skips its result with a reason, and
+  `--require-all-anchored` exits 1 when any result was skipped.
+- **Provenance.** Every import is `declared`: the producer identity is the
+  file's own claim, recorded with the driver name and version it states. Imports
+  bound to an executed adapter-profile run are not available yet.
