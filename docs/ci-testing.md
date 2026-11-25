@@ -102,3 +102,13 @@ the separate component/corpus parser domains and reference-budget refusal.
 Keeping its coverage process separate preserves the documentation renderer's
 native dependency initialization. The source guard rejects removal, duplication,
 conditional execution, a lower threshold or a reduced measured owner set.
+
+## Interpreters for the sealed second-output tests
+
+The tests of the sealed second-output channel, and of `import-sarif --execute`
+that uses it, need a Linux CPython built with the memory file seal constants
+(`fcntl.F_SEAL_*`), such as a distribution or python.org build. The hosted
+Linux jobs use such interpreters. uv's standalone CPython builds lack the
+constants, so on them those tests fail with `channel-unavailable` instead of
+being skipped. The package, its CLI and every other command still import and
+run there.

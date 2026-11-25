@@ -5,7 +5,13 @@
 # ORCID: 0009-0009-3560-0851
 # Contact: www.anulum.li | protoscience@anulum.li
 # RigorFoundry — second-output memory file channel tests
-"""Verify the inherited memory file channel with a real child process writing to ``/dev/fd/N``."""
+"""Verify the inherited memory file channel with a real child process writing to ``/dev/fd/N``.
+
+These tests need a Linux CPython built with the memory file seal constants (``fcntl.F_SEAL_*``),
+such as a distribution or python.org build. uv's standalone builds lack the constants, so the
+real-channel tests fail there with ``channel-unavailable``; they are not skipped. Only the
+absence of ``os.memfd_create``, a platform without memory files, skips this module.
+"""
 
 from __future__ import annotations
 
