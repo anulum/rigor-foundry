@@ -290,6 +290,10 @@ def inspect_prlimit(policy: PrlimitCompatibilityPolicy | None = None) -> Prlimit
         help_text = canonical_help(_metadata_command(launcher, "--help"))
         if any(option not in help_text.split() for option in active.required_options):
             raise RuntimeError("a required prlimit option is unavailable")
+        if owner != _metadata_command(package_query, "--search", active.executable_path):
+            raise RuntimeError("prlimit package ownership changed during inspection")
+        if record != _metadata_command(package_query, *record_arguments):
+            raise RuntimeError("prlimit package record changed during inspection")
     after = (_snapshot(executable, active), _snapshot(query, active))
     if before != after:
         raise RuntimeError("the prlimit launcher or the package query changed during inspection")

@@ -136,7 +136,13 @@ def test_the_package_must_own_the_path_and_be_installed_exactly() -> None:
             package_identity(owner, record, POLICY)
 
 
-def _fake_launcher(root: Path, *, replace_on_help: bool) -> PrlimitCompatibilityPolicy:
+def _fake_launcher(
+    root: Path,
+    *,
+    replace_on_help: bool,
+    second_owner: str | None = None,
+    second_record: str | None = None,
+) -> PrlimitCompatibilityPolicy:
     """Write real launcher and dpkg-query processes owned by the test user, and their policy."""
     root.mkdir(parents=True, exist_ok=True)
     launcher, query = root / "prlimit", root / "dpkg-query"
@@ -150,10 +156,22 @@ def _fake_launcher(root: Path, *, replace_on_help: bool) -> PrlimitCompatibility
         "else:\n    raise SystemExit(64)\n",
         encoding="utf-8",
     )
+    state = root / "query-count"
+    owners = (
+        f"util-linux: {launcher}\n".encode(),
+        (second_owner or f"util-linux: {launcher}\n").encode(),
+    )
+    records = (
+        b"util-linux|2.39.3-1|amd64|install ok installed\n",
+        (second_record or "util-linux|2.39.3-1|amd64|install ok installed\n").encode(),
+    )
     query.write_text(
-        "#!/usr/bin/python3\nimport os, sys\n"
-        f"if sys.argv[1] == '--search':\n    os.write(1, b'util-linux: {launcher}\\n')\n"
-        "else:\n    os.write(1, b'util-linux|2.39.3-1|amd64|install ok installed\\n')\n",
+        "#!/usr/bin/python3\nimport os, sys\nfrom pathlib import Path\n"
+        f"state = Path({str(state)!r})\n"
+        "count = int(state.read_text()) if state.exists() else 0\n"
+        "state.write_text(str(count + 1))\n"
+        f"answers = {owners!r} if sys.argv[1] == '--search' else {records!r}\n"
+        "os.write(1, answers[0 if count < 2 else 1])\n",
         encoding="utf-8",
     )
     launcher.chmod(0o755)
@@ -178,3 +196,34 @@ def test_real_fixture_processes_are_attested_and_a_replacement_is_refused(tmp_pa
     assert (provenance.semantic_version, provenance.package_version) == ("2.39.3", "2.39.3-1")
     with pytest.raises(RuntimeError, match="changed during inspection"):
         inspect_prlimit(_fake_launcher(tmp_path / "replaced", replace_on_help=True))
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        (
+            {"second_owner": "util-linux: /usr/bin/other\n"},
+            "package ownership changed during inspection",
+        ),
+        (
+            {"second_record": "util-linux|2.40.0-1|amd64|install ok installed\n"},
+            "package record changed during inspection",
+        ),
+    ],
+)
+def test_a_package_database_change_during_inspection_is_refused(
+    tmp_path: Path, changes: dict[str, str], message: str
+) -> None:
+    """The ownership and the record are queried again after the help check and must be equal.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned launcher fixture allocation.
+    changes : dict[str, str]
+        The query's second answer for one of the two queries.
+    message : str
+        Text the refusal must contain.
+    """
+    with pytest.raises(RuntimeError, match=message):
+        inspect_prlimit(_fake_launcher(tmp_path / "changing", replace_on_help=False, **changes))
