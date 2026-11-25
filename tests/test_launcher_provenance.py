@@ -332,6 +332,7 @@ def test_a_package_database_change_during_inspection_is_refused(
         ({"GITHUB_ACTIONS": "true"}, "linux", False, "fail"),
         ({"CI": "true"}, "linux", False, "fail"),
         ({"CI": "1"}, "linux", False, "fail"),
+        ({"CI": "True"}, "linux", False, "fail"),
         ({"GITHUB_ACTIONS": "true", "CI": "true"}, "win32", False, "skip"),
         ({"CI": "true"}, "darwin", False, "skip"),
     ],
