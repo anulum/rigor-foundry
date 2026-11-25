@@ -115,7 +115,7 @@ def test_a_read_that_ends_before_the_sealed_size_is_refused(
 
 
 def test_a_platform_without_memory_files_has_no_channel(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Without ``memfd_create`` the channel cannot exist.
+    """Without ``memfd_create`` the channel is refused before any file exists.
 
     Parameters
     ----------
@@ -123,5 +123,6 @@ def test_a_platform_without_memory_files_has_no_channel(monkeypatch: pytest.Monk
         Removes ``os.memfd_create`` for this test.
     """
     monkeypatch.delattr(os, "memfd_create")
-    with pytest.raises(RuntimeError, match="needs anonymous memory files"):
+    with pytest.raises(SarifImportRefused, match="no sealable anonymous memory files") as refused:
         SecondOutputChannel()
+    assert refused.value.reason == "channel-unavailable"

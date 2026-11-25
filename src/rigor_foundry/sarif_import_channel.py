@@ -12,13 +12,18 @@ tool only through the process's inherited descriptors. The tool writes its secon
 ``/dev/fd/N``. After the run the host seals the file against every further write, growth and
 shrink, then reads it from offset zero, refusing it when it is larger than the whole-file
 limit, and closes it.
+
+Memory files and their seals exist only on Linux, and only in interpreters built with the
+seal constants. They are resolved when a channel is created, never at import, so the package
+imports on every platform. Where any of them is missing, creating a channel is refused as
+``channel-unavailable``, never degraded to an unsealed channel.
 """
 
 from __future__ import annotations
 
-import fcntl
+import importlib
 import os
-from types import TracebackType
+from types import ModuleType, TracebackType
 from typing import TYPE_CHECKING, Final, Protocol, final
 
 from .sarif_import_document import MAX_SARIF_BYTES, SarifImportRefused
@@ -27,7 +32,39 @@ if TYPE_CHECKING:
     from .adapter_profiles import AdapterProfileEvidence
 
 _NAME: Final = "rigor-second-output"
-_SEALS: Final = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+_SEAL_NAMES: Final = ("F_SEAL_WRITE", "F_SEAL_GROW", "F_SEAL_SHRINK", "F_SEAL_SEAL")
+_SEAL_OPERATIONS: Final = ("F_ADD_SEALS", "F_GET_SEALS")
+_MEMORY_FILE_FLAGS: Final = ("MFD_CLOEXEC", "MFD_ALLOW_SEALING")
+
+
+def _unavailable(detail: str) -> SarifImportRefused:
+    """Return the refusal of a channel the platform cannot provide."""
+    return SarifImportRefused("channel-unavailable", detail)
+
+
+def _sealing() -> tuple[ModuleType, int]:
+    """Return the ``fcntl`` module and the complete seal set, or refuse the channel.
+
+    Returns
+    -------
+    tuple[ModuleType, int]
+        The module that adds and reads seals, and the write, grow, shrink and seal bits.
+
+    Raises
+    ------
+    SarifImportRefused
+        With ``channel-unavailable`` if ``fcntl`` or any seal constant is missing.
+    """
+    try:
+        control = importlib.import_module("fcntl")
+    except ImportError as error:
+        raise _unavailable("the platform has no fcntl to seal a second output") from error
+    if not all(hasattr(control, name) for name in (*_SEAL_NAMES, *_SEAL_OPERATIONS)):
+        raise _unavailable("the interpreter has no memory file seals")
+    seals = 0
+    for name in _SEAL_NAMES:
+        seals |= int(getattr(control, name))
+    return control, seals
 
 
 class SecondOutput(Protocol):
@@ -61,12 +98,14 @@ class SecondOutputChannel:
 
         Raises
         ------
-        RuntimeError
-            If the platform has no anonymous memory files.
+        SarifImportRefused
+            With ``channel-unavailable`` if the platform has no sealable anonymous memory
+            files, before any file is created.
         """
+        self._control, self._seals = _sealing()
         create = getattr(os, "memfd_create", None)
-        if create is None:
-            raise RuntimeError("a second output channel needs anonymous memory files")
+        if create is None or not all(hasattr(os, name) for name in _MEMORY_FILE_FLAGS):
+            raise _unavailable("the platform has no sealable anonymous memory files")
         self._descriptor: int | None = create(_NAME, os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         self.limit = limit
 
@@ -98,9 +137,10 @@ class SecondOutputChannel:
             If the file cannot be sealed, for example because a writable mapping of it
             exists, or if the read ends short.
         """
+        control, seals = self._control, self._seals
         try:
-            if fcntl.fcntl(self.descriptor, fcntl.F_GET_SEALS) & _SEALS != _SEALS:
-                fcntl.fcntl(self.descriptor, fcntl.F_ADD_SEALS, _SEALS)
+            if control.fcntl(self.descriptor, control.F_GET_SEALS) & seals != seals:
+                control.fcntl(self.descriptor, control.F_ADD_SEALS, seals)
         except OSError as error:
             raise ValueError("the second output cannot be sealed against writes") from error
         size = os.fstat(self.descriptor).st_size

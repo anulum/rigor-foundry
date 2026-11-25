@@ -186,3 +186,6 @@ and the SARIF export stay byte-identical.
   The bound covers every file the tool writes, its own temporary files
   included, so a scan whose temporary files pass 32 MiB fails closed; its
   `declared` import stays possible.
+  It needs Linux memory files with seals. Where the platform or the interpreter
+  lacks them, `--execute` is refused as `channel-unavailable` before any run,
+  and the package and its other commands still work.
