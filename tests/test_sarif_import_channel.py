@@ -13,6 +13,7 @@ import mmap
 import os
 import subprocess
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -121,13 +122,30 @@ def test_a_read_that_ends_before_the_sealed_size_is_refused(
 
 
 def test_a_platform_without_memory_files_has_no_channel(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Without ``memfd_create`` the channel is refused before any file exists.
+    """Without ``memfd_create`` the channel is refused before any file exists, on any interpreter.
+
+    A stand-in control module with every seal name makes the memory file check the one that
+    refuses, also on an interpreter built without the seal constants.
 
     Parameters
     ----------
     monkeypatch : pytest.MonkeyPatch
-        Removes ``os.memfd_create`` for this test.
+        Installs complete seal names and removes ``os.memfd_create`` for this test.
     """
+    control = types.ModuleType("fcntl")
+    for value, name in enumerate(
+        (
+            "F_ADD_SEALS",
+            "F_GET_SEALS",
+            "F_SEAL_WRITE",
+            "F_SEAL_GROW",
+            "F_SEAL_SHRINK",
+            "F_SEAL_SEAL",
+        ),
+        start=1,
+    ):
+        setattr(control, name, value)
+    monkeypatch.setitem(sys.modules, "fcntl", control)
     monkeypatch.delattr(os, "memfd_create")
     with pytest.raises(SarifImportRefused, match="no sealable anonymous memory files") as refused:
         SecondOutputChannel()
