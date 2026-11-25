@@ -49,12 +49,14 @@ _FIELDS: Final = frozenset(
         "stderr_bytes",
         "sarif_sha256",
         "sarif_bytes",
+        "import_content_sha256",
         "driver_version",
         "consistent_findings",
         "binding_digest",
     }
 )
 _VECTOR_FIELDS: Final = frozenset({"version", "launcher_identity", "file_size_cap"})
+_PROVENANCE_FIELDS: Final = frozenset({"provenance", "profile_evidence_digest", "report_digest"})
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
 Finding = tuple[str, str, int]
 
@@ -157,6 +159,7 @@ class ExecutedSarifBinding:
     stderr_bytes: int
     sarif_sha256: str
     sarif_bytes: int
+    import_content_sha256: str
     driver_version: str
     consistent_findings: int
 
@@ -175,6 +178,7 @@ class ExecutedSarifBinding:
             "stderr_bytes": self.stderr_bytes,
             "sarif_sha256": self.sarif_sha256,
             "sarif_bytes": self.sarif_bytes,
+            "import_content_sha256": self.import_content_sha256,
             "driver_version": self.driver_version,
             "consistent_findings": self.consistent_findings,
         }
@@ -191,6 +195,26 @@ class ExecutedSarifBinding:
     def to_json(self) -> str:
         """Render deterministic JSON with a trailing newline."""
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
+def import_content_digest(report: dict[str, object]) -> str:
+    """Return the digest of an import report's content, apart from its provenance fields.
+
+    Parameters
+    ----------
+    report : dict[str, object]
+        A serialised import report.
+
+    Returns
+    -------
+    str
+        The canonical digest of every field except ``provenance``, ``profile_evidence_digest``
+        and ``report_digest``, which the executed import sets after the binding. It covers the
+        anchored candidates, the observations, the skipped results and their counts.
+    """
+    return canonical_digest(
+        {key: item for key, item in report.items() if key not in _PROVENANCE_FIELDS}
+    )
 
 
 def complete_output_digest(stdout: bytes, stderr: bytes) -> str:
@@ -272,6 +296,7 @@ def bind_executed_sarif(run: ImportRun, *, report: ImportReport) -> ExecutedSari
         stderr_bytes=len(stderr),
         sarif_sha256=report.sarif_sha256,
         sarif_bytes=len(run.sarif),
+        import_content_sha256=import_content_digest(report.to_dict()),
         driver_version=version,
         consistent_findings=expected.total(),
     )
@@ -301,8 +326,8 @@ def verify_executed_binding(value: object) -> dict[str, object]:
     ValueError
         If a field is missing or extra, the schema differs, the import profile digest is not
         the built-in profile's, the evidence does not verify or names another profile, the
-        tracked content digest is not a digest, the launch vector is not the bounded import
-        launch, or the binding digest differs.
+        tracked content or import content digest is not a digest, the launch vector is not
+        the bounded import launch, or the binding digest differs.
     """
     data = require_mapping(value, "executed SARIF binding")
     require_exact_fields(data, _FIELDS, "executed SARIF binding")
@@ -318,6 +343,7 @@ def verify_executed_binding(value: object) -> dict[str, object]:
     ):
         raise ValueError("the binding's evidence names another profile")
     _require_digest(data["tracked_content_digest"], "tracked content digest")
+    _require_digest(data["import_content_sha256"], "import content digest")
     vector = require_mapping(data["launch_vector"], "launch vector")
     require_exact_fields(vector, _VECTOR_FIELDS, "launch vector")
     cap = vector["file_size_cap"]
@@ -345,7 +371,8 @@ def verify_executed_import(report: dict[str, object], binding: dict[str, object]
     ValueError
         Unless the report is executed, cites the binding's digest, imports the bound SARIF
         bytes, is anchored against the tracked content the run scanned, states the bound
-        driver version, and comes from the import profile's producer.
+        driver version, comes from the import profile's producer, and carries exactly the
+        candidates, observations and skipped results that were bound.
     """
     driver = require_mapping(report["driver"], "driver")
     profile = import_profile_by_name(binding["import_profile"])
@@ -361,3 +388,5 @@ def verify_executed_import(report: dict[str, object], binding: dict[str, object]
         raise ValueError("the report's driver version is not the bound version")
     if report["producer_id"] != profile.producer_id:
         raise ValueError("the report's producer is not the import profile's producer")
+    if import_content_digest(report) != binding["import_content_sha256"]:
+        raise ValueError("the report's imported content is not the bound import")

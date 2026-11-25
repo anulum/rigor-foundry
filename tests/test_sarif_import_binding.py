@@ -39,6 +39,7 @@ from rigor_foundry.sarif_import_binding import (
     bind_executed_sarif,
     complete_output_digest,
     exact_version,
+    import_content_digest,
     json_findings,
     verify_executed_binding,
     verify_executed_import,
@@ -274,6 +275,7 @@ def test_agreeing_multisets_bind_and_the_evidence_count_must_match(
         ("extra", True, "fields do not match the schema"),
         ("tracked_content_digest", "0" * 63, "tracked content digest is not a SHA-256"),
         ("tracked_content_digest", 0, "tracked content digest is not a SHA-256"),
+        ("import_content_sha256", "0" * 65, "import content digest is not a SHA-256"),
         ("launch_vector", [], "launch vector"),
         ("launch_vector.version", "rigor-foundry-bwrap-v1", "not the bounded import launch"),
         ("launch_vector.file_size_cap", FILE_SIZE_CAP - 1, "not the bounded import launch"),
@@ -469,3 +471,36 @@ def test_a_report_and_binding_that_do_not_belong_together_are_refused(
 def test_a_run_on_other_tracked_content_is_never_bound(inventory: GitInventory) -> None:
     """A run whose scanned content is not the content the SARIF is anchored to is refused."""
     assert _reason(inventory, tracked_content_digest="0" * 64) == "other-content"
+
+
+def test_an_edited_executed_report_no_longer_verifies_against_its_binding(
+    inventory: GitInventory,
+) -> None:
+    """A report re-digested after its candidates were dropped or changed is refused.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The producer repository's inventory.
+    """
+    report, binding = import_executed_sarif(
+        _run(inventory), inventory=inventory, head=inventory.head
+    )
+    record, bound = json.loads(report.to_json()), json.loads(binding.to_json())
+    assert bound["import_content_sha256"] == import_content_digest(record)
+    dropped = {
+        **record,
+        "imported_candidates": [],
+        "counts": {**record["counts"], "imported_candidates": 0},
+    }
+    (candidate,) = record["imported_candidates"]
+    changed = {
+        **record,
+        "imported_candidates": [{**candidate, "result": {**candidate["result"], "level": "note"}}],
+    }
+    for edited in (dropped, changed):
+        body = {key: item for key, item in edited.items() if key != "report_digest"}
+        edited["report_digest"] = canonical_digest(body)
+        verify_import_report(edited)
+        with pytest.raises(ValueError, match="imported content is not the bound import"):
+            verify_executed_import(edited, bound)

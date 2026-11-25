@@ -26,6 +26,8 @@ from .sarif_import_producers import PRODUCERS
 from .sarif_import_profile import IMPORT_PROFILES, import_profile_by_name
 from .sarif_import_report import ImportReport, read_import_report
 
+DEFAULT_TIMEOUT_SECONDS = 300
+
 
 def _bounded_read(path: Path) -> bytes:
     """Read at most one byte past the whole-file limit, so a larger file is refused unread."""
@@ -68,6 +70,9 @@ def _execute(args: argparse.Namespace, inventory: GitInventory) -> int:
         )
     if args.head != inventory.head:
         raise ValueError("--execute needs --head equal to the checkout's HEAD")
+    timeout = DEFAULT_TIMEOUT_SECONDS if args.timeout_seconds is None else args.timeout_seconds
+    if timeout < 1:
+        raise ValueError("--timeout-seconds must be a positive integer")
     _require_tracked_configuration(inventory, args.configuration)
     if args.output.resolve() == args.binding_output.resolve():
         raise ValueError("--output and --binding-output must be two different paths")
@@ -80,7 +85,7 @@ def _execute(args: argparse.Namespace, inventory: GitInventory) -> int:
         profile,
         configuration_path=args.configuration,
         target_paths=tuple(args.target),
-        timeout_seconds=args.timeout_seconds,
+        timeout_seconds=timeout,
         expected_tracked_content_digest=inventory.tracked_content_digest,
         git_trust_policy=args.git_trust_policy,
     )
@@ -100,8 +105,15 @@ def _run(
         return _execute(args, inventory)
     if args.sarif is None or args.producer is None:
         raise ValueError("a declared import needs --sarif and --producer, or use --execute")
-    if args.configuration is not None or args.target or args.binding_output is not None:
-        raise ValueError("--configuration, --target and --binding-output need --execute")
+    if (
+        args.configuration is not None
+        or args.target
+        or args.binding_output is not None
+        or args.timeout_seconds is not None
+    ):
+        raise ValueError(
+            "--configuration, --target, --binding-output and --timeout-seconds need --execute"
+        )
     report = import_sarif(
         _bounded_read(args.sarif),
         args.producer,
@@ -165,7 +177,9 @@ def add_import_sarif_command(
         "--target", action="append", default=[], help="With --execute: one tracked target."
     )
     command.add_argument(
-        "--timeout-seconds", type=int, default=300, help="With --execute: the run's timeout."
+        "--timeout-seconds",
+        type=int,
+        help=f"With --execute: the run's timeout, {DEFAULT_TIMEOUT_SECONDS} by default.",
     )
     command.add_argument(
         "--binding-output", type=Path, help="With --execute: the new binding record path."

@@ -317,6 +317,8 @@ def test_an_executed_import_writes_a_report_and_binding_that_verify_together(
         (("--checkout-root", "/elsewhere"), "omit --sarif, --producer and --checkout-root"),
         ((), "needs --head equal to the checkout's HEAD"),
         (("--head", "0" * 40), "needs --head equal to the checkout's HEAD"),
+        (("--timeout-seconds", "0"), "must be a positive integer"),
+        (("--timeout-seconds", "-5"), "must be a positive integer"),
     ],
 )
 def test_an_executed_import_refuses_bad_options_and_writes_nothing(
@@ -401,8 +403,14 @@ def test_a_declared_import_refuses_executed_only_options(
     output = tmp_path / "report.json"
     head = _head(checkout)
     declared = [*_arguments(checkout, SEMGREP, "semgrep", output), "--head", head]
-    assert main([*declared, "--target", "src"]) == 2
-    assert "need --execute" in capsys.readouterr().err
+    for option in (
+        ("--target", "src"),
+        ("--configuration", "security/semgrep.yml"),
+        ("--binding-output", str(tmp_path / "binding.json")),
+        ("--timeout-seconds", "300"),
+    ):
+        assert main([*declared, *option]) == 2, option
+        assert "need --execute" in capsys.readouterr().err
     assert main(["import-sarif", "--root", str(checkout.root), "--output", str(output)]) == 2
     assert "needs --sarif and --producer" in capsys.readouterr().err
     assert not output.exists()

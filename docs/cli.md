@@ -273,7 +273,8 @@ registry and the SARIF export never change; see
 the import-only Semgrep profile on the checkout's tracked content and imports its
 SARIF as `executed`. It cannot be combined with `--sarif`, `--producer` or
 `--checkout-root`. `--head` must be the checkout's HEAD, and `--configuration` must
-be a clean tracked regular file. The run must scan exactly the tracked content
+be a clean tracked regular file. `--timeout-seconds` is a positive number of
+seconds, 300 by default, and is refused without `--execute`. The run must scan exactly the tracked content
 the command loaded, so a checkout that changes in between is refused. The report
 and its binding record are two different new files, written only after the
 binding succeeds; nothing is written when the run, the import or the binding is
