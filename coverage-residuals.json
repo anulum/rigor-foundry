@@ -7,7 +7,7 @@
       "source_path": "src/rigor_foundry/adapter_runtime.py",
       "symbol": "stream_process",
       "guard": "native audit output pipes were not created",
-      "source_digest": "a57e0bdc58d6fc3f75dd84fb640e3866067d3ff2347f115ef41b06a1948f1ff0",
+      "source_digest": "cc6be69f9028b4a8e1fe6d267e81c1d54b96564674d0c40e970c1198fddf9cb1",
       "owner": "runtime-security",
       "rationale": "subprocess.PIPE makes both streams non-null under the supported Python contract; replacing Popen to manufacture a null stream would test a simulation rather than the public adapter boundary, so the fail-closed guard remains explicit and expiring",
       "public_verification": [
@@ -17,7 +17,7 @@
         "a supported Python runtime permits null PIPE streams",
         "the adapter process transport changes"
       ],
-      "reviewed_on": "2026-11-18",
+      "reviewed_on": "2026-11-24",
       "review_by": "2026-12-18"
     },
     {

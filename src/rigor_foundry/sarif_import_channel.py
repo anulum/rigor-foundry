@@ -9,12 +9,14 @@
 
 The host creates one anonymous memory file, close-on-exec, and passes it to the sandboxed
 tool only through the process's inherited descriptors. The tool writes its second output to
-``/dev/fd/N``. After the run the host reads the file from offset zero, once, refusing it
-when it is larger than the whole-file limit, and then closes it.
+``/dev/fd/N``. After the run the host seals the file against every further write, growth and
+shrink, then reads it from offset zero, refusing it when it is larger than the whole-file
+limit, and closes it.
 """
 
 from __future__ import annotations
 
+import fcntl
 import os
 from types import TracebackType
 from typing import Final, final
@@ -22,6 +24,7 @@ from typing import Final, final
 from .sarif_import_document import MAX_SARIF_BYTES, SarifImportRefused
 
 _NAME: Final = "rigor-second-output"
+_SEALS: Final = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
 
 
 @final
@@ -44,7 +47,7 @@ class SecondOutputChannel:
         create = getattr(os, "memfd_create", None)
         if create is None:
             raise RuntimeError("a second output channel needs anonymous memory files")
-        self._descriptor: int | None = create(_NAME, os.MFD_CLOEXEC)
+        self._descriptor: int | None = create(_NAME, os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING)
         self.limit = limit
 
     @property
@@ -60,7 +63,7 @@ class SecondOutputChannel:
         return f"/dev/fd/{self.descriptor}"
 
     def read(self) -> bytes:
-        """Return the whole second output, once, from offset zero.
+        """Seal the second output, then return all of it from offset zero.
 
         Returns
         -------
@@ -72,8 +75,14 @@ class SecondOutputChannel:
         SarifImportRefused
             With ``too-large`` if the output exceeds the limit.
         ValueError
-            If the output changed while it was read.
+            If the file cannot be sealed, for example because a writable mapping of it
+            exists, or if the read ends short.
         """
+        try:
+            if fcntl.fcntl(self.descriptor, fcntl.F_GET_SEALS) & _SEALS != _SEALS:
+                fcntl.fcntl(self.descriptor, fcntl.F_ADD_SEALS, _SEALS)
+        except OSError as error:
+            raise ValueError("the second output cannot be sealed against writes") from error
         size = os.fstat(self.descriptor).st_size
         if size > self.limit:
             raise SarifImportRefused("too-large", f"the second output exceeds {self.limit} bytes")
@@ -83,8 +92,8 @@ class SecondOutputChannel:
             if not chunk:
                 break
             data.extend(chunk)
-        if len(data) != size or os.fstat(self.descriptor).st_size != size:
-            raise ValueError("the second output changed while it was read")
+        if len(data) != size:
+            raise ValueError("the second output ended before its sealed size")
         return bytes(data)
 
     def close(self) -> None:

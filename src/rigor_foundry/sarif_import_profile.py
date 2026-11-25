@@ -49,6 +49,7 @@ class ImportProfile:
     """One import-only profile: a built-in JSON profile run that also writes SARIF."""
 
     name: ImportProfileName
+    producer_id: str
     base: AdapterProfile
 
     @property
@@ -57,6 +58,7 @@ class ImportProfile:
         return canonical_digest(
             {
                 "name": self.name,
+                "producer_id": self.producer_id,
                 "base_profile": self.base.name,
                 "base_profile_digest": self.base.profile_digest,
                 "targets": "relative",
@@ -102,7 +104,7 @@ class ImportProfile:
 IMPORT_PROFILES: Final[Mapping[str, ImportProfile]] = MappingProxyType(
     {
         "semgrep-local-sarif-import-v1": ImportProfile(
-            "semgrep-local-sarif-import-v1", profile_by_name("semgrep-local-json-v1")
+            "semgrep-local-sarif-import-v1", "semgrep", profile_by_name("semgrep-local-json-v1")
         )
     }
 )

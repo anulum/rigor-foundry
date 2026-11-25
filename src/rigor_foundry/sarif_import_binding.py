@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Final, cast
 
 from .adapter_profiles import AdapterProfileEvidence, _strict_json
+from .adapter_runtime import process_output_digest
 from .audit_primitives import canonical_digest, require_exact_fields, require_mapping
 from .sarif_import_document import SarifImportRefused
 from .sarif_import_producers import _VERSION
@@ -181,17 +182,28 @@ class ExecutedSarifBinding:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
-def _output_digest(stdout: bytes, stderr: bytes) -> str:
-    """Return the process output digest of one complete, untruncated run."""
-    return canonical_digest(
-        {
-            "stdout_digest": hashlib.sha256(stdout).hexdigest(),
-            "stdout_bytes": len(stdout),
-            "stderr_digest": hashlib.sha256(stderr).hexdigest(),
-            "stderr_bytes": len(stderr),
-            "truncated": False,
-            "timed_out": False,
-        }
+def complete_output_digest(stdout: bytes, stderr: bytes) -> str:
+    """Return the process output digest of one complete run, untruncated and in time.
+
+    Parameters
+    ----------
+    stdout : bytes
+        Every byte the run wrote to standard output.
+    stderr : bytes
+        Every byte the run wrote to standard error.
+
+    Returns
+    -------
+    str
+        The digest that ``stream_process`` records for that output.
+    """
+    return process_output_digest(
+        stdout_digest=hashlib.sha256(stdout).hexdigest(),
+        stdout_bytes=len(stdout),
+        stderr_digest=hashlib.sha256(stderr).hexdigest(),
+        stderr_bytes=len(stderr),
+        truncated=False,
+        timed_out=False,
     )
 
 
@@ -235,11 +247,11 @@ def bind_executed_sarif(
     if (evidence.profile, evidence.profile_digest) != (
         profile.base.name,
         profile.base.profile_digest,
-    ) or report.producer_id != "semgrep":
+    ) or report.producer_id != profile.producer_id:
         raise SarifImportRefused("other-evidence", "the evidence is not this profile's base run")
     if evidence.status not in _COMPLETE:
         raise SarifImportRefused("incomplete-evidence", "only a complete run is bound")
-    if evidence.output_digest != _output_digest(stdout, stderr):
+    if evidence.output_digest != complete_output_digest(stdout, stderr):
         raise SarifImportRefused("output-mismatch", "the JSON bytes are not the run's output")
     if report.sarif_sha256 != hashlib.sha256(sarif).hexdigest():
         raise SarifImportRefused("sarif-mismatch", "the report imports other SARIF bytes")

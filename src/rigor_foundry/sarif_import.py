@@ -153,7 +153,7 @@ def import_executed_sarif(
     SarifImportRefused
         When the import or the binding is refused.
     """
-    declared = import_sarif(sarif, "semgrep", inventory, head=head)
+    declared = import_sarif(sarif, profile.producer_id, inventory, head=head)
     binding = bind_executed_sarif(
         profile, evidence, stdout=stdout, stderr=stderr, sarif=sarif, report=declared
     )

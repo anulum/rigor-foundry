@@ -322,6 +322,49 @@ class ProcessOutput:
     stderr: bytes
 
 
+def process_output_digest(
+    *,
+    stdout_digest: str,
+    stdout_bytes: int,
+    stderr_digest: str,
+    stderr_bytes: int,
+    truncated: bool,
+    timed_out: bool,
+) -> str:
+    """Return the content-addressed identity of one process's complete output streams.
+
+    Parameters
+    ----------
+    stdout_digest : str
+        The SHA-256 of every byte the process wrote to standard output.
+    stdout_bytes : int
+        Their count.
+    stderr_digest : str
+        The SHA-256 of every byte the process wrote to standard error.
+    stderr_bytes : int
+        Their count.
+    truncated : bool
+        Whether the output passed its cap.
+    timed_out : bool
+        Whether the process ran past its timeout.
+
+    Returns
+    -------
+    str
+        The canonical digest of those six facts.
+    """
+    return canonical_digest(
+        {
+            "stdout_digest": stdout_digest,
+            "stdout_bytes": stdout_bytes,
+            "stderr_digest": stderr_digest,
+            "stderr_bytes": stderr_bytes,
+            "truncated": truncated,
+            "timed_out": timed_out,
+        }
+    )
+
+
 def stream_process(
     command: tuple[str, ...],
     *,
@@ -394,17 +437,17 @@ def stream_process(
         if process.poll() is None:
             _terminate_process_tree(process)
     returncode = 124 if timed_out else 125 if truncated else int(process.returncode)
-    output_body = {
-        "stdout_digest": stream_digests["stdout"].hexdigest(),
-        "stdout_bytes": stream_bytes["stdout"],
-        "stderr_digest": stream_digests["stderr"].hexdigest(),
-        "stderr_bytes": stream_bytes["stderr"],
-        "truncated": truncated,
-        "timed_out": timed_out,
-    }
+    output_digest = process_output_digest(
+        stdout_digest=stream_digests["stdout"].hexdigest(),
+        stdout_bytes=stream_bytes["stdout"],
+        stderr_digest=stream_digests["stderr"].hexdigest(),
+        stderr_bytes=stream_bytes["stderr"],
+        truncated=truncated,
+        timed_out=timed_out,
+    )
     return ProcessOutput(
         returncode=returncode,
-        output_digest=canonical_digest(output_body),
+        output_digest=output_digest,
         output_bytes=sum(stream_bytes.values()),
         truncated=truncated,
         timed_out=timed_out,

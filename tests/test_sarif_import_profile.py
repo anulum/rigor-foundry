@@ -28,7 +28,7 @@ BUILT_IN_DIGESTS = {
     "semgrep-local-json-v1": "05eaa7fb0174b80e38c40ed06150b750d413ae272d076d2d7762cbaffe9f2947",
     "trivy-repository-json-v1": "d21275b444d3c831d99f702c010a4a4d3479d45938b1844c779530abe1f7a6af",
 }
-IMPORT_DIGEST = "e23425b4afd43856dc7eaf339508ffade6363bd0de8258b37bd605343b5aaa60"
+IMPORT_DIGEST = "4eb40b5a4edfe242ae401773e5ff543082a52f135841dad9784d809538fbbb1c"
 READERS = (
     "src/rigor_foundry/adapter_profiles.py",
     "src/rigor_foundry/polyglot_capability_matrix.py",
@@ -53,7 +53,7 @@ def test_the_import_profile_is_the_semgrep_json_run_plus_one_second_output() -> 
     assert profile is IMPORT_PROFILES[NAME] and profile.base is profile_by_name(
         "semgrep-local-json-v1"
     )
-    assert profile.profile_digest == IMPORT_DIGEST
+    assert profile.profile_digest == IMPORT_DIGEST and profile.producer_id == "semgrep"
     arguments = profile.command_arguments("/workspace/rules.yaml", (".", "src/app"), "/dev/fd/7")
     assert arguments == (
         *profile.base.command_arguments("/workspace/rules.yaml", (".", "src/app")),

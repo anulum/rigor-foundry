@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import mmap
 import os
 import subprocess
 import sys
@@ -71,18 +72,45 @@ def test_an_output_past_the_limit_is_refused_and_one_at_it_is_kept(tmp_path: Pat
         assert refused.value.reason == "too-large"
 
 
-def test_an_output_that_shrinks_while_read_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A read that ends before the size the file reported is refused, never returned short.
+def test_the_read_seals_the_output_against_any_later_write() -> None:
+    """After the read, the memory file can no longer be written, grown or shrunk."""
+    with SecondOutputChannel() as channel:
+        assert _child_writes(channel, SARIF) == 0
+        assert channel.read() == SARIF.read_bytes()
+        with pytest.raises(PermissionError):
+            os.pwrite(channel.descriptor, b"x", 0)
+        with pytest.raises(PermissionError):
+            os.ftruncate(channel.descriptor, 1)
+        assert channel.read() == SARIF.read_bytes()
+
+
+def test_an_output_with_a_writable_mapping_cannot_be_sealed_or_read() -> None:
+    """A live shared writable mapping makes the write seal fail, so nothing is read."""
+    with SecondOutputChannel() as channel:
+        assert _child_writes(channel, SARIF) == 0
+        with (
+            mmap.mmap(
+                channel.descriptor, len(SARIF.read_bytes()), mmap.MAP_SHARED, mmap.PROT_WRITE
+            ),
+            pytest.raises(ValueError, match="cannot be sealed against writes"),
+        ):
+            channel.read()
+
+
+def test_a_read_that_ends_before_the_sealed_size_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A positional read that ends early is refused, never returned short.
 
     Parameters
     ----------
     monkeypatch : pytest.MonkeyPatch
-        Makes the positional read end early, as a concurrent truncation would.
+        Makes the positional read end early.
     """
     with SecondOutputChannel() as channel:
         assert _child_writes(channel, SARIF) == 0
         monkeypatch.setattr(os, "pread", lambda descriptor, length, offset: b"")
-        with pytest.raises(ValueError, match="changed while it was read"):
+        with pytest.raises(ValueError, match="ended before its sealed size"):
             channel.read()
 
 

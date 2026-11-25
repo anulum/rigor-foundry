@@ -170,4 +170,7 @@ and the SARIF export stay byte-identical.
   an unanchored observation.
 - **Provenance.** Every import is `declared`: the producer identity is the
   file's own claim, recorded with the driver name and version it states. Imports
-  bound to an executed adapter-profile run are not available yet.
+  bound to an executed adapter-profile run are not available yet. When they are,
+  such a binding is refused whenever the run's SARIF and JSON findings disagree.
+  That includes two findings of one rule on one line, which share one candidate
+  identity; the `declared` import of the same file stays possible.

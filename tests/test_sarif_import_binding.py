@@ -12,6 +12,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,7 @@ from rigor_foundry.adapter_profiles import (
     ProfileStatus,
     profile_by_name,
 )
+from rigor_foundry.adapter_runtime import process_output_digest, stream_process
 from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.git_inventory import GitInventory, load_git_inventory
 from rigor_foundry.rules import RULES_BY_ID, rule_pack_digest
@@ -32,12 +35,13 @@ from rigor_foundry.sarif_import import import_executed_sarif, import_sarif
 from rigor_foundry.sarif_import_binding import (
     BINDING_SCHEMA,
     bind_executed_sarif,
+    complete_output_digest,
     exact_version,
     json_findings,
     verify_executed_binding,
 )
 from rigor_foundry.sarif_import_document import SarifImportRefused
-from rigor_foundry.sarif_import_profile import import_profile_by_name
+from rigor_foundry.sarif_import_profile import ImportProfile, import_profile_by_name
 from rigor_foundry.sarif_import_report import verify_import_report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,14 +62,6 @@ def _evidence(
     reason: ProfileReason = "findings",
 ) -> AdapterProfileEvidence:
     """Build the base profile evidence of one complete run whose exact output is given."""
-    output = {
-        "stdout_digest": hashlib.sha256(stdout).hexdigest(),
-        "stdout_bytes": len(stdout),
-        "stderr_digest": hashlib.sha256(stderr).hexdigest(),
-        "stderr_bytes": len(stderr),
-        "truncated": False,
-        "timed_out": False,
-    }
     return AdapterProfileEvidence.build(
         profile=profile_by_name(profile),
         status=status,
@@ -74,7 +70,7 @@ def _evidence(
         version_output_digest="1" * 64,
         configuration_digest="2" * 64,
         input_digest="3" * 64,
-        output_digest=canonical_digest(output),
+        output_digest=complete_output_digest(stdout, stderr),
         finding_count=findings,
         scanned_target_count=2,
     )
@@ -348,3 +344,88 @@ def test_the_json_findings_are_read_only_from_typed_semgrep_results() -> None:
     for change in (line_text, no_path):
         with pytest.raises(ValueError, match="lacks its rule, path or line"):
             json_findings(_json_variant(change))
+
+
+def test_one_digest_formula_serves_the_runtime_and_the_binding() -> None:
+    """A real process's recorded output digest equals the binding's recomputation of it."""
+    code = "import sys; sys.stdout.write('out'); sys.stderr.write('err')"
+    process = stream_process(
+        (sys.executable, "-c", code), environment=dict(os.environ), timeout_seconds=30
+    )
+    assert (process.stdout, process.stderr) == (b"out", b"err")
+    assert process.output_digest == complete_output_digest(process.stdout, process.stderr)
+
+
+def test_two_findings_of_one_rule_on_one_line_are_refused_as_executed(
+    inventory: GitInventory,
+) -> None:
+    """Same-line findings at different columns share one candidate id, so the binding fails closed.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The producer repository's inventory.
+    """
+    stdout_document: dict[str, Any] = json.loads(STDOUT)
+    (json_result,) = stdout_document["results"]
+    second = copy.deepcopy(json_result)
+    second["start"]["col"] = second["end"]["col"] = 30
+    stdout_document["results"].append(second)
+    sarif_document: dict[str, Any] = json.loads(SARIF)
+    (sarif_result,) = sarif_document["runs"][0]["results"]
+    other = copy.deepcopy(sarif_result)
+    other["locations"][0]["physicalLocation"]["region"]["startColumn"] = 30
+    sarif_document["runs"][0]["results"].append(other)
+    stdout, sarif = json.dumps(stdout_document).encode(), json.dumps(sarif_document).encode()
+    declared = import_sarif(sarif, "semgrep", inventory, head=inventory.head)
+    assert len(declared.imported_candidates) == 1
+    assert [item.reason for item in declared.skipped] == ["duplicate-candidate"]
+    assert (
+        _reason(inventory, evidence=_evidence(stdout, findings=2), stdout=stdout, sarif=sarif)
+        == "inconsistent-second-output"
+    )
+
+
+def test_the_output_digest_formula_is_pinned() -> None:
+    """Any change to the shared formula changes this value, so stored evidence stays readable."""
+    assert (
+        process_output_digest(
+            stdout_digest="a" * 64,
+            stdout_bytes=1,
+            stderr_digest="b" * 64,
+            stderr_bytes=2,
+            truncated=False,
+            timed_out=True,
+        )
+        == "71a990c54882589b8180b35e90bcd0af8fadcd238240cb5a195c65af945df805"
+    )
+
+
+def test_a_profile_of_another_producer_never_binds_a_semgrep_import(
+    inventory: GitInventory,
+) -> None:
+    """The binding checks the report's producer against the profile's own producer.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The producer repository's inventory.
+    """
+    other = ImportProfile("semgrep-local-sarif-import-v1", "codeql", PROFILE.base)
+    report = import_sarif(SARIF, "semgrep", inventory, head=inventory.head)
+    with pytest.raises(SarifImportRefused) as refused:
+        bind_executed_sarif(
+            other, _evidence(), stdout=STDOUT, stderr=b"", sarif=SARIF, report=report
+        )
+    assert refused.value.reason == "other-evidence"
+    with pytest.raises(SarifImportRefused) as imported:
+        import_executed_sarif(
+            other,
+            _evidence(),
+            stdout=STDOUT,
+            stderr=b"",
+            sarif=SARIF,
+            inventory=inventory,
+            head=inventory.head,
+        )
+    assert imported.value.reason == "unsupported-schema"
