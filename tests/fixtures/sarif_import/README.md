@@ -29,3 +29,10 @@ configuration the producers used.
 |---|---|---|---|
 | `semgrep-1.186.0-producer-repository.sarif` | Semgrep 1.186.0 (`Semgrep OSS`) | `cd producer-repo && semgrep scan --config ../semgrep-rules.yaml --sarif --output ../semgrep.sarif --metrics=off --disable-version-check --quiet .` | `1ed50724f27a674e740798adcb0a387033732931002941696f585fa43f70e746` |
 | `trivy-0.76.2-producer-repository.sarif` | Trivy 0.76.2 | `trivy fs --scanners secret --secret-config trivy-secret.yaml --format sarif --output trivy.sarif --quiet producer-repo` | `c9593b12d91785a3d5766437112e96cdc99b222dde9abe47b2f80bcf6faa62d8` |
+
+## The sandboxed Semgrep JSON output
+
+`semgrep-1.186.0-sandboxed-json-stdout.json` is the exact standard output of the Semgrep JSON profile command run in
+RigorFoundry's own bubblewrap sandbox vector on the producer repository, with a relative target and
+`--sarif-output=/dev/fd/N` on an inherited memory file. The SARIF written to that memory file is byte-identical to
+`semgrep-1.186.0-producer-repository.sarif`. SHA-256 `d33dd9d4f22c7cb7cbfbe9a64faf7a408beed9127c6acc053a5cd134af895a52`.

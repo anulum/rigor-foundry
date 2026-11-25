@@ -16,6 +16,14 @@ coverage. Its fixed scanners are repository misconfiguration and secret
 detection only. Use a separately specified and evidence-bound adapter when
 those other domains are required.
 
+One further profile, `semgrep-local-sarif-import-v1`, is **import-only**. It is not
+one of the built-in profiles above, and `native_audits` cannot name it. It runs
+the unchanged Semgrep JSON profile command with relative targets and one more
+argument that writes SARIF to an inherited memory file. The JSON run stays the
+execution authority, and its evidence appears only inside the binding record
+that ties the SARIF to that run; see
+[Third-party SARIF import](sarif.md#third-party-sarif-import).
+
 ## Policy declaration
 
 Repository policy schema 1.3 accepts this strict profile form in

@@ -16,12 +16,16 @@ the producer identity is the file's own claim, recorded as such.
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 
+from .adapter_profiles import AdapterProfileEvidence
 from .git_inventory import GitInventory
+from .sarif_import_binding import ExecutedSarifBinding, bind_executed_sarif
 from .sarif_import_document import parse_sarif_document
 from .sarif_import_locations import LocationRoots, RunLocations, route_result
 from .sarif_import_producers import bind_head, identify_producer
+from .sarif_import_profile import ImportProfile
 from .sarif_import_records import ImportedCandidate, ImportObservation, ImportSkip
 from .sarif_import_report import ImportReport
 from .sarif_import_rules import RunRules, ToolComponent
@@ -108,3 +112,52 @@ def import_sarif(
         observations=tuple(observations),
         skipped=tuple(skipped),
     )
+
+
+def import_executed_sarif(
+    profile: ImportProfile,
+    evidence: AdapterProfileEvidence,
+    *,
+    stdout: bytes,
+    stderr: bytes,
+    sarif: bytes,
+    inventory: GitInventory,
+    head: str,
+) -> tuple[ImportReport, ExecutedSarifBinding]:
+    """Import the SARIF second output of one complete import-profile run as ``executed``.
+
+    Parameters
+    ----------
+    profile : ImportProfile
+        The import-only profile that ran.
+    evidence : AdapterProfileEvidence
+        The base JSON profile evidence of that run.
+    stdout : bytes
+        The run's exact JSON standard output.
+    stderr : bytes
+        The run's exact standard error.
+    sarif : bytes
+        The exact second output.
+    inventory : GitInventory
+        The verified inventory of the scanned checkout.
+    head : str
+        The checkout's HEAD, since the second output states no revision.
+
+    Returns
+    -------
+    tuple[ImportReport, ExecutedSarifBinding]
+        The ``executed`` import report, which cites the binding's digest, and the binding.
+
+    Raises
+    ------
+    SarifImportRefused
+        When the import or the binding is refused.
+    """
+    declared = import_sarif(sarif, "semgrep", inventory, head=head)
+    binding = bind_executed_sarif(
+        profile, evidence, stdout=stdout, stderr=stderr, sarif=sarif, report=declared
+    )
+    executed = dataclasses.replace(
+        declared, provenance="executed", profile_evidence_digest=binding.binding_digest
+    )
+    return executed, binding
