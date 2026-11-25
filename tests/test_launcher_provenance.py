@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import sys
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
@@ -25,15 +27,82 @@ from rigor_foundry.launcher_provenance import (
 )
 
 POLICY = PrlimitCompatibilityPolicy()
-HOST = pytest.mark.skipif(
-    not (Path(POLICY.executable_path).is_file() and Path(POLICY.package_query_path).is_file()),
-    reason="the host has no dpkg-managed util-linux prlimit",
-)
+LAUNCHER_REASON = "the host has no dpkg-managed util-linux prlimit"
+Decision = Literal["run", "skip", "fail"]
+
+
+def launcher_decision(environment: Mapping[str, str], platform: str, present: bool) -> Decision:
+    """Decide whether the real-launcher tests run, skip or fail on this host.
+
+    Parameters
+    ----------
+    environment : Mapping[str, str]
+        The process environment.
+    platform : str
+        The ``sys.platform`` value.
+    present : bool
+        Whether the policy's launcher and package query are regular files.
+
+    Returns
+    -------
+    Decision
+        ``run`` when the launcher is present. ``fail`` on a Linux CI host without it, so a
+        runner that loses ``prlimit`` cannot turn every real-launcher test into a silent skip.
+        ``skip`` otherwise: off Linux no dpkg-managed util-linux exists, and a local Linux
+        host may lack the package.
+    """
+    if present:
+        return "run"
+    hosted = environment.get("GITHUB_ACTIONS") == "true" or environment.get("CI", "").lower() in {
+        "1",
+        "true",
+    }
+    return "fail" if hosted and platform == "linux" else "skip"
+
+
+def require_real_launcher(decision: Decision) -> None:
+    """Skip or fail the calling test as the decision requires, or let it run.
+
+    Parameters
+    ----------
+    decision : Decision
+        The outcome of ``launcher_decision`` for this host.
+    """
+    if decision == "fail":
+        pytest.fail(f"Linux CI requires the real launcher, but {LAUNCHER_REASON}")
+    if decision == "skip":
+        pytest.skip(LAUNCHER_REASON)
+
+
+def admit_real_launcher(
+    environment: Mapping[str, str], platform: str, policy: PrlimitCompatibilityPolicy
+) -> None:
+    """Admit a real-launcher test on this host, or skip or fail it.
+
+    Parameters
+    ----------
+    environment : Mapping[str, str]
+        The process environment.
+    platform : str
+        The ``sys.platform`` value.
+    policy : PrlimitCompatibilityPolicy
+        The policy naming the launcher and the package query.
+    """
+    present = Path(policy.executable_path).is_file() and Path(policy.package_query_path).is_file()
+    require_real_launcher(launcher_decision(environment, platform, present))
+
+
+@pytest.fixture
+def real_launcher() -> None:
+    """Admit the calling test only on a host with the real launcher, failing in Linux CI."""
+    admit_real_launcher(os.environ, sys.platform, POLICY)
+
+
 OWNER = "util-linux: /usr/bin/prlimit\n"
 RECORD = "util-linux|2.39.3-9ubuntu6.6|amd64|install ok installed\n"
 
 
-@HOST
+@pytest.mark.usefixtures("real_launcher")
 def test_the_real_launcher_is_attested_within_the_policy() -> None:
     """The host's prlimit is root-owned, dpkg-associated, in the interval and has --fsize."""
     provenance = inspect_prlimit()
@@ -45,7 +114,7 @@ def test_the_real_launcher_is_attested_within_the_policy() -> None:
     assert inspect_prlimit().identity_digest == provenance.identity_digest
 
 
-@HOST
+@pytest.mark.usefixtures("real_launcher")
 def test_a_policy_naming_an_absent_option_refuses_the_real_launcher() -> None:
     """A feature the launcher does not offer refuses the inspection."""
     with pytest.raises(RuntimeError, match="required prlimit option is unavailable"):
@@ -227,3 +296,72 @@ def test_a_package_database_change_during_inspection_is_refused(
     """
     with pytest.raises(RuntimeError, match=message):
         inspect_prlimit(_fake_launcher(tmp_path / "changing", replace_on_help=False, **changes))
+
+
+@pytest.mark.parametrize(
+    ("environment", "platform", "present", "expected"),
+    [
+        ({}, "linux", True, "run"),
+        ({"GITHUB_ACTIONS": "true"}, "linux", True, "run"),
+        ({}, "linux", False, "skip"),
+        ({"GITHUB_ACTIONS": "false", "CI": "false"}, "linux", False, "skip"),
+        ({"GITHUB_ACTIONS": "true"}, "linux", False, "fail"),
+        ({"CI": "true"}, "linux", False, "fail"),
+        ({"CI": "1"}, "linux", False, "fail"),
+        ({"GITHUB_ACTIONS": "true", "CI": "true"}, "win32", False, "skip"),
+        ({"CI": "true"}, "darwin", False, "skip"),
+    ],
+)
+def test_a_missing_launcher_fails_in_linux_ci_and_skips_elsewhere(
+    environment: dict[str, str], platform: str, present: bool, expected: Decision
+) -> None:
+    """Only a Linux CI host without the launcher fails; a present launcher always runs.
+
+    Parameters
+    ----------
+    environment : dict[str, str]
+        The process environment.
+    platform : str
+        The ``sys.platform`` value.
+    present : bool
+        Whether the launcher and package query exist.
+    expected : Decision
+        The required decision.
+    """
+    assert launcher_decision(environment, platform, present) == expected
+
+
+def test_the_decision_skips_or_fails_the_calling_test() -> None:
+    """A fail decision fails with its reason, a skip decision skips, and run does neither."""
+    with pytest.raises(pytest.fail.Exception, match="Linux CI requires the real launcher"):
+        require_real_launcher("fail")
+    with pytest.raises(pytest.skip.Exception, match="dpkg-managed util-linux prlimit"):
+        require_real_launcher("skip")
+    require_real_launcher("run")
+
+
+def test_a_host_without_the_launcher_fails_in_linux_ci_and_skips_locally(tmp_path: Path) -> None:
+    """A policy naming absent files fails the test under Linux CI and skips it elsewhere.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned allocation for absent and present launcher files.
+    """
+    absent = dataclasses.replace(
+        POLICY,
+        executable_path=str(tmp_path / "absent" / "prlimit"),
+        package_query_path=str(tmp_path / "absent" / "dpkg-query"),
+    )
+    with pytest.raises(pytest.fail.Exception, match="Linux CI requires the real launcher"):
+        admit_real_launcher({"GITHUB_ACTIONS": "true"}, "linux", absent)
+    with pytest.raises(pytest.skip.Exception, match="dpkg-managed util-linux prlimit"):
+        admit_real_launcher({}, "linux", absent)
+    (tmp_path / "prlimit").write_bytes(b"")
+    (tmp_path / "dpkg-query").write_bytes(b"")
+    present = dataclasses.replace(
+        POLICY,
+        executable_path=str(tmp_path / "prlimit"),
+        package_query_path=str(tmp_path / "dpkg-query"),
+    )
+    admit_real_launcher({"GITHUB_ACTIONS": "true"}, "linux", present)
