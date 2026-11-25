@@ -92,6 +92,11 @@ def _semgrep_repository(root: Path) -> GitRepository:
     return repository
 
 
+def _digest(repository: GitRepository) -> str:
+    """Return the tracked content digest of the checkout as it is now."""
+    return load_git_inventory(repository.root).tracked_content_digest
+
+
 def _assert_unchanged_launch(calls: Calls, spec: AdapterSpec) -> tuple[str, ...]:
     """Return the built-in arguments after checking the one audit launch is exactly its vector."""
     assert spec.profile is not None and spec.configuration_path is not None
@@ -169,6 +174,7 @@ def test_a_real_semgrep_run_writes_sarif_that_imports_as_executed(
         configuration_path="security/semgrep.yml",
         target_paths=("src",),
         timeout_seconds=120,
+        expected_tracked_content_digest=_digest(repository),
     )
     ((command, descriptors),) = calls
     assert command[1:3] == (f"--fsize={FILE_SIZE_CAP}:{FILE_SIZE_CAP}", "--")
@@ -179,6 +185,7 @@ def test_a_real_semgrep_run_writes_sarif_that_imports_as_executed(
         run.evidence.status == "findings" and run.launch_vector["version"] == LAUNCH_VECTOR_VERSION
     )
     inventory = load_git_inventory(repository.root)
+    assert run.tracked_content_digest == inventory.tracked_content_digest
     report, binding = import_executed_sarif(
         PROFILE,
         run.evidence,
@@ -218,6 +225,7 @@ def test_a_cap_below_the_output_size_fails_the_run_instead_of_cutting_it(
             configuration_path="security/semgrep.yml",
             target_paths=("src",),
             timeout_seconds=120,
+            expected_tracked_content_digest=_digest(repository),
         )
     assert refused.value.reason == "incomplete-evidence"
 
@@ -241,6 +249,7 @@ def test_an_incomplete_run_never_reads_its_second_output(tmp_path: Path) -> None
             configuration_path="security/semgrep.yml",
             target_paths=("src",),
             timeout_seconds=120,
+            expected_tracked_content_digest=_digest(repository),
         )
     assert refused.value.reason == "incomplete-evidence"
 
@@ -305,5 +314,39 @@ def test_a_launcher_that_is_not_the_attested_one_refuses_the_run(
                 configuration_path="security/semgrep.yml",
                 target_paths=("src",),
                 timeout_seconds=120,
+                expected_tracked_content_digest=_digest(repository),
             )
         assert refused.value.reason == "launcher-changed"
+
+
+def test_a_checkout_that_moves_between_inventory_and_run_is_refused(tmp_path: Path) -> None:
+    """The run accepts only the tracked content the SARIF will be anchored against.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    """
+    repository = _semgrep_repository(tmp_path / "repository")
+    expected = _digest(repository)
+    repository.write_text("src/app/core.py", "VALUE = 2\n")
+    repository.commit()
+    with pytest.raises(RuntimeError, match="does not match the audited tracked input"):
+        run_import_profile(
+            repository.root,
+            PROFILE,
+            configuration_path="security/semgrep.yml",
+            target_paths=("src",),
+            timeout_seconds=120,
+            expected_tracked_content_digest=expected,
+        )
+    moved = _digest(repository)
+    run = run_import_profile(
+        repository.root,
+        PROFILE,
+        configuration_path="security/semgrep.yml",
+        target_paths=("src",),
+        timeout_seconds=120,
+        expected_tracked_content_digest=moved,
+    )
+    assert run.tracked_content_digest == moved != expected

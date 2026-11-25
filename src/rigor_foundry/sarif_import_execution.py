@@ -132,6 +132,7 @@ class ImportRun:
     stderr: bytes
     sarif: bytes
     launcher: PrlimitProvenance
+    tracked_content_digest: str
 
     @property
     def launch_vector(self) -> dict[str, object]:
@@ -150,6 +151,7 @@ def run_import_profile(
     configuration_path: str,
     target_paths: tuple[str, ...],
     timeout_seconds: int,
+    expected_tracked_content_digest: str,
     git_trust_policy: GitTrustPolicy | None = None,
 ) -> ImportRun:
     """Run one import-only profile on a repository's exact tracked content.
@@ -166,6 +168,10 @@ def run_import_profile(
         The tracked targets.
     timeout_seconds : int
         The run's timeout.
+    expected_tracked_content_digest : str
+        The tracked content digest of the inventory the SARIF will be anchored against. The
+        run refuses any other tracked content, so a checkout that moves between that
+        inventory and the run cannot anchor another content's findings.
     git_trust_policy : GitTrustPolicy | None
         The Git trust contract for the tracked workspace.
 
@@ -179,6 +185,8 @@ def run_import_profile(
     SarifImportRefused
         With ``incomplete-evidence`` unless the JSON run is complete, or ``launcher-changed``
         if the attested launcher changed during the run.
+    RuntimeError
+        If the checkout's tracked content is not the expected content.
     """
     spec = AdapterSpec.from_dict(
         {
@@ -205,11 +213,19 @@ def run_import_profile(
             repository,
             spec,
             git_trust_policy=git_trust_policy,
-            expected_tracked_content_digest=None,
+            expected_tracked_content_digest=expected_tracked_content_digest,
             second_output=run,
         )
     if inspect_prlimit(attested.policy).identity_digest != attested.identity_digest:
         raise SarifImportRefused("launcher-changed", "the launcher changed during the run")
     if run.evidence is None or run.sarif is None:
         raise SarifImportRefused("incomplete-evidence", "only a complete run has a second output")
-    return ImportRun(profile, run.evidence, run.stdout, run.stderr, run.sarif, attested)
+    return ImportRun(
+        profile,
+        run.evidence,
+        run.stdout,
+        run.stderr,
+        run.sarif,
+        attested,
+        expected_tracked_content_digest,
+    )
