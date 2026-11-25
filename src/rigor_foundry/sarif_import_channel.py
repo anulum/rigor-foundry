@@ -21,9 +21,8 @@ imports on every platform. Where any of them is missing, creating a channel is r
 
 from __future__ import annotations
 
-import importlib
 import os
-from types import ModuleType, TracebackType
+from types import TracebackType
 from typing import TYPE_CHECKING, Final, Protocol, final
 
 from .sarif_import_document import MAX_SARIF_BYTES, SarifImportRefused
@@ -42,29 +41,27 @@ def _unavailable(detail: str) -> SarifImportRefused:
     return SarifImportRefused("channel-unavailable", detail)
 
 
-def _sealing() -> tuple[ModuleType, int]:
-    """Return the ``fcntl`` module and the complete seal set, or refuse the channel.
+def _sealing() -> int:
+    """Return the complete seal set, or refuse the channel where it cannot be sealed.
 
     Returns
     -------
-    tuple[ModuleType, int]
-        The module that adds and reads seals, and the write, grow, shrink and seal bits.
+    int
+        The write, grow, shrink and seal bits.
 
     Raises
     ------
     SarifImportRefused
-        With ``channel-unavailable`` if ``fcntl`` or any seal constant is missing.
+        With ``channel-unavailable`` if ``fcntl``, a seal constant or a seal operation is
+        missing.
     """
     try:
-        control = importlib.import_module("fcntl")
+        import fcntl
     except ImportError as error:
         raise _unavailable("the platform has no fcntl to seal a second output") from error
-    if not all(hasattr(control, name) for name in (*_SEAL_NAMES, *_SEAL_OPERATIONS)):
+    if not all(hasattr(fcntl, name) for name in (*_SEAL_NAMES, *_SEAL_OPERATIONS)):
         raise _unavailable("the interpreter has no memory file seals")
-    seals = 0
-    for name in _SEAL_NAMES:
-        seals |= int(getattr(control, name))
-    return control, seals
+    return fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
 
 
 class SecondOutput(Protocol):
@@ -102,7 +99,7 @@ class SecondOutputChannel:
             With ``channel-unavailable`` if the platform has no sealable anonymous memory
             files, before any file is created.
         """
-        self._control, self._seals = _sealing()
+        self._seals = _sealing()
         create = getattr(os, "memfd_create", None)
         if create is None or not all(hasattr(os, name) for name in _MEMORY_FILE_FLAGS):
             raise _unavailable("the platform has no sealable anonymous memory files")
@@ -137,10 +134,12 @@ class SecondOutputChannel:
             If the file cannot be sealed, for example because a writable mapping of it
             exists, or if the read ends short.
         """
-        control, seals = self._control, self._seals
+        import fcntl
+
+        seals = self._seals
         try:
-            if control.fcntl(self.descriptor, control.F_GET_SEALS) & seals != seals:
-                control.fcntl(self.descriptor, control.F_ADD_SEALS, seals)
+            if fcntl.fcntl(self.descriptor, fcntl.F_GET_SEALS) & seals != seals:
+                fcntl.fcntl(self.descriptor, fcntl.F_ADD_SEALS, seals)
         except OSError as error:
             raise ValueError("the second output cannot be sealed against writes") from error
         size = os.fstat(self.descriptor).st_size

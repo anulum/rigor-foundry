@@ -73,14 +73,20 @@ def test_an_output_past_the_limit_is_refused_and_one_at_it_is_kept(tmp_path: Pat
 
 
 def test_the_read_seals_the_output_against_any_later_write() -> None:
-    """After the read, the memory file can no longer be written, grown or shrunk."""
+    """After the read, the memory file can no longer be written, grown, shrunk or unsealed."""
+    import fcntl
+
+    every = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
     with SecondOutputChannel() as channel:
         assert _child_writes(channel, SARIF) == 0
         assert channel.read() == SARIF.read_bytes()
+        assert fcntl.fcntl(channel.descriptor, fcntl.F_GET_SEALS) & every == every
         with pytest.raises(PermissionError):
             os.pwrite(channel.descriptor, b"x", 0)
         with pytest.raises(PermissionError):
             os.ftruncate(channel.descriptor, 1)
+        with pytest.raises(PermissionError):
+            fcntl.fcntl(channel.descriptor, fcntl.F_ADD_SEALS, fcntl.F_SEAL_WRITE)
         assert channel.read() == SARIF.read_bytes()
 
 

@@ -164,3 +164,29 @@ def test_a_platform_without_sealable_memory_files_refuses_the_channel(
     with pytest.raises(SarifImportRefused, match="no sealable anonymous memory files") as refused:
         SecondOutputChannel()
     assert refused.value.reason == "channel-unavailable"
+
+
+@pytest.mark.parametrize("control", [None, types.ModuleType("fcntl")])
+def test_a_refused_channel_never_creates_a_memory_file(
+    monkeypatch: pytest.MonkeyPatch, control: types.ModuleType | None
+) -> None:
+    """The seals are resolved before any file exists, so a refusal leaks no descriptor.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Removes ``fcntl`` or its seal names, and records every memory file creation.
+    control : types.ModuleType | None
+        No ``fcntl`` at all, or one without any seal name.
+    """
+    created: list[str] = []
+
+    def recorder(name: str, flags: int = 0) -> int:
+        created.append(name)
+        return -1
+
+    monkeypatch.setitem(sys.modules, "fcntl", control)
+    monkeypatch.setattr(os, "memfd_create", recorder, raising=False)
+    with pytest.raises(SarifImportRefused) as refused:
+        SecondOutputChannel()
+    assert refused.value.reason == "channel-unavailable" and created == []
