@@ -12,7 +12,8 @@ from __future__ import annotations
 import dataclasses
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any, Literal
 
@@ -90,6 +91,29 @@ def admit_real_launcher(
     """
     present = Path(policy.executable_path).is_file() and Path(policy.package_query_path).is_file()
     require_real_launcher(launcher_decision(environment, platform, present))
+
+
+def outcome_of(action: Callable[[], None], message: str) -> type[BaseException]:
+    """Return the exact type of what an admission raised, after checking its message.
+
+    ``pytest.raises`` of one outcome type would let another outcome escape: a skip raised
+    where a failure is required would end the checking test as skipped, not failed.
+
+    Parameters
+    ----------
+    action : Callable[[], None]
+        The admission call.
+    message : str
+        Text the raised outcome must contain.
+
+    Returns
+    -------
+    type[BaseException]
+        The raised outcome's exact type.
+    """
+    with pytest.raises(BaseException, match=message) as raised:
+        action()
+    return type(raised.value)
 
 
 @pytest.fixture
@@ -333,10 +357,9 @@ def test_a_missing_launcher_fails_in_linux_ci_and_skips_elsewhere(
 
 def test_the_decision_skips_or_fails_the_calling_test() -> None:
     """A fail decision fails with its reason, a skip decision skips, and run does neither."""
-    with pytest.raises(pytest.fail.Exception, match="Linux CI requires the real launcher"):
-        require_real_launcher("fail")
-    with pytest.raises(pytest.skip.Exception, match="dpkg-managed util-linux prlimit"):
-        require_real_launcher("skip")
+    failed = outcome_of(partial(require_real_launcher, "fail"), "Linux CI requires the real")
+    skipped = outcome_of(partial(require_real_launcher, "skip"), "dpkg-managed util-linux prlimit")
+    assert failed is pytest.fail.Exception and skipped is pytest.skip.Exception
     require_real_launcher("run")
 
 
@@ -353,12 +376,18 @@ def test_a_host_without_the_launcher_fails_in_linux_ci_and_skips_locally(tmp_pat
         executable_path=str(tmp_path / "absent" / "prlimit"),
         package_query_path=str(tmp_path / "absent" / "dpkg-query"),
     )
-    with pytest.raises(pytest.fail.Exception, match="Linux CI requires the real launcher"):
-        admit_real_launcher({"GITHUB_ACTIONS": "true"}, "linux", absent)
-    with pytest.raises(pytest.skip.Exception, match="dpkg-managed util-linux prlimit"):
-        admit_real_launcher({}, "linux", absent)
+    hosted = partial(admit_real_launcher, {"GITHUB_ACTIONS": "true"}, "linux", absent)
+    local = partial(admit_real_launcher, {}, "linux", absent)
+    assert outcome_of(hosted, "Linux CI requires the real") is pytest.fail.Exception
+    assert outcome_of(local, "dpkg-managed util-linux prlimit") is pytest.skip.Exception
     (tmp_path / "prlimit").write_bytes(b"")
+    without_query = dataclasses.replace(absent, executable_path=str(tmp_path / "prlimit"))
+    no_query = partial(admit_real_launcher, {"GITHUB_ACTIONS": "true"}, "linux", without_query)
+    assert outcome_of(no_query, "Linux CI requires the real") is pytest.fail.Exception
     (tmp_path / "dpkg-query").write_bytes(b"")
+    without_launcher = dataclasses.replace(absent, package_query_path=str(tmp_path / "dpkg-query"))
+    no_launcher = partial(admit_real_launcher, {"CI": "true"}, "linux", without_launcher)
+    assert outcome_of(no_launcher, "Linux CI requires the real") is pytest.fail.Exception
     present = dataclasses.replace(
         POLICY,
         executable_path=str(tmp_path / "prlimit"),
