@@ -186,22 +186,17 @@ def test_a_real_semgrep_run_writes_sarif_that_imports_as_executed(
     )
     inventory = load_git_inventory(repository.root)
     assert run.tracked_content_digest == inventory.tracked_content_digest
-    report, binding = import_executed_sarif(
-        PROFILE,
-        run.evidence,
-        stdout=run.stdout,
-        stderr=run.stderr,
-        sarif=run.sarif,
-        inventory=inventory,
-        head=inventory.head,
-    )
+    report, binding = import_executed_sarif(run, inventory=inventory, head=inventory.head)
     (candidate,) = report.imported_candidates
     assert (candidate.anchor.path, candidate.anchor.line_start) == ("src/app/settings.py", 2)
     assert (
         report.provenance == "executed"
         and report.profile_evidence_digest == binding.binding_digest
     )
-    assert verify_executed_binding(json.loads(binding.to_json()))["consistent_findings"] == 1
+    record = verify_executed_binding(json.loads(binding.to_json()))
+    assert record["consistent_findings"] == 1 and record["launch_vector"] == run.launch_vector
+    assert record["launch_vector"]["launcher_identity"] == inspect_prlimit().identity_digest
+    assert record["tracked_content_digest"] == inventory.tracked_content_digest
 
 
 def test_a_cap_below_the_output_size_fails_the_run_instead_of_cutting_it(

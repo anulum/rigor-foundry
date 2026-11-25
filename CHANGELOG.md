@@ -95,6 +95,16 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `ext:<producer>:` namespace. The audit report, the rule registry and the SARIF
   export are unchanged. The command is provisional.
 
+- `rigor import-sarif --execute semgrep-local-sarif-import-v1` runs an
+  import-only Semgrep profile on the checkout's tracked content and imports its
+  SARIF as `executed`. The run is the Semgrep JSON profile's run with one more
+  output, launched behind an attested `prlimit` that bounds every file the tool
+  writes to the SARIF limit plus one byte. A binding record ties the SARIF to
+  that run; it requires the run to be complete and to have scanned the
+  anchoring content, its output and version to be exact, and the SARIF and JSON
+  findings to agree, and it names the bounded launch. `rigor verify-import` checks
+  a report against its binding. Both commands are provisional.
+
 - SARIF runs carry a CWE taxonomy pinned to CWE List 5.0. 23 rules relate to
   one CWE entry each, with kind `relevant` and never `equal`: the rule marks a
   surface related to the weakness and does not prove it. Each mapping is a

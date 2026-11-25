@@ -19,13 +19,12 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 
-from .adapter_profiles import AdapterProfileEvidence
 from .git_inventory import GitInventory
 from .sarif_import_binding import ExecutedSarifBinding, bind_executed_sarif
 from .sarif_import_document import parse_sarif_document
+from .sarif_import_execution import ImportRun
 from .sarif_import_locations import LocationRoots, RunLocations, route_result
 from .sarif_import_producers import bind_head, identify_producer
-from .sarif_import_profile import ImportProfile
 from .sarif_import_records import ImportedCandidate, ImportObservation, ImportSkip
 from .sarif_import_report import ImportReport
 from .sarif_import_rules import RunRules, ToolComponent
@@ -115,12 +114,8 @@ def import_sarif(
 
 
 def import_executed_sarif(
-    profile: ImportProfile,
-    evidence: AdapterProfileEvidence,
+    run: ImportRun,
     *,
-    stdout: bytes,
-    stderr: bytes,
-    sarif: bytes,
     inventory: GitInventory,
     head: str,
 ) -> tuple[ImportReport, ExecutedSarifBinding]:
@@ -128,18 +123,11 @@ def import_executed_sarif(
 
     Parameters
     ----------
-    profile : ImportProfile
-        The import-only profile that ran.
-    evidence : AdapterProfileEvidence
-        The base JSON profile evidence of that run.
-    stdout : bytes
-        The run's exact JSON standard output.
-    stderr : bytes
-        The run's exact standard error.
-    sarif : bytes
-        The exact second output.
+    run : ImportRun
+        The complete import-profile run.
     inventory : GitInventory
-        The verified inventory of the scanned checkout.
+        The verified inventory the SARIF is anchored against; the run must have scanned
+        its tracked content.
     head : str
         The checkout's HEAD, since the second output states no revision.
 
@@ -153,10 +141,8 @@ def import_executed_sarif(
     SarifImportRefused
         When the import or the binding is refused.
     """
-    declared = import_sarif(sarif, profile.producer_id, inventory, head=head)
-    binding = bind_executed_sarif(
-        profile, evidence, stdout=stdout, stderr=stderr, sarif=sarif, report=declared
-    )
+    declared = import_sarif(run.sarif, run.profile.producer_id, inventory, head=head)
+    binding = bind_executed_sarif(run, report=declared)
     executed = dataclasses.replace(
         declared, provenance="executed", profile_evidence_digest=binding.binding_digest
     )

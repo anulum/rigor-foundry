@@ -267,6 +267,20 @@ unanchored for lack of a physical location. The audit report, the rule
 registry and the SARIF export never change; see
 [Third-party SARIF import](sarif.md#third-party-sarif-import).
 
+`rigor import-sarif --execute semgrep-local-sarif-import-v1 --configuration FILE
+--target PATH [--target PATH ...] --root CHECKOUT --head OID --output REPORT.json
+--binding-output BINDING.json [--timeout-seconds N] [--require-all-anchored]` runs
+the import-only Semgrep profile on the checkout's tracked content and imports its
+SARIF as `executed`. It cannot be combined with `--sarif`, `--producer` or
+`--checkout-root`. `--head` must be the checkout's HEAD, and `--configuration` must
+be a clean tracked regular file. The run must scan exactly the tracked content
+the command loaded, so a checkout that changes in between is refused. The report
+and its binding record are two different new files, written only after the
+binding succeeds; nothing is written when the run, the import or the binding is
+refused. The binding is written first, so an executed report never exists
+without its binding. `rigor verify-import --report REPORT.json
+--binding BINDING.json` checks both records and that they belong together.
+
 ## Content-addressed report differences
 
 `rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]`

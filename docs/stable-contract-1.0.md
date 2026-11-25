@@ -53,8 +53,10 @@ The `sbom-import` options `--statement-sha256` and `--image-manifest-sha256`
 belong to the provisional [OCI SPDX profile](cra-reporting.md#import-an-oci-image-statement).
 The original `sbom-import` spellings remain frozen.
 
-The `import-sarif` command and its options are individually declared provisional
-outside the frozen manifest, and so is its `rigor.import-report.v1` report; see
+The `import-sarif` and `verify-import` commands and their options are
+individually declared provisional outside the frozen manifest, and so are the
+`rigor.import-report.v1` report and the `rigor.executed-sarif-binding.v1`
+binding record; see
 [Third-party SARIF import](sarif.md#third-party-sarif-import).
 
 The identity-bearing semantic key-policy wire at version `2.0` is explicitly

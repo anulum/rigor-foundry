@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import copy
+import dataclasses
 import hashlib
 import json
 import os
@@ -30,6 +31,7 @@ from rigor_foundry.adapter_profiles import (
 from rigor_foundry.adapter_runtime import process_output_digest, stream_process
 from rigor_foundry.audit_primitives import canonical_digest
 from rigor_foundry.git_inventory import GitInventory, load_git_inventory
+from rigor_foundry.launcher_provenance import PrlimitCompatibilityPolicy, PrlimitProvenance
 from rigor_foundry.rules import RULES_BY_ID, rule_pack_digest
 from rigor_foundry.sarif_import import import_executed_sarif, import_sarif
 from rigor_foundry.sarif_import_binding import (
@@ -39,8 +41,10 @@ from rigor_foundry.sarif_import_binding import (
     exact_version,
     json_findings,
     verify_executed_binding,
+    verify_executed_import,
 )
 from rigor_foundry.sarif_import_document import SarifImportRefused
+from rigor_foundry.sarif_import_execution import FILE_SIZE_CAP, LAUNCH_VECTOR_VERSION, ImportRun
 from rigor_foundry.sarif_import_profile import ImportProfile, import_profile_by_name
 from rigor_foundry.sarif_import_report import verify_import_report
 
@@ -49,6 +53,15 @@ FIXTURES = ROOT / "tests/fixtures/sarif_import"
 SARIF = (FIXTURES / "semgrep-1.186.0-producer-repository.sarif").read_bytes()
 STDOUT = (FIXTURES / "semgrep-1.186.0-sandboxed-json-stdout.json").read_bytes()
 PROFILE = import_profile_by_name("semgrep-local-sarif-import-v1")
+LAUNCHER = PrlimitProvenance(
+    policy=PrlimitCompatibilityPolicy(),
+    executable_digest="4" * 64,
+    semantic_version="2.39.3",
+    package_query_digest="5" * 64,
+    package_version="2.39.3-9ubuntu6.6",
+    package_architecture="amd64",
+    capability_digest="6" * 64,
+)
 
 
 def _evidence(
@@ -74,6 +87,14 @@ def _evidence(
         finding_count=findings,
         scanned_target_count=2,
     )
+
+
+def _run(inventory: GitInventory, **changes: Any) -> ImportRun:
+    """Return the recorded real run of the import profile on the inventory's content."""
+    run = ImportRun(
+        PROFILE, _evidence(), STDOUT, b"", SARIF, LAUNCHER, inventory.tracked_content_digest
+    )
+    return dataclasses.replace(run, **changes)
 
 
 @pytest.fixture
@@ -104,13 +125,7 @@ def test_the_real_sandboxed_run_imports_as_executed_and_its_binding_verifies(
     """The run's SARIF binds to its JSON, and the executed report cites the binding."""
     digest, registered = rule_pack_digest(), dict(RULES_BY_ID)
     report, binding = import_executed_sarif(
-        PROFILE,
-        _evidence(),
-        stdout=STDOUT,
-        stderr=b"",
-        sarif=SARIF,
-        inventory=inventory,
-        head=inventory.head,
+        _run(inventory), inventory=inventory, head=inventory.head
     )
     assert (report.provenance, report.profile_evidence_digest) == (
         "executed",
@@ -123,28 +138,21 @@ def test_the_real_sandboxed_run_imports_as_executed_and_its_binding_verifies(
     assert record["sarif_sha256"] == hashlib.sha256(SARIF).hexdigest()
     assert (record["sarif_bytes"], record["driver_version"]) == (len(SARIF), "1.186.0")
     assert AdapterProfileEvidence.from_dict(record["evidence"]) == _evidence()
+    assert record["tracked_content_digest"] == inventory.tracked_content_digest
+    assert record["launch_vector"] == {
+        "version": LAUNCH_VECTOR_VERSION,
+        "launcher_identity": LAUNCHER.identity_digest,
+        "file_size_cap": FILE_SIZE_CAP,
+    }
     assert rule_pack_digest() == digest and dict(RULES_BY_ID) == registered
 
 
 def _bind(inventory: GitInventory, **changes: Any) -> None:
     """Bind the real run with some inputs replaced."""
-    inputs: dict[str, Any] = {
-        "evidence": _evidence(),
-        "stdout": STDOUT,
-        "stderr": b"",
-        "sarif": SARIF,
-    }
-    inputs.update(changes)
-    report = changes.pop("report", None) or import_sarif(
-        inputs["sarif"], "semgrep", inventory, head=inventory.head
-    )
+    report = changes.pop("report", None)
+    run = _run(inventory, **changes)
     bind_executed_sarif(
-        PROFILE,
-        inputs["evidence"],
-        stdout=inputs["stdout"],
-        stderr=inputs["stderr"],
-        sarif=inputs["sarif"],
-        report=report,
+        run, report=report or import_sarif(run.sarif, "semgrep", inventory, head=inventory.head)
     )
 
 
@@ -264,6 +272,14 @@ def test_agreeing_multisets_bind_and_the_evidence_count_must_match(
         ("import_profile", "semgrep-local-json-v1", "import profile is not declared"),
         ("binding_digest", "0" * 64, "binding digest does not match"),
         ("extra", True, "fields do not match the schema"),
+        ("tracked_content_digest", "0" * 63, "tracked content digest is not a SHA-256"),
+        ("tracked_content_digest", 0, "tracked content digest is not a SHA-256"),
+        ("launch_vector", [], "launch vector"),
+        ("launch_vector.version", "rigor-foundry-bwrap-v1", "not the bounded import launch"),
+        ("launch_vector.file_size_cap", FILE_SIZE_CAP - 1, "not the bounded import launch"),
+        ("launch_vector.file_size_cap", float(FILE_SIZE_CAP), "not the bounded import launch"),
+        ("launch_vector.launcher_identity", "A" * 64, "launcher identity is not a SHA-256"),
+        ("launch_vector.extra", True, "fields do not match the schema"),
     ],
 )
 def test_a_changed_binding_record_is_refused(
@@ -282,17 +298,13 @@ def test_a_changed_binding_record_is_refused(
     message : str
         Text the refusal must contain.
     """
-    _, binding = import_executed_sarif(
-        PROFILE,
-        _evidence(),
-        stdout=STDOUT,
-        stderr=b"",
-        sarif=SARIF,
-        inventory=inventory,
-        head=inventory.head,
-    )
+    _, binding = import_executed_sarif(_run(inventory), inventory=inventory, head=inventory.head)
     record = json.loads(binding.to_json())
-    record[field] = value
+    name, _, member = field.partition(".")
+    if member:
+        record[name][member] = value
+    else:
+        record[name] = value
     with pytest.raises(ValueError, match=message):
         verify_executed_binding(record)
 
@@ -301,15 +313,7 @@ def test_a_binding_whose_evidence_names_another_profile_is_refused(
     inventory: GitInventory,
 ) -> None:
     """Valid evidence of another profile, re-digested into the record, is refused."""
-    _, binding = import_executed_sarif(
-        PROFILE,
-        _evidence(),
-        stdout=STDOUT,
-        stderr=b"",
-        sarif=SARIF,
-        inventory=inventory,
-        head=inventory.head,
-    )
+    _, binding = import_executed_sarif(_run(inventory), inventory=inventory, head=inventory.head)
     record = json.loads(binding.to_json())
     record["evidence"] = _evidence(profile="trivy-repository-json-v1").to_dict()
     record["binding_digest"] = canonical_digest(
@@ -414,18 +418,54 @@ def test_a_profile_of_another_producer_never_binds_a_semgrep_import(
     other = ImportProfile("semgrep-local-sarif-import-v1", "codeql", PROFILE.base)
     report = import_sarif(SARIF, "semgrep", inventory, head=inventory.head)
     with pytest.raises(SarifImportRefused) as refused:
-        bind_executed_sarif(
-            other, _evidence(), stdout=STDOUT, stderr=b"", sarif=SARIF, report=report
-        )
+        bind_executed_sarif(_run(inventory, profile=other), report=report)
     assert refused.value.reason == "other-evidence"
     with pytest.raises(SarifImportRefused) as imported:
         import_executed_sarif(
-            other,
-            _evidence(),
-            stdout=STDOUT,
-            stderr=b"",
-            sarif=SARIF,
-            inventory=inventory,
-            head=inventory.head,
+            _run(inventory, profile=other), inventory=inventory, head=inventory.head
         )
     assert imported.value.reason == "unsupported-schema"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("provenance", "declared", "provenance is not executed"),
+        ("profile_evidence_digest", "0" * 64, "does not cite this binding"),
+        ("sarif_sha256", "0" * 64, "imports other SARIF bytes"),
+        ("tracked_content_digest", "0" * 64, "anchored against other tracked content"),
+        ("producer_id", "codeql", "producer is not the import profile's producer"),
+    ],
+)
+def test_a_report_and_binding_that_do_not_belong_together_are_refused(
+    inventory: GitInventory, field: str, value: str, message: str
+) -> None:
+    """Each fact that ties an executed report to its binding is checked.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The producer repository's inventory.
+    field : str
+        The report field changed.
+    value : str
+        Its new value.
+    message : str
+        Text the refusal must contain.
+    """
+    report, binding = import_executed_sarif(
+        _run(inventory), inventory=inventory, head=inventory.head
+    )
+    record, bound = json.loads(report.to_json()), json.loads(binding.to_json())
+    verify_executed_import(record, bound)
+    changed = {**record, field: value}
+    with pytest.raises(ValueError, match=message):
+        verify_executed_import(changed, bound)
+    other_version = {**record, "driver": {**record["driver"], "version": "1.185.0"}}
+    with pytest.raises(ValueError, match="driver version is not the bound version"):
+        verify_executed_import(other_version, bound)
+
+
+def test_a_run_on_other_tracked_content_is_never_bound(inventory: GitInventory) -> None:
+    """A run whose scanned content is not the content the SARIF is anchored to is refused."""
+    assert _reason(inventory, tracked_content_digest="0" * 64) == "other-content"

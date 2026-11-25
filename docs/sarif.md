@@ -168,10 +168,16 @@ and the SARIF export stay byte-identical.
   of the wrong SARIF type, `null` included, skips its result with a reason.
   `--require-all-anchored` exits 1 when any result was skipped or any finding is
   an unanchored observation.
-- **Provenance.** Every import is `declared`: the producer identity is the
-  file's own claim, recorded with the driver name and version it states. Imports
-  bound to an executed adapter-profile run are not available yet. When they are,
-  such a binding is refused whenever the run's SARIF and JSON findings disagree.
+- **Provenance.** An import of a given file is `declared`: the producer identity
+  is the file's own claim, recorded with the driver name and version it states.
+  `--execute` instead runs the import-only Semgrep profile and imports the SARIF
+  it writes as `executed`, bound by a `rigor.executed-sarif-binding.v1` record
+  to the JSON run that wrote it. The record carries that run's evidence, the
+  digests and sizes of its exact outputs, the tracked content digest it scanned
+  and the identity of its bounded launch, all under one digest. The run must
+  scan the tracked content of the inventory the SARIF is anchored against, and
+  `rigor verify-import` checks that a report and its binding belong together.
+  That binding is refused whenever the run's SARIF and JSON findings disagree.
   That includes two findings of one rule on one line, which share one candidate
   identity; the `declared` import of the same file stays possible. Such a run is
   bounded by an attested `prlimit` to files of at most 32 MiB plus one byte.
