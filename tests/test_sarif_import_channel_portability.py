@@ -9,7 +9,9 @@
 
 The import witnesses run in a fresh interpreter, because a module-level ``import fcntl`` has
 already run in this one before any test could remove it. Each witness fails on a package that
-reads ``fcntl`` or a seal constant at import.
+reads ``fcntl`` or a seal constant at import. Both preludes work on every platform: one makes
+``fcntl`` unimportable, as on Windows, and the other installs an empty stand-in without any
+seal name, as on macOS or an interpreter built without the seals.
 """
 
 from __future__ import annotations
@@ -27,12 +29,7 @@ from rigor_foundry.sarif_import_document import SarifImportRefused
 
 ROOT = Path(__file__).resolve().parents[1]
 WITHOUT_FCNTL = "import sys\nsys.modules['fcntl'] = None\n"
-WITHOUT_SEALS = (
-    "import fcntl\n"
-    "for name in ('F_ADD_SEALS', 'F_GET_SEALS', 'F_SEAL_WRITE', 'F_SEAL_GROW',"
-    " 'F_SEAL_SHRINK', 'F_SEAL_SEAL'):\n"
-    "    vars(fcntl).pop(name, None)\n"
-)
+WITHOUT_SEALS = "import sys, types\nsys.modules['fcntl'] = types.ModuleType('fcntl')\n"
 IMPORT_AND_OPEN = (
     "import rigor_foundry, rigor_foundry.cli, rigor_foundry.sarif_import_cli\n"
     "from rigor_foundry.sarif_import_channel import SecondOutputChannel\n"
