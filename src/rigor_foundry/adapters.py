@@ -52,6 +52,7 @@ from .osv_database import (
     materialise_osv_database,
 )
 from .sandbox_provenance import BubblewrapProvenance, inspect_bubblewrap
+from .sarif_import_channel import SecondOutput
 from .trusted_executable import TrustedExecutable, open_trusted_executable, run_trusted_command
 
 ExecutionScope = Literal["staged", "full"]
@@ -420,6 +421,7 @@ def _run_profile_adapter(
     expected_tracked_content_digest: str | None,
     workspace_parent: Path | None = None,
     invocation_guard: Callable[[AdapterInvocation], None] | None = None,
+    second_output: SecondOutput | None = None,
 ) -> AdapterResult:
     """Run one built-in profile against an exact tracked-only workspace."""
     if spec.profile is None or spec.configuration_path is None:
@@ -463,9 +465,15 @@ def _run_profile_adapter(
                 extra_environment=profile_environment,
                 database_digest=database_digest,
             )
-        command_arguments = profile.command_arguments(
-            f"/workspace/{workspace.configuration_path}",
-            tuple(f"/workspace/{target}" for target in workspace.target_paths),
+        command_arguments = (
+            profile.command_arguments(
+                f"/workspace/{workspace.configuration_path}",
+                tuple(f"/workspace/{target}" for target in workspace.target_paths),
+            )
+            if second_output is None
+            else second_output.command_arguments(
+                f"/workspace/{workspace.configuration_path}", workspace.target_paths
+            )
         )
         sandbox, environment, provenance, sandbox_digest, launcher = sandbox_contract(
             workspace.root,
@@ -578,11 +586,15 @@ def _run_profile_adapter(
                     )
                 )
                 _verify_adapter_executable(executable)
+            launch = (*sandbox, "--", SANDBOX_TOOL, *command_arguments)
+            descriptors: tuple[int, ...] = (launcher.descriptor, executable.descriptor)
+            if second_output is not None:
+                launch, descriptors = second_output.wrap(launch, descriptors)
             process = stream_process(
-                (*sandbox, "--", SANDBOX_TOOL, *command_arguments),
+                launch,
                 environment=environment,
                 timeout_seconds=spec.timeout_seconds,
-                pass_fds=(launcher.descriptor, executable.descriptor),
+                pass_fds=descriptors,
             )
             _verify_adapter_executable(executable)
         finally:
@@ -619,6 +631,8 @@ def _run_profile_adapter(
             finding_count=findings,
             scanned_target_count=scanned,
         )
+        if second_output is not None:
+            second_output.complete(evidence, process.stdout, process.stderr)
         child_environment = {
             **CHILD_ENVIRONMENT,
             "PATH": f"{Path(sys.prefix) / 'bin'}:/usr/bin:/bin",

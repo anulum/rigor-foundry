@@ -173,4 +173,8 @@ and the SARIF export stay byte-identical.
   bound to an executed adapter-profile run are not available yet. When they are,
   such a binding is refused whenever the run's SARIF and JSON findings disagree.
   That includes two findings of one rule on one line, which share one candidate
-  identity; the `declared` import of the same file stays possible.
+  identity; the `declared` import of the same file stays possible. Such a run is
+  bounded by an attested `prlimit` to files of at most 32 MiB plus one byte.
+  The bound covers every file the tool writes, its own temporary files
+  included, so a scan whose temporary files pass 32 MiB fails closed; its
+  `declared` import stays possible.

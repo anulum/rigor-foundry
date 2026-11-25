@@ -26,7 +26,7 @@
       "source_path": "src/rigor_foundry/adapters.py",
       "symbol": "_run_profile_adapter",
       "guard": "Bubblewrap provenance changed during native audit execution",
-      "source_digest": "d290803dac666de92bd4e778cd958112b7dfe4f188832ddd350abf28ef5a8bf2",
+      "source_digest": "b8fafcd200fe7cf8b1e8e37923eb92d5b06d1e079279b03f43ffd3c677cb64b1",
       "owner": "runtime-security",
       "rationale": "honest activation requires replacing the root-owned installed Bubblewrap package during a live built-in profile scan; CI must not mutate that host trust anchor, and replacing provenance results would not exercise the operating-system boundary",
       "public_verification": [
@@ -37,7 +37,7 @@
         "a disposable package-manager integration host becomes available",
         "sandbox provenance moves to a repository-owned executable"
       ],
-      "reviewed_on": "2026-09-13",
+      "reviewed_on": "2026-11-24",
       "review_by": "2026-12-12"
     },
     {

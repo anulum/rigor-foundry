@@ -19,12 +19,32 @@ from __future__ import annotations
 import fcntl
 import os
 from types import TracebackType
-from typing import Final, final
+from typing import TYPE_CHECKING, Final, Protocol, final
 
 from .sarif_import_document import MAX_SARIF_BYTES, SarifImportRefused
 
+if TYPE_CHECKING:
+    from .adapter_profiles import AdapterProfileEvidence
+
 _NAME: Final = "rigor-second-output"
 _SEALS: Final = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+
+
+class SecondOutput(Protocol):
+    """The typed hook through which one profile run also writes a second output."""
+
+    def command_arguments(
+        self, configuration_path: str, target_paths: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        """Return the run's arguments, with relative targets and the channel's path."""
+
+    def wrap(
+        self, launch: tuple[str, ...], descriptors: tuple[int, ...]
+    ) -> tuple[tuple[str, ...], tuple[int, ...]]:
+        """Return the launch vector behind its bound, and the descriptors it inherits."""
+
+    def complete(self, evidence: AdapterProfileEvidence, stdout: bytes, stderr: bytes) -> None:
+        """Receive the run's evidence and output once the run has ended."""
 
 
 @final

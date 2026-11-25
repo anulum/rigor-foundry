@@ -19,8 +19,11 @@ those other domains are required.
 One further profile, `semgrep-local-sarif-import-v1`, is **import-only**. It is not
 one of the built-in profiles above, and `native_audits` cannot name it. It runs
 the unchanged Semgrep JSON profile command with relative targets and one more
-argument that writes SARIF to an inherited memory file. The JSON run stays the
-execution authority, and its evidence appears only inside the binding record
+argument that writes SARIF to an inherited memory file, launched behind the
+attested util-linux `prlimit` with soft and hard file-size limits one byte above
+the 32 MiB SARIF limit. The three profiles above never use that launcher. The
+JSON run stays the execution authority, and its evidence appears only inside the
+binding record
 that ties the SARIF to that run; see
 [Third-party SARIF import](sarif.md#third-party-sarif-import).
 
