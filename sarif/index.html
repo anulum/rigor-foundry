@@ -1088,6 +1088,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../container-rules/" class="md-nav__link">
         
   
@@ -1423,6 +1450,17 @@
     <span class="md-ellipsis">
       
         Identity and anchors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#third-party-sarif-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party SARIF import
       
     </span>
   </a>
@@ -2231,6 +2269,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#third-party-sarif-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party SARIF import
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2393,6 +2442,68 @@ inventory, tracked content, rule-pack, HEAD, tree, and Git object format.</p>
 the OASIS SARIF 2.1.0 Errata 01 JSON schema. <code>report_sarif</code> and the schema/version
 constants are provisional package-level APIs. Their lifecycle is independent
 of the stable SARIF wire contract; see <a href="../api-stability/">Public API stability</a>.</p>
+<h2 id="third-party-sarif-import">Third-party SARIF import<a class="headerlink" href="#third-party-sarif-import" title="Permanent link">&para;</a></h2>
+<p><code>rigor import-sarif</code> imports one SARIF 2.1.0 file from a declared producer into
+an import report, schema <code>rigor.import-report.v1</code>. It is separate from the audit
+report. Imported findings stay <code>unreviewed</code> candidates: nothing in the import
+adjudicates them, and the audit report, the rule registry, the rule-pack digest
+and the SARIF export stay byte-identical.</p>
+<ul>
+<li><strong>Declared producers.</strong> CodeQL, Semgrep and Trivy are declared in code, each by
+  the driver name, version field, supported versions, exact <code>$schema</code> URI and root
+  <code>uriBaseId</code> that its real output uses. A version must be exactly
+  <code>MAJOR.MINOR.PATCH</code> with no leading zero. Its major must be declared, and a
+  major-zero producer declares its supported minors instead, since any 0.x minor
+  may change the format: Trivy 0.76 only. A file from another producer, with
+  another driver, schema or version, or claiming different drivers in different
+  runs is refused as a whole. RigorFoundry's own SARIF, in any run, is refused as
+  a self-import.</li>
+<li><strong>One commit.</strong> Every <code>versionControlProvenance[].revisionId</code> of every run must
+  equal the checkout's HEAD. When any run states none, <code>--head</code> must name that
+  HEAD.</li>
+<li><strong>Whole-file limits.</strong> The import refuses a file over 32 MiB, one that is not
+  strict JSON (duplicate keys and non-finite numbers included), nesting deeper
+  than 64, more than 8 runs, more than 100,000 results in a run, or more than
+  20,000 rules across a run's driver and tool extensions.</li>
+<li><strong>Rules.</strong> Imported rules live in their own <code>ext:&lt;producer&gt;:&lt;ruleId&gt;</code>
+  namespace, per tool component, so rules kept in a query-pack extension resolve
+  through <code>rule.toolComponent.index</code>. A candidate identifier binds the producer,
+  the rule, the rule's component name and version, the anchor, the message digest
+  and the partial fingerprints. A producer's own <code>fingerprints</code> are kept as data.</li>
+<li><strong>Locations.</strong> A relative URI, a URI under a declared root <code>uriBaseId</code>, or an
+  absolute <code>file:</code> URI under the checkout (or <code>--checkout-root</code>) must resolve,
+  after decoding exactly once, to one clean tracked blob, compared exactly and
+  never through a symbolic link. The <code>startLine</code> to <code>endLine</code> span becomes the
+  anchor. A result without a physical artifact location is an unanchored
+  observation, and a non-finding <code>kind</code> is an observation wherever it points.</li>
+<li><strong>Preservation.</strong> Level, kind, baseline state, suppressions, fingerprints and
+  properties are kept verbatim within fixed bounds, and by digest beyond them.
+  Nothing is mapped onto RigorFoundry severity, confidence or category. A field
+  of the wrong SARIF type, <code>null</code> included, skips its result with a reason.
+  <code>--require-all-anchored</code> exits 1 when any result was skipped or any finding is
+  an unanchored observation.</li>
+<li><strong>Provenance.</strong> An import of a given file is <code>declared</code>: the producer identity
+  is the file's own claim, recorded with the driver name and version it states.
+  <code>--execute</code> instead runs the import-only Semgrep profile and imports the SARIF
+  it writes as <code>executed</code>, bound by a <code>rigor.executed-sarif-binding.v1</code> record
+  to the JSON run that wrote it. The record carries that run's evidence, the
+  digests and sizes of its exact outputs, the tracked content digest it scanned,
+  the digest of the imported content and the identity of its bounded launch, all
+  under one digest. The run must
+  scan the tracked content of the inventory the SARIF is anchored against, and
+  <code>rigor verify-import</code> checks that a report and its binding belong together,
+  so a report edited after the binding no longer verifies.
+  That binding is refused whenever the run's SARIF and JSON findings disagree.
+  That includes two findings of one rule on one line, which share one candidate
+  identity; the <code>declared</code> import of the same file stays possible. Such a run is
+  bounded by an attested <code>prlimit</code> to files of at most 32 MiB plus one byte.
+  The bound covers every file the tool writes, its own temporary files
+  included, so a scan whose temporary files pass 32 MiB fails closed; its
+  <code>declared</code> import stays possible.
+  It needs Linux memory files with seals. Where the platform or the interpreter
+  lacks them, <code>--execute</code> is refused as <code>channel-unavailable</code> before any run,
+  and the package and its other commands still work.</li>
+</ul>
 
 
 

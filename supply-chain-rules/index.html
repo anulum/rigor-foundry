@@ -16,7 +16,7 @@
         <link rel="prev" href="../reliability-rules/">
       
       
-        <link rel="next" href="../container-rules/">
+        <link rel="next" href="../lockfile-integrity-rules/">
       
       
         
@@ -1143,6 +1143,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lockfile-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lockfile integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calibration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1157,6 +1168,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2155,6 +2193,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lockfile-integrity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lockfile integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#calibration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2243,6 +2292,13 @@ produces no candidate. The category contributes a portable control toward the
 <code>supply-chain</code> audit domain over the tracked requirement surface, so a
 repository that declares that domain required is now covered by a portable rule
 as well as any wired native adapter (for example a Trivy or Grype profile).</p>
+<h2 id="lockfile-integrity">Lockfile integrity<a class="headerlink" href="#lockfile-integrity" title="Permanent link">&para;</a></h2>
+<p>Rule-pack <code>rigor-foundry/1.20.0</code> adds <code>SC003</code> to <code>SC010</code> and <code>SC012</code> over
+tracked lockfiles. They classify every locked entry by how its content is
+pinned and refuse unreadable lockfiles by name; rule packs <code>rigor-foundry/1.21.0</code>
+to <code>1.27.0</code> extend them to Yarn 1, Yarn 2+, pnpm, Cargo, Go, Poetry and Pipenv lockfiles, and
+<code>rigor-foundry/1.28.0</code> adds <code>SC011</code>, manifest drift for Poetry and Pipenv. See
+<a href="../lockfile-integrity-rules/">Lockfile integrity rules</a>.</p>
 <h2 id="calibration">Calibration<a class="headerlink" href="#calibration" title="Permanent link">&para;</a></h2>
 <p>False-positive calibration against real repositories is deliberately separate
 work: these rules ship with safe-and-vulnerable fixtures and precise

@@ -1173,6 +1173,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#third-party-sarif-import-provisional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party SARIF import (provisional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lockfile-integrity-provisional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lockfile integrity (provisional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#content-addressed-report-differences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1342,6 +1364,33 @@
     
   
     Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
   
 
     
@@ -2486,6 +2535,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#third-party-sarif-import-provisional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Third-party SARIF import (provisional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lockfile-integrity-provisional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lockfile integrity (provisional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#content-addressed-report-differences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2773,6 +2844,44 @@ read-only and includes every candidate. <code>--profile github-code-scanning</co
 only reviewed <code>valid</code> results, declares what it omitted, and refuses GitHub's
 upload limits before writing anything; see <a href="../sarif/">SARIF export</a> for the state
 mapping, the anchor contract and the profile.</p>
+<h2 id="third-party-sarif-import-provisional">Third-party SARIF import (provisional)<a class="headerlink" href="#third-party-sarif-import-provisional" title="Permanent link">&para;</a></h2>
+<p><code>rigor import-sarif --sarif FILE --producer {codeql,semgrep,trivy} --root CHECKOUT
+--output REPORT.json [--head OID] [--checkout-root PATH] [--require-all-anchored]</code>
+imports one declared producer's SARIF 2.1.0 file into a separate import report.
+The file is refused as a whole if it exceeds a whole-file limit, comes from an
+undeclared producer or from RigorFoundry itself, or describes another commit.
+<code>--head</code> is required when any run states no <code>revisionId</code>. Each result becomes
+an <code>unreviewed</code> candidate anchored to a clean tracked blob of the checkout, an
+observation, or a skip with its reason. <code>--require-all-anchored</code> exits 1 after
+writing the report when any result was skipped or any finding stayed
+unanchored for lack of a physical location. The audit report, the rule
+registry and the SARIF export never change; see
+<a href="../sarif/#third-party-sarif-import">Third-party SARIF import</a>.</p>
+<p><code>rigor import-sarif --execute semgrep-local-sarif-import-v1 --configuration FILE
+--target PATH [--target PATH ...] --root CHECKOUT --head OID --output REPORT.json
+--binding-output BINDING.json [--timeout-seconds N] [--require-all-anchored]</code> runs
+the import-only Semgrep profile on the checkout's tracked content and imports its
+SARIF as <code>executed</code>. It cannot be combined with <code>--sarif</code>, <code>--producer</code> or
+<code>--checkout-root</code>. <code>--head</code> must be the checkout's HEAD, and <code>--configuration</code> must
+be a clean tracked regular file. <code>--timeout-seconds</code> is a positive number of
+seconds, 300 by default, and is refused without <code>--execute</code>. The run must scan exactly the tracked content
+the command loaded, so a checkout that changes in between is refused. The report
+and its binding record are two different new files, written only after the
+binding succeeds; nothing is written when the run, the import or the binding is
+refused. The binding is written first, so an executed report never exists
+without its binding. <code>rigor verify-import --report REPORT.json
+--binding BINDING.json</code> checks both records and that they belong together.</p>
+<h2 id="lockfile-integrity-provisional">Lockfile integrity (provisional)<a class="headerlink" href="#lockfile-integrity-provisional" title="Permanent link">&para;</a></h2>
+<p><code>rigor lockfile-integrity --root PATH [--json]</code> classifies every entry of every
+tracked lockfile by how its content is pinned, and prints a summary with one
+line per finding of a recorded entry. <code>--json</code> prints the full
+<code>rigor.lockfile-integrity-report.v1</code> record instead. npm, Yarn 1, Yarn 2+,
+pnpm, Cargo, Go, Poetry and Pipenv lockfiles are classified, and a Poetry or
+Pipenv lockfile's manifest hash is compared with its tracked manifest.
+The command shares the scan's Git provenance options. Findings and refusals
+are observations, so it exits 0 whenever it produced a report, and 2 when the
+root is not a readable Git repository. The same findings appear as <code>SC</code>
+candidates in <code>rigor scan</code>; see <a href="../lockfile-integrity-rules/">Lockfile integrity rules</a>.</p>
 <h2 id="content-addressed-report-differences">Content-addressed report differences<a class="headerlink" href="#content-addressed-report-differences" title="Permanent link">&para;</a></h2>
 <p><code>rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]</code>
 loads and verifies both historical reports, partitions exact candidate

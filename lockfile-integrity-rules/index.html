@@ -1,0 +1,3335 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Evidence-bound codebase transformation">
+      
+      
+      
+        <link rel="canonical" href="https://anulum.github.io/rigor-foundry/lockfile-integrity-rules/">
+      
+      
+        <link rel="prev" href="../supply-chain-rules/">
+      
+      
+        <link rel="next" href="../container-rules/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/anulum_logo_company.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Lockfile integrity rules - RigorFoundry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/accessibility.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lockfile-integrity-rules" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="RigorFoundry" class="md-header__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RigorFoundry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Lockfile integrity rules
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="RigorFoundry" class="md-nav__button md-logo" aria-label="RigorFoundry" data-md-component="logo">
+      
+  <img src="../assets/anulum_logo.png" alt="logo">
+
+    </a>
+    RigorFoundry
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anulum/rigor-foundry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First repository
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Consumer integrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vscode-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    VS Code integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../jupyter-notebook-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jupyter notebook analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-repository-boundary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository boundary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration-evidence-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calibration evidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digest-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Digest dependencies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../report-diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report differences
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../offline-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline evidence verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule-chain-candidate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule-chain candidate inspection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clause-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Canonical clause semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../condition-evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conditions with partial observations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy-source-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy source bytes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../common-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule declarations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-source-models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context source models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../context-source-ownership/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retained context sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../task-registry-source-owners/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task and registry source owners
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../selected-dispatch-applicability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Selected dispatch applicability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dispatch-permit-candidates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dispatch permit candidates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../permit-consumption-ledger/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permit consumption ledger
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../permit-anchor-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Permit anchor verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Source provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/discovery-source-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discovery source validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-reporting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline CRA reporting preparation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cra-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CRA readiness rules and StandardPack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in adapter profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../application-security-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Application-security rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reliability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../supply-chain-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Supply-chain rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-class-per-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One class per entry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npm-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        npm lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yarn-1-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yarn 1 lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yarn-2-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yarn 2+ lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cargo-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cargo lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#go-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#poetry-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poetry lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipenv-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipenv lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manifest-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest drift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-declared-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The declared registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refused-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refused files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Container rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-actions-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub Actions security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-privacy-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data-and-privacy rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation and licence rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scientific-numerical-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scientific and numerical rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations-observability-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations and observability rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance-reproducibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance and reproducibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-compatibility-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API and schema compatibility rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sarif/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SARIF export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rule-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compliance-maps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compliance maps and OSCAL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../assisted-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assisted-review drafting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../claim-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claim isolation and fleet views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cross-repository-campaigns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-repository campaigns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../campaign-admission/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Campaign admission
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../instruction-dispatch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Instruction dispatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-catalogue/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapter catalogue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remediation-executor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remediation execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../polyglot-capability-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Polyglot capability matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public API stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stable-contract-1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1.0 stable compatibility contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-provenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git command provenance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-git-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Git inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-file-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository file inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory-domains/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configured inventory domains
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configured-inventory-inputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configured inventory inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory-baselines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inventory baselines and states
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintained-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Maintained inventory and facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../task-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task contexts and remediation sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../source-universe/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retained source universe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpreter CI tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fuzzing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-class-per-entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One class per entry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#digests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Digests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npm-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        npm lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yarn-1-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yarn 1 lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yarn-2-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yarn 2+ lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pnpm-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cargo-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cargo lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#go-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#poetry-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poetry lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipenv-lockfiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipenv lockfiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manifest-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manifest drift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-declared-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The declared registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refused-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refused files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Apache License 2.0; see LICENSE. -->
+<!-- © Concepts 1996–2026 Miroslav Šotek. All rights reserved. -->
+<!-- © Code 2020–2026 Miroslav Šotek. All rights reserved. -->
+<!-- ORCID: 0009-0009-3560-0851 -->
+<!-- Contact: www.anulum.li | protoscience@anulum.li -->
+<!-- RigorFoundry — lockfile integrity rules -->
+
+<h1 id="lockfile-integrity-rules">Lockfile integrity rules<a class="headerlink" href="#lockfile-integrity-rules" title="Permanent link">&para;</a></h1>
+<p>Rule-pack <code>rigor-foundry/1.20.0</code> classifies every entry of every tracked
+lockfile by how its content is pinned, and raises supply-chain candidates
+(prefix <code>SC</code>) for the entries whose pin fails. Like every RigorFoundry rule,
+each finding is an anchored <strong>needs-evidence candidate</strong>, never a verdict. A
+lockfile that cannot be read is refused by name and never looks clean. The
+rules implement <em>lockfile integrity semantics v1</em>.</p>
+<p>Rule pack <code>rigor-foundry/1.20.0</code> reads npm lockfiles (<code>package-lock.json</code> and
+<code>npm-shrinkwrap.json</code>, <code>lockfileVersion</code> 1, 2 and 3), and <code>rigor-foundry/1.21.0</code>
+adds Yarn 1 (<code>yarn.lock</code> with the <code># yarn lockfile v1</code> header), and
+<code>rigor-foundry/1.22.0</code> adds Yarn 2+ (<code>yarn.lock</code> with a <code>__metadata</code> block),
+<code>rigor-foundry/1.23.0</code> adds pnpm (<code>pnpm-lock.yaml</code>, <code>lockfileVersion</code> <code>6.0</code>
+and <code>9.0</code>), <code>rigor-foundry/1.24.0</code> adds Cargo (<code>Cargo.lock</code> v1 to v4),
+<code>rigor-foundry/1.25.0</code> adds Go (<code>go.sum</code>, read with the <code>go.mod</code> beside it),
+<code>rigor-foundry/1.26.0</code> adds Poetry (<code>poetry.lock</code>, <code>lock-version</code> <code>2.0</code> and
+<code>2.1</code>), <code>rigor-foundry/1.27.0</code> adds Pipenv (<code>Pipfile.lock</code>, <code>pipfile-spec</code>
+6), and <code>rigor-foundry/1.28.0</code> compares Poetry's and Pipenv's manifest hashes
+(<code>SC011</code>). Every lockfile kind the rules recognise is now classified. All the rules are in maturity probation.</p>
+<h2 id="one-class-per-entry">One class per entry<a class="headerlink" href="#one-class-per-entry" title="Permanent link">&para;</a></h2>
+<p>Every locked entry gets exactly one class, plus zero or more findings.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>artifact-pinned</code></td>
+<td>an exact version and an accepted, well-formed digest of the fetched artifact</td>
+</tr>
+<tr>
+<td><code>commit-pinned</code></td>
+<td>a VCS source with a full commit id (40 or 64 lower-case hex)</td>
+</tr>
+<tr>
+<td><code>local</code></td>
+<td>a path, link or workspace source inside the repository root</td>
+</tr>
+<tr>
+<td><code>unpinned</code></td>
+<td>a recognised artifact, VCS or path form that fails its pin; its <code>form</code> is recorded</td>
+</tr>
+<tr>
+<td><code>unclassified</code></td>
+<td>a form these rules do not know; it always carries <code>unknown-form</code></td>
+</tr>
+<tr>
+<td><code>graph-only</code></td>
+<td>in the graph but not fetched itself: a Cargo package that names a <code>replace</code>, or a Go module version that <code>go.sum</code> lists with only its <code>/go.mod</code> line and <code>go.mod</code> does not require</td>
+</tr>
+</tbody>
+</table>
+<p>An <code>unpinned</code> entry always names its failure: <code>missing-digest</code>,
+<code>weak-digest</code>, <code>malformed-digest</code>, <code>floating-ref</code> or <code>path-escape</code>. The other
+entry findings are <code>origin-mismatch</code>, <code>origin-unknown</code> and <code>unknown-form</code>.
+<code>manifest-drift</code> belongs to a whole Poetry or Pipenv lockfile; see
+<a href="#manifest-drift">Manifest drift</a>.</p>
+<h2 id="digests">Digests<a class="headerlink" href="#digests" title="Permanent link">&para;</a></h2>
+<p>SHA-512, SHA-384 and SHA-256 are accepted; SHA-1 and MD5 are weak. An npm
+<code>integrity</code> value may list several SRI tokens, separated by ASCII whitespace,
+and every token is validated:</p>
+<ul>
+<li>a token decodes only when its algorithm is known, it has no <code>?option</code>
+  suffix, its standard base64 is canonical (re-encoding reproduces it exactly)
+  and the decoded length matches the algorithm;</li>
+<li>any token that does not decode gives <code>malformed-digest</code>, even beside a valid
+  accepted token, and the entry is then <code>unpinned</code>;</li>
+<li>an entry whose valid tokens are all weak gives <code>weak-digest</code>;</li>
+<li>a weak token beside a valid accepted one is clean, and both algorithms are
+  recorded;</li>
+<li><strong>two exceptions:</strong> in Poetry and Pipenv lockfiles every listed hash must be
+  accepted, and a weak one anywhere gives <code>weak-digest</code>. Poetry checks the file
+  an install picks, which depends on the platform, against that file's own
+  hash; pip, which Pipenv drives, accepts a file when any listed hash of any
+  algorithm matches (<code>check_against_chunks</code>). Either way a weak hash is a way
+  in. See the two sections below;</li>
+<li>an <code>integrity</code> field that is present but empty is malformed; only an absent
+  field is <code>missing-digest</code>.</li>
+</ul>
+<h2 id="npm-lockfiles">npm lockfiles<a class="headerlink" href="#npm-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Where entries come from.</strong> Versions 2 and 3 are read from <code>packages</code>.
+  Version 1 is read from its nested <code>dependencies</code> tree, and each entry is keyed
+  by its equivalent <code>node_modules</code> path. Each entry points at the line where
+  its key is written.</li>
+<li><strong>The legacy tree.</strong> A version 2 file also keeps the version 1 tree for
+  npm 6. When that tree records an <code>integrity</code> or a <code>resolved</code> URL that differs
+  from <code>packages</code> for the same path, the file is refused as
+  <code>conflicting-entries</code>.</li>
+<li><strong>Registry artifacts.</strong> A remote artifact is pinned by an exact version and
+  an accepted, well-formed <code>integrity</code>. An entry with an exact version and no
+  <code>resolved</code> URL comes from the declared registry.</li>
+<li><strong>VCS sources.</strong> A <code>git+…</code>, <code>git://</code> or hosted (<code>github:</code>, <code>gitlab:</code>,
+  <code>bitbucket:</code>, <code>gist:</code>) source is pinned by a full commit id; a branch, tag,
+  <code>semver:</code> range or abbreviated commit gives <code>floating-ref</code>. The VCS host is
+  recorded but not compared with the registry, because the commit is the pin.</li>
+<li><strong>Local sources.</strong> <code>link</code> entries, <code>file:</code> sources and <code>packages</code> keys that
+  are paths are <code>local</code> when they resolve inside the repository. An absolute
+  path, a Windows drive, a backslash or a <code>..</code> that leaves the repository root
+  gives <code>path-escape</code>. The rules read paths as written and do not follow
+  symbolic links.</li>
+<li><strong>Bundled entries.</strong> An <code>inBundle</code> (version 1: <code>bundled</code>) entry arrives inside
+  the artifact of its nearest non-bundled ancestor. It takes that ancestor's
+  class and findings, with <code>digest_scope</code> <code>parent-artifact</code> and the ancestor's
+  key in <code>inherited_from</code>. It is listed in the report, but its findings are not
+  raised again as candidates.</li>
+</ul>
+<h2 id="yarn-1-lockfiles">Yarn 1 lockfiles<a class="headerlink" href="#yarn-1-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Syntax.</strong> The reader accepts exactly what Yarn 1 writes: header comments that
+  include <code># yarn lockfile v1</code>; key lines at column 0 that list one or more
+  specifiers separated by <code>,</code>; fields indented two spaces; and the members of a
+  <code>dependencies:</code> block indented four. Quoted keys and values use JSON string
+  escapes; a bare one holds no space, quote or colon. A file whose line endings
+  are all CRLF reads as LF. Anything else is <code>unparseable</code>, including mixed line
+  endings, a byte-order mark, a tab, another indentation or a comment after the
+  first entry. A field repeated in one entry, or a specifier named by two entries
+  (compared unquoted), is <code>conflicting-entries</code>; one version resolved under two
+  specifiers is normal.</li>
+<li><strong>Keys.</strong> An entry's key lists its specifiers, unquoted, separated by <code>,</code>.</li>
+<li><strong>Local sources.</strong> A <code>file:</code> or <code>link:</code> specifier, or a <code>file:</code> URL, is <code>local</code>
+  inside the repository and gives <code>path-escape</code> outside it.</li>
+<li><strong>Git clones.</strong> A <code>resolved</code> <code>git+…</code> or <code>git://</code> URL with <code>#&lt;commit&gt;</code> is cloned
+  through Git, so a full commit makes it <code>commit-pinned</code>; anything shorter gives
+  <code>floating-ref</code>.</li>
+<li><strong>Hosted archives.</strong> Yarn 1 writes a GitHub dependency as a
+  <code>https://codeload.github.com/&lt;owner&gt;/&lt;repo&gt;/tar.gz/&lt;ref&gt;</code> archive. Neither Git
+  nor Yarn checks those bytes, so a full commit in the path does not pin it.
+  Without an <code>integrity</code> digest it is <code>unpinned</code> with <code>missing-digest</code>, and the
+  commit is recorded as <code>archive_commit</code> with its <code>commit_hash_algorithm</code>. A
+  reference that is not a full commit also gives <code>floating-ref</code>. The archive host
+  is recorded, not compared, like every VCS host.</li>
+<li><strong>Registry artifacts.</strong> Any other URL is a registry artifact with an exact
+  <code>version</code>, pinned by an accepted <code>integrity</code> digest. The SHA-1 hex after the
+  URL's <code>#</code> is a weak digest of its own: alone it gives <code>weak-digest</code>, and beside
+  an accepted <code>integrity</code> it is clean.</li>
+</ul>
+<h2 id="yarn-2-lockfiles">Yarn 2+ lockfiles<a class="headerlink" href="#yarn-2-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Syntax and versions.</strong> The file is YAML read without anchors, aliases or
+  tags, with a duplicate key refused as <code>unparseable</code>. Only <code>__metadata.version</code>
+  values that a real Yarn release wrote into a fixture here are read: 6 (Yarn 3)
+  and 10 (Yarn 4). Any other version is <code>unsupported-version</code>. <code>cacheKey</code> must
+  match <code>^[0-9]+([a-z][0-9a-z]*)?$</code>. Each entry's key lists its descriptors and
+  must be written as Yarn writes it: plain when it is a plain YAML string and
+  JSON-quoted otherwise, on the line before its fields, or, when longer than
+  1024 characters, after <code>?</code> with the <code>:</code> alone on the next line. Any other
+  layout is <code>unparseable</code>, and a descriptor named by two entries is
+  <code>conflicting-entries</code>.</li>
+<li><strong>Checksums.</strong> A <code>checksum</code> hashes Yarn's own cache archive, so its scope is
+  <code>cache-archive</code>. Yarn 3 writes bare hex and Yarn 4 prefixes the cache key. A
+  checksum whose cache key differs from <code>__metadata.cacheKey</code> is not verified by
+  Yarn, so it is <code>malformed-digest</code>, and the entry's <code>notes</code> record
+  <code>digest_problem: foreign-cache-key</code> with both keys.</li>
+<li><strong>Registry artifacts.</strong> An <code>npm:</code> resolution has no URL: its origin is the
+  registry declared for its scope. An <code>npm:</code> alias (<code>foo@npm:bar@1.0.0</code>) is the
+  artifact <code>bar</code>, with <code>alias</code> recorded. A tarball URL is compared with the
+  declared registry.</li>
+<li><strong>Git.</strong> A clone (<code>git:</code>, <code>git+…</code>, <code>ssh:</code>) at a full <code>#commit=</code> is
+  <code>commit-pinned</code>. A GitHub archive is an artifact pinned only by its checksum,
+  with <code>archive_commit</code>. <code>#head=</code>, <code>#tag=</code>, <code>#semver=</code> and short commits give
+  <code>floating-ref</code>.</li>
+<li><strong>Local and other protocols.</strong> <code>file:</code> (its checksum recorded), <code>link:</code>,
+  <code>portal:</code> and <code>workspace:</code> are <code>local</code>, and give <code>path-escape</code> outside the
+  repository. <code>exec:</code> and any other protocol are <code>unclassified</code> with
+  <code>unknown-form</code>.</li>
+<li><strong>Paths.</strong> A path is read as Yarn 3.8.7 and 4.19.0 read it: the part after
+  <code>#</code> (or the whole reference without one), URL-decoded. A relative path is
+  resolved from the package its <code>locator</code> binding names: a workspace's
+  directory, or a local package's own folder found the same way, at most 32
+  levels deep. A path relative to a fetched package is inside that package,
+  not the repository, so the entry is <code>unknown-form</code>, as is a path Yarn could
+  not read (no single <code>locator</code>, or a bad <code>%</code> escape). An absolute path leaves
+  the repository whoever declared it.</li>
+<li><strong>Patches.</strong> A <code>patch:</code> entry is classified by its own checksum, and its base
+  is a separate entry. <code>notes</code> records <code>patch_source</code>: <code>builtin&lt;name&gt;</code> for a
+  patch that ships with Yarn, or the patch paths, joined by <code>&amp;</code> as Yarn joins
+  them. Every path must stay inside the repository. Flags are read as the Yarn
+  that wrote the lockfile reads them: for version 6 (Yarn 3) a leading <code>~</code>
+  means optional, so <code>~/x</code> is the absolute <code>/x</code>; for version 10 (Yarn 4) flags
+  end at the last <code>!</code>, and <code>~/</code> is the project root.</li>
+</ul>
+<h2 id="pnpm-lockfiles">pnpm lockfiles<a class="headerlink" href="#pnpm-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Versions and documents.</strong> Only the versions a real pnpm release wrote into a
+  fixture here are read: <code>6.0</code> (pnpm 8.15.9) and <code>9.0</code> (pnpm 9.15.9 to
+  12.23.0). Any other is <code>unsupported-version</code>. pnpm 11 and later may write two
+  YAML documents, an env document (configuration dependencies and the pinned
+  package manager) and then the main lockfile. Both are read, and the env
+  document's entries are keyed <code>env › &lt;key&gt;</code>. An env document with no main
+  document has no fixture and is <code>unsupported-version</code>. A tracked git-branch
+  lockfile, <code>pnpm-lock.&lt;branch&gt;.yaml</code>, is refused as <code>unsupported-version</code>,
+  never skipped.</li>
+<li><strong>Entries.</strong> Each <code>packages</code> key is an entry, classified by its <code>resolution</code>.
+  In <code>9.0</code>, <code>snapshots</code> add peer and patch suffixes, and a snapshot whose package
+  is missing makes the file <code>unparseable</code>. Each importer's <code>link:</code> dependency
+  (<code>workspace:</code> included) is a <code>local</code> entry keyed <code>&lt;importer&gt; › &lt;name&gt;</code>, its
+  path resolved from the importer's directory. A <code>6.0</code> lockfile of a single
+  project writes its dependencies at the top level, as importer <code>.</code>; pnpm 8
+  writes one form or the other, so a <code>6.0</code> file with both is <code>unparseable</code>. A
+  key must
+  be written as js-yaml writes it: plain or quoted on the line before its
+  fields, or after <code>?</code> with the <code>:</code> alone on the next line when longer than
+  1024 characters.</li>
+<li><strong>Registry packages and tarballs.</strong> A resolution with no <code>type</code> and no
+  <code>tarball</code> comes from the registry declared for its scope and is pinned by its
+  <code>integrity</code>. A relative <code>tarball</code> is resolved against that registry, as pnpm's
+  <code>new URL(tarball, registry)</code> does. An absolute one is compared with the
+  registry, giving <code>origin-mismatch</code> otherwise, and records
+  <code>tarball_url_dependency</code>.</li>
+<li><strong>Git-hosted archives.</strong> pnpm exempts codeload, GitLab and Bitbucket archives
+  from integrity because their URL names a commit, but nothing verifies those
+  bytes against the commit. So, as for Yarn 1, such an archive is an artifact
+  pinned only by its <code>integrity</code>, with <code>archive_commit</code>, and another reference
+  gives <code>floating-ref</code>. pnpm 8 and 9 never write that integrity; pnpm 10 and 11
+  write it when they download the archive.</li>
+<li><strong>Git clones and local sources.</strong> <code>type: git</code> at a full commit is
+  <code>commit-pinned</code>, with the repository host and any <code>path</code> recorded.
+  <code>type: directory</code> and <code>file:</code> tarballs are <code>local</code>, resolved from the
+  lockfile's directory (a tarball's integrity is recorded), and give
+  <code>path-escape</code> outside the repository. <code>binary</code>, <code>variations</code>, <code>custom:…</code> and
+  any other <code>type</code> have no fixture yet and are <code>unknown-form</code>.</li>
+<li><strong>Patches.</strong> A patched package is classified by its own <code>integrity</code>, and
+  <code>notes</code> record <code>patch_hash</code> and <code>patch_source</code>. pnpm 8 to 10 write the patch's
+  path into <code>patchedDependencies</code>; pnpm 11 writes only its hash, and the path
+  comes from the tracked <code>pnpm-workspace.yaml</code>. Without a path the entry is
+  <code>unknown-form</code>; a path outside the repository is <code>path-escape</code>.</li>
+</ul>
+<h2 id="cargo-lockfiles">Cargo lockfiles<a class="headerlink" href="#cargo-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Formats.</strong> Only the formats a real Cargo release wrote into a fixture here
+  are read: v1 (Cargo 1.40.0), v2 (1.47.0), <code>version = 3</code> (1.75.0) and
+  <code>version = 4</code> (1.83.0 and 1.100.0). The version is a TOML integer, as Cargo
+  reads it; a float such as <code>3.0</code> is <code>unsupported-version</code>. v1 and v2 carry no
+  <code>version</code>: v1 lists its
+  checksums in <code>[metadata]</code> as <code>"checksum &lt;name&gt; &lt;version&gt; (&lt;source&gt;)"</code>, and v2
+  lists them on each package. A v1 file with no registry package has no checksum
+  keys, so it reads as v2; that is harmless, since nothing in it has a digest to
+  read. <code>version = 5</code>, or any other value, is <code>unsupported-version</code>. A file whose
+  <code>[metadata]</code> holds checksum keys but which is otherwise v2 or later is one
+  Cargo treats as a bad merge, dropping every checksum, so it is refused as
+  <code>conflicting-entries</code>.</li>
+<li><strong>Entries and lines.</strong> Each <code>[[package]]</code> is an entry at its header's line, and
+  Cargo writes <code>name</code> and <code>version</code> on the two lines after it; any other layout
+  is <code>unparseable</code>. The key is <code>&lt;name&gt; &lt;version&gt;</code>, with <code>(&lt;source&gt;)</code> added when
+  two entries share a name and a version. <code>[[patch.unused]]</code> is not installed,
+  so it is not classified, and the file records <code>unused_patches</code>.</li>
+<li><strong>Registry packages.</strong> A <code>registry+</code> or <code>sparse+</code> package is pinned by the
+  64-hex lowercase sha256 Cargo verifies on download; a missing checksum or
+  <code>"&lt;none&gt;"</code> is <code>missing-digest</code>, and any other shape <code>malformed-digest</code>. The
+  origin is the index the lockfile names, so it is not compared: crates.io's two
+  source IDs report <code>crates.io</code>, and any other index is recorded by host with
+  <code>alternate_registry</code>. Source replacement, which changes where the bytes come
+  from but keeps the recorded checksums, is the companion rule's.</li>
+<li><strong>Git packages.</strong> The full commit after <code>#</code> pins a Git package, whatever its
+  query asks for. The query is recorded as <code>git_reference</code> (<code>default-branch</code>
+  when there is none), and a 64-hex commit is a sha256 one. A missing, short or
+  non-hex fragment is <code>floating-ref</code>.</li>
+<li><strong>Path packages and workspace members</strong> have no source and are <code>local</code>, noted
+  <code>path_unverified: manifest</code>. The lockfile cannot show whether such an entry is
+  a real path dependency or a registry entry with its <code>source</code> and <code>checksum</code>
+  stripped; <code>cargo --locked</code> refuses that mismatch against <code>Cargo.toml</code>, and a
+  manifest rule is the place to check it.</li>
+<li><strong><code>[replace]</code>.</strong> A package that names a <code>replace</code> is <code>graph-only</code>, noted
+  <code>replaced_by</code>, and its replacement is classified as its own entry in the same
+  file, so a Cargo <code>graph-only</code> entry always carries <code>replaced_by</code>. A <code>replace</code>
+  that names no package in the file, or names one that itself carries a
+  <code>replace</code> (a package replacing itself, a cycle or a chain, which Cargo never
+  writes and which would hide an unpinned package), is <code>unparseable</code>.</li>
+</ul>
+<h2 id="go-lockfiles">Go lockfiles<a class="headerlink" href="#go-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The pair.</strong> Each tracked <code>go.sum</code> is read with the tracked <code>go.mod</code> beside
+  it. Go never writes a <code>go.sum</code> alone, so one without a <code>go.mod</code> is
+  <code>unparseable</code>; a <code>go.mod</code> that is present but untracked, or not text, is
+  <code>unreadable</code>. <code>go.sum</code> has no format version: Go 1.16.15, 1.17.13, 1.22.2 and
+  1.27.4 wrote byte-identical files for the fixtures, so <code>format_version</code> is
+  <code>go.sum</code>.</li>
+<li><strong>Reading <code>go.sum</code></strong> follows Go's <code>readGoSum</code> (go1.27.4): lines end only at a
+  line feed, fields are separated by the characters <code>unicode.IsSpace</code> accepts
+  (so CRLF reads the same), blank lines are skipped, and any other line without
+  exactly three fields is <code>unparseable</code>. Lines carrying the empty-<code>go.mod</code> hash
+  (<code>h1:G7mAYYxgmS0lVkHyy2hEOLQCFB0DlQFTMLWggykrydY=</code>), which an old Go wrote
+  for non-modules, are skipped as Go skips them, and the file records how many
+  as <code>dropped_lines</code>. Two different hashes of one line kind for one module
+  version are <code>conflicting-entries</code>, since Go accepts whichever matches;
+  identical repeats are accepted.</li>
+<li><strong>Reading <code>go.mod</code></strong> follows Go's own grammar (<code>golang.org/x/mod/modfile</code>):
+  <code>require</code>, <code>exclude</code> and <code>replace</code> are read, as lines or blocks; <code>module</code>,
+  <code>go</code>, <code>toolchain</code>, <code>godebug</code>, <code>retract</code>, <code>tool</code> and <code>ignore</code> are accepted and
+  not read, and <code>module</code>, <code>godebug</code>, <code>retract</code>, <code>tool</code> and <code>ignore</code> may be
+  blocks, as in Go. Versions are kept as written. A <code>go.mod</code> is <code>unparseable</code>
+  when it holds any of these:</li>
+<li>a directive Go does not know;</li>
+<li>a <code>/*</code> comment, or a character Go's lexer refuses (a byte-order mark
+    included);</li>
+<li>a quote inside a word, or a back-quoted string;</li>
+<li>a double-quoted string with a backslash escape (Go accepts some; this
+    reader does not decode them);</li>
+<li>a line ending in <code>(</code> other than a block directive followed by <code>(</code> alone
+    (Go's "unknown block type"), or a block that is never closed;</li>
+<li><code>require</code>, <code>exclude</code> or <code>replace</code> arguments Go refuses.</li>
+</ul>
+<p>Two different replacements of one module version are <code>conflicting-entries</code>,
+  as Go refuses them.
+- <strong>Entries and lines.</strong> Each module version is one entry, keyed
+  <code>&lt;module&gt; &lt;version&gt;</code> exactly as written (pseudo-versions and <code>+incompatible</code>
+  included), at its <code>h1:</code> line, else at its <code>/go.mod</code> line.
+  - With both lines it is <code>artifact-pinned</code>, with <code>digest_scope</code> <code>module-tree</code>:
+    <code>h1:</code> is Go's <code>dirhash.Hash1</code>, a SHA-256 over the module's files, not over an
+    archive. Only a lower-case <code>h1:</code> followed by standard base64 of exactly 32
+    bytes pins; any other prefix or shape is <code>malformed-digest</code>.
+  - With only its <code>/go.mod</code> line it is <code>graph-only</code>, noted
+    <code>go_mod_digest: present</code>: that hash covers only the module's <code>go.mod</code>, a
+    graph digest, and Go needs the module's files only when it builds a package
+    from it.
+  - A version that <code>go.mod</code> requires needs both lines; without either it is
+    <code>missing-digest</code>. A required version with no line at all stands at line 1,
+    which stands for the file, noted <code>required_at: go.mod:&lt;line&gt;</code>, and its
+    candidate's evidence ends with <code>; required_at=go.mod:&lt;line&gt;</code>.
+- <strong><code>replace</code>.</strong> A replacement Go reads as a directory (<code>modfile.IsDirectoryPath</code>)
+  makes the required version <code>local</code>, noted <code>replaced_by</code> with the directory;
+  the directory is read from the directory of <code>go.mod</code>, and one outside the
+  repository is <code>path-escape</code>. A module replacement makes the required version
+  take its target's class from the target's <code>go.sum</code> lines, noted <code>replaced_by:
+  &lt;module&gt; &lt;version&gt;</code>. A replacement with no version on its left applies to
+  every version, and one naming the exact version wins, as in Go.
+- <strong><code>exclude</code>.</strong> Lines for an excluded version are classified as written, noted
+  <code>excluded_at: go.mod:&lt;line&gt;</code>, with no finding; Go leaves that version out of
+  the build list.
+- <strong>Origin.</strong> The origin is the module path's first element: the import path's
+  host, not the server. <code>golang.org/x</code>, <code>gopkg.in</code> and <code>go.uber.org</code> are vanity
+  paths, and <code>GOPROXY</code>, from the environment, chooses the server; <code>h1:</code> and the
+  checksum database bind the bytes whoever serves them. The proxy configuration
+  is the companion rule's. A local replacement's origin is <code>local</code>.
+- <strong>Known limits.</strong> Build-list completeness, which pruned module graphs leave to
+  <code>go.mod</code>, is the companion rule's. With <code>vendor/</code> and <code>-mod=vendor</code>, Go builds
+  from the vendored tree without checking <code>go.sum</code>, so a pinned <code>go.sum</code> proves
+  nothing about vendored code. <code>go.work.sum</code>, written for Go workspaces, is not
+  read yet.</p>
+<h2 id="poetry-lockfiles">Poetry lockfiles<a class="headerlink" href="#poetry-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Versions.</strong> Poetry 1.3 to 1.8 write <code>lock-version = "2.0"</code> and Poetry 2
+  writes <code>"2.1"</code>; these two are read, and <code>format_version</code> is the string.
+  Poetry 1.2 and older write <code>1.x</code>, with every hash in <code>[metadata.files]</code> keyed
+  by name alone, so a <code>lock-version</code> below 2.0 is <code>unsupported-lock-version</code>;
+  regenerate it with Poetry 1.3 or later. A missing <code>lock-version</code> is
+  <code>missing-version</code>. Any other value, <code>2.2</code> or a non-string included, is
+  <code>unsupported-version</code>, and a 2.x file that also has <code>[metadata.files]</code> mixes
+  the two encodings as <code>conflicting-entries</code>.</li>
+<li><strong>Entries and lines.</strong> Each <code>[[package]]</code> is an entry at its header's line,
+  with <code>name</code> and <code>version</code> on the two lines after it, as for Cargo. The key is
+  <code>&lt;name&gt; &lt;version&gt;</code>, plus <code>(&lt;source url&gt;)</code> when two entries share both. A
+  package without <code>files</code>, which Poetry cannot read, is <code>unparseable</code>.</li>
+<li><strong>Digests.</strong> Poetry verifies an archive at install by its file name against
+  <code>files</code>, and verifies nothing when <code>files</code> is empty, which is
+  <code>missing-digest</code>. Each hash is <code>&lt;algorithm&gt;:&lt;hex&gt;</code> at the algorithm's length.
+  <strong>Every file must carry an accepted hash:</strong> a sha1 or md5 hash on any file
+  gives <code>weak-digest</code>, even beside accepted ones, because the file an install
+  picks depends on the platform. This is one of the two exceptions to the rule
+  that one accepted digest suffices. An algorithm outside the accepted and weak ones
+  (Poetry also knows <code>sha224</code> and the <code>sha3</code>, <code>shake</code> and <code>blake2</code> families) is
+  <code>malformed-digest</code>, noted <code>unrecognised_algorithm</code>.</li>
+<li><strong>Sources.</strong></li>
+<li>no <code>[package.source]</code>: PyPI, <code>artifact-pinned</code> through <code>files</code>, with origin
+    <code>pypi.org</code>;</li>
+<li><code>legacy</code>: an index, <code>artifact-pinned</code> through <code>files</code>, with its URL's host
+    as origin, compared with the declared sources (below);</li>
+<li><code>url</code>: a direct archive, <code>artifact-pinned</code> through <code>files</code>, with its URL's
+    host as origin; the URL is the dependency itself, so nothing is compared;</li>
+<li><code>file</code> and <code>directory</code>: <code>local</code>, read from the lockfile's directory, and
+    <code>path-escape</code> outside the repository; a file's hash is recorded as the
+    note <code>file_hash</code>, and a developed directory as <code>develop</code>;</li>
+<li><code>git</code>: <code>commit-pinned</code> by a full <code>resolved_reference</code>, with
+    <code>commit_hash_algorithm</code>, <code>git_reference</code> and any <code>subdirectory</code>; a missing
+    or short one is <code>floating-ref</code>;</li>
+<li>any other type, or a known one without its URL, is <code>unclassified</code> with
+    <code>unknown-form</code>.</li>
+<li><strong>Declared sources.</strong> They are the <code>[[tool.poetry.source]]</code> entries of the
+  tracked <code>pyproject.toml</code> beside <code>poetry.lock</code>.</li>
+<li>An index package must name a declared source by <code>reference</code>, compared
+    without case, at that source's URL, ignoring the trailing slash Poetry
+    strips; otherwise it is <code>origin-mismatch</code>.</li>
+<li>A PyPI package is <code>origin-mismatch</code> when the declaration deactivates PyPI
+    for the Poetry generation that wrote the lockfile, and no source is named
+    <code>pypi</code>:<ul>
+<li>for <code>lock-version</code> 2.0 (Poetry 1.3 to 1.8), a source with
+  <code>default = true</code> (1.3.2), or with <code>priority = "default"</code> or <code>"primary"</code>
+  (1.8.5); <code>secondary = true</code> and the other priorities keep PyPI;</li>
+<li>for <code>lock-version</code> 2.1 (Poetry 2), a source whose <code>priority</code> is
+  <code>"primary"</code> or absent.</li>
+</ul>
+</li>
+<li>A <code>pyproject.toml</code> that is absent, untracked, not text, not TOML or not
+    the shape Poetry writes gives <code>origin-unknown</code> on every PyPI and index
+    entry.</li>
+<li>A declaration that cannot be judged for the generation that wrote the
+    lockfile gives <code>origin-unknown</code> on every PyPI entry: a priority that
+    generation does not know; a <code>default</code> or <code>secondary</code> key beside a Poetry 2 lockfile
+    (Poetry 2's schema refuses them); or, beside a 2.0 lockfile, a source with
+    none of <code>default = true</code>, <code>secondary = true</code> or a priority, which 1.8.5
+    counts as primary and so deactivates PyPI, while 1.3.2 keeps PyPI, and the
+    lockfile cannot tell which wrote it.</li>
+<li>Neither is ever a refusal.</li>
+<li><strong>Not read:</strong> <code>groups</code>, <code>category</code>, <code>markers</code>, <code>extras</code>, <code>dependencies</code>,
+  <code>optional</code>, <code>python-versions</code> and <code>description</code>, even when malformed; they
+  play no part in the pin.</li>
+<li><strong><code>content-hash</code></strong> is Poetry's hash of the manifest the lockfile was made
+  from. It is recorded as the file's <code>manifest_hash</code>, a drift signal and never
+  an artifact digest, and is compared with <code>pyproject.toml</code>; see
+  <a href="#manifest-drift">Manifest drift</a>.</li>
+</ul>
+<h2 id="pipenv-lockfiles">Pipenv lockfiles<a class="headerlink" href="#pipenv-lockfiles" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Version.</strong> Pipenv 2020.11.15 to 2026.12.1 all write <code>pipfile-spec</code> 6, which
+  is read; <code>format_version</code> is <code>6</code>. Only the integer 6 is accepted: another
+  number, a string, the float <code>6.0</code> or a boolean is <code>unsupported-version</code>, and
+  a missing <code>_meta</code> or <code>pipfile-spec</code> is <code>missing-version</code>. The JSON is read as
+  npm's is: a repeated key is <code>conflicting-entries</code>, and anything that is not
+  one strict JSON object of objects where Pipenv writes them is <code>unparseable</code>.</li>
+<li><strong>Categories, keys and lines.</strong> Every top-level key except <code>_meta</code> is a
+  category: <code>default</code>, <code>develop</code>, and from Pipenv 2022.10 the categories a
+  Pipfile names. Each entry is keyed <code>&lt;category&gt;/&lt;name&gt;</code>, since one package can
+  sit in several categories, and stands at its own key's line.</li>
+<li><strong>Digests.</strong> An entry's <code>hashes</code> is a list of <code>&lt;algorithm&gt;:&lt;hex&gt;</code>; a missing
+  or empty list is <code>missing-digest</code>. <strong>Every listed hash must be accepted:</strong> pip
+  accepts a file when any listed hash matches, so an md5 or sha1 hash anywhere
+  gives <code>weak-digest</code>, even beside accepted ones. An algorithm outside the table
+  is <code>malformed-digest</code>, noted <code>unrecognised_algorithm</code>; pip refuses an unknown
+  one.</li>
+<li><strong>Forms.</strong></li>
+<li>an exact <code>version</code>, one <code>==&lt;version&gt;</code> with no <code>*</code>, <code>,</code>, <code>;</code> or space:
+    <code>artifact-pinned</code> through its hashes, from the source its <code>index</code> names
+    (below); <code>===</code>, prefix matches such as <code>==1.*</code>, ranges, several specifiers
+    and <code>*</code> pin no artifact and are <code>unclassified</code> with <code>unknown-form</code>;</li>
+<li>a <code>file</code> with an <code>http</code> or <code>https</code> URL: <code>artifact-pinned</code> through its
+    hashes, with the URL's host as origin; Pipenv 2026.12.1 writes no hash for
+    such an entry, which is <code>missing-digest</code>;</li>
+<li>a <code>file</code> with a local path, and a <code>path</code>: <code>local</code>, read from the lockfile's
+    directory, and <code>path-escape</code> outside the repository; a local file's hashes
+    are recorded as the note <code>file_hash</code>, and <code>editable: true</code> as <code>editable</code>;</li>
+<li><code>git</code>: <code>commit-pinned</code> by a 40- or 64-hex <code>ref</code>, with
+    <code>commit_hash_algorithm</code> and any <code>subdirectory</code>; any other <code>ref</code> is
+    <code>floating-ref</code>, with the URL's host as origin;</li>
+<li><code>hg</code>, <code>svn</code>, <code>bzr</code>, a <code>file</code> with another scheme, or an entry with none of
+    these keys: <code>unclassified</code> with <code>unknown-form</code>.</li>
+<li><strong>Origins.</strong> An exact-version entry's <code>index</code> must name a source in
+  <code>_meta.sources</code>, compared exactly as written, and its origin is that source's
+  host; any other name is <code>origin-mismatch</code>. Two sources with one name leave
+  the index ambiguous, so the file is refused as <code>conflicting-entries</code>. Without an <code>index</code>, pip may take
+  the entry from any declared source, so its origin is the one source when
+  there is exactly one, and otherwise <code>origin-unknown</code>. A source with
+  <code>verify_ssl: false</code> is noted on the entries that name it; weakened transport
+  is the companion rule's. The Pipfile's own <code>[[source]]</code> is not compared with
+  <code>_meta.sources</code> here.</li>
+<li><strong>Not read:</strong> <code>markers</code>, <code>extras</code> and <code>_meta.requires</code>.</li>
+<li><strong><code>_meta.hash.sha256</code></strong> is the hash of the Pipfile the lockfile was made from.
+  It is recorded as the file's <code>manifest_hash</code>, a drift signal, and is compared
+  with the <code>Pipfile</code>; see <a href="#manifest-drift">Manifest drift</a>.</li>
+</ul>
+<h2 id="manifest-drift">Manifest drift<a class="headerlink" href="#manifest-drift" title="Permanent link">&para;</a></h2>
+<p><code>rigor-foundry/1.28.0</code> compares the manifest hash that a Poetry or Pipenv
+lockfile records with the tracked manifest beside it. It raises
+<code>SC011-lockfile-manifest-drift</code> when the hash matches no form that the tool
+which wrote the lockfile, or the current release, computes from that manifest.
+The rule follows one principle: a false drift is worse than a missing one.</p>
+<ul>
+<li><strong>The manifest.</strong> It is <code>pyproject.toml</code> beside <code>poetry.lock</code> and <code>Pipfile</code>
+  beside <code>Pipfile.lock</code>, as both tools read them.</li>
+<li><strong>The states.</strong> Each file's <code>manifest_check</code> records one:</li>
+<li><code>fresh</code> or <code>drift</code>;</li>
+<li><code>manifest-missing</code>, when no manifest sits beside the lockfile;</li>
+<li><code>manifest-uncertain</code>, when the manifest is present but untracked, or
+    tracked but not text (reason <code>manifest-untracked-or-not-text</code>). It is also
+    the state when a Poetry writer newer than the newest release mirrored here,
+    2.5.2, matches no F1 (reason <code>writer-newer-than-mirrored</code>);</li>
+<li><code>manifest-unparseable</code>, when the TOML does not parse, a hashed table has
+    another type, or a hashed value has no JSON form, such as a TOML date.
+    Poetry 1.8.5 and 2.5.2 refuse such a manifest as invalid, and Pipenv
+    2025.0.4 and 2026.12.1 fail with <code>TypeError</code>.</li>
+</ul>
+<p>Only <code>drift</code> gives SC011.
+- <strong>Poetry's forms,</strong> read in <code>packages/locker.py</code> at each release's tag:
+  - <strong>F1, from 2.3.0,</strong> hashes <code>[project]</code>'s <code>requires-python</code>, <code>dependencies</code>
+    and <code>optional-dependencies</code>, a non-empty <code>[dependency-groups]</code>, and
+    <code>[tool.poetry]</code>'s <code>dependencies</code>, <code>source</code>, <code>extras</code>, <code>dev-dependencies</code> and
+    <code>group</code>;
+  - <strong>F2, 2.0 to 2.2,</strong> is F1 without the groups;
+  - <strong>F3, 1.x,</strong> is the <code>[tool.poetry]</code> part alone.
+- <strong>The writer</strong> is the version that line 1 names (<code>@generated by Poetry
+  &lt;version&gt;</code>), ordered as PEP 440 orders versions, so <code>2.3.0b1</code> comes before
+  <code>2.3.0</code>. The accepted forms are the union of the writer's own verdict and that
+  of Poetry 2.5.2, which recomputes without the groups for a writer before 2.3.0:
+  - from 2.3.0 to 2.5.2: F1;
+  - from 2.0 to before 2.3.0: F1 or F2;
+  - before 2.0, or a line 1 without a parseable version: F1, F2 or F3;
+  - after 2.5.2: F1, and a mismatch is <code>manifest-uncertain</code>, because a later
+    Poetry may hash differently.</p>
+<p>Two consequences, both as Poetry itself reports them:
+  - a <code>[dependency-groups]</code> table added after a 2.5.2 lock is drift, although
+    the hash without the groups still matches;
+  - a group changed after a pre-2.3.0 lock is not detected.
+- <strong>Pipenv's forms:</strong>
+  - <strong>plette's,</strong> used from 2022.12.19 to 2025.x, and by 2020.11.15 over
+    <code>default</code> and <code>develop</code>;
+  - <strong>the PEP 503 canonical form</strong> of 2026.12.1.</p>
+<p><code>Pipfile.lock</code> names no writer, and each current release calls the other's
+  fresh lock of a Pipfile with a non-canonical package name stale, so either
+  form is accepted.
+  - PyPI is inserted as the source when <code>[[source]]</code> is absent, as every
+    release does.
+  - A <code>${VAR}</code> in a source URL is hashed as written, never expanded, by both
+    current releases.
+  - A changed source is drift through the hash.
+- <strong>A lockfile without its hash,</strong> with no <code>content-hash</code> or no <code>_meta.hash</code>,
+  is drift with <code>recorded=none</code>. Both tools call such a lock stale.
+- <strong>Not read:</strong> environment variables, the manifest's other keys, its layout and
+  its key order.
+- <strong>The fixtures.</strong> There are 34 real cases (<code>manifest-*</code>), generated by
+  <code>tests/fixtures/lockfiles/generate-manifest-drift.sh</code> with Poetry 1.8.5, 2.2.1
+  and 2.5.2 and Pipenv 2020.11.15, 2025.0.4 and 2026.12.1.
+  - Each case keeps the tool's own freshness check in <code>verdict.txt</code>: its
+    command, its exit status and its final message.
+  - Two complete runs wrote identical bytes.</p>
+<h2 id="the-declared-registry">The declared registry<a class="headerlink" href="#the-declared-registry" title="Permanent link">&para;</a></h2>
+<p>Origins are compared only with what the repository itself declares; user-level
+and global npm configuration are not repository content.</p>
+<ul>
+<li>A tracked <code>.npmrc</code> beside the lockfile is read first, then the one at the
+  repository root. <code>registry=</code> names the default registry and
+  <code>@scope:registry=</code> the registry of one scope.</li>
+<li>With no <code>.npmrc</code> at either place, or no <code>registry</code> key, the declared registry
+  is npm's documented default, <code>https://registry.npmjs.org/</code>.</li>
+<li>With the default <code>replace-registry-host</code>, a <code>resolved</code> URL on
+  <code>registry.npmjs.org</code> is npm's placeholder for the configured registry, so it
+  matches. Other hosts are compared literally, by host and explicit port; a
+  registry's path is not compared.</li>
+<li>For Yarn 1, every tracked <code>.npmrc</code> and every tracked <code>.yarnrc</code> on the path
+  from the repository root down to the lockfile's directory is read and merged
+  per key, the nearer file winning, as Yarn 1 merges them; an untracked or
+  unreadable file at any of those levels makes the origin unknown. Per package,
+  Yarn's own order applies: the
+  <code>.npmrc</code> registry of the package's scope, the <code>.yarnrc</code> one, then the unscoped
+  <code>.npmrc</code> and <code>.yarnrc</code> registries. Yarn 1 fetches lockfile URLs as written, so
+  there is no placeholder: with nothing declared, <code>registry.yarnpkg.com</code> and
+  <code>registry.npmjs.org</code> are both the default; with a registry declared, any other
+  host is <code>origin-mismatch</code>. <code>.yarnrc.yml</code> is Yarn 2+ configuration and is not
+  read. A <code>.yarnrc</code> registry line with <code>${…}</code>, a <code>--registry</code> flag, a changed
+  repeat, a non-HTTP(S) value or a line that does not tokenise is uncertain.</li>
+<li>For Yarn 2+, only <code>.yarnrc.yml</code> is read: every tracked one from the root down
+  to the lockfile's directory, merged per key with the nearer winning and
+  <code>npmScopes</code> merged per scope. <code>npmRegistryServer</code> is the default registry
+  (<code>https://registry.yarnpkg.com</code> when unset) and
+  <code>npmScopes.&lt;scope&gt;.npmRegistryServer</code> a scope's. A file that is not one YAML
+  mapping, <code>${…}</code> in a read value, or a registry that is not an HTTP(S) URL is
+  uncertain. A <code>checksumBehavior</code> of <code>ignore</code> or <code>update</code> is recorded on the
+  lockfile's result as <code>checksum_behavior</code>, because Yarn then accepts a checksum
+  mismatch.</li>
+<li>For pnpm, only the tracked <code>.npmrc</code> beside the lockfile (pnpm's workspace
+  root) is read for <code>6.0</code>, because pnpm 8 ignores <code>pnpm-workspace.yaml</code>
+  registries. A <code>9.0</code> lockfile does not say whether pnpm 10 or 11 installs it,
+  and they read differently: pnpm 10 builds its registries from its defaults
+  and <code>.npmrc</code> alone, while pnpm 11 lets the tracked <code>pnpm-workspace.yaml</code>
+  <code>registry</code> and <code>registries</code> win (within the YAML, <code>registry</code> beats a
+  <code>registries</code> default). Both views are built, and every scope whose host
+  differs between them is <code>origin-unknown</code>, a YAML-only scope or default
+  included; a YAML entry that names the same host as the pnpm 10 view stays
+  clean. With nothing declared the default is
+  <code>registry.npmjs.org</code>, and for <code>9.0</code> the <code>@jsr</code> scope is <code>npm.jsr.io</code>. A
+  <code>registries</code> setting that mixes its two shapes, names an unknown field, routes
+  a scope twice, or holds <code>${…}</code> is uncertain.</li>
+<li>Every artifact's origin is <code>origin-unknown</code>, never a pass, when the
+  declaration cannot be read with certainty:</li>
+<li>an <code>.npmrc</code> that is present but untracked, or tracked but not text;</li>
+<li>a registry set through <code>${…}</code> interpolation;</li>
+<li>a <code>replace-registry-host</code> other than <code>npmjs</code>;</li>
+<li>a section header;</li>
+<li>a repeated registry key with a different value;</li>
+<li>a registry that is not an HTTP(S) URL.</li>
+</ul>
+<h2 id="refused-files">Refused files<a class="headerlink" href="#refused-files" title="Permanent link">&para;</a></h2>
+<p>A refused file names its reason and has no entry results.</p>
+<table>
+<thead>
+<tr>
+<th>Reason</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unparseable</code></td>
+<td>not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit; a <code>go.sum</code> with no <code>go.mod</code> beside it, a <code>go.sum</code> line without three fields, or a <code>go.mod</code> outside the grammar subset</td>
+</tr>
+<tr>
+<td><code>missing-version</code></td>
+<td>no <code>lockfileVersion</code>, or no Poetry <code>lock-version</code></td>
+</tr>
+<tr>
+<td><code>unsupported-version</code></td>
+<td>a version the kind's rules do not read, such as an npm <code>lockfileVersion</code> other than 1, 2 or 3, or a pnpm branch lockfile</td>
+</tr>
+<tr>
+<td><code>conflicting-entries</code></td>
+<td>a key repeated in one object, a version 2 legacy tree that disagrees with <code>packages</code>, a Yarn 1 field or specifier repeated, two different <code>go.sum</code> hashes of one line kind for one module version, two different <code>replace</code> targets for one module version, <code>[metadata.files]</code> in a Poetry 2.x lockfile, or a repeated source name in a <code>Pipfile.lock</code></td>
+</tr>
+<tr>
+<td><code>unreadable</code></td>
+<td>over the 8 MiB inventory limit, binary, or not UTF-8; for <code>go.sum</code>, a <code>go.mod</code> beside it that is untracked or not text</td>
+</tr>
+<tr>
+<td><code>ambiguous-yarn-lock</code></td>
+<td>a <code>yarn.lock</code> with neither, or both, the <code># yarn lockfile v1</code> header and a top-level <code>__metadata:</code> block; a byte-order mark is <code>unparseable</code></td>
+</tr>
+<tr>
+<td><code>unsupported-file-kind</code></td>
+<td>reserved for a recognised lockfile whose rules are not in this rule pack; since <code>rigor-foundry/1.27.0</code> every recognised kind has its rules</td>
+</tr>
+<tr>
+<td><code>unsupported-lock-version</code></td>
+<td>a Poetry <code>lock-version</code> below 2.0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Finding</th>
+<th style="text-align: center;">Confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SC003-lockfile-refused</code></td>
+<td>one candidate per refused file, with its kind and reason in the evidence</td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC004-lockfile-missing-digest</code></td>
+<td><code>missing-digest</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC005-lockfile-weak-digest</code></td>
+<td><code>weak-digest</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC006-lockfile-malformed-digest</code></td>
+<td><code>malformed-digest</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC007-lockfile-floating-ref</code></td>
+<td><code>floating-ref</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC008-lockfile-origin-mismatch</code></td>
+<td><code>origin-mismatch</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC009-lockfile-origin-unknown</code></td>
+<td><code>origin-unknown</code></td>
+<td style="text-align: center;">medium</td>
+</tr>
+<tr>
+<td><code>SC010-lockfile-path-escape</code></td>
+<td><code>path-escape</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC011-lockfile-manifest-drift</code></td>
+<td>one candidate per Poetry or Pipenv lockfile whose manifest hash has drifted, from <code>rigor-foundry/1.28.0</code></td>
+<td style="text-align: center;">high</td>
+</tr>
+<tr>
+<td><code>SC012-lockfile-unknown-form</code></td>
+<td><code>unknown-form</code></td>
+<td style="text-align: center;">medium</td>
+</tr>
+</tbody>
+</table>
+<p>A finding candidate is anchored at its
+entry's line and carries the file's SHA-256, the entry key's SHA-256, the class,
+the finding and the entry's origin host, so a reviewer sees an unexpected host. A Go version that <code>go.mod</code>
+requires and <code>go.sum</code> does not list stands at <code>go.sum</code> line 1, and its evidence
+ends with <code>; required_at=go.mod:&lt;line&gt;</code>, so a reviewer finds the requirement.
+A refused file without text is anchored at the repository tree.</p>
+<p>An SC011 candidate stands at the lockfile line that records the hash, or at
+line 1 when there is none. Its evidence is
+<code>file_sha256=…; manifest=&lt;path&gt;; manifest_sha256=…; recorded=&lt;hash|none&gt;; writer=…; accepted=&lt;forms&gt;</code>.
+<code>writer</code> is the text after <code>Poetry</code> on line 1, <code>unknown</code> when line 1 names
+none, and <code>none</code> for Pipenv.</p>
+<h2 id="the-report">The report<a class="headerlink" href="#the-report" title="Permanent link">&para;</a></h2>
+<p><code>rigor lockfile-integrity --root PATH [--json]</code> prints the classification of
+every tracked lockfile; see the <a href="../cli/#lockfile-integrity-provisional">command reference</a>.
+The <code>--json</code> form is the provisional <code>rigor.lockfile-integrity-report.v1</code>
+record:</p>
+<ul>
+<li><code>head</code>, <code>head_tree</code> and <code>tracked_content_digest</code> bind the repository state
+  that was read; <code>rule_pack_version</code> and <code>rule_pack_digest</code> bind the rules;</li>
+<li><code>summary</code> counts files, entries, every class, every finding, every refusal
+  reason and, in <code>manifest_states</code>, every manifest state, zeros included. The
+  entry counts include bundled entries, and <code>manifest-drift</code> counts drifted
+  files;</li>
+<li><code>scope_note</code> says that installer configuration that weakens verification is
+  evaluated by a separate configuration rule;</li>
+<li><code>files</code> lists one record per tracked lockfile in path order, with <code>path</code>,
+  <code>file_sha256</code>, <code>kind</code>, <code>format_version</code>, <code>status</code>, <code>refusal_reason</code>,
+  <code>checksum_behavior</code>, <code>unused_patches</code>, <code>dropped_lines</code>, <code>manifest_hash</code> and
+  <code>manifest_check</code>. <code>manifest_check</code> is <code>null</code> except for Poetry and Pipenv
+  lockfiles that were classified, where it holds <code>manifest_path</code>,
+  <code>manifest_sha256</code>, <code>state</code>, <code>reason</code>, <code>recorded</code>, <code>hash_line</code>, <code>writer</code> and
+  <code>accepted</code>;</li>
+<li>each file lists its entries in line, then key, order, with <code>key</code>, <code>line</code>,
+  <code>class</code>, <code>form</code>, <code>findings</code>, <code>digest_algorithms</code>, <code>digest_scope</code>,
+  <code>commit_hash_algorithm</code>, <code>origin</code>, <code>inherited_from</code>, <code>archive_commit</code> and
+  <code>notes</code> (named evidence: <code>alias</code>, <code>alternate_registry</code>, <code>develop</code>,
+  <code>digest_problem</code> with the cache keys, <code>excluded_at</code>, <code>file_hash</code>, <code>git_path</code>,
+  <code>git_reference</code>, <code>go_mod_digest</code>, <code>patch_hash</code>, <code>patch_source</code>,
+  <code>path_unverified</code>, <code>replaced_by</code>, <code>required_at</code>, <code>subdirectory</code>,
+  <code>tarball_url_dependency</code> or <code>unrecognised_algorithm</code>); <code>digest_scope</code> is <code>artifact</code>, <code>cache-archive</code>,
+  <code>uncompressed-tar</code>, <code>parent-artifact</code> or <code>module-tree</code>;</li>
+<li><code>report_digest</code> is the SHA-256 of the canonical JSON of the report without
+  that field. The report holds no floating-point number and only fixed ASCII
+  member names, so the canonical JSON is the RFC 8785 serialisation.</li>
+</ul>
+<h2 id="boundaries">Boundaries<a class="headerlink" href="#boundaries" title="Permanent link">&para;</a></h2>
+<p>The rules read tracked lockfiles only. Which findings fail a build is the
+consumer's policy, so the command exits zero whenever it produced a report.
+Install commands and configuration that weaken verification (<code>npm install</code>
+instead of <code>npm ci</code>, disabled checksums or registries) belong to a separate
+companion rule. Calibration across adopter repositories is the maturity step
+that can take a rule out of probation.</p>
+<p>The clean test fixtures (<code>tests/fixtures/lockfiles/</code>) were generated by npm
+6.14.18, 8.19.4 and 10.9.2, by Yarn 1.22.22, 3.8.7 and 4.19.0, and by pnpm 8.15.9,
+9.15.9 and 10.34.9, all on Node.js 18.19.1, and by pnpm 11.29.0 and 12.23.0 on
+Node.js 26.13.0. Each pnpm release ran with a fresh store, so a repeated run
+writes the same bytes. The Cargo fixtures were generated by Cargo 1.40.0,
+1.47.0, 1.75.0, 1.83.0 and 1.100.0, against crates.io sources vendored once and
+read through source replacement, a loopback Git daemon and a loopback sparse
+registry serving crates.io's own crate and index line. The Go fixtures were
+generated by Go 1.16.15, 1.17.13, 1.22.2 and 1.27.4, each with fresh module and
+build caches, against <code>proxy.golang.org</code> and <code>sum.golang.org</code>; every release
+wrote the same <code>go.sum</code>, and two complete runs wrote the same bytes. Go 1.27.4
+also wrote <code>tool</code>, <code>godebug</code> and <code>ignore</code> blocks into one <code>go.mod</code> through
+<code>go mod edit</code>. The Poetry fixtures were generated by Poetry 1.2.2, 1.3.2, 1.8.5,
+2.0.1 and 2.5.2, each wheel checked against the sha256 PyPI publishes and its
+dependencies resolved as of its release, with fresh caches, for one project
+holding a PyPI package, a declared loopback index serving PyPI's own wheel, a
+loopback Git daemon, a directory, a local wheel and a URL; two complete runs
+wrote the same bytes. The Pipenv fixtures were generated in the same way by
+Pipenv 2020.11.15, 2022.12.19, 2023.12.1, 2024.4.1, 2025.0.4 and 2026.12.1, for
+one Pipfile adding an editable path, a development package and, from 2022, a
+custom category; 2023.12.1 and 2024.4.1 wrote the same lockfile. Pipenv records
+PyPI's sdist hash beside a local wheel's own, and 2020.11.15 records it for the
+loopback-index package too; both are accepted hashes. Every failing case is a
+recorded edit of one of them.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 1996–2026 Miroslav Šotek · <a href="https://github.com/anulum/rigor-foundry/blob/main/LICENSE">Apache-2.0</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/accessibility.js"></script>
+      
+    
+  </body>
+</html>

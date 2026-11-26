@@ -1088,6 +1088,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../container-rules/" class="md-nav__link">
         
   
@@ -1961,6 +1988,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpreter CI tests
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1977,6 +2022,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#interpreters-for-the-sealed-second-output-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreters for the sealed second-output tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -2055,6 +2130,25 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#interpreters-for-the-sealed-second-output-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreters for the sealed second-output tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -2168,6 +2262,14 @@ the separate component/corpus parser domains and reference-budget refusal.
 Keeping its coverage process separate preserves the documentation renderer's
 native dependency initialization. The source guard rejects removal, duplication,
 conditional execution, a lower threshold or a reduced measured owner set.</p>
+<h2 id="interpreters-for-the-sealed-second-output-tests">Interpreters for the sealed second-output tests<a class="headerlink" href="#interpreters-for-the-sealed-second-output-tests" title="Permanent link">&para;</a></h2>
+<p>The tests of the sealed second-output channel, and of <code>import-sarif --execute</code>
+that uses it, need a Linux CPython built with the memory file seal constants
+(<code>fcntl.F_SEAL_*</code>), such as a distribution or python.org build. The hosted
+Linux jobs use such interpreters. uv's standalone CPython builds lack the
+constants, so on them those tests fail with <code>channel-unavailable</code> instead of
+being skipped. The package, its CLI and every other command still import and
+run there.</p>
 
 
 

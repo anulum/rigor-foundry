@@ -1088,6 +1088,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../container-rules/" class="md-nav__link">
         
   
@@ -2229,6 +2256,15 @@ preconditions, field meanings, authority boundaries, and failure modes.</p>
 <p>The <code>sbom-import</code> options <code>--statement-sha256</code> and <code>--image-manifest-sha256</code>
 belong to the provisional <a href="../cra-reporting/#import-an-oci-image-statement">OCI SPDX profile</a>.
 The original <code>sbom-import</code> spellings remain frozen.</p>
+<p>The <code>import-sarif</code> and <code>verify-import</code> commands and their options are
+individually declared provisional outside the frozen manifest, and so are the
+<code>rigor.import-report.v1</code> report and the <code>rigor.executed-sarif-binding.v1</code>
+binding record; see
+<a href="../sarif/#third-party-sarif-import">Third-party SARIF import</a>.</p>
+<p>The <code>lockfile-integrity</code> command and its options are individually declared
+provisional outside the frozen manifest, and so is the
+<code>rigor.lockfile-integrity-report.v1</code> report; see
+<a href="../lockfile-integrity-rules/#the-report">Lockfile integrity rules</a>.</p>
 <p>The identity-bearing semantic key-policy wire at version <code>2.0</code> is explicitly
 provisional and separately version-pinned. The frozen
 <code>verification-key-policy</code> wire remains <code>1.0</code> with its original fields.

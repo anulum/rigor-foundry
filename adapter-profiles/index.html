@@ -1201,6 +1201,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../lockfile-integrity-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lockfile integrity rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../container-rules/" class="md-nav__link">
         
   
@@ -2290,6 +2317,16 @@ does not claim dependency-vulnerability, CVE, SBOM, licence, or supply-chain
 coverage. Its fixed scanners are repository misconfiguration and secret
 detection only. Use a separately specified and evidence-bound adapter when
 those other domains are required.</p>
+<p>One further profile, <code>semgrep-local-sarif-import-v1</code>, is <strong>import-only</strong>. It is not
+one of the built-in profiles above, and <code>native_audits</code> cannot name it. It runs
+the unchanged Semgrep JSON profile command with relative targets and one more
+argument that writes SARIF to an inherited memory file, launched behind the
+attested util-linux <code>prlimit</code> with soft and hard file-size limits one byte above
+the 32 MiB SARIF limit. The three profiles above never use that launcher. The
+JSON run stays the execution authority, and its evidence appears only inside the
+binding record
+that ties the SARIF to that run; see
+<a href="../sarif/#third-party-sarif-import">Third-party SARIF import</a>.</p>
 <h2 id="policy-declaration">Policy declaration<a class="headerlink" href="#policy-declaration" title="Permanent link">&para;</a></h2>
 <p>Repository policy schema 1.3 accepts this strict profile form in
 <code>native_audits</code>:</p>
