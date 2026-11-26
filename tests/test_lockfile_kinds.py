@@ -35,6 +35,7 @@ YARN_BERRY = (
         ("package-lock.json", "npm"),
         ("web/npm-shrinkwrap.json", "npm"),
         ("pnpm-lock.yaml", "pnpm"),
+        ("web/pnpm-lock.feature!login.yaml", "pnpm"),
         ("crates/tool/Cargo.lock", "cargo"),
         ("go.sum", "go"),
         ("poetry.lock", "poetry"),
@@ -57,7 +58,16 @@ def test_a_lockfile_kind_follows_its_exact_file_name(path: str, kind: str) -> No
 
 @pytest.mark.parametrize(
     "path",
-    ["Package-Lock.json", "package-lock.json.bak", "yarn.lock.orig", "go.mod", "Pipfile", "lock"],
+    [
+        "Package-Lock.json",
+        "package-lock.json.bak",
+        "yarn.lock.orig",
+        "go.mod",
+        "Pipfile",
+        "lock",
+        "pnpm-lock.yml",
+        "pnpm-lock..yaml",
+    ],
 )
 def test_other_paths_are_not_lockfiles(path: str) -> None:
     """Names are compared exactly, so near misses and manifests are not lockfiles.

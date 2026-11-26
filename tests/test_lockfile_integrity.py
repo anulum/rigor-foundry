@@ -23,6 +23,7 @@ from rigor_foundry.lockfile_integrity import (
     assess_lockfiles,
     berry_registry_declaration,
     npm_registry_declaration,
+    pnpm_configuration,
     scan_lockfile_integrity,
     yarn1_registry_declaration,
 )
@@ -54,12 +55,12 @@ def test_a_real_scan_raises_one_candidate_per_recorded_finding_and_refusal(tmp_p
     ]
     counts = Counter(candidate.rule_id for candidate in lockfile)
     assert counts == {
-        "SC003-lockfile-refused": 5,
-        "SC004-lockfile-missing-digest": 2,
+        "SC003-lockfile-refused": 6,
+        "SC004-lockfile-missing-digest": 4,
         "SC005-lockfile-weak-digest": 1,
         "SC006-lockfile-malformed-digest": 1,
         "SC007-lockfile-floating-ref": 1,
-        "SC008-lockfile-origin-mismatch": 1,
+        "SC008-lockfile-origin-mismatch": 2,
         "SC009-lockfile-origin-unknown": 3,
         "SC010-lockfile-path-escape": 1,
         "SC012-lockfile-unknown-form": 1,
@@ -108,6 +109,8 @@ def test_a_refused_file_is_anchored_by_blob_or_by_tree_when_it_has_no_text(tmp_p
     assert "reason=unreadable" in refused["bin/package-lock.json"].evidence
     assert "kind=unknown; reason=ambiguous-yarn-lock" in refused["tools/yarn.lock"].evidence
     assert "kind=cargo; reason=unsupported-file-kind" in refused["crates/Cargo.lock"].evidence
+    branch = refused["pnpm/pnpm-lock.feature!x.yaml"]
+    assert "kind=pnpm; reason=unsupported-version" in branch.evidence
 
 
 @pytest.mark.parametrize(
@@ -410,3 +413,55 @@ def test_a_checksum_behaviour_that_keeps_verification_is_not_recorded(tmp_path: 
     repository.commit()
     result = assess_lockfiles(load_git_inventory(repository.root))[0]
     assert (result.status, result.checksum_behavior) == ("classified", None)
+
+
+PNPM_9 = "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      a:\n        specifier: 1.0.0\n        version: 1.0.0\n\npackages:\n\n  a@1.0.0:\n    resolution: {}\n\nsnapshots:\n\n  a@1.0.0: {}\n"
+
+
+def test_pnpm_reads_npmrc_and_its_workspace_file_beside_the_lockfile_only(tmp_path: Path) -> None:
+    """Pnpm reads its workspace root; a root ``.npmrc`` above a nested lockfile is not read."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("web/pnpm-lock.yaml", PNPM_9)
+    repository.write_text(".npmrc", "registry=https://root.example/\n")
+    repository.write_text("web/.npmrc", "@acme:registry=https://acme.example/\n")
+    repository.write_text("web/pnpm-workspace.yaml", "patchedDependencies:\n  a: p.patch\n")
+    repository.commit()
+    inventory = load_git_inventory(repository.root)
+    hosts, workspace = pnpm_configuration(inventory, "web/pnpm-lock.yaml")
+    assert hosts == {"@acme": "acme.example"}
+    assert workspace is not None and dict(workspace.patches) == {"a": "p.patch"}
+    result = assess_lockfiles(inventory)[0]
+    assert (result.kind, result.status, result.format_version) == ("pnpm", "classified", "9.0")
+    assert result.entries[0].findings == ("missing-digest",)
+    assert result.entries[0].origin == "registry.npmjs.org"
+
+
+@pytest.mark.parametrize("untracked", [".npmrc", "pnpm-workspace.yaml"])
+def test_an_untracked_pnpm_configuration_file_makes_the_origin_unknown(
+    tmp_path: Path, untracked: str
+) -> None:
+    """A present but untracked ``.npmrc`` or ``pnpm-workspace.yaml`` is never read as absent.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    untracked : str
+        The file left untracked.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("pnpm-lock.yaml", PNPM_9)
+    repository.commit()
+    (repository.root / untracked).write_text("registry=https://x.example/\n", encoding="utf-8")
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert result.entries[0].findings == ("missing-digest", "origin-unknown")
+
+
+def test_a_pnpm_configuration_file_that_is_not_text_is_uncertain(tmp_path: Path) -> None:
+    """A tracked binary ``pnpm-workspace.yaml`` cannot be read with certainty."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("pnpm-lock.yaml", PNPM_9)
+    repository.write_bytes("pnpm-workspace.yaml", b"\0")
+    repository.commit()
+    hosts, workspace = pnpm_configuration(load_git_inventory(repository.root), "pnpm-lock.yaml")
+    assert (hosts, workspace) == ({}, None)

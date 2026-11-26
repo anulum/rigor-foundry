@@ -1437,6 +1437,215 @@
     {
       "checksum_behavior": null,
       "entries": [],
+      "file_sha256": "be65fc350a6b0590d6f5d7594811cc589310e672017982b4b25e432324cb319d",
+      "format_version": null,
+      "kind": "pnpm",
+      "path": "pnpm/pnpm-lock.feature!x.yaml",
+      "refusal_reason": "unsupported-version",
+      "status": "refused"
+    },
+    {
+      "checksum_behavior": null,
+      "entries": [
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": ". \u203a linked-lib",
+          "line": 25,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": ". \u203a ws-a",
+          "line": 43,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "packages/ws-a \u203a linked-lib",
+          "line": 49,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "debug@4.3.4",
+          "line": 58,
+          "notes": {},
+          "origin": "registry.npmjs.org"
+        },
+        {
+          "archive_commit": "98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "class": "unpinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [
+            "missing-digest"
+          ],
+          "form": "artifact",
+          "inherited_from": null,
+          "key": "is-number@https://codeload.github.com/jonschlinkert/is-number/tar.gz/98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "line": 67,
+          "notes": {},
+          "origin": "codeload.github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "left-pad@1.3.0",
+          "line": 72,
+          "notes": {},
+          "origin": "registry.npmjs.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "local-lib@file:local-lib",
+          "line": 76,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "local-tgz@file:local-tgz/local-tgz-1.0.0.tgz",
+          "line": 79,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ms@2.1.2",
+          "line": 83,
+          "notes": {
+            "patch_hash": "y57fqylhrn67pmfdfc22sorfim",
+            "patch_source": "patches/ms@2.1.2.patch"
+          },
+          "origin": "registry.npmjs.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ms@2.1.3",
+          "line": 86,
+          "notes": {},
+          "origin": "registry.npmjs.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "unpinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [
+            "missing-digest",
+            "origin-mismatch"
+          ],
+          "form": "artifact",
+          "inherited_from": null,
+          "key": "ms@https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz",
+          "line": 89,
+          "notes": {
+            "tarball_url_dependency": "true"
+          },
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "commit-pinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "vcs-lib@git+git://127.0.0.1:19419/vcs-lib.git#ee7225ad8820e4fbfcc0a6909a85af289e3f70e7",
+          "line": 93,
+          "notes": {},
+          "origin": "127.0.0.1"
+        }
+      ],
+      "file_sha256": "be65fc350a6b0590d6f5d7594811cc589310e672017982b4b25e432324cb319d",
+      "format_version": "9.0",
+      "kind": "pnpm",
+      "path": "pnpm/pnpm-lock.yaml",
+      "refusal_reason": null,
+      "status": "classified"
+    },
+    {
+      "checksum_behavior": null,
+      "entries": [],
       "file_sha256": "2064c0d477d3fafb2bee3eeb8c6f01ba48a30919c938d94e0aae2ea159f9e812",
       "format_version": null,
       "kind": null,
@@ -2612,31 +2821,31 @@
       "status": "classified"
     }
   ],
-  "head": "996f9728155853433389984b3c9c22287f348c99",
-  "head_tree": "d4007713bdb10702ddda3e629d19459e66461577",
-  "report_digest": "4df188abcf0769158dc863b67ac8ce0a783f73cd997c44d625a2f7d219fada28",
-  "rule_pack_digest": "29583fe2c1352f07ec59f0214176fa31c97b9a03cd97e2d029b0312ef762840f",
-  "rule_pack_version": "rigor-foundry/1.22.0",
+  "head": "50c3557d842a56d0ca8f7a2d1ea1af5b95a859f3",
+  "head_tree": "878fffe576e73f53b1de07c99667a06ef43cdc31",
+  "report_digest": "41d96dbac5702791887a7a9e0f9164cd5a6e89753847bcf9df0eecfaae6189ae",
+  "rule_pack_digest": "79c778a1a66aff3269625ce4bdf7dd0817d062221b07439ca3dad352b7c1c9f4",
+  "rule_pack_version": "rigor-foundry/1.23.0",
   "schema": "rigor.lockfile-integrity-report.v1",
   "scope_note": "Installer configuration that weakens verification, such as Yarn's checksumBehavior, approvedGitRepositories, unsafeHttpWhitelist or enableStrictSsl, is evaluated by a separate configuration rule. A pinned entry is not proof that the installer verifies it.",
   "summary": {
     "classes": {
-      "artifact-pinned": 127,
-      "commit-pinned": 5,
+      "artifact-pinned": 131,
+      "commit-pinned": 6,
       "graph-only": 0,
-      "local": 13,
+      "local": 18,
       "unclassified": 1,
-      "unpinned": 7
+      "unpinned": 9
     },
-    "classified_files": 6,
-    "entries": 153,
-    "files": 11,
+    "classified_files": 7,
+    "entries": 165,
+    "files": 13,
     "findings": {
       "floating-ref": 1,
       "malformed-digest": 2,
       "manifest-drift": 0,
-      "missing-digest": 2,
-      "origin-mismatch": 1,
+      "missing-digest": 4,
+      "origin-mismatch": 2,
       "origin-unknown": 4,
       "path-escape": 1,
       "unknown-form": 1,
@@ -2650,9 +2859,9 @@
       "unreadable": 1,
       "unsupported-file-kind": 1,
       "unsupported-lock-version": 0,
-      "unsupported-version": 1
+      "unsupported-version": 2
     },
-    "refused_files": 5
+    "refused_files": 6
   },
-  "tracked_content_digest": "66374c5ef4576fd98679ddcfb0ddc940057b72e4d110e5133c7b8a44b64c247c"
+  "tracked_content_digest": "6d94209c251fcb8378e7eefd4d52d938c3d317e3a14338d05d59faee6d4ba9a9"
 }

@@ -18,9 +18,10 @@ rules implement *lockfile integrity semantics v1*.
 Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
 `npm-shrinkwrap.json`, `lockfileVersion` 1, 2 and 3), and `rigor-foundry/1.21.0`
 adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
-`rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block).
-Every other lockfile the rules recognise is refused as `unsupported-file-kind`
-until its own rules exist: `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`,
+`rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block),
+and `rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
+and `9.0`). Every other lockfile the rules recognise is refused as
+`unsupported-file-kind` until its own rules exist: `Cargo.lock`, `go.sum`,
 `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
 
 ## One class per entry
@@ -161,6 +162,52 @@ and every token is validated:
   means optional, so `~/x` is the absolute `/x`; for version 10 (Yarn 4) flags
   end at the last `!`, and `~/` is the project root.
 
+## pnpm lockfiles
+
+- **Versions and documents.** Only the versions a real pnpm release wrote into a
+  fixture here are read: `6.0` (pnpm 8.15.9) and `9.0` (pnpm 9.15.9 to
+  12.23.0). Any other is `unsupported-version`. pnpm 11 and later may write two
+  YAML documents, an env document (configuration dependencies and the pinned
+  package manager) and then the main lockfile. Both are read, and the env
+  document's entries are keyed `env › <key>`. An env document with no main
+  document has no fixture and is `unsupported-version`. A tracked git-branch
+  lockfile, `pnpm-lock.<branch>.yaml`, is refused as `unsupported-version`,
+  never skipped.
+- **Entries.** Each `packages` key is an entry, classified by its `resolution`.
+  In `9.0`, `snapshots` add peer and patch suffixes, and a snapshot whose package
+  is missing makes the file `unparseable`. Each importer's `link:` dependency
+  (`workspace:` included) is a `local` entry keyed `<importer> › <name>`, its
+  path resolved from the importer's directory. A `6.0` lockfile of a single
+  project writes its dependencies at the top level, as importer `.`; pnpm 8
+  writes one form or the other, so a `6.0` file with both is `unparseable`. A
+  key must
+  be written as js-yaml writes it: plain or quoted on the line before its
+  fields, or after `? ` with the `:` alone on the next line when longer than
+  1024 characters.
+- **Registry packages and tarballs.** A resolution with no `type` and no
+  `tarball` comes from the registry declared for its scope and is pinned by its
+  `integrity`. A relative `tarball` is resolved against that registry, as pnpm's
+  `new URL(tarball, registry)` does. An absolute one is compared with the
+  registry, giving `origin-mismatch` otherwise, and records
+  `tarball_url_dependency`.
+- **Git-hosted archives.** pnpm exempts codeload, GitLab and Bitbucket archives
+  from integrity because their URL names a commit, but nothing verifies those
+  bytes against the commit. So, as for Yarn 1, such an archive is an artifact
+  pinned only by its `integrity`, with `archive_commit`, and another reference
+  gives `floating-ref`. pnpm 8 and 9 never write that integrity; pnpm 10 and 11
+  write it when they download the archive.
+- **Git clones and local sources.** `type: git` at a full commit is
+  `commit-pinned`, with the repository host and any `path` recorded.
+  `type: directory` and `file:` tarballs are `local`, resolved from the
+  lockfile's directory (a tarball's integrity is recorded), and give
+  `path-escape` outside the repository. `binary`, `variations`, `custom:…` and
+  any other `type` have no fixture yet and are `unknown-form`.
+- **Patches.** A patched package is classified by its own `integrity`, and
+  `notes` record `patch_hash` and `patch_source`. pnpm 8 to 10 write the patch's
+  path into `patchedDependencies`; pnpm 11 writes only its hash, and the path
+  comes from the tracked `pnpm-workspace.yaml`. Without a path the entry is
+  `unknown-form`; a path outside the repository is `path-escape`.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -196,6 +243,19 @@ and global npm configuration are not repository content.
   uncertain. A `checksumBehavior` of `ignore` or `update` is recorded on the
   lockfile's result as `checksum_behavior`, because Yarn then accepts a checksum
   mismatch.
+- For pnpm, only the tracked `.npmrc` beside the lockfile (pnpm's workspace
+  root) is read for `6.0`, because pnpm 8 ignores `pnpm-workspace.yaml`
+  registries. A `9.0` lockfile does not say whether pnpm 10 or 11 installs it,
+  and they read differently: pnpm 10 builds its registries from its defaults
+  and `.npmrc` alone, while pnpm 11 lets the tracked `pnpm-workspace.yaml`
+  `registry` and `registries` win (within the YAML, `registry` beats a
+  `registries` default). Both views are built, and every scope whose host
+  differs between them is `origin-unknown`, a YAML-only scope or default
+  included; a YAML entry that names the same host as the pnpm 10 view stays
+  clean. With nothing declared the default is
+  `registry.npmjs.org`, and for `9.0` the `@jsr` scope is `npm.jsr.io`. A
+  `registries` setting that mixes its two shapes, names an unknown field, routes
+  a scope twice, or holds `${…}` is uncertain.
 - Every artifact's origin is `origin-unknown`, never a pass, when the
   declaration cannot be read with certainty:
   - an `.npmrc` that is present but untracked, or tracked but not text;
@@ -213,7 +273,7 @@ A refused file names its reason and has no entry results.
 |---|---|
 | `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit |
 | `missing-version` | no `lockfileVersion` |
-| `unsupported-version` | a `lockfileVersion` other than 1, 2 or 3 |
+| `unsupported-version` | a version the kind's rules do not read, such as an npm `lockfileVersion` other than 1, 2 or 3, or a pnpm branch lockfile |
 | `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, or a Yarn 1 field or specifier repeated |
 | `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8 |
 | `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block; a byte-order mark is `unparseable` |
@@ -259,8 +319,8 @@ record:
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
   `commit_hash_algorithm`, `origin`, `inherited_from`, `archive_commit` and
-  `notes` (named evidence: `alias`, `digest_problem` with the cache keys, or
-  `patch_source`);
+  `notes` (named evidence: `alias`, `digest_problem` with the cache keys,
+  `git_path`, `patch_hash`, `patch_source` or `tarball_url_dependency`);
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
   member names, so the canonical JSON is the RFC 8785 serialisation.
@@ -274,6 +334,8 @@ instead of `npm ci`, disabled checksums or registries) belong to a separate
 companion rule. Calibration across adopter repositories is the maturity step
 that can take a rule out of probation.
 
-The clean test fixtures were generated by npm 6.14.18, 8.19.4 and 10.9.2 and by
-Yarn 1.22.22, 3.8.7 and 4.19.0, on Node.js 18.19.1 (`tests/fixtures/lockfiles/`), and every failing
-case is a recorded edit of one of them.
+The clean test fixtures (`tests/fixtures/lockfiles/`) were generated by npm
+6.14.18, 8.19.4 and 10.9.2, by Yarn 1.22.22, 3.8.7 and 4.19.0, and by pnpm 8.15.9,
+9.15.9 and 10.34.9, all on Node.js 18.19.1, and by pnpm 11.29.0 and 12.23.0 on
+Node.js 26.13.0. Each pnpm release ran with a fresh store, so a repeated run
+writes the same bytes. Every failing case is a recorded edit of one of them.

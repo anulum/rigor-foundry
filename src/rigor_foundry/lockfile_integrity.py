@@ -26,7 +26,7 @@ from typing import Final
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
-from .lockfile_kinds import is_lockfile_path, lockfile_kind
+from .lockfile_kinds import PNPM_LOCK, is_lockfile_path, lockfile_kind
 from .lockfile_model import EntryFinding, LockfileKind, LockfileRefusal, LockfileResult
 from .lockfile_npm import classify_npm_lockfile
 from .lockfile_npmrc import (
@@ -36,6 +36,8 @@ from .lockfile_npmrc import (
     npmrc_registry_hosts,
     read_npmrc,
 )
+from .lockfile_pnpm import classify_pnpm_lockfile
+from .lockfile_pnpm_config import PnpmWorkspace, read_pnpm_workspace
 from .lockfile_yarn1 import classify_yarn1_lockfile
 from .lockfile_yarn_berry import classify_yarn_berry_lockfile
 from .lockfile_yarnrc import (
@@ -70,6 +72,7 @@ _MEDIUM_CONFIDENCE: Final[frozenset[EntryFinding]] = frozenset({"origin-unknown"
 _NPMRC: Final = ".npmrc"
 _YARNRC: Final = ".yarnrc"
 _YARNRC_YML: Final = ".yarnrc.yml"
+_PNPM_WORKSPACE: Final = "pnpm-workspace.yaml"
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -320,6 +323,50 @@ def berry_registry_declaration(
     return BerryRegistryDeclaration(known=True, config=merged)
 
 
+def _beside(inventory: GitInventory, lock_path: str, name: str) -> tuple[bool, str | None]:
+    """Find one configuration file beside the lockfile only, as pnpm reads its workspace root.
+
+    Returns whether it was read with certainty, and its text; ``(True, None)`` when there is
+    none. A file that is present but untracked, or tracked but not text, is uncertain.
+    """
+    path = posixpath.join(posixpath.dirname(lock_path), name)
+    for item in inventory.files:
+        if item.path == path:
+            return item.text is not None, item.text
+    return not os.path.lexists(inventory.root / path), None
+
+
+def pnpm_configuration(
+    inventory: GitInventory, lock_path: str
+) -> tuple[Mapping[str, str] | None, PnpmWorkspace | None]:
+    """Return what the ``.npmrc`` and ``pnpm-workspace.yaml`` beside a pnpm lockfile declare.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The tracked repository content.
+    lock_path : str
+        The lockfile's repository-relative POSIX path.
+
+    Returns
+    -------
+    tuple[Mapping[str, str] | None, PnpmWorkspace | None]
+        The ``.npmrc`` registry hosts and the workspace declaration; each ``None`` when its file
+        cannot be read with certainty, and empty when there is no file.
+    """
+    certain, npmrc = _beside(inventory, lock_path, _NPMRC)
+    hosts = None if not certain else {} if npmrc is None else npmrc_registry_hosts(npmrc)
+    certain, workspace_text = _beside(inventory, lock_path, _PNPM_WORKSPACE)
+    workspace = (
+        None
+        if not certain
+        else PnpmWorkspace()
+        if workspace_text is None
+        else read_pnpm_workspace(workspace_text)
+    )
+    return hosts, workspace
+
+
 def _refused(
     item: TrackedFile, kind: LockfileKind | None, reason: LockfileRefusal
 ) -> LockfileResult:
@@ -347,6 +394,11 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
         elif kind == "yarn-v1":
             yarn = yarn1_registry_declaration(inventory, item.path)
             version, entries = classify_yarn1_lockfile(text, lock_dir, yarn)
+        elif kind == "pnpm":
+            if posixpath.basename(item.path) != PNPM_LOCK:
+                raise LockfileRefusal("unsupported-version")
+            hosts, workspace = pnpm_configuration(inventory, item.path)
+            version, entries = classify_pnpm_lockfile(text, lock_dir, hosts, workspace)
         elif kind == "yarn-berry":
             berry = berry_registry_declaration(inventory, item.path)
             version, entries = classify_yarn_berry_lockfile(text, lock_dir, berry)

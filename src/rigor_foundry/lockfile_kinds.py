@@ -15,12 +15,15 @@ is refused rather than guessed, and one that opens with a byte-order mark is unp
 
 from __future__ import annotations
 
+import re
 from pathlib import PurePosixPath
 from typing import Final
 
 from .lockfile_model import LockfileKind, LockfileRefusal
 
 YARN_LOCK: Final = "yarn.lock"
+PNPM_LOCK: Final = "pnpm-lock.yaml"
+_PNPM_BRANCH_LOCK: Final = re.compile(r"pnpm-lock\..+\.yaml")
 _KINDS_BY_NAME: Final[dict[str, LockfileKind]] = {
     "package-lock.json": "npm",
     "npm-shrinkwrap.json": "npm",
@@ -45,10 +48,27 @@ def is_lockfile_path(path: str) -> bool:
     Returns
     -------
     bool
-        Whether its file name is exactly one of the lockfile names.
+        Whether its file name is one of the lockfile names, or a pnpm git-branch lockfile
+        (``pnpm-lock.<branch>.yaml``), which is reported rather than skipped.
     """
     name = PurePosixPath(path).name
-    return name == YARN_LOCK or name in _KINDS_BY_NAME
+    return name == YARN_LOCK or name in _KINDS_BY_NAME or is_pnpm_branch_lockfile(path)
+
+
+def is_pnpm_branch_lockfile(path: str) -> bool:
+    """Return whether a path names a pnpm git-branch lockfile, ``pnpm-lock.<branch>.yaml``.
+
+    Parameters
+    ----------
+    path : str
+        A repository-relative POSIX path.
+
+    Returns
+    -------
+    bool
+        Whether its file name has that form.
+    """
+    return _PNPM_BRANCH_LOCK.fullmatch(PurePosixPath(path).name) is not None
 
 
 def _yarn_kind(text: str) -> LockfileKind:
@@ -93,7 +113,7 @@ def lockfile_kind(path: str, text: str) -> LockfileKind:
     name = PurePosixPath(path).name
     if name == YARN_LOCK:
         return _yarn_kind(text)
-    kind = _KINDS_BY_NAME.get(name)
+    kind = "pnpm" if is_pnpm_branch_lockfile(path) else _KINDS_BY_NAME.get(name)
     if kind is None:
         raise ValueError(f"not a lockfile path: {path}")
     return kind

@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.22.0"
+RULE_PACK_VERSION = "rigor-foundry/1.23.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"

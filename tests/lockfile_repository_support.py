@@ -33,6 +33,7 @@ V1 = FIXTURES / "npm-6.14.18-v1" / "package-lock.json.gz"
 V3 = FIXTURES / "npm-10.9.2-v3" / "package-lock.json.gz"
 YARN1 = FIXTURES / "yarn-1.22.22-v1" / "yarn.lock.gz"
 BERRY = FIXTURES / "yarn-4.19.0-berry" / "yarn.lock.gz"
+PNPM = FIXTURES / "pnpm-9.15.9-v9" / "pnpm-lock.yaml.gz"
 GOLDEN = FIXTURES / "report-golden.json"
 COMMIT_DATE = "2026-11-25T00:00:00Z"
 SHA1 = "sha1-" + base64.b64encode(hashlib.sha1(b"x", usedforsecurity=False).digest()).decode()
@@ -131,6 +132,8 @@ def build_lockfile_repository(root: Path) -> GitRepository:
     repository.write_text(
         "berry/.yarnrc.yml", "nodeLinker: node-modules\nchecksumBehavior: update\n"
     )
+    repository.write_text("pnpm/pnpm-lock.yaml", fixture_text(PNPM))
+    repository.write_text("pnpm/pnpm-lock.feature!x.yaml", fixture_text(PNPM))
     repository.write_text("tools/yarn.lock", 'left-pad@^1.3.0:\n  version "1.3.0"\n')
     repository.write_text("empty/yarn.lock", "")
     repository.write_text("crates/Cargo.lock", "version = 4\n")

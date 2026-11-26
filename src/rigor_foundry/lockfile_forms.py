@@ -180,8 +180,9 @@ def vcs_entry(
     reading: DigestReading,
     digest_scope: DigestScope = "artifact",
     notes: tuple[tuple[str, str], ...] = (),
+    extra_findings: frozenset[EntryFinding] = frozenset(),
 ) -> LockedEntry:
-    """Classify a VCS source: pinned by a full commit and no malformed digest.
+    """Classify a VCS source: pinned by a full commit, no malformed digest and no other finding.
 
     Parameters
     ----------
@@ -197,17 +198,20 @@ def vcs_entry(
         What those digests cover, such as Yarn's ``cache-archive``.
     notes : tuple[tuple[str, str], ...]
         Further evidence to record, ordered by name.
+    extra_findings : frozenset[EntryFinding]
+        Findings beside the commit and digest ones, such as a patch's ``path-escape``.
 
     Returns
     -------
     LockedEntry
-        ``commit-pinned``, or ``unpinned`` with ``floating-ref`` or ``malformed-digest``.
+        ``commit-pinned``, or ``unpinned`` with ``floating-ref``, ``malformed-digest`` or the
+        extra findings.
     """
     host = vcs_host(spec)
     commit = spec.partition("#")[2]
     scope: DigestScope | None = digest_scope if reading.algorithms else None
     full = FULL_COMMIT.fullmatch(commit) is not None
-    if full and not reading.malformed_tokens:
+    if full and not reading.malformed_tokens and not extra_findings:
         return LockedEntry(
             key,
             line,
@@ -218,7 +222,7 @@ def vcs_entry(
             origin=host,
             notes=notes,
         )
-    failures: set[EntryFinding] = set()
+    failures: set[EntryFinding] = set(extra_findings)
     if not full:
         failures.add("floating-ref")
     if reading.malformed_tokens:

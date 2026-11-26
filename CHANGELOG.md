@@ -82,6 +82,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read pnpm lockfiles (rule pack
+  `rigor-foundry/1.23.0`), for the `lockfileVersion` values that pnpm 8 to 12
+  wrote into the test fixtures, including the two-document form that pnpm 11
+  and later write for configuration dependencies and the pinned package
+  manager. Registry packages, tarball URLs, GitHub archives, Git clones, local
+  folders and tarballs, workspace links and patches are each classified as
+  pnpm reads them. A GitHub archive pins only by its integrity, which pnpm
+  exempts. The origin comes from the `.npmrc` and `pnpm-workspace.yaml` beside
+  the lockfile, and is unknown where the two disagree. A git-branch lockfile is
+  reported, not skipped.
+
 - Lockfile integrity rules read Yarn 2+ lockfiles (rule pack
   `rigor-foundry/1.22.0`), for the `__metadata` versions that Yarn 3 and Yarn 4
   wrote into the test fixtures. A checksum covers Yarn's cache archive, and one

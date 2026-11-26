@@ -1,0 +1,6 @@
+pnpm 8.15.9
+node v18.19.1
+sha256 e9c59bc08ffcf9321547159575891211e9007146dd38b08bc15623a417a38507
+stored gzip-compressed (level 9, mtime 0) as pnpm-lock.yaml.gz, package.json.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed pnpm-lock.yaml bytes pnpm wrote, with a fresh store and cache

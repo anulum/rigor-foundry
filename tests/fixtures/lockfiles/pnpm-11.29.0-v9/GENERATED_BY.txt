@@ -1,0 +1,7 @@
+pnpm 11.29.0
+node v26.13.0
+sha256 198ff1c270f0768a2a648e88517f02d6e26415ec8e85ba42cfbe520adbb89233
+pnpm 12.23.0 on node v26.13.0 wrote byte-identical bytes: its release tag is the same source commit as 11.29.0's
+stored gzip-compressed (level 9, mtime 0) as pnpm-lock.yaml.gz, package.json.gz and pnpm-workspace.yaml.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed pnpm-lock.yaml bytes pnpm wrote, with a fresh store and cache
