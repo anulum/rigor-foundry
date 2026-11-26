@@ -82,6 +82,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Pipenv lockfiles (rule pack
+  `rigor-foundry/1.27.0`), `pipfile-spec` 6 as Pipenv 2020.11 to 2026.12 wrote
+  them into the test fixtures, every category included, each entry keyed by
+  its category and name. An exact version pins through its hashes, and every
+  listed hash must be accepted, because pip accepts a file that matches any of
+  them; its `index` must name a source the lockfile records. A URL pins through
+  its hashes, and Pipenv 2026.12.1, which writes none for it, leaves it missing
+  its digest. Git entries pin by a full-commit ref, and file and path entries
+  are local. The Pipfile hash is recorded in `manifest_hash`. Every lockfile
+  kind the rules recognise is now classified.
+
 - Lockfile integrity rules read Poetry lockfiles (rule pack
   `rigor-foundry/1.26.0`), `lock-version` 2.0 and 2.1 as Poetry 1.3 to 2.5
   wrote them into the test fixtures; an older `lock-version` is refused as

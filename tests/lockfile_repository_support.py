@@ -39,6 +39,7 @@ GO_SUM = FIXTURES / "go-1.27.4" / "go.sum.gz"
 GO_MOD = FIXTURES / "go-1.27.4" / "go.mod.gz"
 POETRY_LOCK = FIXTURES / "poetry-2.5.2-lock-2.1" / "poetry.lock.gz"
 POETRY_PYPROJECT = FIXTURES / "poetry-2.5.2-lock-2.1" / "pyproject.toml.gz"
+PIPENV_LOCK = FIXTURES / "pipenv-2026.12.1" / "Pipfile.lock.gz"
 GOLDEN = FIXTURES / "report-golden.json"
 COMMIT_DATE = "2026-11-25T00:00:00Z"
 SHA1 = "sha1-" + base64.b64encode(hashlib.sha1(b"x", usedforsecurity=False).digest()).decode()
@@ -149,6 +150,7 @@ def build_lockfile_repository(root: Path) -> GitRepository:
     repository.write_text("poetry/poetry.lock", fixture_text(POETRY_LOCK))
     repository.write_text("poetry/pyproject.toml", fixture_text(POETRY_PYPROJECT))
     repository.write_text("pip/Pipfile.lock", "{}\n")
+    repository.write_text("pipenv/Pipfile.lock", fixture_text(PIPENV_LOCK))
     repository.write_bytes("bin/package-lock.json", b"{\0}")
     repository.write_text("old/package-lock.json", '{"lockfileVersion": 4}\n')
     with _fixed_commit_dates():

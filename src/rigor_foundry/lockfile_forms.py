@@ -17,10 +17,11 @@ from __future__ import annotations
 
 import posixpath
 import re
+from dataclasses import dataclass
 from typing import Final
 from urllib.parse import urlsplit
 
-from .lockfile_digests import DigestReading
+from .lockfile_digests import DIGEST_BYTES, DigestReading, combine_readings, read_hex_digest
 from .lockfile_model import (
     ENTRY_FINDINGS,
     PIN_FAILURES,
@@ -39,6 +40,7 @@ HOSTED_SHORTCUTS: Final[dict[str, str]] = {
 }
 FULL_COMMIT: Final = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _WINDOWS_DRIVE: Final = re.compile(r"[A-Za-z]:")
+_WEAK_ALGORITHMS: Final = frozenset({"sha1", "md5"})
 
 
 def ordered(findings: set[EntryFinding]) -> tuple[EntryFinding, ...]:
@@ -311,3 +313,59 @@ def artifact_entry(
         archive_commit=archive_commit,
         notes=notes,
     )
+
+
+@dataclass(frozen=True)
+class ListedHashes:
+    """The reading of a list of ``<algorithm>:<hex>`` hashes, and what any one of them adds.
+
+    Parameters
+    ----------
+    reading : DigestReading
+        The combined reading of every listed hash.
+    findings : frozenset[EntryFinding]
+        ``weak-digest`` when any hash that decodes is weak, beside the reading's own findings.
+    notes : tuple[tuple[str, str], ...]
+        ``unrecognised_algorithm`` with the algorithms outside the table, when there are any.
+    """
+
+    reading: DigestReading
+    findings: frozenset[EntryFinding]
+    notes: tuple[tuple[str, str], ...]
+
+
+def listed_hashes(values: list[str]) -> ListedHashes:
+    """Read a list of ``<algorithm>:<hex>`` hashes in which every hash must be accepted.
+
+    Poetry checks the file an install picks against that file's own listed hash, and pip accepts
+    a file when any listed hash of any algorithm matches; either way a weak hash anywhere in the
+    list is a way in, so it weakens the entry even beside accepted ones. An algorithm outside the
+    table is malformed and noted, as neither tool verifies with it.
+
+    Parameters
+    ----------
+    values : list[str]
+        The listed hashes, in file order.
+
+    Returns
+    -------
+    ListedHashes
+        The combined reading, ``weak-digest`` when any hash that decodes is weak, and the note
+        naming any unrecognised algorithm.
+    """
+    readings = []
+    unrecognised = set()
+    weak = False
+    for value in values:
+        algorithm, separator, digest = value.partition(":")
+        if not separator or algorithm not in DIGEST_BYTES:
+            if separator:
+                unrecognised.add(algorithm)
+            readings.append(DigestReading(algorithms=(), malformed_tokens=1))
+            continue
+        reading = read_hex_digest(algorithm, digest)
+        weak = weak or (algorithm in _WEAK_ALGORITHMS and not reading.malformed_tokens)
+        readings.append(reading)
+    notes = (("unrecognised_algorithm", " ".join(sorted(unrecognised))),) if unrecognised else ()
+    findings: frozenset[EntryFinding] = frozenset({"weak-digest"}) if weak else frozenset()
+    return ListedHashes(combine_readings(readings), findings, notes)

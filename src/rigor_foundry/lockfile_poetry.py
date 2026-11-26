@@ -32,14 +32,8 @@ import re
 from dataclasses import dataclass
 from typing import Final
 
-from .lockfile_digests import (
-    DIGEST_BYTES,
-    DigestReading,
-    combine_readings,
-    missing_digest,
-    read_hex_digest,
-)
-from .lockfile_forms import artifact_entry, local_entry, unknown_entry, vcs_entry
+from .lockfile_digests import missing_digest
+from .lockfile_forms import artifact_entry, listed_hashes, local_entry, unknown_entry, vcs_entry
 from .lockfile_model import EntryFinding, LockedEntry, LockfileRefusal
 from .lockfile_npmrc import url_host
 from .lockfile_poetry_sources import PoetryDeclaration
@@ -48,7 +42,6 @@ from .lockfile_toml import entry_keys, header_lines, load_document, table, table
 SUPPORTED_POETRY_LOCK_VERSIONS: Final = frozenset({"2.0", "2.1"})
 PYPI_HOST: Final = "pypi.org"
 _VERSION: Final = re.compile(r"(\d+)\.(\d+)")
-_WEAK: Final = frozenset({"sha1", "md5"})
 
 
 @dataclass(frozen=True)
@@ -102,35 +95,6 @@ def _hashes(package: dict[str, object]) -> list[str]:
     return hashes
 
 
-@dataclass(frozen=True)
-class _Digests:
-    """The reading of a package's hashes, the Poetry findings beside it, and its notes."""
-
-    reading: DigestReading
-    findings: frozenset[EntryFinding]
-    notes: tuple[tuple[str, str], ...]
-
-
-def _digests(hashes: list[str]) -> _Digests:
-    """Read every hash as ``<algorithm>:<hex>``; any weak one weakens the entry."""
-    readings = []
-    unrecognised = set()
-    weak = False
-    for value in hashes:
-        algorithm, separator, digest = value.partition(":")
-        if not separator or algorithm not in DIGEST_BYTES:
-            if separator:
-                unrecognised.add(algorithm)
-            readings.append(DigestReading(algorithms=(), malformed_tokens=1))
-            continue
-        reading = read_hex_digest(algorithm, digest)
-        weak = weak or (algorithm in _WEAK and not reading.malformed_tokens)
-        readings.append(reading)
-    notes = (("unrecognised_algorithm", " ".join(sorted(unrecognised))),) if unrecognised else ()
-    findings: frozenset[EntryFinding] = frozenset({"weak-digest"}) if weak else frozenset()
-    return _Digests(combine_readings(readings), findings, notes)
-
-
 def _origin_finding(
     declaration: PoetryDeclaration | None, verdict: bool | None
 ) -> frozenset[EntryFinding]:
@@ -152,7 +116,7 @@ def _classify(
     hashes = _hashes(package)
     raw_source = package.get("source")
     if raw_source is None:
-        digests = _digests(hashes)
+        digests = listed_hashes(hashes)
         deactivated = None if declaration is None else declaration.pypi_deactivated(version)
         return artifact_entry(
             key,
@@ -165,7 +129,7 @@ def _classify(
     source = table(raw_source)
     kind, url = text_field(source, "type"), text_field(source, "url")
     if kind == "legacy":
-        digests = _digests(hashes)
+        digests = listed_hashes(hashes)
         mismatch = (
             None
             if declaration is None
@@ -180,7 +144,7 @@ def _classify(
             notes=digests.notes,
         )
     if kind == "url" and url is not None:
-        digests = _digests(hashes)
+        digests = listed_hashes(hashes)
         return artifact_entry(
             key, line, digests.reading, url_host(url), set(digests.findings), notes=digests.notes
         )

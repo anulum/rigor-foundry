@@ -21,10 +21,10 @@ adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
 `rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block),
 `rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
 and `9.0`), `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4),
-`rigor-foundry/1.25.0` adds Go (`go.sum`, read with the `go.mod` beside it), and
+`rigor-foundry/1.25.0` adds Go (`go.sum`, read with the `go.mod` beside it),
 `rigor-foundry/1.26.0` adds Poetry (`poetry.lock`, `lock-version` `2.0` and
-`2.1`). `Pipfile.lock`, the one other lockfile the rules recognise, is refused
-as `unsupported-file-kind` until its own rules exist. All the rules are in maturity probation.
+`2.1`), and `rigor-foundry/1.27.0` adds Pipenv (`Pipfile.lock`, `pipfile-spec`
+6). Every lockfile kind the rules recognise is now classified. All the rules are in maturity probation.
 
 ## One class per entry
 
@@ -57,8 +57,13 @@ and every token is validated:
   accepted token, and the entry is then `unpinned`;
 - an entry whose valid tokens are all weak gives `weak-digest`;
 - a weak token beside a valid accepted one is clean, and both algorithms are
-  recorded, except in Poetry lockfiles, where every file must carry an
-  accepted hash (see below);
+  recorded;
+- **two exceptions:** in Poetry and Pipenv lockfiles every listed hash must be
+  accepted, and a weak one anywhere gives `weak-digest`. Poetry checks the file
+  an install picks, which depends on the platform, against that file's own
+  hash; pip, which Pipenv drives, accepts a file when any listed hash of any
+  algorithm matches (`check_against_chunks`). Either way a weak hash is a way
+  in. See the two sections below;
 - an `integrity` field that is present but empty is malformed; only an absent
   field is `missing-digest`.
 
@@ -343,8 +348,8 @@ and every token is validated:
   `missing-digest`. Each hash is `<algorithm>:<hex>` at the algorithm's length.
   **Every file must carry an accepted hash:** a sha1 or md5 hash on any file
   gives `weak-digest`, even beside accepted ones, because the file an install
-  picks depends on the platform. This is the Poetry exception to the rule that one
-  accepted digest suffices. An algorithm outside the accepted and weak ones
+  picks depends on the platform. This is one of the two exceptions to the rule
+  that one accepted digest suffices. An algorithm outside the accepted and weak ones
   (Poetry also knows `sha224` and the `sha3`, `shake` and `blake2` families) is
   `malformed-digest`, noted `unrecognised_algorithm`.
 - **Sources.**
@@ -393,6 +398,55 @@ and every token is validated:
   from. It is recorded as the file's `manifest_hash`, a drift signal and never
   an artifact digest, and is not yet compared: `SC011-lockfile-manifest-drift`
   enters with one unit for Poetry and Pipenv together.
+
+## Pipenv lockfiles
+
+- **Version.** Pipenv 2020.11.15 to 2026.12.1 all write `pipfile-spec` 6, which
+  is read; `format_version` is `6`. Only the integer 6 is accepted: another
+  number, a string, the float `6.0` or a boolean is `unsupported-version`, and
+  a missing `_meta` or `pipfile-spec` is `missing-version`. The JSON is read as
+  npm's is: a repeated key is `conflicting-entries`, and anything that is not
+  one strict JSON object of objects where Pipenv writes them is `unparseable`.
+- **Categories, keys and lines.** Every top-level key except `_meta` is a
+  category: `default`, `develop`, and from Pipenv 2022.10 the categories a
+  Pipfile names. Each entry is keyed `<category>/<name>`, since one package can
+  sit in several categories, and stands at its own key's line.
+- **Digests.** An entry's `hashes` is a list of `<algorithm>:<hex>`; a missing
+  or empty list is `missing-digest`. **Every listed hash must be accepted:** pip
+  accepts a file when any listed hash matches, so an md5 or sha1 hash anywhere
+  gives `weak-digest`, even beside accepted ones. An algorithm outside the table
+  is `malformed-digest`, noted `unrecognised_algorithm`; pip refuses an unknown
+  one.
+- **Forms.**
+  - an exact `version`, one `==<version>` with no `*`, `,`, `;` or space:
+    `artifact-pinned` through its hashes, from the source its `index` names
+    (below); `===`, prefix matches such as `==1.*`, ranges, several specifiers
+    and `*` pin no artifact and are `unclassified` with `unknown-form`;
+  - a `file` with an `http` or `https` URL: `artifact-pinned` through its
+    hashes, with the URL's host as origin; Pipenv 2026.12.1 writes no hash for
+    such an entry, which is `missing-digest`;
+  - a `file` with a local path, and a `path`: `local`, read from the lockfile's
+    directory, and `path-escape` outside the repository; a local file's hashes
+    are recorded as the note `file_hash`, and `editable: true` as `editable`;
+  - `git`: `commit-pinned` by a 40- or 64-hex `ref`, with
+    `commit_hash_algorithm` and any `subdirectory`; any other `ref` is
+    `floating-ref`, with the URL's host as origin;
+  - `hg`, `svn`, `bzr`, a `file` with another scheme, or an entry with none of
+    these keys: `unclassified` with `unknown-form`.
+- **Origins.** An exact-version entry's `index` must name a source in
+  `_meta.sources`, compared exactly as written, and its origin is that source's
+  host; any other name is `origin-mismatch`. Two sources with one name leave
+  the index ambiguous, so the file is refused as `conflicting-entries`. Without an `index`, pip may take
+  the entry from any declared source, so its origin is the one source when
+  there is exactly one, and otherwise `origin-unknown`. A source with
+  `verify_ssl: false` is noted on the entries that name it; weakened transport
+  is the companion rule's. The Pipfile's own `[[source]]` is not compared with
+  `_meta.sources` here.
+- **Not read:** `markers`, `extras` and `_meta.requires`.
+- **`_meta.hash.sha256`** is the hash of the Pipfile the lockfile was made from.
+  It is recorded as the file's `manifest_hash`, a drift signal, and is not yet
+  compared: `SC011-lockfile-manifest-drift` enters with one unit for Poetry and
+  Pipenv together.
 
 ## The declared registry
 
@@ -460,10 +514,10 @@ A refused file names its reason and has no entry results.
 | `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit; a `go.sum` with no `go.mod` beside it, a `go.sum` line without three fields, or a `go.mod` outside the grammar subset |
 | `missing-version` | no `lockfileVersion`, or no Poetry `lock-version` |
 | `unsupported-version` | a version the kind's rules do not read, such as an npm `lockfileVersion` other than 1, 2 or 3, or a pnpm branch lockfile |
-| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, a Yarn 1 field or specifier repeated, two different `go.sum` hashes of one line kind for one module version, two different `replace` targets for one module version, or `[metadata.files]` in a Poetry 2.x lockfile |
+| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, a Yarn 1 field or specifier repeated, two different `go.sum` hashes of one line kind for one module version, two different `replace` targets for one module version, `[metadata.files]` in a Poetry 2.x lockfile, or a repeated source name in a `Pipfile.lock` |
 | `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8; for `go.sum`, a `go.mod` beside it that is untracked or not text |
 | `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block; a byte-order mark is `unparseable` |
-| `unsupported-file-kind` | a recognised lockfile whose rules are not in this rule pack |
+| `unsupported-file-kind` | reserved for a recognised lockfile whose rules are not in this rule pack; since `rigor-foundry/1.27.0` every recognised kind has its rules |
 | `unsupported-lock-version` | a Poetry `lock-version` below 2.0 |
 
 ## Rules
@@ -482,7 +536,7 @@ A refused file names its reason and has no entry results.
 
 `SC011-lockfile-manifest-drift` enters the rule pack with one unit that reads
 the manifest hashes of Poetry and Pipenv together; until then, Poetry's
-`content-hash` is recorded but not compared. A finding candidate is anchored at its
+`content-hash` and Pipenv's `_meta.hash` are recorded but not compared. A finding candidate is anchored at its
 entry's line and carries the file's SHA-256, the entry key's SHA-256, the class,
 the finding and the entry's origin host, so a reviewer sees an unexpected host. A Go version that `go.mod`
 requires and `go.sum` does not list stands at `go.sum` line 1, and its evidence
@@ -544,4 +598,10 @@ also wrote `tool`, `godebug` and `ignore` blocks into one `go.mod` through
 dependencies resolved as of its release, with fresh caches, for one project
 holding a PyPI package, a declared loopback index serving PyPI's own wheel, a
 loopback Git daemon, a directory, a local wheel and a URL; two complete runs
-wrote the same bytes. Every failing case is a recorded edit of one of them.
+wrote the same bytes. The Pipenv fixtures were generated in the same way by
+Pipenv 2020.11.15, 2022.12.19, 2023.12.1, 2024.4.1, 2025.0.4 and 2026.12.1, for
+one Pipfile adding an editable path, a development package and, from 2022, a
+custom category; 2023.12.1 and 2024.4.1 wrote the same lockfile. Pipenv records
+PyPI's sdist hash beside a local wheel's own, and 2020.11.15 records it for the
+loopback-index package too; both are accepted hashes. Every failing case is a
+recorded edit of one of them.

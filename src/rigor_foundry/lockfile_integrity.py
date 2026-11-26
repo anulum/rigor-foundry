@@ -8,9 +8,9 @@
 """Classify every tracked lockfile of a repository, and raise its findings as candidates.
 
 Each tracked file with a lockfile name yields one result: classified entry by entry, or
-refused with a named reason and no entries. npm, Yarn 1, Yarn 2+, pnpm, Cargo, Go and Poetry
-lockfiles are classified; ``Pipfile.lock`` is refused as ``unsupported-file-kind`` until its own
-rules exist, so an unread file never looks clean. Each finding of an entry the lockfile itself
+refused with a named reason and no entries. Every kind the detector recognises is classified:
+npm, Yarn 1, Yarn 2+, pnpm, Cargo, Go, Poetry and Pipenv lockfiles, so an unread file never
+looks clean. Each finding of an entry the lockfile itself
 records becomes one supply-chain candidate at the entry's line; a bundled entry repeats its
 ancestor's findings in the report, but not as candidates. A refused file becomes one candidate.
 """
@@ -22,7 +22,7 @@ import os
 import posixpath
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
-from typing import Final
+from typing import Final, Literal
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
@@ -39,6 +39,7 @@ from .lockfile_npmrc import (
     npmrc_registry_hosts,
     read_npmrc,
 )
+from .lockfile_pipenv import PIPFILE_SPEC, classify_pipenv_lockfile
 from .lockfile_pnpm import classify_pnpm_lockfile
 from .lockfile_pnpm_config import PnpmWorkspace, read_pnpm_workspace
 from .lockfile_poetry import classify_poetry_lockfile
@@ -80,6 +81,8 @@ _YARNRC_YML: Final = ".yarnrc.yml"
 _PNPM_WORKSPACE: Final = "pnpm-workspace.yaml"
 _GO_MOD: Final = "go.mod"
 _PYPROJECT: Final = "pyproject.toml"
+# The last kind the dispatch reaches; adding a kind to ``LockfileKind`` breaks its type check.
+_LastKind = Literal["pipenv"]
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -456,7 +459,17 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                     item.path, item.content_digest, kind, version, None, entries, behavior
                 )
         else:
-            raise LockfileRefusal("unsupported-file-kind")
+            last: _LastKind = kind
+            pipenv = classify_pipenv_lockfile(text, lock_dir)
+            return LockfileResult(
+                item.path,
+                item.content_digest,
+                last,
+                str(PIPFILE_SPEC),
+                None,
+                pipenv.entries,
+                manifest_hash=pipenv.meta_hash,
+            )
     except LockfileRefusal as refusal:
         return _refused(item, kind, refusal)
     return LockfileResult(item.path, item.content_digest, kind, version, None, entries)

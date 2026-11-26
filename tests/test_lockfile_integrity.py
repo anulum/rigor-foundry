@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from lockfile_repository_support import (
+    PIPENV_LOCK,
     POETRY_LOCK,
     POETRY_PYPROJECT,
     build_lockfile_repository,
@@ -64,7 +65,7 @@ def test_a_real_scan_raises_one_candidate_per_recorded_finding_and_refusal(tmp_p
     counts = Counter(candidate.rule_id for candidate in lockfile)
     assert counts == {
         "SC003-lockfile-refused": 8,
-        "SC004-lockfile-missing-digest": 4,
+        "SC004-lockfile-missing-digest": 5,
         "SC005-lockfile-weak-digest": 1,
         "SC006-lockfile-malformed-digest": 1,
         "SC007-lockfile-floating-ref": 1,
@@ -118,7 +119,7 @@ def test_a_refused_file_is_anchored_by_blob_or_by_tree_when_it_has_no_text(tmp_p
     assert "kind=unknown; reason=ambiguous-yarn-lock" in refused["tools/yarn.lock"].evidence
     assert "kind=go; reason=unparseable" in refused["go/go.sum"].evidence
     assert "kind=poetry; reason=missing-version" in refused["py/poetry.lock"].evidence
-    assert "kind=pipenv; reason=unsupported-file-kind" in refused["pip/Pipfile.lock"].evidence
+    assert "kind=pipenv; reason=missing-version" in refused["pip/Pipfile.lock"].evidence
     branch = refused["pnpm/pnpm-lock.feature!x.yaml"]
     assert "kind=pnpm; reason=unsupported-version" in branch.evidence
 
@@ -609,3 +610,17 @@ def test_a_pyproject_that_cannot_be_read_with_certainty_makes_origins_unknown(
     assert findings["six 1.16.0"] == ("origin-unknown",)
     assert findings["idna 3.4"] == ("origin-unknown",)
     assert findings["attrs 22.1.0"] == ()
+
+
+def test_pipenv_is_classified_in_a_real_scan_with_its_manifest_hash(tmp_path: Path) -> None:
+    """The real 2026.12.1 lockfile: format 6, its Pipfile hash, and the URL entry's finding."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("svc/Pipfile.lock", fixture_text(PIPENV_LOCK))
+    repository.commit()
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert (result.kind, result.status, result.format_version) == ("pipenv", "classified", "6")
+    assert result.manifest_hash is not None and len(result.manifest_hash) == 64
+    findings = {entry.key: entry.findings for entry in result.entries}
+    assert findings["default/attrs"] == ("missing-digest",)
+    candidates = scan_lockfile_integrity(load_git_inventory(repository.root))
+    assert [candidate.rule_id for candidate in candidates] == [FINDING_RULE_IDS["missing-digest"]]

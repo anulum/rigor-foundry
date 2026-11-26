@@ -1,0 +1,6 @@
+pipenv, version 2024.4.1
+sha256 ed6c4fadd235d1b6c4b21c73de528ac863c87934f42fb2473b0a59e7a30f4a5b
+pipenv, version 2023.12.1 wrote byte-identical Pipfile.lock bytes
+stored gzip-compressed (level 9, mtime 0) as Pipfile.lock.gz and Pipfile.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed Pipfile.lock bytes Pipenv wrote

@@ -1706,8 +1706,154 @@
       "kind": "pipenv",
       "manifest_hash": null,
       "path": "pip/Pipfile.lock",
-      "refusal_reason": "unsupported-file-kind",
+      "refusal_reason": "missing-version",
       "status": "refused",
+      "unused_patches": null
+    },
+    {
+      "checksum_behavior": null,
+      "dropped_lines": null,
+      "entries": [
+        {
+          "archive_commit": null,
+          "class": "unpinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [
+            "missing-digest"
+          ],
+          "form": "artifact",
+          "inherited_from": null,
+          "key": "default/attrs",
+          "line": 24,
+          "notes": {},
+          "origin": "files.pythonhosted.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "commit-pinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "default/gitlib",
+          "line": 27,
+          "notes": {},
+          "origin": "127.0.0.1"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "default/idna",
+          "line": 31,
+          "notes": {
+            "verify_ssl": "false"
+          },
+          "origin": "127.0.0.1:19441"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "default/localpkg",
+          "line": 38,
+          "notes": {
+            "editable": "true"
+          },
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256",
+            "sha256"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "default/six",
+          "line": 42,
+          "notes": {},
+          "origin": "pypi.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "default/toml",
+          "line": 51,
+          "notes": {
+            "file_hash": "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"
+          },
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256",
+            "sha256"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "develop/six",
+          "line": 60,
+          "notes": {},
+          "origin": "pypi.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "docs/idna",
+          "line": 71,
+          "notes": {
+            "verify_ssl": "false"
+          },
+          "origin": "127.0.0.1:19441"
+        }
+      ],
+      "file_sha256": "2e1152c2cffa276bfbe9952269b4668bc110b6a3a2dce8dd4e78f5db5cbc3f30",
+      "format_version": "6",
+      "kind": "pipenv",
+      "manifest_hash": "1c640c04791be8c49cb72eba2ec26632c4ed94daa5e96b70798cabab6b5fcee3",
+      "path": "pipenv/Pipfile.lock",
+      "refusal_reason": null,
+      "status": "classified",
       "unused_patches": null
     },
     {
@@ -3236,30 +3382,30 @@
       "unused_patches": null
     }
   ],
-  "head": "d4e597b2510978505d084d4f8cd94292adc3d73b",
-  "head_tree": "0a980e23fcf9cdb8157f436950090cd1d3e34b92",
-  "report_digest": "deb6818f58e2752cc8c6b8475b0a3f3fdfe7bb5896c287ce84119a05559580f9",
-  "rule_pack_digest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
-  "rule_pack_version": "rigor-foundry/1.26.0",
+  "head": "af5df757d16e4a27028d3e17092adaca0f8b2ab7",
+  "head_tree": "577a7fae46a3214df74cdae450b404f1150415f5",
+  "report_digest": "b198bc77d92775d6aa2f51a3784681094814cb28102fa97c23c5d5403a185166",
+  "rule_pack_digest": "084d6173052e7e274d16238fc8331efed683e3f34b4564e757be63bbe8a96ac1",
+  "rule_pack_version": "rigor-foundry/1.27.0",
   "schema": "rigor.lockfile-integrity-report.v1",
   "scope_note": "Installer configuration that weakens verification, such as Yarn's checksumBehavior, approvedGitRepositories, unsafeHttpWhitelist or enableStrictSsl, is evaluated by a separate configuration rule. A pinned entry is not proof that the installer verifies it.",
   "summary": {
     "classes": {
-      "artifact-pinned": 143,
-      "commit-pinned": 7,
+      "artifact-pinned": 147,
+      "commit-pinned": 8,
       "graph-only": 2,
-      "local": 22,
+      "local": 24,
       "unclassified": 1,
-      "unpinned": 9
+      "unpinned": 10
     },
-    "classified_files": 10,
-    "entries": 184,
-    "files": 18,
+    "classified_files": 11,
+    "entries": 192,
+    "files": 19,
     "findings": {
       "floating-ref": 1,
       "malformed-digest": 2,
       "manifest-drift": 0,
-      "missing-digest": 4,
+      "missing-digest": 5,
       "origin-mismatch": 2,
       "origin-unknown": 4,
       "path-escape": 1,
@@ -3269,14 +3415,14 @@
     "refusals": {
       "ambiguous-yarn-lock": 2,
       "conflicting-entries": 0,
-      "missing-version": 1,
+      "missing-version": 2,
       "unparseable": 1,
       "unreadable": 1,
-      "unsupported-file-kind": 1,
+      "unsupported-file-kind": 0,
       "unsupported-lock-version": 0,
       "unsupported-version": 2
     },
     "refused_files": 8
   },
-  "tracked_content_digest": "efb3502a50af876a5d1a42a1230f4cc12a805c2e766797dcec192b1a56cd70ab"
+  "tracked_content_digest": "a65a4de52fd403d13228fd72988a3fae13a936f401cb4fc15de322cefcdb9429"
 }
