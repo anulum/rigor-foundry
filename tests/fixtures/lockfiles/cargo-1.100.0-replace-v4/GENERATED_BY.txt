@@ -1,0 +1,5 @@
+cargo 1.100.0 (3acc79c0c 2026-11-05)
+sha256 25da45d483a0317c321e557ce7f3705f53a40c61d5c8e30c9ee64fba1fba775f
+stored gzip-compressed (level 9, mtime 0) as Cargo.lock.gz and Cargo.toml.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed Cargo.lock bytes Cargo wrote

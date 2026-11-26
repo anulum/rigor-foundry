@@ -108,7 +108,7 @@ def test_a_refused_file_is_anchored_by_blob_or_by_tree_when_it_has_no_text(tmp_p
     assert refused["old/package-lock.json"].anchor.line_start == 1
     assert "reason=unreadable" in refused["bin/package-lock.json"].evidence
     assert "kind=unknown; reason=ambiguous-yarn-lock" in refused["tools/yarn.lock"].evidence
-    assert "kind=cargo; reason=unsupported-file-kind" in refused["crates/Cargo.lock"].evidence
+    assert "kind=go; reason=unsupported-file-kind" in refused["go/go.sum"].evidence
     branch = refused["pnpm/pnpm-lock.feature!x.yaml"]
     assert "kind=pnpm; reason=unsupported-version" in branch.evidence
 

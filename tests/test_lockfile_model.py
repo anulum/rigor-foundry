@@ -228,6 +228,7 @@ def test_a_classified_and_a_refused_file_serialise_every_field() -> None:
         "refusal_reason": "ambiguous-yarn-lock",
         "entries": [],
         "checksum_behavior": None,
+        "unused_patches": None,
     }
 
 
@@ -273,3 +274,15 @@ def test_a_refusal_carries_its_named_reason() -> None:
     refusal = LockfileRefusal("unsupported-version")
     assert refusal.reason == "unsupported-version"
     assert str(refusal) == "unsupported-version"
+
+
+def test_an_unused_patch_count_is_never_negative() -> None:
+    """A Cargo file's skipped ``[[patch.unused]]`` count is zero or more."""
+    with pytest.raises(ValueError, match="never negative"):
+        LockfileResult("Cargo.lock", "a" * 64, "cargo", "4", None, (), unused_patches=-1)
+    assert (
+        LockfileResult("Cargo.lock", "a" * 64, "cargo", "4", None, (), unused_patches=1).to_dict()[
+            "unused_patches"
+        ]
+        == 1
+    )

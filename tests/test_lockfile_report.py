@@ -63,9 +63,9 @@ def test_the_command_prints_the_text_summary_and_exits_zero(
     assert main(["lockfile-integrity", "--root", str(repository.root)]) == 0
     text = capsys.readouterr().out
     assert text.startswith(
-        "lockfile integrity: 13 lockfiles, 7 classified, 6 refused, 165 entries\n"
+        "lockfile integrity: 14 lockfiles, 8 classified, 6 refused, 168 entries\n"
     )
-    assert "crates/Cargo.lock: refused (unsupported-file-kind)\n" in text
+    assert "go/go.sum: refused (unsupported-file-kind)\n" in text
     assert "web/package-lock.json:" in text and "(floating-ref)" in text
     assert "node_modules/bundle-dependencies/node_modules/yargs" not in text
     assert text.endswith(

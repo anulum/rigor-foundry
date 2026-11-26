@@ -26,6 +26,7 @@ from typing import Final
 
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
+from .lockfile_cargo import classify_cargo_lockfile
 from .lockfile_kinds import PNPM_LOCK, is_lockfile_path, lockfile_kind
 from .lockfile_model import EntryFinding, LockfileKind, LockfileRefusal, LockfileResult
 from .lockfile_npm import classify_npm_lockfile
@@ -399,6 +400,17 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                 raise LockfileRefusal("unsupported-version")
             hosts, workspace = pnpm_configuration(inventory, item.path)
             version, entries = classify_pnpm_lockfile(text, lock_dir, hosts, workspace)
+        elif kind == "cargo":
+            cargo = classify_cargo_lockfile(text)
+            return LockfileResult(
+                item.path,
+                item.content_digest,
+                kind,
+                cargo.version,
+                None,
+                cargo.entries,
+                unused_patches=cargo.unused_patches,
+            )
         elif kind == "yarn-berry":
             berry = berry_registry_declaration(inventory, item.path)
             version, entries = classify_yarn_berry_lockfile(text, lock_dir, berry)

@@ -246,6 +246,9 @@ class LockfileResult:
     checksum_behavior : str | None
         A Yarn ``checksumBehavior`` that weakens verification, ``ignore`` or ``update``, when the
         repository's tracked configuration sets it; ``None`` otherwise.
+    unused_patches : int | None
+        How many ``[[patch.unused]]`` entries a ``Cargo.lock`` lists, so that skipping them is
+        visible; ``None`` for other kinds and refused files.
     """
 
     path: str
@@ -255,9 +258,14 @@ class LockfileResult:
     refusal_reason: RefusalReason | None
     entries: tuple[LockedEntry, ...]
     checksum_behavior: str | None = None
+    unused_patches: int | None = None
 
     def __post_init__(self) -> None:
         """Refuse a result that breaks the file-level rules."""
+        _require(
+            self.unused_patches is None or self.unused_patches >= 0,
+            "an unused-patch count is never negative",
+        )
         _require(bool(self.path), "a result needs its path")
         _require(
             len(self.file_sha256) == 64 and set(self.file_sha256) <= _HEX,
@@ -300,4 +308,5 @@ class LockfileResult:
             "refusal_reason": self.refusal_reason,
             "entries": [entry.to_dict() for entry in self.entries],
             "checksum_behavior": self.checksum_behavior,
+            "unused_patches": self.unused_patches,
         }

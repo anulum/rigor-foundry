@@ -19,10 +19,10 @@ Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
 `npm-shrinkwrap.json`, `lockfileVersion` 1, 2 and 3), and `rigor-foundry/1.21.0`
 adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
 `rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block),
-and `rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
-and `9.0`). Every other lockfile the rules recognise is refused as
-`unsupported-file-kind` until its own rules exist: `Cargo.lock`, `go.sum`,
-`poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
+`rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
+and `9.0`), and `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4).
+Every other lockfile the rules recognise is refused as `unsupported-file-kind`
+until its own rules exist: `go.sum`, `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
 
 ## One class per entry
 
@@ -35,7 +35,7 @@ Every locked entry gets exactly one class, plus zero or more findings.
 | `local` | a path, link or workspace source inside the repository root |
 | `unpinned` | a recognised artifact, VCS or path form that fails its pin; its `form` is recorded |
 | `unclassified` | a form these rules do not know; it always carries `unknown-form` |
-| `graph-only` | reserved for Go's graph-only `go.sum` lines, which are informational |
+| `graph-only` | in the graph but not fetched itself: a Cargo package that names a `replace`; reserved too for Go's graph-only `go.sum` lines, which are informational |
 
 An `unpinned` entry always names its failure: `missing-digest`,
 `weak-digest`, `malformed-digest`, `floating-ref` or `path-escape`. The other
@@ -208,6 +208,48 @@ and every token is validated:
   comes from the tracked `pnpm-workspace.yaml`. Without a path the entry is
   `unknown-form`; a path outside the repository is `path-escape`.
 
+## Cargo lockfiles
+
+- **Formats.** Only the formats a real Cargo release wrote into a fixture here
+  are read: v1 (Cargo 1.40.0), v2 (1.47.0), `version = 3` (1.75.0) and
+  `version = 4` (1.83.0 and 1.100.0). The version is a TOML integer, as Cargo
+  reads it; a float such as `3.0` is `unsupported-version`. v1 and v2 carry no
+  `version`: v1 lists its
+  checksums in `[metadata]` as `"checksum <name> <version> (<source>)"`, and v2
+  lists them on each package. A v1 file with no registry package has no checksum
+  keys, so it reads as v2; that is harmless, since nothing in it has a digest to
+  read. `version = 5`, or any other value, is `unsupported-version`. A file whose
+  `[metadata]` holds checksum keys but which is otherwise v2 or later is one
+  Cargo treats as a bad merge, dropping every checksum, so it is refused as
+  `conflicting-entries`.
+- **Entries and lines.** Each `[[package]]` is an entry at its header's line, and
+  Cargo writes `name` and `version` on the two lines after it; any other layout
+  is `unparseable`. The key is `<name> <version>`, with ` (<source>)` added when
+  two entries share a name and a version. `[[patch.unused]]` is not installed,
+  so it is not classified, and the file records `unused_patches`.
+- **Registry packages.** A `registry+` or `sparse+` package is pinned by the
+  64-hex lowercase sha256 Cargo verifies on download; a missing checksum or
+  `"<none>"` is `missing-digest`, and any other shape `malformed-digest`. The
+  origin is the index the lockfile names, so it is not compared: crates.io's two
+  source IDs report `crates.io`, and any other index is recorded by host with
+  `alternate_registry`. Source replacement, which changes where the bytes come
+  from but keeps the recorded checksums, is the companion rule's.
+- **Git packages.** The full commit after `#` pins a Git package, whatever its
+  query asks for. The query is recorded as `git_reference` (`default-branch`
+  when there is none), and a 64-hex commit is a sha256 one. A missing, short or
+  non-hex fragment is `floating-ref`.
+- **Path packages and workspace members** have no source and are `local`, noted
+  `path_unverified: manifest`. The lockfile cannot show whether such an entry is
+  a real path dependency or a registry entry with its `source` and `checksum`
+  stripped; `cargo --locked` refuses that mismatch against `Cargo.toml`, and a
+  manifest rule is the place to check it.
+- **`[replace]`.** A package that names a `replace` is `graph-only`, noted
+  `replaced_by`, and its replacement is classified as its own entry in the same
+  file, so a Cargo `graph-only` entry always carries `replaced_by`. A `replace`
+  that names no package in the file, or names one that itself carries a
+  `replace` (a package replacing itself, a cycle or a chain, which Cargo never
+  writes and which would hide an unpinned package), is `unparseable`.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -314,13 +356,14 @@ record:
 - `scope_note` says that installer configuration that weakens verification is
   evaluated by a separate configuration rule;
 - `files` lists one record per tracked lockfile in path order, with `path`,
-  `file_sha256`, `kind`, `format_version`, `status`, `refusal_reason` and
-  `checksum_behavior`;
+  `file_sha256`, `kind`, `format_version`, `status`, `refusal_reason`,
+  `checksum_behavior` and `unused_patches`;
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
   `commit_hash_algorithm`, `origin`, `inherited_from`, `archive_commit` and
-  `notes` (named evidence: `alias`, `digest_problem` with the cache keys,
-  `git_path`, `patch_hash`, `patch_source` or `tarball_url_dependency`);
+  `notes` (named evidence: `alias`, `alternate_registry`, `digest_problem` with
+  the cache keys, `git_path`, `git_reference`, `patch_hash`, `patch_source`,
+  `path_unverified`, `replaced_by` or `tarball_url_dependency`);
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
   member names, so the canonical JSON is the RFC 8785 serialisation.
@@ -338,4 +381,8 @@ The clean test fixtures (`tests/fixtures/lockfiles/`) were generated by npm
 6.14.18, 8.19.4 and 10.9.2, by Yarn 1.22.22, 3.8.7 and 4.19.0, and by pnpm 8.15.9,
 9.15.9 and 10.34.9, all on Node.js 18.19.1, and by pnpm 11.29.0 and 12.23.0 on
 Node.js 26.13.0. Each pnpm release ran with a fresh store, so a repeated run
-writes the same bytes. Every failing case is a recorded edit of one of them.
+writes the same bytes. The Cargo fixtures were generated by Cargo 1.40.0,
+1.47.0, 1.75.0, 1.83.0 and 1.100.0, against crates.io sources vendored once and
+read through source replacement, a loopback Git daemon and a loopback sparse
+registry serving crates.io's own crate and index line. Every failing case is a
+recorded edit of one of them.

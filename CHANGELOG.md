@@ -82,6 +82,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Cargo lockfiles (rule pack
+  `rigor-foundry/1.24.0`), formats v1 to v4 as Cargo 1.40 to 1.100 wrote them
+  into the test fixtures. Registry packages pin by the sha256 Cargo verifies,
+  with the index they name as their origin; crates.io's two source IDs read as
+  `crates.io`, and any other index is noted as an alternate registry. Git
+  packages pin by the locked commit and record the reference an update would
+  follow. Path packages are local, noted as checkable only against the
+  manifest. A package replaced through `[replace]` is recorded as in the graph
+  only, and unused patches are counted. A file in which Cargo would drop every
+  checksum, as a bad merge, is refused.
+
 - Lockfile integrity rules read pnpm lockfiles (rule pack
   `rigor-foundry/1.23.0`), for the `lockfileVersion` values that pnpm 8 to 12
   wrote into the test fixtures, including the two-document form that pnpm 11
