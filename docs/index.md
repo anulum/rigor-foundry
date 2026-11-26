@@ -52,3 +52,7 @@ For general correspondence, email [protoscience@anulum.li](mailto:protoscience@a
 
 [GitHub Actions security candidates](github-actions-security.md) document the
 workflow/composite scopes, incomplete outcomes and verification boundaries.
+
+[Lockfile integrity rules](lockfile-integrity-rules.md) classify every tracked
+lockfile entry by its pin, refuse unreadable lockfiles by name, and keep new
+rules in probation.

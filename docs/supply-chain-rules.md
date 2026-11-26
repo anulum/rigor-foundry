@@ -48,6 +48,13 @@ produces no candidate. The category contributes a portable control toward the
 repository that declares that domain required is now covered by a portable rule
 as well as any wired native adapter (for example a Trivy or Grype profile).
 
+## Lockfile integrity
+
+Rule-pack `rigor-foundry/1.20.0` adds `SC003` to `SC010` and `SC012` over
+tracked lockfiles. They classify every locked entry by how its content is
+pinned and refuse unreadable lockfiles by name; see
+[Lockfile integrity rules](lockfile-integrity-rules.md).
+
 ## Calibration
 
 False-positive calibration against real repositories is deliberately separate

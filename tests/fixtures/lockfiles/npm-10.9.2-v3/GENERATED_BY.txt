@@ -1,0 +1,7 @@
+npm 10.9.2
+node v18.19.1
+lockfileVersion 3
+sha256 b082626dd798b7b6a763f45517232de44122026a888a3eb1391bb8b2fb0d7474
+stored gzip-compressed (level 9, mtime 0) as package-lock.json.gz and package.json.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed package-lock.json bytes npm wrote

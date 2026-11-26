@@ -62,6 +62,14 @@ PROVISIONAL_CLI_COMMANDS: Mapping[str, CliCommandContract] = MappingProxyType(
             "--target",
             "--timeout-seconds",
         ),
+        "lockfile-integrity": _command(
+            "--git-executable",
+            "--git-max-version-exclusive",
+            "--git-min-version",
+            "--git-trust-root",
+            "--json",
+            "--root",
+        ),
         "policy-check": _command("--policy", "--root"),
         "verify-import": _command("--binding", "--report"),
         "scan-provenance": _command(

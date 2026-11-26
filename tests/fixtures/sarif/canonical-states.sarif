@@ -3,7 +3,7 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652"
+        "id": "rigor-foundry/c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd"
       },
       "properties": {
         "rigorFoundry/branch": "main",
@@ -12,9 +12,9 @@
         "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
         "rigorFoundry/ignoredInventoryDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "rigorFoundry/policyDigest": "337869827cef06cc90297cb12217f19f76b57a989ee3f6dec9256e4fc0b4954d",
-        "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-        "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+        "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+        "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
         "rigorFoundry/trackedContentDigest": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d"
       },
       "results": [
@@ -57,17 +57,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "d143275f03d8163250a229577944ca06a2c7ad4a59af5668ebc8a64adc8e2a89",
+              "digest": "9554f7b31f122cdeaa38b2e7b2b5f647cf57a293804e68a407fe78676fd6087b",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P0",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator."
           },
@@ -113,17 +113,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "b11588df8b5f188d7adc1566c6675a37b707ef08d178676e3be12593e9012341",
+              "digest": "ba6b3579862a4d3980683924b73affb7f8422de5a7d17df80b990f0ff82b56cd",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P1",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant."
           },
@@ -169,17 +169,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "7aa90770701de93cc4a6d16713cb8b1bfd78a182d8f0412d30a7383dee9aee47",
+              "digest": "057d6b199e53f296b756f90402ee6e161e230978319c9f0d47f3e8894bae8e22",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P2",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes."
           },
@@ -225,17 +225,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "2aca6f530594bc52d47e2e0f9bb8dfa11613080353eced744279f570b5a67147",
+              "digest": "5db8d99a12c95824b9246e026657878a79f70e5b5f350ce955701609a828d43f",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P3",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
           },
@@ -281,17 +281,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "b27faaa1aeaac005ac895bfd67225f518368ced7319973535eadcd44d351f2ca",
+              "digest": "19f25ea1a44b05bb3c94ed6f17497c1cb7b20d90847e2079a13bc916af994b0f",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P4",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Enumerate the intended compatibility exports, downstream consumers, and generated API ownership; replace with explicit lazy or static exports unless the facade contract is documented and drift-gated."
           },
@@ -337,17 +337,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "invalid",
-              "digest": "5c89a2bf04092e5ee0d77fb9b788f88265d98f6ee286a78e8ada3cd0b90e2d69",
+              "digest": "dbe1414138e9632e12e511342b148e9ce73cd58b80efffa31e3ff94b501c1b2e",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": null,
               "severityProvenance": "none"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "invalid",
             "rigorFoundry/verification": "Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
           },
@@ -393,17 +393,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "accepted-boundary",
-              "digest": "b01274129671cede21850b8dd0e30dae89bca47f681718b03101c38b511f6524",
+              "digest": "c0f7491569831ca5121c46bd5a04ca61e72f17d3481dda7ab5494404257c4e61",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": null,
               "severityProvenance": "none"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "accepted-boundary",
             "rigorFoundry/verification": "Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed."
           },
@@ -449,17 +449,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
             "rigorFoundry/review": {
               "decision": "needs-evidence",
-              "digest": "67039fad8ddfed491405433eff05df6fd52079120cf46b4aebad4659bd882390",
+              "digest": "7eb8b84bc17ee41972e35aaebd01cc36e9d47801217dfba9061d4e6780691f6e",
               "reviewedAt": "",
               "reviewer": "",
               "severity": null,
               "severityProvenance": "none"
             },
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "needs-evidence",
             "rigorFoundry/verification": "Confirm the file's intended licence with the repository owner, then add the exact SPDX-License-Identifier header or record why the source is separately licensed."
           },
@@ -505,9 +505,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and canonical internal TODO, then define the exact roots, packages, GodFile registries, and enforcement state without copying another project's assumptions."
           },
@@ -553,9 +553,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -601,9 +601,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -649,9 +649,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -697,9 +697,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -745,9 +745,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -793,9 +793,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -841,9 +841,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -889,9 +889,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -937,9 +937,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -985,9 +985,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -1033,9 +1033,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -1081,9 +1081,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -1129,9 +1129,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -1177,9 +1177,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Read the repository rules and risk model, then declare the domain required or justify not-applicable with repository-specific evidence."
           },
@@ -1225,9 +1225,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Default the parameter to None and create the list, dict, or set inside the function body, or confirm the shared instance is genuinely intended."
           },
@@ -1273,9 +1273,9 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "4ef2384147e6e67410ec77cb822f974d9710d8d991c6ff5e10a31e1034f0f652",
-            "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+            "rigorFoundry/reportDigest": "c080c2bf987987f98a0f2c7d0dd7d089a66adfc2be6fb21e07dfd18562b887bd",
+            "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
             "rigorFoundry/verdictState": "unreviewed",
             "rigorFoundry/verification": "Reproduce the dependency or hardware boundary, verify the gate is explicit and fail-closed, and identify the separate real integration job or evidence path that executes the contract."
           },
@@ -4297,6 +4297,348 @@
               ],
               "shortDescription": {
                 "text": "Target-event checkout selects PR code or an unresolved dynamic source."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned."
+              },
+              "help": {
+                "markdown": "Tracked lockfile could not be classified, so no entry has an integrity verdict.\n\n**Why it matters.** A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned.\n\n**How to verify.** Read the refusal reason in the candidate evidence. Regenerate the lockfile with a supported tool version, remove the conflicting or hostile content, or record why this lockfile kind is outside the review.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked lockfile could not be classified, so no entry has an integrity verdict.\n\nWhy it matters: A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned.\nHow to verify: Read the refusal reason in the candidate evidence. Regenerate the lockfile with a supported tool version, remove the conflicting or hostile content, or record why this lockfile kind is outside the review."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc003-lockfile-refused",
+              "id": "SC003-lockfile-refused",
+              "name": "SC003-lockfile-refused",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked lockfile could not be classified, so no entry has an integrity verdict."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download."
+              },
+              "help": {
+                "markdown": "Locked remote artifact records no integrity digest.\n\n**Why it matters.** The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download.\n\n**How to verify.** Regenerate the lockfile so the entry records a SHA-256 or stronger digest, and confirm that the digest matches the artifact the registry serves.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked remote artifact records no integrity digest.\n\nWhy it matters: The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download.\nHow to verify: Regenerate the lockfile so the entry records a SHA-256 or stronger digest, and confirm that the digest matches the artifact the registry serves."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc004-lockfile-missing-digest",
+              "id": "SC004-lockfile-missing-digest",
+              "name": "SC004-lockfile-missing-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked remote artifact records no integrity digest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary."
+              },
+              "help": {
+                "markdown": "Locked artifact is protected only by a SHA-1 or MD5 digest.\n\n**Why it matters.** The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary.\n\n**How to verify.** Regenerate the lockfile with a current tool so the entry records SHA-512, SHA-384 or SHA-256, and confirm the new digest against the registry.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact is protected only by a SHA-1 or MD5 digest.\n\nWhy it matters: The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary.\nHow to verify: Regenerate the lockfile with a current tool so the entry records SHA-512, SHA-384 or SHA-256, and confirm the new digest against the registry."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc005-lockfile-weak-digest",
+              "id": "SC005-lockfile-weak-digest",
+              "name": "SC005-lockfile-weak-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact is protected only by a SHA-1 or MD5 digest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check."
+              },
+              "help": {
+                "markdown": "Locked artifact lists a digest that does not decode.\n\n**Why it matters.** A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check.\n\n**How to verify.** Inspect the entry's digest text, find how it was produced, and regenerate the entry from the registry rather than editing the digest by hand.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact lists a digest that does not decode.\n\nWhy it matters: A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check.\nHow to verify: Inspect the entry's digest text, find how it was produced, and regenerate the entry from the registry rather than editing the digest by hand."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc006-lockfile-malformed-digest",
+              "id": "SC006-lockfile-malformed-digest",
+              "name": "SC006-lockfile-malformed-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact lists a digest that does not decode."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing."
+              },
+              "help": {
+                "markdown": "Locked VCS source names a branch, tag or abbreviated commit.\n\n**Why it matters.** The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing.\n\n**How to verify.** Pin the dependency to a full commit id, or to a released version from the registry with an accepted digest, and regenerate the lockfile.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked VCS source names a branch, tag or abbreviated commit.\n\nWhy it matters: The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing.\nHow to verify: Pin the dependency to a full commit id, or to a released version from the registry with an accepted digest, and regenerate the lockfile."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc007-lockfile-floating-ref",
+              "id": "SC007-lockfile-floating-ref",
+              "name": "SC007-lockfile-floating-ref",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked VCS source names a branch, tag or abbreviated commit."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror."
+              },
+              "help": {
+                "markdown": "Locked artifact resolves from a host the repository does not declare.\n\n**Why it matters.** The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror.\n\n**How to verify.** Confirm that the host is an intended source, then declare it in the repository's registry configuration, or regenerate the entry from the declared registry.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact resolves from a host the repository does not declare.\n\nWhy it matters: The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror.\nHow to verify: Confirm that the host is an intended source, then declare it in the repository's registry configuration, or regenerate the entry from the declared registry."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc008-lockfile-origin-mismatch",
+              "id": "SC008-lockfile-origin-mismatch",
+              "name": "SC008-lockfile-origin-mismatch",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact resolves from a host the repository does not declare."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass."
+              },
+              "help": {
+                "markdown": "Registry declaration cannot be read, so the locked origin is unknown.\n\n**Why it matters.** The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass.\n\n**How to verify.** Track the registry configuration in the repository without environment interpolation or a replaced placeholder host, then rescan.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Registry declaration cannot be read, so the locked origin is unknown.\n\nWhy it matters: The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass.\nHow to verify: Track the registry configuration in the repository without environment interpolation or a replaced placeholder host, then rescan."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc009-lockfile-origin-unknown",
+              "id": "SC009-lockfile-origin-unknown",
+              "name": "SC009-lockfile-origin-unknown",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Registry declaration cannot be read, so the locked origin is unknown."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository."
+              },
+              "help": {
+                "markdown": "Locked local source resolves outside the repository root.\n\n**Why it matters.** A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository.\n\n**How to verify.** Move the dependency inside the repository, or replace it with a pinned registry or VCS source.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked local source resolves outside the repository root.\n\nWhy it matters: A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository.\nHow to verify: Move the dependency inside the repository, or replace it with a pinned registry or VCS source."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc010-lockfile-path-escape",
+              "id": "SC010-lockfile-path-escape",
+              "name": "SC010-lockfile-path-escape",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked local source resolves outside the repository root."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped."
+              },
+              "help": {
+                "markdown": "Locked entry uses a form the lockfile rules do not know.\n\n**Why it matters.** The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped.\n\n**How to verify.** Identify how the entry is resolved and fetched, and confirm its integrity by other means, or regenerate the lockfile with a supported tool.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked entry uses a form the lockfile rules do not know.\n\nWhy it matters: The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped.\nHow to verify: Identify how the entry is resolved and fetched, and confirm its integrity by other means, or regenerate the lockfile with a supported tool."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc012-lockfile-unknown-form",
+              "id": "SC012-lockfile-unknown-form",
+              "name": "SC012-lockfile-unknown-form",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked entry uses a form the lockfile rules do not know."
               }
             }
           ],

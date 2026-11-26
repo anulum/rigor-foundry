@@ -23,6 +23,7 @@ from . import (
     domains,
     github_actions,
     godfiles,
+    lockfile_integrity,
     native_analysis,
     notebook_analysis,
     operations,
@@ -65,6 +66,7 @@ _GUIDANCE_OWNERS = (
     api_compatibility,
     cra_rules,
     github_actions,
+    lockfile_integrity,
 )
 
 

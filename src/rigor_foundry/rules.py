@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.19.0"
+RULE_PACK_VERSION = "rigor-foundry/1.20.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -36,6 +36,7 @@ API_COMPATIBILITY_RULE_PACK_VERSION = "rigor-foundry/1.16.0"
 CRA_RULE_PACK_VERSION = "rigor-foundry/1.17.0"
 JUPYTER_RULE_PACK_VERSION = "rigor-foundry/1.18.0"
 GITHUB_ACTIONS_RULE_PACK_VERSION = "rigor-foundry/1.19.0"
+LOCKFILE_RULE_PACK_VERSION = "rigor-foundry/1.20.0"
 
 _RULE_ID = re.compile(
     r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA|CR|GA)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
@@ -459,6 +460,60 @@ RULES: tuple[RuleDefinition, ...] = (
         "github-actions",
         "Target-event checkout selects PR code or an unresolved dynamic source.",
         GITHUB_ACTIONS_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC003-lockfile-refused",
+        "supply-chain",
+        "Tracked lockfile could not be classified, so no entry has an integrity verdict.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC004-lockfile-missing-digest",
+        "supply-chain",
+        "Locked remote artifact records no integrity digest.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC005-lockfile-weak-digest",
+        "supply-chain",
+        "Locked artifact is protected only by a SHA-1 or MD5 digest.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC006-lockfile-malformed-digest",
+        "supply-chain",
+        "Locked artifact lists a digest that does not decode.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC007-lockfile-floating-ref",
+        "supply-chain",
+        "Locked VCS source names a branch, tag or abbreviated commit.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC008-lockfile-origin-mismatch",
+        "supply-chain",
+        "Locked artifact resolves from a host the repository does not declare.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC009-lockfile-origin-unknown",
+        "supply-chain",
+        "Registry declaration cannot be read, so the locked origin is unknown.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC010-lockfile-path-escape",
+        "supply-chain",
+        "Locked local source resolves outside the repository root.",
+        LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC012-lockfile-unknown-form",
+        "supply-chain",
+        "Locked entry uses a form the lockfile rules do not know.",
+        LOCKFILE_RULE_PACK_VERSION,
     ),
 )
 

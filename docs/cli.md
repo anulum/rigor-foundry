@@ -282,6 +282,18 @@ refused. The binding is written first, so an executed report never exists
 without its binding. `rigor verify-import --report REPORT.json
 --binding BINDING.json` checks both records and that they belong together.
 
+## Lockfile integrity (provisional)
+
+`rigor lockfile-integrity --root PATH [--json]` classifies every entry of every
+tracked lockfile by how its content is pinned, and prints a summary with one
+line per finding of a recorded entry. `--json` prints the full
+`rigor.lockfile-integrity-report.v1` record instead. npm lockfiles are
+classified; the other recognised kinds are refused as `unsupported-file-kind`.
+The command shares the scan's Git provenance options. Findings and refusals
+are observations, so it exits 0 whenever it produced a report, and 2 when the
+root is not a readable Git repository. The same findings appear as `SC`
+candidates in `rigor scan`; see [Lockfile integrity rules](lockfile-integrity-rules.md).
+
 ## Content-addressed report differences
 
 `rigor report-diff --before BEFORE.json --after AFTER.json [--output DIFF.json]`

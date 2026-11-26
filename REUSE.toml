@@ -40,6 +40,11 @@ SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
+path = ["tests/fixtures/lockfiles/*/*", "tests/fixtures/lockfiles/report-golden.json"]
+SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
 path = ["tests/fixtures/sarif_import/*.sarif", "tests/fixtures/sarif_import/producer-repository.json", "tests/fixtures/sarif_import/semgrep-1.186.0-sandboxed-json-stdout.json"]
 SPDX-FileCopyrightText = "1996-2026 Miroslav Šotek"
 SPDX-License-Identifier = "Apache-2.0"

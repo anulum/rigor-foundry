@@ -344,6 +344,10 @@ to use the RigorFoundry name or marks except as the licence permits.
 workflow and composite-action references, run interpolation and target-event
 checkout, with explicit incomplete analysis and new rules in probation.
 
+[Lockfile integrity rules](docs/lockfile-integrity-rules.md) classify every
+tracked lockfile entry by its pin, refuse unreadable lockfiles by name, and keep
+new rules in probation.
+
 ## Text and data mining reservation
 
 The rightsholder, Miroslav Šotek (ANULUM), expressly reserves the use of the

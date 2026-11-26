@@ -8,6 +8,13 @@
       "responsibility": "Consented repository-native adapter execution owner for command selection, guarded version and audit invocation, tool and sandbox identity continuity, bounded process evidence, and canonical AdapterResult construction."
     },
     {
+      "dependency_boundary": "Every command added after the 1.0 contract registers itself from its own *_cli module (doctor, policy-check, import-sarif, lockfile-integrity, CRA, OSCAL, provenance scan, report diff, offline verification and source provenance); this file only calls their add functions. Scanning, review, SARIF, gate, maturity and campaign logic live in their own modules.",
+      "lines": 702,
+      "path": "src/rigor_foundry/cli.py",
+      "reassess_when": "The file exceeds 800 lines, a new command's handler is written here instead of in its own *_cli module, or the Markdown report rendering gains a second output format.",
+      "responsibility": "The rigor entry point: the top-level parser and its exit-status contract, the shared Git trust options, the handlers of the frozen 1.0 command set (scan, scan-revision, review templates and validation, SARIF, promote, gate, maturity, campaigns, residuals, bootstrap and contract), and the Markdown report those handlers print."
+    },
+    {
       "dependency_boundary": "Public audit-domain constants and canonical model primitives define strict compliance-map records; built-in AICPA TSC, EU CRA, and ISO/IEC 27001 templates are consumed by the OSCAL exporter, CLI, documentation, and CRA pack source binding. No evidence collection, conformity adjudication, network retrieval, or external-standard content is owned here.",
       "lines": 827,
       "path": "src/rigor_foundry/compliance_maps.py",

@@ -59,6 +59,11 @@ individually declared provisional outside the frozen manifest, and so are the
 binding record; see
 [Third-party SARIF import](sarif.md#third-party-sarif-import).
 
+The `lockfile-integrity` command and its options are individually declared
+provisional outside the frozen manifest, and so is the
+`rigor.lockfile-integrity-report.v1` report; see
+[Lockfile integrity rules](lockfile-integrity-rules.md#the-report).
+
 The identity-bearing semantic key-policy wire at version `2.0` is explicitly
 provisional and separately version-pinned. The frozen
 `verification-key-policy` wire remains `1.0` with its original fields.

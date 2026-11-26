@@ -225,7 +225,7 @@ def test_every_candidate_text_site_reads_its_own_rules_published_guidance() -> N
 
 
 def test_the_sites_reference_every_registered_rule_and_every_further_case() -> None:
-    """Across the 20 detectors the sites reach all 68 rules and each published case."""
+    """Across the 21 detectors the sites reach all 77 rules and each published case."""
     referenced: set[str] = set()
     cases: set[tuple[str, int]] = set()
     for path in _detector_modules():
@@ -241,7 +241,7 @@ def test_the_sites_reference_every_registered_rule_and_every_further_case() -> N
         for rule_id, guidance in module.RULE_GUIDANCE.items():
             for index in range(len(guidance.cases)):
                 assert (rule_id, index) in sites.case_indices, f"{rule_id} case {index} is unused"
-    assert len(_detector_modules()) == 20
+    assert len(_detector_modules()) == 21
     assert referenced == set(_RULE_IDS)
     assert cases == {
         ("AA001-unbound-api-manifest", 0),

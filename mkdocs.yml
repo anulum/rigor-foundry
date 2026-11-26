@@ -85,6 +85,7 @@ nav:
   - Application-security rules: application-security-rules.md
   - Reliability rules: reliability-rules.md
   - Supply-chain rules: supply-chain-rules.md
+  - Lockfile integrity rules: lockfile-integrity-rules.md
   - Container rules: container-rules.md
   - GitHub Actions security: github-actions-security.md
   - Data-and-privacy rules: data-privacy-rules.md

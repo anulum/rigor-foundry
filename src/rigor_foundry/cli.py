@@ -40,6 +40,7 @@ from .git_provenance import (
     GitTrustPolicy,
 )
 from .incremental_scan import resolve_changed_paths, select_changed_candidates
+from .lockfile_integrity_cli import add_lockfile_integrity_command
 from .models import (
     AuditReport,
     ReviewRecord,
@@ -673,6 +674,7 @@ def _parser() -> argparse.ArgumentParser:
     add_cra_commands(subparsers)
     add_doctor_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
     add_import_sarif_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
+    add_lockfile_integrity_command(subparsers, _add_git_trust_arguments, _git_trust_policy)
     return parser
 
 

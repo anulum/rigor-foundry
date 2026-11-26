@@ -3,11 +3,11 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/8b44499a5f1553b03b233fe92b01ec2b65b9e623112f79270ade649425dc5025"
+        "id": "rigor-foundry/2c43e94a2d8db344e2965d78d1b3554d9a77736b44aa49d734b77c8f3f762798"
       },
       "properties": {
         "rigorFoundry/branch": "main",
-        "rigorFoundry/canonicalDocumentDigest": "11d804fe6450e54bbc5ee3bea3c0979cd40cc15ad6e0c9c22b4e12aaf757534b",
+        "rigorFoundry/canonicalDocumentDigest": "4c4a97063e45a28489a55574d9981f2de13ba6da03ea7eedc01446bf3bdf5853",
         "rigorFoundry/consumerProfile": "github-code-scanning",
         "rigorFoundry/gitObjectFormat": "sha1",
         "rigorFoundry/head": "bb4b2d5a33879f8059efdd3e83b5aaf906d0b44e",
@@ -20,9 +20,9 @@
           "unreviewed": 0
         },
         "rigorFoundry/policyDigest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
-        "rigorFoundry/reportDigest": "8b44499a5f1553b03b233fe92b01ec2b65b9e623112f79270ade649425dc5025",
-        "rigorFoundry/rulePackDigest": "db5b876156460f0459b352aa1eee146ae5b660bc673957185a5dbf7e017bef7c",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.19.0",
+        "rigorFoundry/reportDigest": "2c43e94a2d8db344e2965d78d1b3554d9a77736b44aa49d734b77c8f3f762798",
+        "rigorFoundry/rulePackDigest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.20.0",
         "rigorFoundry/trackedContentDigest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28"
       },
       "results": [],
@@ -3040,6 +3040,348 @@
               ],
               "shortDescription": {
                 "text": "Target-event checkout selects PR code or an unresolved dynamic source."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned."
+              },
+              "help": {
+                "markdown": "Tracked lockfile could not be classified, so no entry has an integrity verdict.\n\n**Why it matters.** A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned.\n\n**How to verify.** Read the refusal reason in the candidate evidence. Regenerate the lockfile with a supported tool version, remove the conflicting or hostile content, or record why this lockfile kind is outside the review.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Tracked lockfile could not be classified, so no entry has an integrity verdict.\n\nWhy it matters: A tracked lockfile could not be classified, so none of its entries has an integrity verdict; an unread lockfile is never evidence that its dependencies are pinned.\nHow to verify: Read the refusal reason in the candidate evidence. Regenerate the lockfile with a supported tool version, remove the conflicting or hostile content, or record why this lockfile kind is outside the review."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc003-lockfile-refused",
+              "id": "SC003-lockfile-refused",
+              "name": "SC003-lockfile-refused",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Tracked lockfile could not be classified, so no entry has an integrity verdict."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download."
+              },
+              "help": {
+                "markdown": "Locked remote artifact records no integrity digest.\n\n**Why it matters.** The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download.\n\n**How to verify.** Regenerate the lockfile so the entry records a SHA-256 or stronger digest, and confirm that the digest matches the artifact the registry serves.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked remote artifact records no integrity digest.\n\nWhy it matters: The locked artifact records no integrity digest, so the installer cannot detect a substituted or tampered download.\nHow to verify: Regenerate the lockfile so the entry records a SHA-256 or stronger digest, and confirm that the digest matches the artifact the registry serves."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc004-lockfile-missing-digest",
+              "id": "SC004-lockfile-missing-digest",
+              "name": "SC004-lockfile-missing-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked remote artifact records no integrity digest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary."
+              },
+              "help": {
+                "markdown": "Locked artifact is protected only by a SHA-1 or MD5 digest.\n\n**Why it matters.** The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary.\n\n**How to verify.** Regenerate the lockfile with a current tool so the entry records SHA-512, SHA-384 or SHA-256, and confirm the new digest against the registry.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact is protected only by a SHA-1 or MD5 digest.\n\nWhy it matters: The locked artifact is protected only by SHA-1 or MD5, whose collision resistance no longer pins content against a capable adversary.\nHow to verify: Regenerate the lockfile with a current tool so the entry records SHA-512, SHA-384 or SHA-256, and confirm the new digest against the registry."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc005-lockfile-weak-digest",
+              "id": "SC005-lockfile-weak-digest",
+              "name": "SC005-lockfile-weak-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact is protected only by a SHA-1 or MD5 digest."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check."
+              },
+              "help": {
+                "markdown": "Locked artifact lists a digest that does not decode.\n\n**Why it matters.** A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check.\n\n**How to verify.** Inspect the entry's digest text, find how it was produced, and regenerate the entry from the registry rather than editing the digest by hand.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact lists a digest that does not decode.\n\nWhy it matters: A listed digest does not decode: its algorithm, encoding or length is wrong. A malformed digest beside a valid one is never ignored, because tools differ in which one they check.\nHow to verify: Inspect the entry's digest text, find how it was produced, and regenerate the entry from the registry rather than editing the digest by hand."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc006-lockfile-malformed-digest",
+              "id": "SC006-lockfile-malformed-digest",
+              "name": "SC006-lockfile-malformed-digest",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact lists a digest that does not decode."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing."
+              },
+              "help": {
+                "markdown": "Locked VCS source names a branch, tag or abbreviated commit.\n\n**Why it matters.** The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing.\n\n**How to verify.** Pin the dependency to a full commit id, or to a released version from the registry with an accepted digest, and regenerate the lockfile.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked VCS source names a branch, tag or abbreviated commit.\n\nWhy it matters: The VCS source names a branch, a tag or an abbreviated commit, so the code it installs can change without the lockfile changing.\nHow to verify: Pin the dependency to a full commit id, or to a released version from the registry with an accepted digest, and regenerate the lockfile."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc007-lockfile-floating-ref",
+              "id": "SC007-lockfile-floating-ref",
+              "name": "SC007-lockfile-floating-ref",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked VCS source names a branch, tag or abbreviated commit."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror."
+              },
+              "help": {
+                "markdown": "Locked artifact resolves from a host the repository does not declare.\n\n**Why it matters.** The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror.\n\n**How to verify.** Confirm that the host is an intended source, then declare it in the repository's registry configuration, or regenerate the entry from the declared registry.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked artifact resolves from a host the repository does not declare.\n\nWhy it matters: The artifact resolves from a host that is not the registry the repository declares, which can mean dependency confusion or an unreviewed mirror.\nHow to verify: Confirm that the host is an intended source, then declare it in the repository's registry configuration, or regenerate the entry from the declared registry."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc008-lockfile-origin-mismatch",
+              "id": "SC008-lockfile-origin-mismatch",
+              "name": "SC008-lockfile-origin-mismatch",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked artifact resolves from a host the repository does not declare."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass."
+              },
+              "help": {
+                "markdown": "Registry declaration cannot be read, so the locked origin is unknown.\n\n**Why it matters.** The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass.\n\n**How to verify.** Track the registry configuration in the repository without environment interpolation or a replaced placeholder host, then rescan.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Registry declaration cannot be read, so the locked origin is unknown.\n\nWhy it matters: The repository's registry declaration cannot be read with certainty, so the artifact's origin cannot be compared; an unknown origin is never a pass.\nHow to verify: Track the registry configuration in the repository without environment interpolation or a replaced placeholder host, then rescan."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc009-lockfile-origin-unknown",
+              "id": "SC009-lockfile-origin-unknown",
+              "name": "SC009-lockfile-origin-unknown",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Registry declaration cannot be read, so the locked origin is unknown."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository."
+              },
+              "help": {
+                "markdown": "Locked local source resolves outside the repository root.\n\n**Why it matters.** A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository.\n\n**How to verify.** Move the dependency inside the repository, or replace it with a pinned registry or VCS source.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked local source resolves outside the repository root.\n\nWhy it matters: A local dependency path resolves outside the repository root, so its content is neither versioned nor reviewed with the repository.\nHow to verify: Move the dependency inside the repository, or replace it with a pinned registry or VCS source."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc010-lockfile-path-escape",
+              "id": "SC010-lockfile-path-escape",
+              "name": "SC010-lockfile-path-escape",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked local source resolves outside the repository root."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped."
+              },
+              "help": {
+                "markdown": "Locked entry uses a form the lockfile rules do not know.\n\n**Why it matters.** The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped.\n\n**How to verify.** Identify how the entry is resolved and fetched, and confirm its integrity by other means, or regenerate the lockfile with a supported tool.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Locked entry uses a form the lockfile rules do not know.\n\nWhy it matters: The entry uses a form these rules do not know, so it has no integrity verdict; an unknown form is reported rather than skipped.\nHow to verify: Identify how the entry is resolved and fetched, and confirm its integrity by other means, or regenerate the lockfile with a supported tool."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc012-lockfile-unknown-form",
+              "id": "SC012-lockfile-unknown-form",
+              "name": "SC012-lockfile-unknown-form",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.20.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Locked entry uses a form the lockfile rules do not know."
               }
             }
           ],

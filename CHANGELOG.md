@@ -82,6 +82,18 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules (rule pack `rigor-foundry/1.20.0`) classify every
+  entry of every tracked npm lockfile (`lockfileVersion` 1, 2 and 3) by how its
+  content is pinned: by an artifact digest, a full commit, or a path inside the
+  repository, or not at all. Missing, weak and malformed digests, floating VCS
+  references, origins that differ from the registry the repository declares,
+  undeclarable origins, path escapes and unknown forms become supply-chain
+  candidates `SC004` to `SC010` and `SC012`. A lockfile that cannot be read, or
+  whose kind has no rules yet, is refused by name as `SC003` and never looks
+  clean. The provisional `rigor lockfile-integrity` command prints the
+  digest-bound `rigor.lockfile-integrity-report.v1` with one verdict per entry.
+  The new rules are in maturity probation.
+
 - Give every SARIF rule a full description, plain-text and Markdown help and a
   per-rule help link, all from the fixed rationale and verification guidance
   each detector already attaches to its candidates. A generated rule catalogue

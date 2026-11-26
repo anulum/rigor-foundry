@@ -35,6 +35,7 @@ from .godfiles import scan_godfiles
 from .historical_checkout import describe_historical_ignored_paths, historical_inventory
 from .ignored_inventory import collect_ignored_inventory
 from .language_capabilities import suffixes_with
+from .lockfile_integrity import scan_lockfile_integrity
 from .models import AuditPolicy, AuditReport, Candidate
 from .native_analysis import scan_native
 from .notebook_analysis import NOTEBOOK_SUFFIXES, scan_notebooks
@@ -248,6 +249,7 @@ def _scan_inventory(
         *scan_native(inventory, policy),
         *scan_reliability(inventory, policy),
         *scan_supply_chain(inventory, policy),
+        *scan_lockfile_integrity(inventory),
         *scan_container(inventory, policy),
         *scan_github_actions(inventory),
         *scan_data_privacy(inventory, policy),
