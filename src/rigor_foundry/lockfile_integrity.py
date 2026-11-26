@@ -37,10 +37,18 @@ from .lockfile_npmrc import (
     read_npmrc,
 )
 from .lockfile_yarn1 import classify_yarn1_lockfile
+from .lockfile_yarn_berry import classify_yarn_berry_lockfile
 from .lockfile_yarnrc import (
     YarnRegistryDeclaration,
     yarn_registry_declaration,
     yarnrc_registry_hosts,
+)
+from .lockfile_yarnrc_yml import (
+    UNKNOWN_BERRY_REGISTRY,
+    WEAKENING_CHECKSUM_BEHAVIORS,
+    BerryRegistryDeclaration,
+    YarnrcYml,
+    read_yarnrc_yml,
 )
 from .models import Candidate, Confidence
 from .rule_guidance import RuleGuidance
@@ -61,6 +69,7 @@ FINDING_RULE_IDS: Final[Mapping[EntryFinding, str]] = MappingProxyType(
 _MEDIUM_CONFIDENCE: Final[frozenset[EntryFinding]] = frozenset({"origin-unknown", "unknown-form"})
 _NPMRC: Final = ".npmrc"
 _YARNRC: Final = ".yarnrc"
+_YARNRC_YML: Final = ".yarnrc.yml"
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -267,6 +276,50 @@ def yarn1_registry_declaration(inventory: GitInventory, lock_path: str) -> YarnR
     )
 
 
+def _levels(lock_path: str) -> list[str]:
+    """Return the configuration paths from the repository root down to the lockfile's directory."""
+    directory = posixpath.dirname(lock_path)
+    parts = directory.split("/") if directory else []
+    return [posixpath.join(*parts[:depth]) if depth else "" for depth in range(len(parts) + 1)]
+
+
+def berry_registry_declaration(
+    inventory: GitInventory, lock_path: str
+) -> BerryRegistryDeclaration:
+    """Return the registry the repository declares for one Yarn 2+ lockfile.
+
+    Every tracked ``.yarnrc.yml`` from the root down to the lockfile's directory is merged, the
+    nearer winning per key and ``npmScopes`` per scope. An untracked or unreadable file at any
+    level, or an uncertain value in any file, makes the declaration unknown.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The tracked repository content.
+    lock_path : str
+        The lockfile's repository-relative POSIX path.
+
+    Returns
+    -------
+    BerryRegistryDeclaration
+        The declaration.
+    """
+    tracked = {item.path: item for item in inventory.files}
+    merged = YarnrcYml()
+    for place in _levels(lock_path):
+        path = posixpath.join(place, _YARNRC_YML)
+        item = tracked.get(path)
+        if item is None:
+            if os.path.lexists(inventory.root / path):
+                return UNKNOWN_BERRY_REGISTRY
+            continue
+        config = None if item.text is None else read_yarnrc_yml(item.text)
+        if config is None:
+            return UNKNOWN_BERRY_REGISTRY
+        merged = merged.merged_under(config)
+    return BerryRegistryDeclaration(known=True, config=merged)
+
+
 def _refused(
     item: TrackedFile, kind: LockfileKind | None, reason: LockfileRefusal
 ) -> LockfileResult:
@@ -294,6 +347,14 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
         elif kind == "yarn-v1":
             yarn = yarn1_registry_declaration(inventory, item.path)
             version, entries = classify_yarn1_lockfile(text, lock_dir, yarn)
+        elif kind == "yarn-berry":
+            berry = berry_registry_declaration(inventory, item.path)
+            version, entries = classify_yarn_berry_lockfile(text, lock_dir, berry)
+            behavior = berry.config.checksum_behavior
+            if behavior in WEAKENING_CHECKSUM_BEHAVIORS:
+                return LockfileResult(
+                    item.path, item.content_digest, kind, version, None, entries, behavior
+                )
         else:
             raise LockfileRefusal("unsupported-file-kind")
     except LockfileRefusal as refusal:

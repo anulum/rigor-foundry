@@ -21,6 +21,7 @@ from rigor_foundry.lockfile_integrity import (
     FINDING_RULE_IDS,
     RULE_GUIDANCE,
     assess_lockfiles,
+    berry_registry_declaration,
     npm_registry_declaration,
     scan_lockfile_integrity,
     yarn1_registry_declaration,
@@ -341,3 +342,71 @@ def test_an_untracked_intermediate_file_makes_the_origin_unknown(
     declaration = _yarn_declaration(tmp_path, {}, {f"web/{name}": "registry=x\n"})
     assert not declaration.known
     assert declaration.origin_finding("left-pad", "registry.yarnpkg.com") == "origin-unknown"
+
+
+def test_the_berry_declaration_merges_yarnrc_yml_root_down_per_scope(tmp_path: Path) -> None:
+    """Every tracked ``.yarnrc.yml`` on the path is merged, scopes per scope, nearest winning.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("web/app/yarn.lock", "__metadata:\n  version: 10\n  cacheKey: 10c0\n")
+    repository.write_text(
+        ".yarnrc.yml",
+        'npmRegistryServer: "https://root.example"\nnpmScopes:\n  a:\n    npmRegistryServer: "https://a.example"\n',
+    )
+    repository.write_text(
+        "web/.yarnrc.yml",
+        'npmScopes:\n  b:\n    npmRegistryServer: "https://b.example"\nchecksumBehavior: ignore\n',
+    )
+    repository.commit()
+    inventory = load_git_inventory(repository.root)
+    declaration = berry_registry_declaration(inventory, "web/app/yarn.lock")
+    assert declaration.declared_host("@a/x") == "a.example"
+    assert declaration.declared_host("@b/x") == "b.example"
+    assert declaration.declared_host("left-pad") == "root.example"
+    assert declaration.config.checksum_behavior == "ignore"
+    result = next(r for r in assess_lockfiles(inventory) if r.path == "web/app/yarn.lock")
+    assert (result.kind, result.status, result.checksum_behavior) == (
+        "yarn-berry",
+        "classified",
+        "ignore",
+    )
+    repository.write_text("web/app/.yarnrc.yml", "npmRegistryServer: x\n")
+    assert not berry_registry_declaration(
+        load_git_inventory(repository.root), "web/app/yarn.lock"
+    ).known
+
+
+@pytest.mark.parametrize("text", [b"\0", b'npmRegistryServer: "${R}"\n'])
+def test_an_unreadable_or_uncertain_yarnrc_yml_makes_the_origin_unknown(
+    tmp_path: Path, text: bytes
+) -> None:
+    """A tracked ``.yarnrc.yml`` that is not text, or is uncertain, is never read as the default.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    text : bytes
+        The configuration bytes.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("yarn.lock", "__metadata:\n  version: 10\n  cacheKey: 10c0\n")
+    repository.write_bytes(".yarnrc.yml", text)
+    repository.commit()
+    declaration = berry_registry_declaration(load_git_inventory(repository.root), "yarn.lock")
+    assert not declaration.known
+
+
+def test_a_checksum_behaviour_that_keeps_verification_is_not_recorded(tmp_path: Path) -> None:
+    """Only ``ignore`` and ``update`` are recorded; ``throw`` is the default and stays silent."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("yarn.lock", "__metadata:\n  version: 10\n  cacheKey: 10c0\n")
+    repository.write_text(".yarnrc.yml", "checksumBehavior: throw\n")
+    repository.commit()
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert (result.status, result.checksum_behavior) == ("classified", None)

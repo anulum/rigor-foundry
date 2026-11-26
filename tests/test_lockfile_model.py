@@ -79,6 +79,7 @@ def test_the_class_and_reason_vocabularies_are_the_amended_v1_lists() -> None:
         {"findings": ("origin-unknown",)},
         {"digest_scope": "parent-artifact", "inherited_from": "node_modules/parent"},
         {"archive_commit": "c" * 40, "commit_hash_algorithm": "sha1"},
+        {"notes": (("alias", "foo"), ("patch_source", "builtin<compat/resolve>"))},
         {
             "entry_class": "unpinned",
             "form": "artifact",
@@ -114,6 +115,7 @@ def test_entries_that_keep_every_rule_are_built(changes: dict[str, Any]) -> None
         "origin",
         "inherited_from",
         "archive_commit",
+        "notes",
     }
 
 
@@ -159,6 +161,10 @@ def test_entries_that_keep_every_rule_are_built(changes: dict[str, Any]) -> None
         ({"entry_class": "commit-pinned"}, "commit hash algorithm"),
         ({"commit_hash_algorithm": "sha1"}, "commit hash algorithm"),
         ({"archive_commit": "c" * 40}, "commit hash algorithm"),
+        ({"notes": (("patch_source", "x"), ("alias", "foo"))}, "ordered by name"),
+        ({"notes": (("alias", "a"), ("alias", "b"))}, "ordered by name"),
+        ({"notes": (("alias", ""),)}, "non-empty"),
+        ({"notes": (("", "x"),)}, "non-empty"),
         (
             {
                 "entry_class": "unpinned",
@@ -221,6 +227,7 @@ def test_a_classified_and_a_refused_file_serialise_every_field() -> None:
         "status": "refused",
         "refusal_reason": "ambiguous-yarn-lock",
         "entries": [],
+        "checksum_behavior": None,
     }
 
 

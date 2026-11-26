@@ -82,6 +82,18 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Yarn 2+ lockfiles (rule pack
+  `rigor-foundry/1.22.0`), for the `__metadata` versions that Yarn 3 and Yarn 4
+  wrote into the test fixtures. A checksum covers Yarn's cache archive, and one
+  whose cache key is not the lockfile's own is reported as malformed, because
+  Yarn would not verify it. Git clones pin by commit; GitHub archives pin only
+  by checksum. Local and patch paths are resolved from the workspace that
+  declared them, as Yarn resolves them. `npm:` origins come from the registry the tracked `.yarnrc.yml`
+  files declare, and a `checksumBehavior` that accepts mismatches is recorded on
+  the result. Entries now carry named evidence notes (an alias, a digest
+  problem, a patch source), and the report states that installer configuration
+  is evaluated by a separate rule.
+
 - Lockfile integrity rules read Yarn 1 lockfiles (rule pack
   `rigor-foundry/1.21.0`) with a strict reader of Yarn 1's own syntax. A Git
   clone at a full commit is commit-pinned. A GitHub archive is a plain tarball

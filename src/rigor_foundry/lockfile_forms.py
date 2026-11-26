@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 from .lockfile_digests import DigestReading
 from .lockfile_model import (
     ENTRY_FINDINGS,
+    PIN_FAILURES,
     CommitHashAlgorithm,
     DigestScope,
     EntryFinding,
@@ -172,7 +173,14 @@ def vcs_host(spec: str) -> str | None:
     return urlsplit(spec.removeprefix("git+")).hostname
 
 
-def vcs_entry(key: str, line: int, spec: str, reading: DigestReading) -> LockedEntry:
+def vcs_entry(
+    key: str,
+    line: int,
+    spec: str,
+    reading: DigestReading,
+    digest_scope: DigestScope = "artifact",
+    notes: tuple[tuple[str, str], ...] = (),
+) -> LockedEntry:
     """Classify a VCS source: pinned by a full commit and no malformed digest.
 
     Parameters
@@ -185,6 +193,10 @@ def vcs_entry(key: str, line: int, spec: str, reading: DigestReading) -> LockedE
         The VCS specification, with the commit after ``#``.
     reading : DigestReading
         The entry's digests, if it records any.
+    digest_scope : DigestScope
+        What those digests cover, such as Yarn's ``cache-archive``.
+    notes : tuple[tuple[str, str], ...]
+        Further evidence to record, ordered by name.
 
     Returns
     -------
@@ -193,7 +205,7 @@ def vcs_entry(key: str, line: int, spec: str, reading: DigestReading) -> LockedE
     """
     host = vcs_host(spec)
     commit = spec.partition("#")[2]
-    scope: DigestScope | None = "artifact" if reading.algorithms else None
+    scope: DigestScope | None = digest_scope if reading.algorithms else None
     full = FULL_COMMIT.fullmatch(commit) is not None
     if full and not reading.malformed_tokens:
         return LockedEntry(
@@ -204,6 +216,7 @@ def vcs_entry(key: str, line: int, spec: str, reading: DigestReading) -> LockedE
             digest_scope=scope,
             commit_hash_algorithm=commit_hash_algorithm(commit),
             origin=host,
+            notes=notes,
         )
     failures: set[EntryFinding] = set()
     if not full:
@@ -219,6 +232,7 @@ def vcs_entry(key: str, line: int, spec: str, reading: DigestReading) -> LockedE
         digest_algorithms=reading.algorithms,
         digest_scope=scope,
         origin=host,
+        notes=notes,
     )
 
 
@@ -229,6 +243,8 @@ def artifact_entry(
     origin: str | None,
     extra_findings: set[EntryFinding],
     archive_commit: str | None = None,
+    digest_scope: DigestScope = "artifact",
+    notes: tuple[tuple[str, str], ...] = (),
 ) -> LockedEntry:
     """Classify a remote artifact with an exact version, by its digests.
 
@@ -247,6 +263,10 @@ def artifact_entry(
         of a moving reference.
     archive_commit : str | None
         The full commit a hosted archive names, recorded as evidence.
+    digest_scope : DigestScope
+        What the digests cover.
+    notes : tuple[tuple[str, str], ...]
+        Further evidence to record, ordered by name.
 
     Returns
     -------
@@ -256,18 +276,19 @@ def artifact_entry(
     """
     findings: set[EntryFinding] = {*reading.findings, *extra_findings}
     algorithm = commit_hash_algorithm(archive_commit) if archive_commit is not None else None
-    scope: DigestScope | None = "artifact" if reading.algorithms else None
-    if reading.pins_artifact and "floating-ref" not in findings:
+    scope: DigestScope | None = digest_scope if reading.algorithms else None
+    if reading.pins_artifact and not PIN_FAILURES.intersection(findings):
         return LockedEntry(
             key,
             line,
             "artifact-pinned",
             ordered(findings),
             digest_algorithms=reading.algorithms,
-            digest_scope="artifact",
+            digest_scope=digest_scope,
             commit_hash_algorithm=algorithm,
             origin=origin,
             archive_commit=archive_commit,
+            notes=notes,
         )
     return LockedEntry(
         key,
@@ -280,4 +301,5 @@ def artifact_entry(
         commit_hash_algorithm=algorithm,
         origin=origin,
         archive_commit=archive_commit,
+        notes=notes,
     )

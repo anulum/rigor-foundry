@@ -3,7 +3,7 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/2c8cb11141f0ba1fbcbaa2b9bd5e6f14d6873b2b0f993b4f8a42d1d29513b3eb"
+        "id": "rigor-foundry/f37d75a3bb13aa355b5d19cdfd0496de470d89a008913fd3559a1018167d5968"
       },
       "properties": {
         "rigorFoundry/branch": "main",
@@ -12,9 +12,9 @@
         "rigorFoundry/headTree": "5c95b612dd40be4f2d7703c9c28fd369917849f7",
         "rigorFoundry/ignoredInventoryDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "rigorFoundry/policyDigest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
-        "rigorFoundry/reportDigest": "2c8cb11141f0ba1fbcbaa2b9bd5e6f14d6873b2b0f993b4f8a42d1d29513b3eb",
-        "rigorFoundry/rulePackDigest": "9db62e2fe8ddabf7d083e1955d4829336e4446707607433ecdd05139e6ea2f44",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.21.0",
+        "rigorFoundry/reportDigest": "f37d75a3bb13aa355b5d19cdfd0496de470d89a008913fd3559a1018167d5968",
+        "rigorFoundry/rulePackDigest": "29583fe2c1352f07ec59f0214176fa31c97b9a03cd97e2d029b0312ef762840f",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.22.0",
         "rigorFoundry/trackedContentDigest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28"
       },
       "results": [],

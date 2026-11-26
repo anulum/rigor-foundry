@@ -36,6 +36,28 @@ _TAGS = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class YamlLimits:
+    """The bounds one kind of YAML document is read under.
+
+    Parameters
+    ----------
+    max_bytes : int
+        The largest UTF-8 document size read.
+    max_events : int
+        The most parser events read before refusing.
+    references_and_tags : bool
+        Whether anchors, aliases and explicit tags may appear at all.
+    """
+
+    max_bytes: int
+    max_events: int
+    references_and_tags: bool
+
+
+WORKFLOW_YAML_LIMITS = YamlLimits(MAX_WORKFLOW_BYTES, MAX_WORKFLOW_EVENTS, True)
+
+
 class WorkflowFormatError(ValueError):
     """Report a fixed reason and physical line without retaining source text."""
 
@@ -86,9 +108,10 @@ def _line(event: Event, *, end: bool = False) -> int:
 class _EventReader:
     """Consume a bounded single YAML document with backward acyclic aliases."""
 
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, limits: YamlLimits = WORKFLOW_YAML_LIMITS) -> None:
         """Open a parser only; never call a YAML object constructor."""
         self.loader = SafeLoader(text)
+        self.limits = limits
         self.events = 0
         self.aliases = 0
         self.anchors: dict[str, WorkflowValue] = {}
@@ -100,8 +123,14 @@ class _EventReader:
         read_event = cast(Callable[[], Event], self.loader.get_event)
         event = read_event()
         self.events += 1
-        if self.events > MAX_WORKFLOW_EVENTS:
+        if self.events > self.limits.max_events:
             raise WorkflowFormatError("yaml-event-limit", _line(event))
+        if not self.limits.references_and_tags and (
+            isinstance(event, AliasEvent)
+            or getattr(event, "anchor", None) is not None
+            or getattr(event, "tag", None) is not None
+        ):
+            raise WorkflowFormatError("unsupported-yaml-reference-or-tag", _line(event))
         return event
 
     def value(self, event: Event, depth: int = 0) -> WorkflowValue:
@@ -177,17 +206,18 @@ class _EventReader:
             self.loader.dispose()
 
 
-def parse_workflow_yaml(text: str) -> WorkflowValue:
+def parse_workflow_yaml(text: str, limits: YamlLimits = WORKFLOW_YAML_LIMITS) -> WorkflowValue:
     """Parse one bounded YAML document without constructing or executing objects.
 
     Literal keys, including on, and scalar contents retain their spelling.
     Aliases refer to completed immutable values at their definition locations.
-    Merge keys, custom tags, cycles and duplicate keys refuse explicitly.
+    Merge keys, custom tags, cycles and duplicate keys refuse explicitly. Other limits, such
+    as a lockfile's, can also refuse every anchor, alias and explicit tag.
     """
-    if len(text.encode("utf-8")) > MAX_WORKFLOW_BYTES:
+    if len(text.encode("utf-8")) > limits.max_bytes:
         raise WorkflowFormatError("yaml-byte-limit")
     try:
-        return _EventReader(text).document()
+        return _EventReader(text, limits).document()
     except MarkedYAMLError as exc:
         line = 1 if exc.problem_mark is None else exc.problem_mark.line + 1
         raise WorkflowFormatError("invalid-yaml", line) from None

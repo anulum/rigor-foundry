@@ -1,6 +1,268 @@
 {
   "files": [
     {
+      "checksum_behavior": "update",
+      "entries": [
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "debug@npm:4.3.4",
+          "line": 8,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "function-bind@npm:^1.1.2",
+          "line": 20,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "hasown@npm:^2.0.4",
+          "line": 27,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-core-module@npm:^2.13.0",
+          "line": 36,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": "98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-number@github:jonschlinkert/is-number#98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "line": 45,
+          "notes": {},
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "linked-lib@link:./linked-lib::locator=rigor-lockfile-fixture-yarn-berry%40workspace%3A.",
+          "line": 52,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "local-lib@file:./local-lib::locator=rigor-lockfile-fixture-yarn-berry%40workspace%3A.",
+          "line": 58,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ms@npm:2.1.2",
+          "line": 65,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "path-parse@npm:^1.0.7",
+          "line": 72,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "portal-lib@portal:./portal-lib::locator=rigor-lockfile-fixture-yarn-berry%40workspace%3A.",
+          "line": 79,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "resolve@npm:1.22.8",
+          "line": 85,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "resolve@patch:resolve@npm%3A1.22.8#optional!builtin<compat/resolve>",
+          "line": 98,
+          "notes": {
+            "patch_source": "builtin<compat/resolve>"
+          },
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "rigor-lockfile-fixture-yarn-berry@workspace:.",
+          "line": 111,
+          "notes": {},
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "supports-preserve-symlinks-flag@npm:^1.0.0",
+          "line": 126,
+          "notes": {},
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "commit-pinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [
+            "sha512"
+          ],
+          "digest_scope": "cache-archive",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "vcs-lib@git://127.0.0.1:19418/vcs-lib.git#ee7225ad8820e4fbfcc0a6909a85af289e3f70e7",
+          "line": 133,
+          "notes": {},
+          "origin": "127.0.0.1"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ws-a@workspace:*, ws-a@workspace:packages/ws-a",
+          "line": 140,
+          "notes": {},
+          "origin": null
+        }
+      ],
+      "file_sha256": "f65d5e00834ae48b851972aa5719ec80dcf2592362f65da2a9b9e3cb0bbae6e1",
+      "format_version": "10",
+      "kind": "yarn-berry",
+      "path": "berry/yarn.lock",
+      "refusal_reason": null,
+      "status": "classified"
+    },
+    {
+      "checksum_behavior": null,
       "entries": [],
       "file_sha256": "e3866582d3f9634fec41e794cd76e706db674ba62af61ac3ad8aeed8f569f820",
       "format_version": null,
@@ -10,6 +272,7 @@
       "status": "refused"
     },
     {
+      "checksum_behavior": null,
       "entries": [],
       "file_sha256": "083791b01c1a67ae66aca99070c9ee48082d04307473d494376e6de7cf9a654a",
       "format_version": null,
@@ -19,6 +282,7 @@
       "status": "refused"
     },
     {
+      "checksum_behavior": null,
       "entries": [],
       "file_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "format_version": null,
@@ -28,6 +292,7 @@
       "status": "refused"
     },
     {
+      "checksum_behavior": null,
       "entries": [
         {
           "archive_commit": null,
@@ -40,6 +305,7 @@
           "inherited_from": null,
           "key": "local-lib",
           "line": 17,
+          "notes": {},
           "origin": null
         },
         {
@@ -57,6 +323,7 @@
           "inherited_from": null,
           "key": "node_modules/bundle-dependencies",
           "line": 20,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -74,6 +341,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/yargs",
           "line": 35,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -91,6 +359,7 @@
           "inherited_from": null,
           "key": "node_modules/debug",
           "line": 53,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -106,6 +375,7 @@
           "inherited_from": null,
           "key": "node_modules/is-number",
           "line": 70,
+          "notes": {},
           "origin": "github.com"
         },
         {
@@ -119,6 +389,7 @@
           "inherited_from": null,
           "key": "node_modules/local-lib",
           "line": 79,
+          "notes": {},
           "origin": null
         },
         {
@@ -136,6 +407,7 @@
           "inherited_from": null,
           "key": "node_modules/ms",
           "line": 83,
+          "notes": {},
           "origin": "registry.npmjs.org"
         }
       ],
@@ -147,6 +419,7 @@
       "status": "classified"
     },
     {
+      "checksum_behavior": null,
       "entries": [
         {
           "archive_commit": null,
@@ -161,6 +434,7 @@
           "inherited_from": null,
           "key": "node_modules/bundle-dependencies",
           "line": 7,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -176,6 +450,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/ansi-regex",
           "line": 15,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -191,6 +466,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/builtin-modules",
           "line": 19,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -206,6 +482,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/camelcase",
           "line": 23,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -221,6 +498,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/cliui",
           "line": 27,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -236,6 +514,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/code-point-at",
           "line": 36,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -251,6 +530,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/decamelize",
           "line": 43,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -266,6 +546,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/error-ex",
           "line": 50,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -281,6 +562,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/escape-string-regexp",
           "line": 57,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -296,6 +578,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/find-up",
           "line": 61,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -311,6 +594,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/graceful-fs",
           "line": 69,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -326,6 +610,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/hosted-git-info",
           "line": 73,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -341,6 +626,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/invert-kv",
           "line": 77,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -356,6 +642,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/is-arrayish",
           "line": 81,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -371,6 +658,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/is-builtin-module",
           "line": 85,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -386,6 +674,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/is-fullwidth-code-point",
           "line": 92,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -401,6 +690,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/is-utf8",
           "line": 99,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -416,6 +706,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/lcid",
           "line": 103,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -431,6 +722,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/load-json-file",
           "line": 110,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -446,6 +738,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/lodash.assign",
           "line": 121,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -461,6 +754,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/lodash.keys",
           "line": 129,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -476,6 +770,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/lodash.rest",
           "line": 133,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -491,6 +786,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/normalize-package-data",
           "line": 137,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -506,6 +802,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/number-is-nan",
           "line": 147,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -521,6 +818,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/object-assign",
           "line": 151,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -536,6 +834,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/os-locale",
           "line": 155,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -551,6 +850,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/parse-json",
           "line": 162,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -566,6 +866,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/path-exists",
           "line": 169,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -581,6 +882,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/path-type",
           "line": 176,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -596,6 +898,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/pify",
           "line": 185,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -611,6 +914,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/pinkie",
           "line": 189,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -626,6 +930,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/pinkie-promise",
           "line": 193,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -641,6 +946,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/pkg-conf",
           "line": 200,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -656,6 +962,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/read-pkg",
           "line": 210,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -671,6 +978,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/read-pkg-up",
           "line": 219,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -686,6 +994,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/require-main-filename",
           "line": 227,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -701,6 +1010,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/semver",
           "line": 231,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -716,6 +1026,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/spdx-correct",
           "line": 235,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -731,6 +1042,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/spdx-exceptions",
           "line": 242,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -746,6 +1058,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/spdx-expression-parse",
           "line": 246,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -761,6 +1074,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/spdx-license-ids",
           "line": 254,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -776,6 +1090,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/string-width",
           "line": 258,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -791,6 +1106,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/strip-ansi",
           "line": 267,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -806,6 +1122,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/strip-bom",
           "line": 274,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -821,6 +1138,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/symbol",
           "line": 281,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -836,6 +1154,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/validate-npm-package-license",
           "line": 285,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -851,6 +1170,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/window-size",
           "line": 293,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -866,6 +1186,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/wrap-ansi",
           "line": 297,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -881,6 +1202,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/y18n",
           "line": 304,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -896,6 +1218,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/yargs",
           "line": 308,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -911,6 +1234,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/yargs-parser",
           "line": 325,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -926,6 +1250,7 @@
           "inherited_from": null,
           "key": "node_modules/debug",
           "line": 335,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -939,6 +1264,7 @@
           "inherited_from": null,
           "key": "node_modules/is-number",
           "line": 343,
+          "notes": {},
           "origin": "github.com"
         },
         {
@@ -952,6 +1278,7 @@
           "inherited_from": null,
           "key": "node_modules/local-lib",
           "line": 347,
+          "notes": {},
           "origin": null
         },
         {
@@ -967,6 +1294,7 @@
           "inherited_from": null,
           "key": "node_modules/ms",
           "line": 350,
+          "notes": {},
           "origin": "registry.npmjs.org"
         }
       ],
@@ -978,6 +1306,7 @@
       "status": "classified"
     },
     {
+      "checksum_behavior": null,
       "entries": [],
       "file_sha256": "5cec691b1679abc6e78fb48e6486c9669173059a7bcd871cf6613ad61de31a47",
       "format_version": null,
@@ -987,6 +1316,7 @@
       "status": "refused"
     },
     {
+      "checksum_behavior": null,
       "entries": [
         {
           "archive_commit": null,
@@ -999,6 +1329,7 @@
           "inherited_from": null,
           "key": "local-lib",
           "line": 17,
+          "notes": {},
           "origin": null
         },
         {
@@ -1014,6 +1345,7 @@
           "inherited_from": null,
           "key": "node_modules/bundle-dependencies",
           "line": 20,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1029,6 +1361,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/yargs",
           "line": 35,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1044,6 +1377,7 @@
           "inherited_from": null,
           "key": "node_modules/debug",
           "line": 53,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1059,6 +1393,7 @@
           "inherited_from": null,
           "key": "node_modules/is-number",
           "line": 70,
+          "notes": {},
           "origin": "github.com"
         },
         {
@@ -1072,6 +1407,7 @@
           "inherited_from": null,
           "key": "node_modules/local-lib",
           "line": 79,
+          "notes": {},
           "origin": null
         },
         {
@@ -1087,6 +1423,7 @@
           "inherited_from": null,
           "key": "node_modules/ms",
           "line": 83,
+          "notes": {},
           "origin": "registry.npmjs.org"
         }
       ],
@@ -1098,6 +1435,7 @@
       "status": "classified"
     },
     {
+      "checksum_behavior": null,
       "entries": [],
       "file_sha256": "2064c0d477d3fafb2bee3eeb8c6f01ba48a30919c938d94e0aae2ea159f9e812",
       "format_version": null,
@@ -1107,6 +1445,7 @@
       "status": "refused"
     },
     {
+      "checksum_behavior": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1119,6 +1458,7 @@
           "inherited_from": null,
           "key": "local-lib",
           "line": 17,
+          "notes": {},
           "origin": null
         },
         {
@@ -1136,6 +1476,7 @@
           "inherited_from": null,
           "key": "node_modules/bundle-dependencies",
           "line": 20,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1153,6 +1494,7 @@
           "inherited_from": "node_modules/bundle-dependencies",
           "key": "node_modules/bundle-dependencies/node_modules/yargs",
           "line": 35,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1171,6 +1513,7 @@
           "inherited_from": null,
           "key": "node_modules/debug",
           "line": 53,
+          "notes": {},
           "origin": "evil.example"
         },
         {
@@ -1188,6 +1531,7 @@
           "inherited_from": null,
           "key": "node_modules/is-number",
           "line": 70,
+          "notes": {},
           "origin": "github.com"
         },
         {
@@ -1203,6 +1547,7 @@
           "inherited_from": null,
           "key": "node_modules/local-lib",
           "line": 79,
+          "notes": {},
           "origin": null
         },
         {
@@ -1218,6 +1563,7 @@
           "inherited_from": null,
           "key": "node_modules/ms",
           "line": 83,
+          "notes": {},
           "origin": "registry.npmjs.org"
         },
         {
@@ -1233,6 +1579,7 @@
           "inherited_from": null,
           "key": "node_modules/odd",
           "line": 88,
+          "notes": {},
           "origin": null
         }
       ],
@@ -1244,6 +1591,7 @@
       "status": "classified"
     },
     {
+      "checksum_behavior": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1259,6 +1607,7 @@
           "inherited_from": null,
           "key": "ansi-regex@^2.0.0",
           "line": 5,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1275,6 +1624,7 @@
           "inherited_from": null,
           "key": "bundle-dependencies@1.0.2",
           "line": 10,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1291,6 +1641,7 @@
           "inherited_from": null,
           "key": "camelcase@^3.0.0",
           "line": 17,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1307,6 +1658,7 @@
           "inherited_from": null,
           "key": "cliui@^3.2.0",
           "line": 22,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1323,6 +1675,7 @@
           "inherited_from": null,
           "key": "code-point-at@^1.0.0",
           "line": 31,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1339,6 +1692,7 @@
           "inherited_from": null,
           "key": "debug@4.3.4",
           "line": 36,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1355,6 +1709,7 @@
           "inherited_from": null,
           "key": "decamelize@^1.1.1",
           "line": 43,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1371,6 +1726,7 @@
           "inherited_from": null,
           "key": "error-ex@^1.2.0",
           "line": 48,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1387,6 +1743,7 @@
           "inherited_from": null,
           "key": "es-errors@^1.3.0",
           "line": 55,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1403,6 +1760,7 @@
           "inherited_from": null,
           "key": "find-up@^1.0.0",
           "line": 60,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1419,6 +1777,7 @@
           "inherited_from": null,
           "key": "function-bind@^1.1.2",
           "line": 68,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1435,6 +1794,7 @@
           "inherited_from": null,
           "key": "get-caller-file@^1.0.1",
           "line": 73,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1451,6 +1811,7 @@
           "inherited_from": null,
           "key": "graceful-fs@^4.1.2",
           "line": 78,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1467,6 +1828,7 @@
           "inherited_from": null,
           "key": "hasown@^2.0.4",
           "line": 83,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1483,6 +1845,7 @@
           "inherited_from": null,
           "key": "hosted-git-info@^2.1.4",
           "line": 90,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1499,6 +1862,7 @@
           "inherited_from": null,
           "key": "invert-kv@^1.0.0",
           "line": 95,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1515,6 +1879,7 @@
           "inherited_from": null,
           "key": "is-arrayish@^0.2.1",
           "line": 100,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1531,6 +1896,7 @@
           "inherited_from": null,
           "key": "is-core-module@^2.18.0",
           "line": 105,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1547,6 +1913,7 @@
           "inherited_from": null,
           "key": "is-fullwidth-code-point@^1.0.0",
           "line": 112,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1562,6 +1929,7 @@
           "inherited_from": null,
           "key": "is-number@github:jonschlinkert/is-number#98e8ff1da1a89f93d1397a24d7413ed15421c139",
           "line": 119,
+          "notes": {},
           "origin": "codeload.github.com"
         },
         {
@@ -1578,6 +1946,7 @@
           "inherited_from": null,
           "key": "is-utf8@^0.2.0",
           "line": 123,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1594,6 +1963,7 @@
           "inherited_from": null,
           "key": "lcid@^1.0.0",
           "line": 128,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1607,6 +1977,7 @@
           "inherited_from": null,
           "key": "linked-lib@link:./linked-lib",
           "line": 135,
+          "notes": {},
           "origin": null
         },
         {
@@ -1623,6 +1994,7 @@
           "inherited_from": null,
           "key": "load-json-file@^1.0.0",
           "line": 139,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1636,6 +2008,7 @@
           "inherited_from": null,
           "key": "local-lib@file:./local-lib",
           "line": 150,
+          "notes": {},
           "origin": null
         },
         {
@@ -1652,6 +2025,7 @@
           "inherited_from": null,
           "key": "lodash.assign@^4.0.3, lodash.assign@^4.0.6",
           "line": 153,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1668,6 +2042,7 @@
           "inherited_from": null,
           "key": "ms@2.1.2",
           "line": 158,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1684,6 +2059,7 @@
           "inherited_from": null,
           "key": "normalize-package-data@^2.3.2",
           "line": 163,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1700,6 +2076,7 @@
           "inherited_from": null,
           "key": "number-is-nan@^1.0.0",
           "line": 173,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1716,6 +2093,7 @@
           "inherited_from": null,
           "key": "os-locale@^1.4.0",
           "line": 178,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1732,6 +2110,7 @@
           "inherited_from": null,
           "key": "parse-json@^2.2.0",
           "line": 185,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1748,6 +2127,7 @@
           "inherited_from": null,
           "key": "path-exists@^2.0.0",
           "line": 192,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1764,6 +2144,7 @@
           "inherited_from": null,
           "key": "path-parse@^1.0.7",
           "line": 199,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1780,6 +2161,7 @@
           "inherited_from": null,
           "key": "path-type@^1.0.0",
           "line": 204,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1796,6 +2178,7 @@
           "inherited_from": null,
           "key": "pify@^2.0.0",
           "line": 213,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1812,6 +2195,7 @@
           "inherited_from": null,
           "key": "pinkie-promise@^2.0.0",
           "line": 218,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1828,6 +2212,7 @@
           "inherited_from": null,
           "key": "pinkie@^2.0.0",
           "line": 225,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1844,6 +2229,7 @@
           "inherited_from": null,
           "key": "read-pkg-up@^1.0.1",
           "line": 230,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1860,6 +2246,7 @@
           "inherited_from": null,
           "key": "read-pkg@^1.0.0",
           "line": 238,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1876,6 +2263,7 @@
           "inherited_from": null,
           "key": "require-directory@^2.1.1",
           "line": 247,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1892,6 +2280,7 @@
           "inherited_from": null,
           "key": "require-main-filename@^1.0.1",
           "line": 252,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1908,6 +2297,7 @@
           "inherited_from": null,
           "key": "resolve@^1.10.0",
           "line": 257,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1924,6 +2314,7 @@
           "inherited_from": null,
           "key": "semver@2 || 3 || 4 || 5",
           "line": 267,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1940,6 +2331,7 @@
           "inherited_from": null,
           "key": "set-blocking@^2.0.0",
           "line": 272,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1956,6 +2348,7 @@
           "inherited_from": null,
           "key": "spdx-correct@^3.0.0",
           "line": 277,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1972,6 +2365,7 @@
           "inherited_from": null,
           "key": "spdx-exceptions@^2.1.0",
           "line": 285,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -1988,6 +2382,7 @@
           "inherited_from": null,
           "key": "spdx-expression-parse@^3.0.0",
           "line": 290,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2004,6 +2399,7 @@
           "inherited_from": null,
           "key": "spdx-license-ids@^3.0.0",
           "line": 298,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2020,6 +2416,7 @@
           "inherited_from": null,
           "key": "string-width@^1.0.1",
           "line": 303,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2036,6 +2433,7 @@
           "inherited_from": null,
           "key": "strip-ansi@^3.0.0, strip-ansi@^3.0.1",
           "line": 312,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2052,6 +2450,7 @@
           "inherited_from": null,
           "key": "strip-bom@^2.0.0",
           "line": 319,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2068,6 +2467,7 @@
           "inherited_from": null,
           "key": "supports-preserve-symlinks-flag@^1.0.0",
           "line": 326,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2084,6 +2484,7 @@
           "inherited_from": null,
           "key": "validate-npm-package-license@^3.0.1",
           "line": 331,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2097,6 +2498,7 @@
           "inherited_from": null,
           "key": "vcs-lib@git+file:///tmp/rigor-yarn1-fixture/vcs-lib.git#ee7225ad8820e4fbfcc0a6909a85af289e3f70e7",
           "line": 339,
+          "notes": {},
           "origin": null
         },
         {
@@ -2113,6 +2515,7 @@
           "inherited_from": null,
           "key": "which-module@^1.0.0",
           "line": 343,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2129,6 +2532,7 @@
           "inherited_from": null,
           "key": "window-size@^0.2.0",
           "line": 348,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2145,6 +2549,7 @@
           "inherited_from": null,
           "key": "wrap-ansi@^2.0.0",
           "line": 353,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2161,6 +2566,7 @@
           "inherited_from": null,
           "key": "y18n@^3.2.1",
           "line": 361,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2177,6 +2583,7 @@
           "inherited_from": null,
           "key": "yargs-parser@^2.4.1",
           "line": 366,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         },
         {
@@ -2193,6 +2600,7 @@
           "inherited_from": null,
           "key": "yargs@^4.1.0",
           "line": 374,
+          "notes": {},
           "origin": "registry.yarnpkg.com"
         }
       ],
@@ -2204,24 +2612,25 @@
       "status": "classified"
     }
   ],
-  "head": "4cf84a72eef47d011b41fc16de6d84b37b3d287a",
-  "head_tree": "7724e2dd3d3ab940c41a2ec80536066dc54b2b12",
-  "report_digest": "11254ebb5c895928ecb2168791c18b650c3936032e6da0444a474643a93e260b",
-  "rule_pack_digest": "9db62e2fe8ddabf7d083e1955d4829336e4446707607433ecdd05139e6ea2f44",
-  "rule_pack_version": "rigor-foundry/1.21.0",
+  "head": "996f9728155853433389984b3c9c22287f348c99",
+  "head_tree": "d4007713bdb10702ddda3e629d19459e66461577",
+  "report_digest": "4df188abcf0769158dc863b67ac8ce0a783f73cd997c44d625a2f7d219fada28",
+  "rule_pack_digest": "29583fe2c1352f07ec59f0214176fa31c97b9a03cd97e2d029b0312ef762840f",
+  "rule_pack_version": "rigor-foundry/1.22.0",
   "schema": "rigor.lockfile-integrity-report.v1",
+  "scope_note": "Installer configuration that weakens verification, such as Yarn's checksumBehavior, approvedGitRepositories, unsafeHttpWhitelist or enableStrictSsl, is evaluated by a separate configuration rule. A pinned entry is not proof that the installer verifies it.",
   "summary": {
     "classes": {
-      "artifact-pinned": 117,
-      "commit-pinned": 4,
+      "artifact-pinned": 127,
+      "commit-pinned": 5,
       "graph-only": 0,
-      "local": 8,
+      "local": 13,
       "unclassified": 1,
       "unpinned": 7
     },
-    "classified_files": 5,
-    "entries": 137,
-    "files": 10,
+    "classified_files": 6,
+    "entries": 153,
+    "files": 11,
     "findings": {
       "floating-ref": 1,
       "malformed-digest": 2,
@@ -2245,5 +2654,5 @@
     },
     "refused_files": 5
   },
-  "tracked_content_digest": "81e145093097685c50ad7e8484a517559d6b208be6b7e01f8cc9fbe79dbd34d0"
+  "tracked_content_digest": "66374c5ef4576fd98679ddcfb0ddc940057b72e4d110e5133c7b8a44b64c247c"
 }

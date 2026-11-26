@@ -17,9 +17,10 @@ rules implement *lockfile integrity semantics v1*.
 
 Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
 `npm-shrinkwrap.json`, `lockfileVersion` 1, 2 and 3), and `rigor-foundry/1.21.0`
-adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header). Every other
-lockfile the rules recognise is refused as `unsupported-file-kind` until its own
-rules exist: a Yarn 2+ `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`,
+adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
+`rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block).
+Every other lockfile the rules recognise is refused as `unsupported-file-kind`
+until its own rules exist: `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`,
 `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
 
 ## One class per entry
@@ -115,6 +116,51 @@ and every token is validated:
   URL's `#` is a weak digest of its own: alone it gives `weak-digest`, and beside
   an accepted `integrity` it is clean.
 
+## Yarn 2+ lockfiles
+
+- **Syntax and versions.** The file is YAML read without anchors, aliases or
+  tags, with a duplicate key refused as `unparseable`. Only `__metadata.version`
+  values that a real Yarn release wrote into a fixture here are read: 6 (Yarn 3)
+  and 10 (Yarn 4). Any other version is `unsupported-version`. `cacheKey` must
+  match `^[0-9]+([a-z][0-9a-z]*)?$`. Each entry's key lists its descriptors and
+  must be written as Yarn writes it: plain when it is a plain YAML string and
+  JSON-quoted otherwise, on the line before its fields, or, when longer than
+  1024 characters, after `? ` with the `:` alone on the next line. Any other
+  layout is `unparseable`, and a descriptor named by two entries is
+  `conflicting-entries`.
+- **Checksums.** A `checksum` hashes Yarn's own cache archive, so its scope is
+  `cache-archive`. Yarn 3 writes bare hex and Yarn 4 prefixes the cache key. A
+  checksum whose cache key differs from `__metadata.cacheKey` is not verified by
+  Yarn, so it is `malformed-digest`, and the entry's `notes` record
+  `digest_problem: foreign-cache-key` with both keys.
+- **Registry artifacts.** An `npm:` resolution has no URL: its origin is the
+  registry declared for its scope. An `npm:` alias (`foo@npm:bar@1.0.0`) is the
+  artifact `bar`, with `alias` recorded. A tarball URL is compared with the
+  declared registry.
+- **Git.** A clone (`git:`, `git+…`, `ssh:`) at a full `#commit=` is
+  `commit-pinned`. A GitHub archive is an artifact pinned only by its checksum,
+  with `archive_commit`. `#head=`, `#tag=`, `#semver=` and short commits give
+  `floating-ref`.
+- **Local and other protocols.** `file:` (its checksum recorded), `link:`,
+  `portal:` and `workspace:` are `local`, and give `path-escape` outside the
+  repository. `exec:` and any other protocol are `unclassified` with
+  `unknown-form`.
+- **Paths.** A path is read as Yarn 3.8.7 and 4.19.0 read it: the part after
+  `#` (or the whole reference without one), URL-decoded. A relative path is
+  resolved from the package its `locator` binding names: a workspace's
+  directory, or a local package's own folder found the same way, at most 32
+  levels deep. A path relative to a fetched package is inside that package,
+  not the repository, so the entry is `unknown-form`, as is a path Yarn could
+  not read (no single `locator`, or a bad `%` escape). An absolute path leaves
+  the repository whoever declared it.
+- **Patches.** A `patch:` entry is classified by its own checksum, and its base
+  is a separate entry. `notes` records `patch_source`: `builtin<name>` for a
+  patch that ships with Yarn, or the patch paths, joined by `&` as Yarn joins
+  them. Every path must stay inside the repository. Flags are read as the Yarn
+  that wrote the lockfile reads them: for version 6 (Yarn 3) a leading `~`
+  means optional, so `~/x` is the absolute `/x`; for version 10 (Yarn 4) flags
+  end at the last `!`, and `~/` is the project root.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -141,6 +187,15 @@ and global npm configuration are not repository content.
   host is `origin-mismatch`. `.yarnrc.yml` is Yarn 2+ configuration and is not
   read. A `.yarnrc` registry line with `${…}`, a `--registry` flag, a changed
   repeat, a non-HTTP(S) value or a line that does not tokenise is uncertain.
+- For Yarn 2+, only `.yarnrc.yml` is read: every tracked one from the root down
+  to the lockfile's directory, merged per key with the nearer winning and
+  `npmScopes` merged per scope. `npmRegistryServer` is the default registry
+  (`https://registry.yarnpkg.com` when unset) and
+  `npmScopes.<scope>.npmRegistryServer` a scope's. A file that is not one YAML
+  mapping, `${…}` in a read value, or a registry that is not an HTTP(S) URL is
+  uncertain. A `checksumBehavior` of `ignore` or `update` is recorded on the
+  lockfile's result as `checksum_behavior`, because Yarn then accepts a checksum
+  mismatch.
 - Every artifact's origin is `origin-unknown`, never a pass, when the
   declaration cannot be read with certainty:
   - an `.npmrc` that is present but untracked, or tracked but not text;
@@ -196,11 +251,16 @@ record:
   that was read; `rule_pack_version` and `rule_pack_digest` bind the rules;
 - `summary` counts files, entries, every class, every finding and every
   refusal reason, zeros included; the entry counts include bundled entries;
+- `scope_note` says that installer configuration that weakens verification is
+  evaluated by a separate configuration rule;
 - `files` lists one record per tracked lockfile in path order, with `path`,
-  `file_sha256`, `kind`, `format_version`, `status` and `refusal_reason`;
+  `file_sha256`, `kind`, `format_version`, `status`, `refusal_reason` and
+  `checksum_behavior`;
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
-  `commit_hash_algorithm`, `origin`, `inherited_from` and `archive_commit`;
+  `commit_hash_algorithm`, `origin`, `inherited_from`, `archive_commit` and
+  `notes` (named evidence: `alias`, `digest_problem` with the cache keys, or
+  `patch_source`);
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
   member names, so the canonical JSON is the RFC 8785 serialisation.
@@ -215,5 +275,5 @@ companion rule. Calibration across adopter repositories is the maturity step
 that can take a rule out of probation.
 
 The clean test fixtures were generated by npm 6.14.18, 8.19.4 and 10.9.2 and by
-Yarn 1.22.22, on Node.js 18.19.1 (`tests/fixtures/lockfiles/`), and every failing
+Yarn 1.22.22, 3.8.7 and 4.19.0, on Node.js 18.19.1 (`tests/fixtures/lockfiles/`), and every failing
 case is a recorded edit of one of them.

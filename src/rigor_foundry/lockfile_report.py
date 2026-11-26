@@ -26,6 +26,11 @@ from .lockfile_model import ENTRY_CLASSES, ENTRY_FINDINGS, REFUSAL_REASONS, Lock
 from .rules import RULE_PACK_VERSION, rule_pack_digest
 
 LOCKFILE_REPORT_SCHEMA: Final = "rigor.lockfile-integrity-report.v1"
+SCOPE_NOTE: Final = (
+    "Installer configuration that weakens verification, such as Yarn's checksumBehavior, "
+    "approvedGitRepositories, unsafeHttpWhitelist or enableStrictSsl, is evaluated by a separate "
+    "configuration rule. A pinned entry is not proof that the installer verifies it."
+)
 
 
 @dataclass(frozen=True)
@@ -92,6 +97,7 @@ class LockfileIntegrityReport:
         """Return the report without its digest."""
         return {
             "schema": LOCKFILE_REPORT_SCHEMA,
+            "scope_note": SCOPE_NOTE,
             "head": self.head,
             "head_tree": self.head_tree,
             "tracked_content_digest": self.tracked_content_digest,

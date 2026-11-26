@@ -138,6 +138,9 @@ class LockedEntry:
     archive_commit : str | None
         The full commit a hosted archive URL names, recorded as evidence. The archive's bytes
         are not verified against it, so it never makes the entry ``commit-pinned``.
+    notes : tuple[tuple[str, str], ...]
+        Further named evidence a lockfile kind records, ordered by name: an alias, a digest
+        problem with the keys involved, or a patch source.
     """
 
     key: str
@@ -151,6 +154,7 @@ class LockedEntry:
     origin: str | None = None
     inherited_from: str | None = None
     archive_commit: str | None = None
+    notes: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         """Refuse an entry that breaks a rule of integrity semantics v1."""
@@ -197,6 +201,11 @@ class LockedEntry:
             (self.inherited_from is not None) == (self.digest_scope == "parent-artifact"),
             "exactly the entries carried by a parent artifact name that parent",
         )
+        names = [name for name, _ in self.notes]
+        _require(
+            names == sorted(set(names)) and all(name and value for name, value in self.notes),
+            "notes are named, unique, non-empty and ordered by name",
+        )
 
     def to_dict(self) -> dict[str, object]:
         """Return the entry as a report object with every field present."""
@@ -212,6 +221,7 @@ class LockedEntry:
             "origin": self.origin,
             "inherited_from": self.inherited_from,
             "archive_commit": self.archive_commit,
+            "notes": dict(self.notes),
         }
 
 
@@ -233,6 +243,9 @@ class LockfileResult:
         Why the whole file is refused; ``None`` for a classified file.
     entries : tuple[LockedEntry, ...]
         The entries, ordered by line, then key; empty for a refused file.
+    checksum_behavior : str | None
+        A Yarn ``checksumBehavior`` that weakens verification, ``ignore`` or ``update``, when the
+        repository's tracked configuration sets it; ``None`` otherwise.
     """
 
     path: str
@@ -241,6 +254,7 @@ class LockfileResult:
     format_version: str | None
     refusal_reason: RefusalReason | None
     entries: tuple[LockedEntry, ...]
+    checksum_behavior: str | None = None
 
     def __post_init__(self) -> None:
         """Refuse a result that breaks the file-level rules."""
@@ -285,4 +299,5 @@ class LockfileResult:
             "status": self.status,
             "refusal_reason": self.refusal_reason,
             "entries": [entry.to_dict() for entry in self.entries],
+            "checksum_behavior": self.checksum_behavior,
         }
