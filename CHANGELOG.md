@@ -82,6 +82,19 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Go lockfiles (rule pack
+  `rigor-foundry/1.25.0`): each `go.sum` is read with the `go.mod` beside it,
+  as Go 1.16 to 1.27 wrote them into the test fixtures. A module version with
+  its `h1:` and `/go.mod` lines is pinned, by a digest of the module's file
+  tree, recorded under the new `digest_scope` value `module-tree`; one with only
+  its `/go.mod` line is in the graph only, unless `go.mod` requires it. A
+  required version without both lines is missing its digest; with no line at
+  all it stands at line 1 and its evidence names the `go.mod` line. Local
+  `replace` directories are local, module replacements take their target's
+  class, and excluded versions are noted. Lines Go drops are counted in the new
+  `dropped_lines` field, and two different hashes or replacements for one
+  module version are refused as conflicting.
+
 - Lockfile integrity rules read Cargo lockfiles (rule pack
   `rigor-foundry/1.24.0`), formats v1 to v4 as Cargo 1.40 to 1.100 wrote them
   into the test fixtures. Registry packages pin by the sha256 Cargo verifies,

@@ -27,6 +27,8 @@ from typing import Final
 from .candidate_anchor import RepositoryTreeAnchor, TrackedBlobAnchor
 from .git_inventory import GitInventory, TrackedFile
 from .lockfile_cargo import classify_cargo_lockfile
+from .lockfile_go import classify_go_lockfile
+from .lockfile_gomod import parse_go_mod
 from .lockfile_kinds import PNPM_LOCK, is_lockfile_path, lockfile_kind
 from .lockfile_model import EntryFinding, LockfileKind, LockfileRefusal, LockfileResult
 from .lockfile_npm import classify_npm_lockfile
@@ -74,6 +76,7 @@ _NPMRC: Final = ".npmrc"
 _YARNRC: Final = ".yarnrc"
 _YARNRC_YML: Final = ".yarnrc.yml"
 _PNPM_WORKSPACE: Final = "pnpm-workspace.yaml"
+_GO_MOD: Final = "go.mod"
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -411,6 +414,22 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                 cargo.entries,
                 unused_patches=cargo.unused_patches,
             )
+        elif kind == "go":
+            certain, go_mod = _beside(inventory, item.path, _GO_MOD)
+            if not certain:
+                raise LockfileRefusal("unreadable")
+            if go_mod is None:
+                raise LockfileRefusal("unparseable")
+            go = classify_go_lockfile(text, parse_go_mod(go_mod), lock_dir)
+            return LockfileResult(
+                item.path,
+                item.content_digest,
+                kind,
+                "go.sum",
+                None,
+                go.entries,
+                dropped_lines=go.dropped_lines,
+            )
         elif kind == "yarn-berry":
             berry = berry_registry_declaration(inventory, item.path)
             version, entries = classify_yarn_berry_lockfile(text, lock_dir, berry)
@@ -509,6 +528,9 @@ def lockfile_candidates(
                     f"file_sha256={result.file_sha256}; key_sha256={_sha256(entry.key)}; "
                     f"class={entry.entry_class}; finding={finding}; origin={entry.origin or 'none'}"
                 )
+                required_at = dict(entry.notes).get("required_at")
+                if required_at is not None:
+                    evidence += f"; required_at={required_at}"
                 confidence: Confidence = "medium" if finding in _MEDIUM_CONFIDENCE else "high"
                 candidates.append(
                     _candidate(

@@ -47,7 +47,9 @@ RefusalReason = Literal[
     "unsupported-file-kind",
     "unsupported-lock-version",
 ]
-DigestScope = Literal["artifact", "cache-archive", "uncompressed-tar", "parent-artifact"]
+DigestScope = Literal[
+    "artifact", "cache-archive", "uncompressed-tar", "parent-artifact", "module-tree"
+]
 CommitHashAlgorithm = Literal["sha1", "sha256"]
 
 ENTRY_CLASSES: Final[tuple[EntryClass, ...]] = (
@@ -249,6 +251,9 @@ class LockfileResult:
     unused_patches : int | None
         How many ``[[patch.unused]]`` entries a ``Cargo.lock`` lists, so that skipping them is
         visible; ``None`` for other kinds and refused files.
+    dropped_lines : int | None
+        How many ``go.sum`` lines carrying the empty-``go.mod`` hash were skipped, as Go skips
+        them; ``None`` for other kinds and refused files.
     """
 
     path: str
@@ -259,12 +264,17 @@ class LockfileResult:
     entries: tuple[LockedEntry, ...]
     checksum_behavior: str | None = None
     unused_patches: int | None = None
+    dropped_lines: int | None = None
 
     def __post_init__(self) -> None:
         """Refuse a result that breaks the file-level rules."""
         _require(
             self.unused_patches is None or self.unused_patches >= 0,
             "an unused-patch count is never negative",
+        )
+        _require(
+            self.dropped_lines is None or self.dropped_lines >= 0,
+            "a dropped-line count is never negative",
         )
         _require(bool(self.path), "a result needs its path")
         _require(
@@ -309,4 +319,5 @@ class LockfileResult:
             "entries": [entry.to_dict() for entry in self.entries],
             "checksum_behavior": self.checksum_behavior,
             "unused_patches": self.unused_patches,
+            "dropped_lines": self.dropped_lines,
         }

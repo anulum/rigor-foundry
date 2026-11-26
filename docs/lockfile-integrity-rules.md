@@ -20,9 +20,10 @@ Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
 adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
 `rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block),
 `rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
-and `9.0`), and `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4).
+and `9.0`), `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4), and
+`rigor-foundry/1.25.0` adds Go (`go.sum`, read with the `go.mod` beside it).
 Every other lockfile the rules recognise is refused as `unsupported-file-kind`
-until its own rules exist: `go.sum`, `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
+until its own rules exist: `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
 
 ## One class per entry
 
@@ -35,7 +36,7 @@ Every locked entry gets exactly one class, plus zero or more findings.
 | `local` | a path, link or workspace source inside the repository root |
 | `unpinned` | a recognised artifact, VCS or path form that fails its pin; its `form` is recorded |
 | `unclassified` | a form these rules do not know; it always carries `unknown-form` |
-| `graph-only` | in the graph but not fetched itself: a Cargo package that names a `replace`; reserved too for Go's graph-only `go.sum` lines, which are informational |
+| `graph-only` | in the graph but not fetched itself: a Cargo package that names a `replace`, or a Go module version that `go.sum` lists with only its `/go.mod` line and `go.mod` does not require |
 
 An `unpinned` entry always names its failure: `missing-digest`,
 `weak-digest`, `malformed-digest`, `floating-ref` or `path-escape`. The other
@@ -250,6 +251,77 @@ and every token is validated:
   `replace` (a package replacing itself, a cycle or a chain, which Cargo never
   writes and which would hide an unpinned package), is `unparseable`.
 
+## Go lockfiles
+
+- **The pair.** Each tracked `go.sum` is read with the tracked `go.mod` beside
+  it. Go never writes a `go.sum` alone, so one without a `go.mod` is
+  `unparseable`; a `go.mod` that is present but untracked, or not text, is
+  `unreadable`. `go.sum` has no format version: Go 1.16.15, 1.17.13, 1.22.2 and
+  1.27.4 wrote byte-identical files for the fixtures, so `format_version` is
+  `go.sum`.
+- **Reading `go.sum`** follows Go's `readGoSum` (go1.27.4): lines end only at a
+  line feed, fields are separated by the characters `unicode.IsSpace` accepts
+  (so CRLF reads the same), blank lines are skipped, and any other line without
+  exactly three fields is `unparseable`. Lines carrying the empty-`go.mod` hash
+  (`h1:G7mAYYxgmS0lVkHyy2hEOLQCFB0DlQFTMLWggykrydY=`), which an old Go wrote
+  for non-modules, are skipped as Go skips them, and the file records how many
+  as `dropped_lines`. Two different hashes of one line kind for one module
+  version are `conflicting-entries`, since Go accepts whichever matches;
+  identical repeats are accepted.
+- **Reading `go.mod`** follows Go's own grammar (`golang.org/x/mod/modfile`):
+  `require`, `exclude` and `replace` are read, as lines or blocks; `module`,
+  `go`, `toolchain`, `godebug`, `retract`, `tool` and `ignore` are accepted and
+  not read, and `module`, `godebug`, `retract`, `tool` and `ignore` may be
+  blocks, as in Go. Versions are kept as written. A `go.mod` is `unparseable`
+  when it holds any of these:
+  - a directive Go does not know;
+  - a `/*` comment, or a character Go's lexer refuses (a byte-order mark
+    included);
+  - a quote inside a word, or a back-quoted string;
+  - a double-quoted string with a backslash escape (Go accepts some; this
+    reader does not decode them);
+  - a line ending in `(` other than a block directive followed by `(` alone
+    (Go's "unknown block type"), or a block that is never closed;
+  - `require`, `exclude` or `replace` arguments Go refuses.
+
+  Two different replacements of one module version are `conflicting-entries`,
+  as Go refuses them.
+- **Entries and lines.** Each module version is one entry, keyed
+  `<module> <version>` exactly as written (pseudo-versions and `+incompatible`
+  included), at its `h1:` line, else at its `/go.mod` line.
+  - With both lines it is `artifact-pinned`, with `digest_scope` `module-tree`:
+    `h1:` is Go's `dirhash.Hash1`, a SHA-256 over the module's files, not over an
+    archive. Only a lower-case `h1:` followed by standard base64 of exactly 32
+    bytes pins; any other prefix or shape is `malformed-digest`.
+  - With only its `/go.mod` line it is `graph-only`, noted
+    `go_mod_digest: present`: that hash covers only the module's `go.mod`, a
+    graph digest, and Go needs the module's files only when it builds a package
+    from it.
+  - A version that `go.mod` requires needs both lines; without either it is
+    `missing-digest`. A required version with no line at all stands at line 1,
+    which stands for the file, noted `required_at: go.mod:<line>`, and its
+    candidate's evidence ends with `; required_at=go.mod:<line>`.
+- **`replace`.** A replacement Go reads as a directory (`modfile.IsDirectoryPath`)
+  makes the required version `local`, noted `replaced_by` with the directory;
+  the directory is read from the directory of `go.mod`, and one outside the
+  repository is `path-escape`. A module replacement makes the required version
+  take its target's class from the target's `go.sum` lines, noted `replaced_by:
+  <module> <version>`. A replacement with no version on its left applies to
+  every version, and one naming the exact version wins, as in Go.
+- **`exclude`.** Lines for an excluded version are classified as written, noted
+  `excluded_at: go.mod:<line>`, with no finding; Go leaves that version out of
+  the build list.
+- **Origin.** The origin is the module path's first element: the import path's
+  host, not the server. `golang.org/x`, `gopkg.in` and `go.uber.org` are vanity
+  paths, and `GOPROXY`, from the environment, chooses the server; `h1:` and the
+  checksum database bind the bytes whoever serves them. The proxy configuration
+  is the companion rule's. A local replacement's origin is `local`.
+- **Known limits.** Build-list completeness, which pruned module graphs leave to
+  `go.mod`, is the companion rule's. With `vendor/` and `-mod=vendor`, Go builds
+  from the vendored tree without checking `go.sum`, so a pinned `go.sum` proves
+  nothing about vendored code. `go.work.sum`, written for Go workspaces, is not
+  read yet.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -313,11 +385,11 @@ A refused file names its reason and has no entry results.
 
 | Reason | When |
 |---|---|
-| `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit |
+| `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit; a `go.sum` with no `go.mod` beside it, a `go.sum` line without three fields, or a `go.mod` outside the grammar subset |
 | `missing-version` | no `lockfileVersion` |
 | `unsupported-version` | a version the kind's rules do not read, such as an npm `lockfileVersion` other than 1, 2 or 3, or a pnpm branch lockfile |
-| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, or a Yarn 1 field or specifier repeated |
-| `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8 |
+| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, a Yarn 1 field or specifier repeated, two different `go.sum` hashes of one line kind for one module version, or two different `replace` targets for one module version |
+| `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8; for `go.sum`, a `go.mod` beside it that is untracked or not text |
 | `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block; a byte-order mark is `unparseable` |
 | `unsupported-file-kind` | a recognised lockfile whose rules are not in this rule pack |
 | `unsupported-lock-version` | reserved for Poetry lock formats below 2.0 |
@@ -339,8 +411,10 @@ A refused file names its reason and has no entry results.
 `SC011-lockfile-manifest-drift` enters the rule pack with the first lockfile
 kind that records a manifest hash. A finding candidate is anchored at its
 entry's line and carries the file's SHA-256, the entry key's SHA-256, the class,
-the finding and the entry's origin host, so a reviewer sees an unexpected host. A refused file without text is
-anchored at the repository tree.
+the finding and the entry's origin host, so a reviewer sees an unexpected host. A Go version that `go.mod`
+requires and `go.sum` does not list stands at `go.sum` line 1, and its evidence
+ends with `; required_at=go.mod:<line>`, so a reviewer finds the requirement.
+A refused file without text is anchored at the repository tree.
 
 ## The report
 
@@ -357,13 +431,15 @@ record:
   evaluated by a separate configuration rule;
 - `files` lists one record per tracked lockfile in path order, with `path`,
   `file_sha256`, `kind`, `format_version`, `status`, `refusal_reason`,
-  `checksum_behavior` and `unused_patches`;
+  `checksum_behavior`, `unused_patches` and `dropped_lines`;
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
   `commit_hash_algorithm`, `origin`, `inherited_from`, `archive_commit` and
   `notes` (named evidence: `alias`, `alternate_registry`, `digest_problem` with
-  the cache keys, `git_path`, `git_reference`, `patch_hash`, `patch_source`,
-  `path_unverified`, `replaced_by` or `tarball_url_dependency`);
+  the cache keys, `excluded_at`, `git_path`, `git_reference`, `go_mod_digest`,
+  `patch_hash`, `patch_source`, `path_unverified`, `replaced_by`, `required_at`
+  or `tarball_url_dependency`); `digest_scope` is `artifact`, `cache-archive`,
+  `uncompressed-tar`, `parent-artifact` or `module-tree`;
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
   member names, so the canonical JSON is the RFC 8785 serialisation.
@@ -384,5 +460,9 @@ Node.js 26.13.0. Each pnpm release ran with a fresh store, so a repeated run
 writes the same bytes. The Cargo fixtures were generated by Cargo 1.40.0,
 1.47.0, 1.75.0, 1.83.0 and 1.100.0, against crates.io sources vendored once and
 read through source replacement, a loopback Git daemon and a loopback sparse
-registry serving crates.io's own crate and index line. Every failing case is a
-recorded edit of one of them.
+registry serving crates.io's own crate and index line. The Go fixtures were
+generated by Go 1.16.15, 1.17.13, 1.22.2 and 1.27.4, each with fresh module and
+build caches, against `proxy.golang.org` and `sum.golang.org`; every release
+wrote the same `go.sum`, and two complete runs wrote the same bytes. Go 1.27.4
+also wrote `tool`, `godebug` and `ignore` blocks into one `go.mod` through
+`go mod edit`. Every failing case is a recorded edit of one of them.

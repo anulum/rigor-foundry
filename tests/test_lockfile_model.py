@@ -229,6 +229,7 @@ def test_a_classified_and_a_refused_file_serialise_every_field() -> None:
         "entries": [],
         "checksum_behavior": None,
         "unused_patches": None,
+        "dropped_lines": None,
     }
 
 
@@ -285,4 +286,16 @@ def test_an_unused_patch_count_is_never_negative() -> None:
             "unused_patches"
         ]
         == 1
+    )
+
+
+def test_a_dropped_line_count_is_never_negative() -> None:
+    """A go.sum's skipped empty-hash line count is zero or more."""
+    with pytest.raises(ValueError, match="never negative"):
+        LockfileResult("go.sum", "a" * 64, "go", "go.sum", None, (), dropped_lines=-1)
+    assert (
+        LockfileResult("go.sum", "a" * 64, "go", "go.sum", None, (), dropped_lines=2).to_dict()[
+            "dropped_lines"
+        ]
+        == 2
     )

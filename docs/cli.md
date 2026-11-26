@@ -288,7 +288,7 @@ without its binding. `rigor verify-import --report REPORT.json
 tracked lockfile by how its content is pinned, and prints a summary with one
 line per finding of a recorded entry. `--json` prints the full
 `rigor.lockfile-integrity-report.v1` record instead. npm, Yarn 1, Yarn 2+,
-pnpm and Cargo lockfiles are classified; the other recognised kinds are refused as `unsupported-file-kind`.
+pnpm, Cargo and Go lockfiles are classified; the other recognised kinds are refused as `unsupported-file-kind`.
 The command shares the scan's Git provenance options. Findings and refusals
 are observations, so it exits 0 whenever it produced a report, and 2 when the
 root is not a readable Git repository. The same findings appear as `SC`

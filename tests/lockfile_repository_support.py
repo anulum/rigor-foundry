@@ -35,6 +35,8 @@ YARN1 = FIXTURES / "yarn-1.22.22-v1" / "yarn.lock.gz"
 BERRY = FIXTURES / "yarn-4.19.0-berry" / "yarn.lock.gz"
 PNPM = FIXTURES / "pnpm-9.15.9-v9" / "pnpm-lock.yaml.gz"
 CARGO = FIXTURES / "cargo-1.83.0-sparse-v4" / "Cargo.lock.gz"
+GO_SUM = FIXTURES / "go-1.27.4" / "go.sum.gz"
+GO_MOD = FIXTURES / "go-1.27.4" / "go.mod.gz"
 GOLDEN = FIXTURES / "report-golden.json"
 COMMIT_DATE = "2026-11-25T00:00:00Z"
 SHA1 = "sha1-" + base64.b64encode(hashlib.sha1(b"x", usedforsecurity=False).digest()).decode()
@@ -139,6 +141,9 @@ def build_lockfile_repository(root: Path) -> GitRepository:
     repository.write_text("empty/yarn.lock", "")
     repository.write_text("crates/Cargo.lock", fixture_text(CARGO))
     repository.write_text("go/go.sum", "example.com/mod v1.0.0 h1:abc=\n")
+    repository.write_text("gomod/go.sum", fixture_text(GO_SUM))
+    repository.write_text("gomod/go.mod", fixture_text(GO_MOD))
+    repository.write_text("py/poetry.lock", "[metadata]\n")
     repository.write_bytes("bin/package-lock.json", b"{\0}")
     repository.write_text("old/package-lock.json", '{"lockfileVersion": 4}\n')
     with _fixed_commit_dates():

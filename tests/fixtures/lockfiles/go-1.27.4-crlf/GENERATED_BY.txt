@@ -1,0 +1,6 @@
+go version go1.27.4 linux/amd64
+sha256 c553968cd529c2b54b7a7c36f2ad6e3e48c6d6ecd84285339e33d2239f69bf4c
+the go.sum bytes above were then given CRLF line endings, as a Windows checkout writes them; Go reads them the same
+stored gzip-compressed (level 9, mtime 0) as go.sum.gz and go.mod.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed go.sum bytes Go wrote

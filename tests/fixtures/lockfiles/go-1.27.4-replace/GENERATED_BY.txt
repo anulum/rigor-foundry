@@ -1,0 +1,8 @@
+go version go1.27.4 linux/amd64
+sha256 c9a44cd626cedfc6cc83c2c8ef4b85594f71d3f1a9cdd130bc2e6c6abffc24d1
+go version go1.16.15 linux/amd64 wrote byte-identical go.sum bytes
+go version go1.17.13 linux/amd64 wrote byte-identical go.sum bytes
+go version go1.22.2 linux/amd64 wrote byte-identical go.sum bytes
+stored gzip-compressed (level 9, mtime 0) as go.sum.gz and go.mod.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed go.sum bytes Go wrote

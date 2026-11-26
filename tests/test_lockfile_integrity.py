@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import pytest
 from lockfile_repository_support import build_lockfile_repository
 from repository_audit_git_repository import GitRepository
 
+from rigor_foundry.cli import report_markdown
 from rigor_foundry.git_inventory import load_git_inventory
 from rigor_foundry.lockfile_integrity import (
     FINDING_RULE_IDS,
@@ -30,6 +32,7 @@ from rigor_foundry.lockfile_integrity import (
 from rigor_foundry.lockfile_npmrc import DEFAULT_NPM_REGISTRY, UNKNOWN_NPM_REGISTRY
 from rigor_foundry.lockfile_yarnrc import YarnRegistryDeclaration
 from rigor_foundry.rules import RULES_BY_ID
+from rigor_foundry.sarif import report_sarif
 from rigor_foundry.scanner import scan_repository
 
 
@@ -55,7 +58,7 @@ def test_a_real_scan_raises_one_candidate_per_recorded_finding_and_refusal(tmp_p
     ]
     counts = Counter(candidate.rule_id for candidate in lockfile)
     assert counts == {
-        "SC003-lockfile-refused": 6,
+        "SC003-lockfile-refused": 7,
         "SC004-lockfile-missing-digest": 4,
         "SC005-lockfile-weak-digest": 1,
         "SC006-lockfile-malformed-digest": 1,
@@ -108,7 +111,8 @@ def test_a_refused_file_is_anchored_by_blob_or_by_tree_when_it_has_no_text(tmp_p
     assert refused["old/package-lock.json"].anchor.line_start == 1
     assert "reason=unreadable" in refused["bin/package-lock.json"].evidence
     assert "kind=unknown; reason=ambiguous-yarn-lock" in refused["tools/yarn.lock"].evidence
-    assert "kind=go; reason=unsupported-file-kind" in refused["go/go.sum"].evidence
+    assert "kind=go; reason=unparseable" in refused["go/go.sum"].evidence
+    assert "kind=poetry; reason=unsupported-file-kind" in refused["py/poetry.lock"].evidence
     branch = refused["pnpm/pnpm-lock.feature!x.yaml"]
     assert "kind=pnpm; reason=unsupported-version" in branch.evidence
 
@@ -465,3 +469,94 @@ def test_a_pnpm_configuration_file_that_is_not_text_is_uncertain(tmp_path: Path)
     repository.commit()
     hosts, workspace = pnpm_configuration(load_git_inventory(repository.root), "pnpm-lock.yaml")
     assert (hosts, workspace) == ({}, None)
+
+
+GO_SUM = (
+    "github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=\n"
+    "github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=\n"
+)
+GO_MOD = "module example.com/m\n\ngo 1.27\n\nrequire github.com/pkg/errors v0.9.1\n"
+
+
+def test_go_reads_the_tracked_go_mod_beside_go_sum(tmp_path: Path) -> None:
+    """The pair is read together, and the dropped-line count is on the result."""
+    repository = GitRepository.create(tmp_path / "repository")
+    dropped = "example.com/old v1.0.0/go.mod h1:G7mAYYxgmS0lVkHyy2hEOLQCFB0DlQFTMLWggykrydY=\n"
+    repository.write_text("svc/go.sum", GO_SUM + dropped)
+    repository.write_text("svc/go.mod", GO_MOD)
+    repository.commit()
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert (result.kind, result.status, result.format_version, result.dropped_lines) == (
+        "go",
+        "classified",
+        "go.sum",
+        1,
+    )
+    assert [(entry.key, entry.entry_class) for entry in result.entries] == [
+        ("github.com/pkg/errors v0.9.1", "artifact-pinned")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("go_mod", "reason"),
+    [
+        (None, "unparseable"),
+        ("module example.com/m\nrequire (\n", "unparseable"),
+        (b"module example.com/m\0\n", "unreadable"),
+        ("untracked", "unreadable"),
+    ],
+)
+def test_a_go_sum_without_a_readable_go_mod_is_refused(
+    tmp_path: Path, go_mod: str | bytes | None, reason: str
+) -> None:
+    """Go never writes go.sum alone; an untracked or binary go.mod cannot be read with certainty.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    go_mod : str | bytes | None
+        The tracked go.mod, ``"untracked"`` for one left out of Git, or ``None`` for none.
+    reason : str
+        The refusal.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("go.sum", GO_SUM)
+    if isinstance(go_mod, bytes):
+        repository.write_bytes("go.mod", go_mod)
+    elif go_mod is not None and go_mod != "untracked":
+        repository.write_text("go.mod", go_mod)
+    repository.commit()
+    if go_mod == "untracked":
+        (repository.root / "go.mod").write_text(GO_MOD, encoding="utf-8")
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert (result.status, result.refusal_reason, result.dropped_lines) == (
+        "refused",
+        reason,
+        None,
+    )
+
+
+def test_the_go_mod_line_of_an_absent_requirement_reaches_text_json_and_sarif(
+    tmp_path: Path,
+) -> None:
+    """The candidate stands at go.sum line 1 and its evidence names the requirement's go.mod line."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("go.sum", GO_SUM)
+    repository.write_text("go.mod", GO_MOD + "require golang.org/x/text v0.3.6\n")
+    repository.commit()
+    report = scan_repository(repository.root)
+    [candidate] = [
+        item for item in report.candidates if item.rule_id == FINDING_RULE_IDS["missing-digest"]
+    ]
+    assert (candidate.anchor.path, candidate.anchor.line_start) == ("go.sum", 1)
+    assert candidate.evidence.endswith("; required_at=go.mod:6")
+    assert f"- Evidence: {candidate.evidence}\n" in report_markdown(report)
+    assert candidate.evidence in report.to_json()
+    [result] = [
+        item
+        for item in json.loads(report_sarif(report))["runs"][0]["results"]
+        if item["ruleId"] == candidate.rule_id
+    ]
+    assert result["properties"]["rigorFoundry/evidence"] == candidate.evidence
+    assert result["locations"][0]["physicalLocation"]["region"]["startLine"] == 1

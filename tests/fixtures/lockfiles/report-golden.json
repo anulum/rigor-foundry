@@ -2,6 +2,7 @@
   "files": [
     {
       "checksum_behavior": "update",
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -264,6 +265,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "e3866582d3f9634fec41e794cd76e706db674ba62af61ac3ad8aeed8f569f820",
       "format_version": null,
@@ -275,6 +277,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -337,6 +340,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "format_version": null,
@@ -348,6 +352,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -476,17 +481,193 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "d4f4c37f9489a0944bd2c37104740a790d2ff7cd5935adcd8ecf783ca8242987",
       "format_version": null,
       "kind": "go",
       "path": "go/go.sum",
-      "refusal_reason": "unsupported-file-kind",
+      "refusal_reason": "unparseable",
       "status": "refused",
       "unused_patches": null
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": 0,
+      "entries": [
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "example.com/local v0.0.0",
+          "line": 1,
+          "notes": {
+            "replaced_by": "./local",
+            "required_at": "go.mod:6"
+          },
+          "origin": "local"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "github.com/davecgh/go-spew v1.1.0",
+          "line": 1,
+          "notes": {},
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "github.com/pkg/errors v0.9.1",
+          "line": 3,
+          "notes": {},
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "github.com/pmezard/go-difflib v1.0.0",
+          "line": 5,
+          "notes": {},
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "graph-only",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "github.com/stretchr/objx v0.1.0",
+          "line": 7,
+          "notes": {
+            "go_mod_digest": "present"
+          },
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "github.com/stretchr/testify v1.7.0",
+          "line": 8,
+          "notes": {},
+          "origin": "github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "golang.org/x/text v0.3.6",
+          "line": 10,
+          "notes": {},
+          "origin": "golang.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "graph-only",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e",
+          "line": 12,
+          "notes": {
+            "go_mod_digest": "present"
+          },
+          "origin": "golang.org"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405",
+          "line": 13,
+          "notes": {},
+          "origin": "gopkg.in"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha256"
+          ],
+          "digest_scope": "module-tree",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c",
+          "line": 15,
+          "notes": {},
+          "origin": "gopkg.in"
+        }
+      ],
+      "file_sha256": "c553968cd529c2b54b7a7c36f2ad6e3e48c6d6ecd84285339e33d2239f69bf4c",
+      "format_version": "go.sum",
+      "kind": "go",
+      "path": "gomod/go.sum",
+      "refusal_reason": null,
+      "status": "classified",
+      "unused_patches": null
+    },
+    {
+      "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1375,6 +1556,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "5cec691b1679abc6e78fb48e6486c9669173059a7bcd871cf6613ad61de31a47",
       "format_version": null,
@@ -1386,6 +1568,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1506,6 +1689,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "be65fc350a6b0590d6f5d7594811cc589310e672017982b4b25e432324cb319d",
       "format_version": null,
@@ -1517,6 +1701,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1717,6 +1902,19 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
+      "entries": [],
+      "file_sha256": "54598c827c778e534b551200ec14723e50f1a14beff1a1050395b5f74709273f",
+      "format_version": null,
+      "kind": "poetry",
+      "path": "py/poetry.lock",
+      "refusal_reason": "unsupported-file-kind",
+      "status": "refused",
+      "unused_patches": null
+    },
+    {
+      "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [],
       "file_sha256": "2064c0d477d3fafb2bee3eeb8c6f01ba48a30919c938d94e0aae2ea159f9e812",
       "format_version": null,
@@ -1728,6 +1926,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -1875,6 +2074,7 @@
     },
     {
       "checksum_behavior": null,
+      "dropped_lines": null,
       "entries": [
         {
           "archive_commit": null,
@@ -2896,25 +3096,25 @@
       "unused_patches": null
     }
   ],
-  "head": "612a3104724a93365aa017bc00c38013b63243b2",
-  "head_tree": "d9598d5b85a78d476944ccaa850f81566ee2ed06",
-  "report_digest": "dbbec28e123df701980144ad0cc3b20bf4b02d74af1913711273637e242be647",
-  "rule_pack_digest": "04bfdf728c5d0bfe0360761f90d0db418661b8e4898a2b20c433c8ffd50bb768",
-  "rule_pack_version": "rigor-foundry/1.24.0",
+  "head": "450a19ed564e74d2a933cb4b63165031fbaded21",
+  "head_tree": "b2ec2139109b1e62aab40612e87fea83fdab6605",
+  "report_digest": "532f7695b0d765be02fc5d5ca2fb569f4341d75ee8d9bc7a190c91d9607d13e7",
+  "rule_pack_digest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
+  "rule_pack_version": "rigor-foundry/1.25.0",
   "schema": "rigor.lockfile-integrity-report.v1",
   "scope_note": "Installer configuration that weakens verification, such as Yarn's checksumBehavior, approvedGitRepositories, unsafeHttpWhitelist or enableStrictSsl, is evaluated by a separate configuration rule. A pinned entry is not proof that the installer verifies it.",
   "summary": {
     "classes": {
-      "artifact-pinned": 133,
+      "artifact-pinned": 140,
       "commit-pinned": 6,
-      "graph-only": 0,
-      "local": 19,
+      "graph-only": 2,
+      "local": 20,
       "unclassified": 1,
       "unpinned": 9
     },
-    "classified_files": 8,
-    "entries": 168,
-    "files": 14,
+    "classified_files": 9,
+    "entries": 178,
+    "files": 16,
     "findings": {
       "floating-ref": 1,
       "malformed-digest": 2,
@@ -2930,13 +3130,13 @@
       "ambiguous-yarn-lock": 2,
       "conflicting-entries": 0,
       "missing-version": 0,
-      "unparseable": 0,
+      "unparseable": 1,
       "unreadable": 1,
       "unsupported-file-kind": 1,
       "unsupported-lock-version": 0,
       "unsupported-version": 2
     },
-    "refused_files": 6
+    "refused_files": 7
   },
-  "tracked_content_digest": "7be34cbf75027be8f9f4e17ae4068e4f1f66b255864bfa4dea372a010e8762f2"
+  "tracked_content_digest": "df50d0636955e11d65090c3bb14b18d080030a2d258eabd60b9d3d1b2d7fdd00"
 }
