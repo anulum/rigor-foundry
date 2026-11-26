@@ -254,6 +254,10 @@ class LockfileResult:
     dropped_lines : int | None
         How many ``go.sum`` lines carrying the empty-``go.mod`` hash were skipped, as Go skips
         them; ``None`` for other kinds and refused files.
+    manifest_hash : str | None
+        The hash the lockfile records of the manifest it was made from, such as Poetry's
+        ``content-hash``: a drift signal, never an artifact digest; ``None`` for kinds without
+        one and refused files.
     """
 
     path: str
@@ -265,6 +269,7 @@ class LockfileResult:
     checksum_behavior: str | None = None
     unused_patches: int | None = None
     dropped_lines: int | None = None
+    manifest_hash: str | None = None
 
     def __post_init__(self) -> None:
         """Refuse a result that breaks the file-level rules."""
@@ -320,4 +325,5 @@ class LockfileResult:
             "checksum_behavior": self.checksum_behavior,
             "unused_patches": self.unused_patches,
             "dropped_lines": self.dropped_lines,
+            "manifest_hash": self.manifest_hash,
         }

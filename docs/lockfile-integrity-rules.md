@@ -20,10 +20,11 @@ Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
 adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header), and
 `rigor-foundry/1.22.0` adds Yarn 2+ (`yarn.lock` with a `__metadata` block),
 `rigor-foundry/1.23.0` adds pnpm (`pnpm-lock.yaml`, `lockfileVersion` `6.0`
-and `9.0`), `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4), and
-`rigor-foundry/1.25.0` adds Go (`go.sum`, read with the `go.mod` beside it).
-Every other lockfile the rules recognise is refused as `unsupported-file-kind`
-until its own rules exist: `poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
+and `9.0`), `rigor-foundry/1.24.0` adds Cargo (`Cargo.lock` v1 to v4),
+`rigor-foundry/1.25.0` adds Go (`go.sum`, read with the `go.mod` beside it), and
+`rigor-foundry/1.26.0` adds Poetry (`poetry.lock`, `lock-version` `2.0` and
+`2.1`). `Pipfile.lock`, the one other lockfile the rules recognise, is refused
+as `unsupported-file-kind` until its own rules exist. All the rules are in maturity probation.
 
 ## One class per entry
 
@@ -56,7 +57,8 @@ and every token is validated:
   accepted token, and the entry is then `unpinned`;
 - an entry whose valid tokens are all weak gives `weak-digest`;
 - a weak token beside a valid accepted one is clean, and both algorithms are
-  recorded;
+  recorded, except in Poetry lockfiles, where every file must carry an
+  accepted hash (see below);
 - an `integrity` field that is present but empty is malformed; only an absent
   field is `missing-digest`.
 
@@ -322,6 +324,76 @@ and every token is validated:
   nothing about vendored code. `go.work.sum`, written for Go workspaces, is not
   read yet.
 
+## Poetry lockfiles
+
+- **Versions.** Poetry 1.3 to 1.8 write `lock-version = "2.0"` and Poetry 2
+  writes `"2.1"`; these two are read, and `format_version` is the string.
+  Poetry 1.2 and older write `1.x`, with every hash in `[metadata.files]` keyed
+  by name alone, so a `lock-version` below 2.0 is `unsupported-lock-version`;
+  regenerate it with Poetry 1.3 or later. A missing `lock-version` is
+  `missing-version`. Any other value, `2.2` or a non-string included, is
+  `unsupported-version`, and a 2.x file that also has `[metadata.files]` mixes
+  the two encodings as `conflicting-entries`.
+- **Entries and lines.** Each `[[package]]` is an entry at its header's line,
+  with `name` and `version` on the two lines after it, as for Cargo. The key is
+  `<name> <version>`, plus ` (<source url>)` when two entries share both. A
+  package without `files`, which Poetry cannot read, is `unparseable`.
+- **Digests.** Poetry verifies an archive at install by its file name against
+  `files`, and verifies nothing when `files` is empty, which is
+  `missing-digest`. Each hash is `<algorithm>:<hex>` at the algorithm's length.
+  **Every file must carry an accepted hash:** a sha1 or md5 hash on any file
+  gives `weak-digest`, even beside accepted ones, because the file an install
+  picks depends on the platform. This is the Poetry exception to the rule that one
+  accepted digest suffices. An algorithm outside the accepted and weak ones
+  (Poetry also knows `sha224` and the `sha3`, `shake` and `blake2` families) is
+  `malformed-digest`, noted `unrecognised_algorithm`.
+- **Sources.**
+  - no `[package.source]`: PyPI, `artifact-pinned` through `files`, with origin
+    `pypi.org`;
+  - `legacy`: an index, `artifact-pinned` through `files`, with its URL's host
+    as origin, compared with the declared sources (below);
+  - `url`: a direct archive, `artifact-pinned` through `files`, with its URL's
+    host as origin; the URL is the dependency itself, so nothing is compared;
+  - `file` and `directory`: `local`, read from the lockfile's directory, and
+    `path-escape` outside the repository; a file's hash is recorded as the
+    note `file_hash`, and a developed directory as `develop`;
+  - `git`: `commit-pinned` by a full `resolved_reference`, with
+    `commit_hash_algorithm`, `git_reference` and any `subdirectory`; a missing
+    or short one is `floating-ref`;
+  - any other type, or a known one without its URL, is `unclassified` with
+    `unknown-form`.
+- **Declared sources.** They are the `[[tool.poetry.source]]` entries of the
+  tracked `pyproject.toml` beside `poetry.lock`.
+  - An index package must name a declared source by `reference`, compared
+    without case, at that source's URL, ignoring the trailing slash Poetry
+    strips; otherwise it is `origin-mismatch`.
+  - A PyPI package is `origin-mismatch` when the declaration deactivates PyPI
+    for the Poetry generation that wrote the lockfile, and no source is named
+    `pypi`:
+    - for `lock-version` 2.0 (Poetry 1.3 to 1.8), a source with
+      `default = true` (1.3.2), or with `priority = "default"` or `"primary"`
+      (1.8.5); `secondary = true` and the other priorities keep PyPI;
+    - for `lock-version` 2.1 (Poetry 2), a source whose `priority` is
+      `"primary"` or absent.
+  - A `pyproject.toml` that is absent, untracked, not text, not TOML or not
+    the shape Poetry writes gives `origin-unknown` on every PyPI and index
+    entry.
+  - A declaration that cannot be judged for the generation that wrote the
+    lockfile gives `origin-unknown` on every PyPI entry: a priority that
+    generation does not know; a `default` or `secondary` key beside a Poetry 2 lockfile
+    (Poetry 2's schema refuses them); or, beside a 2.0 lockfile, a source with
+    none of `default = true`, `secondary = true` or a priority, which 1.8.5
+    counts as primary and so deactivates PyPI, while 1.3.2 keeps PyPI, and the
+    lockfile cannot tell which wrote it.
+  - Neither is ever a refusal.
+- **Not read:** `groups`, `category`, `markers`, `extras`, `dependencies`,
+  `optional`, `python-versions` and `description`, even when malformed; they
+  play no part in the pin.
+- **`content-hash`** is Poetry's hash of the manifest the lockfile was made
+  from. It is recorded as the file's `manifest_hash`, a drift signal and never
+  an artifact digest, and is not yet compared: `SC011-lockfile-manifest-drift`
+  enters with one unit for Poetry and Pipenv together.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -386,13 +458,13 @@ A refused file names its reason and has no entry results.
 | Reason | When |
 |---|---|
 | `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit; a `go.sum` with no `go.mod` beside it, a `go.sum` line without three fields, or a `go.mod` outside the grammar subset |
-| `missing-version` | no `lockfileVersion` |
+| `missing-version` | no `lockfileVersion`, or no Poetry `lock-version` |
 | `unsupported-version` | a version the kind's rules do not read, such as an npm `lockfileVersion` other than 1, 2 or 3, or a pnpm branch lockfile |
-| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, a Yarn 1 field or specifier repeated, two different `go.sum` hashes of one line kind for one module version, or two different `replace` targets for one module version |
+| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, a Yarn 1 field or specifier repeated, two different `go.sum` hashes of one line kind for one module version, two different `replace` targets for one module version, or `[metadata.files]` in a Poetry 2.x lockfile |
 | `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8; for `go.sum`, a `go.mod` beside it that is untracked or not text |
 | `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block; a byte-order mark is `unparseable` |
 | `unsupported-file-kind` | a recognised lockfile whose rules are not in this rule pack |
-| `unsupported-lock-version` | reserved for Poetry lock formats below 2.0 |
+| `unsupported-lock-version` | a Poetry `lock-version` below 2.0 |
 
 ## Rules
 
@@ -408,8 +480,9 @@ A refused file names its reason and has no entry results.
 | `SC010-lockfile-path-escape` | `path-escape` | high |
 | `SC012-lockfile-unknown-form` | `unknown-form` | medium |
 
-`SC011-lockfile-manifest-drift` enters the rule pack with the first lockfile
-kind that records a manifest hash. A finding candidate is anchored at its
+`SC011-lockfile-manifest-drift` enters the rule pack with one unit that reads
+the manifest hashes of Poetry and Pipenv together; until then, Poetry's
+`content-hash` is recorded but not compared. A finding candidate is anchored at its
 entry's line and carries the file's SHA-256, the entry key's SHA-256, the class,
 the finding and the entry's origin host, so a reviewer sees an unexpected host. A Go version that `go.mod`
 requires and `go.sum` does not list stands at `go.sum` line 1, and its evidence
@@ -431,14 +504,15 @@ record:
   evaluated by a separate configuration rule;
 - `files` lists one record per tracked lockfile in path order, with `path`,
   `file_sha256`, `kind`, `format_version`, `status`, `refusal_reason`,
-  `checksum_behavior`, `unused_patches` and `dropped_lines`;
+  `checksum_behavior`, `unused_patches`, `dropped_lines` and `manifest_hash`;
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
   `commit_hash_algorithm`, `origin`, `inherited_from`, `archive_commit` and
-  `notes` (named evidence: `alias`, `alternate_registry`, `digest_problem` with
-  the cache keys, `excluded_at`, `git_path`, `git_reference`, `go_mod_digest`,
-  `patch_hash`, `patch_source`, `path_unverified`, `replaced_by`, `required_at`
-  or `tarball_url_dependency`); `digest_scope` is `artifact`, `cache-archive`,
+  `notes` (named evidence: `alias`, `alternate_registry`, `develop`,
+  `digest_problem` with the cache keys, `excluded_at`, `file_hash`, `git_path`,
+  `git_reference`, `go_mod_digest`, `patch_hash`, `patch_source`,
+  `path_unverified`, `replaced_by`, `required_at`, `subdirectory`,
+  `tarball_url_dependency` or `unrecognised_algorithm`); `digest_scope` is `artifact`, `cache-archive`,
   `uncompressed-tar`, `parent-artifact` or `module-tree`;
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
@@ -465,4 +539,9 @@ generated by Go 1.16.15, 1.17.13, 1.22.2 and 1.27.4, each with fresh module and
 build caches, against `proxy.golang.org` and `sum.golang.org`; every release
 wrote the same `go.sum`, and two complete runs wrote the same bytes. Go 1.27.4
 also wrote `tool`, `godebug` and `ignore` blocks into one `go.mod` through
-`go mod edit`. Every failing case is a recorded edit of one of them.
+`go mod edit`. The Poetry fixtures were generated by Poetry 1.2.2, 1.3.2, 1.8.5,
+2.0.1 and 2.5.2, each wheel checked against the sha256 PyPI publishes and its
+dependencies resolved as of its release, with fresh caches, for one project
+holding a PyPI package, a declared loopback index serving PyPI's own wheel, a
+loopback Git daemon, a directory, a local wheel and a URL; two complete runs
+wrote the same bytes. Every failing case is a recorded edit of one of them.

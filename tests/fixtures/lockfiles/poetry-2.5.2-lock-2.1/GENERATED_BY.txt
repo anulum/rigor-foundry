@@ -1,0 +1,5 @@
+Poetry (version 2.5.2)
+sha256 7f15a03bceff08ecc38d8de03ace6682ddb109f22a88e11989feb6241cff6c1e
+stored gzip-compressed (level 9, mtime 0) as poetry.lock.gz and pyproject.toml.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed poetry.lock bytes Poetry wrote

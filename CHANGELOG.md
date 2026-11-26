@@ -82,6 +82,17 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Poetry lockfiles (rule pack
+  `rigor-foundry/1.26.0`), `lock-version` 2.0 and 2.1 as Poetry 1.3 to 2.5
+  wrote them into the test fixtures; an older `lock-version` is refused as
+  `unsupported-lock-version`. A package pins through the hashes of its files,
+  and every file must carry an accepted hash. Index packages must name a source
+  the tracked `pyproject.toml` declares, at its URL, and a PyPI package is an
+  origin mismatch when that declaration deactivates PyPI for the Poetry
+  generation that wrote the lockfile. Git packages pin by their resolved
+  commit, and file and directory packages are local. Poetry's `content-hash` is
+  recorded in the new `manifest_hash` field, as a drift signal only.
+
 - Lockfile integrity rules read Go lockfiles (rule pack
   `rigor-foundry/1.25.0`): each `go.sum` is read with the `go.mod` beside it,
   as Go 1.16 to 1.27 wrote them into the test fixtures. A module version with

@@ -28,8 +28,6 @@ only: its replacement is fetched instead, and is classified as its own entry.
 from __future__ import annotations
 
 import re
-import tomllib
-from collections import Counter
 from dataclasses import dataclass
 from typing import Final
 from urllib.parse import urlsplit
@@ -38,6 +36,7 @@ from .lockfile_digests import DigestReading, missing_digest, read_hex_digest
 from .lockfile_forms import artifact_entry, unknown_entry, vcs_entry
 from .lockfile_model import LockedEntry, LockfileRefusal
 from .lockfile_npmrc import url_host
+from .lockfile_toml import entry_keys, header_lines, load_document, table, tables, text_field
 
 CRATES_IO: Final = "crates.io"
 CRATES_IO_SOURCES: Final = frozenset(
@@ -46,7 +45,6 @@ CRATES_IO_SOURCES: Final = frozenset(
 SUPPORTED_CARGO_VERSIONS: Final = frozenset({3, 4})
 _CHECKSUM_KEY: Final = "checksum "
 _NO_CHECKSUM: Final = "<none>"
-_HEADER: Final = "[[package]]"
 _PACKAGE_ID: Final = re.compile(r"(\S+) (\S+)(?: \((.+)\))?")
 
 
@@ -69,28 +67,6 @@ class CargoLockfile:
     unused_patches: int
 
 
-def _table(value: object) -> dict[str, object]:
-    """Return a TOML table, refusing anything else."""
-    if not isinstance(value, dict):
-        raise LockfileRefusal("unparseable")
-    return value
-
-
-def _tables(value: object) -> list[dict[str, object]]:
-    """Return an array of TOML tables, refusing anything else."""
-    if not isinstance(value, list):
-        raise LockfileRefusal("unparseable")
-    return [_table(item) for item in value]
-
-
-def _text(package: dict[str, object], field: str) -> str | None:
-    """Return a package's string field, absent as ``None``, refusing another type."""
-    value = package.get(field)
-    if value is not None and not isinstance(value, str):
-        raise LockfileRefusal("unparseable")
-    return value
-
-
 def _unfragmented(source: str) -> str:
     """Return a source ID without its precise ``#`` fragment, as Cargo's package IDs write it."""
     return source.partition("#")[0]
@@ -98,7 +74,7 @@ def _unfragmented(source: str) -> str:
 
 def _version(document: dict[str, object], packages: list[dict[str, object]]) -> str:
     """Return the format version, refusing an unsupported one or a bad merge."""
-    metadata = _table(document.get("metadata", {}))
+    metadata = table(document.get("metadata", {}))
     listed = any(key.startswith(_CHECKSUM_KEY) for key in metadata)
     raw = document.get("version")
     if raw is not None and (type(raw) is not int or raw not in SUPPORTED_CARGO_VERSIONS):
@@ -109,39 +85,6 @@ def _version(document: dict[str, object], packages: list[dict[str, object]]) -> 
     if raw is not None:
         return str(raw)
     return "1" if listed else "2"
-
-
-def _header_lines(text: str, packages: list[dict[str, object]]) -> list[int]:
-    """Return each package's header line, requiring Cargo's own layout.
-
-    The ``name`` and ``version`` lines must read as Cargo writes them, quoted strings, so a missing
-    or non-string name or version refuses the file here, before anything reads them.
-    """
-    lines = text.splitlines()
-    headers = [index + 1 for index, line in enumerate(lines) if line == _HEADER]
-    if len(headers) != len(packages):
-        raise LockfileRefusal("unparseable")
-    for line, package in zip(headers, packages, strict=True):
-        written = lines[line : line + 2]
-        expected = [f'name = "{package.get("name")}"', f'version = "{package.get("version")}"']
-        if written != expected:
-            raise LockfileRefusal("unparseable")
-    return headers
-
-
-def _keys(packages: list[dict[str, object]]) -> list[str]:
-    """Return each package's key, with its source when its name and version are shared."""
-    shared = Counter((package["name"], package["version"]) for package in packages)
-    keys = []
-    for package in packages:
-        key = f"{package['name']} {package['version']}"
-        source = package.get("source")
-        if shared[(package["name"], package["version"])] > 1 and source is not None:
-            key += f" ({source})"
-        keys.append(key)
-    if len(set(keys)) != len(keys):
-        raise LockfileRefusal("conflicting-entries")
-    return keys
 
 
 def _reading(value: object) -> DigestReading:
@@ -200,11 +143,11 @@ def _classify(
     packages: list[dict[str, object]],
 ) -> LockedEntry:
     """Classify one package."""
-    replace = _text(package, "replace")
+    replace = text_field(package, "replace")
     if replace is not None:
         _replaced_target(replace, packages)
         return LockedEntry(key, line, "graph-only", notes=(("replaced_by", replace),))
-    source = _text(package, "source")
+    source = text_field(package, "source")
     if source is None:
         return LockedEntry(key, line, "local", notes=(("path_unverified", "manifest"),))
     reading = _reading(checksum)
@@ -233,18 +176,15 @@ def classify_cargo_lockfile(text: str) -> CargoLockfile:
     LockfileRefusal
         ``unparseable``, ``conflicting-entries`` or ``unsupported-version``, with no entry results.
     """
-    try:
-        document = tomllib.loads(text)
-    except tomllib.TOMLDecodeError:
-        raise LockfileRefusal("unparseable") from None
-    packages = _tables(document.get("package", []))
+    document = load_document(text)
+    packages = tables(document.get("package", []))
     version = _version(document, packages)
-    lines = _header_lines(text, packages)
-    keys = _keys(packages)
-    metadata = _table(document.get("metadata", {}))
+    lines = header_lines(text, packages)
+    keys = entry_keys(packages, [text_field(package, "source") for package in packages])
+    metadata = table(document.get("metadata", {}))
     entries = []
     for key, line, package in zip(keys, lines, packages, strict=True):
-        source = _text(package, "source")
+        source = text_field(package, "source")
         checksum = (
             package.get("checksum")
             if version != "1" or source is None
@@ -253,5 +193,5 @@ def classify_cargo_lockfile(text: str) -> CargoLockfile:
             )
         )
         entries.append(_classify(key, line, package, checksum, packages))
-    unused = _tables(_table(document.get("patch", {})).get("unused", []))
+    unused = tables(table(document.get("patch", {})).get("unused", []))
     return CargoLockfile(version, tuple(entries), len(unused))

@@ -3,11 +3,11 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883"
+        "id": "rigor-foundry/7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23"
       },
       "properties": {
         "rigorFoundry/branch": "main",
-        "rigorFoundry/canonicalDocumentDigest": "66bb8cae0d4ffed6b3915c138a6ab63778b5d773ce5afae95d81c9238be83579",
+        "rigorFoundry/canonicalDocumentDigest": "356e007f6c753a90baca06991c87b904b165c231d37ca53b6a309fab4799bcf6",
         "rigorFoundry/consumerProfile": "github-code-scanning",
         "rigorFoundry/gitObjectFormat": "sha1",
         "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
@@ -20,9 +20,9 @@
           "unreviewed": 17
         },
         "rigorFoundry/policyDigest": "337869827cef06cc90297cb12217f19f76b57a989ee3f6dec9256e4fc0b4954d",
-        "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
-        "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+        "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
+        "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
         "rigorFoundry/trackedContentDigest": "df3504641b7e93484d5458eb122363375f4801abad8303605dac1facd051993d"
       },
       "results": [
@@ -65,17 +65,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
+            "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "f5211a392ca5bc7c515983bca1eaa2597097c21f6a3d06e31184ae6762348beb",
+              "digest": "4f8208d441aa9eab78535494eb253262f8a1fd808d9c78cead75c8e880ea1ee3",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P0",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+            "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Trace the argument to a trusted literal or a validated allow-list; otherwise replace the call with an explicit parser, dispatch table, or sandboxed evaluator."
           },
@@ -121,17 +121,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
+            "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "e671574bcfd40cee6fd168bf07cf9743931ef8c501836cb0480f8303cdfd7010",
+              "digest": "74ba6445d2ca4981cc6f3b3d0aef27e933795110e2d0bab06962a5ca85c16bef",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P1",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+            "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Pass an argument vector without a shell (shell=False, or subprocess with a list), or prove every interpolated value is a trusted constant."
           },
@@ -177,17 +177,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
+            "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "6e7b7e247baa1ec58d6500e159b9c45056d4dbeee5f4853b4d25a10ce91e7f9c",
+              "digest": "483ee121645ad1a2cdb8770116fb4c3df0df0001c8d56f1f861cef26ebe0eb0d",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P2",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+            "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Deserialize only trusted local data, or switch to a bounded safe format (yaml.safe_load, JSON, or a schema-validated parser) for any externally sourced bytes."
           },
@@ -233,17 +233,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
+            "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "fdf94843bd6a4007f9e73516cafb6e16269fa615da4c33d33ee8b77a5ad981bf",
+              "digest": "c0aea3e90a4b2b5f15df07d9f08a4e83ef6a0ca209577f84e6729d245e178001",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P3",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+            "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Search integration and public-contract tests for this module's actual production surface; either record the named owner or add a dedicated real-surface test."
           },
@@ -289,17 +289,17 @@
             "rigorFoundry/gitObjectFormat": "sha1",
             "rigorFoundry/head": "ebdd2e6c79b452e03939b1ed69daa3bd9959bbaa",
             "rigorFoundry/headTree": "0f1b8f7b1715a9a71548e7abca392fdfea7981a6",
-            "rigorFoundry/reportDigest": "1727c1ab6ac6741004d50ec8507664d3c0f6abc211751a30e765a0087f1b3883",
+            "rigorFoundry/reportDigest": "7e6c93e08d70af604d17b1764324baa0ac1736d3e9922ffcdebf8ca621247d23",
             "rigorFoundry/review": {
               "decision": "valid",
-              "digest": "be2674de0a35e9c3ea4f9ddd4de73eb4ae9c535ac126d3a88628618ca9db374a",
+              "digest": "485cde2f061e68df9b8a21b1b204ebdd03b0839d6db3a5ba91a881bb42c3dc32",
               "reviewedAt": "2026-11-24T00:00:00Z",
               "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
               "severity": "P4",
               "severityProvenance": "review-record"
             },
-            "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-            "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+            "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+            "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
             "rigorFoundry/verdictState": "valid",
             "rigorFoundry/verification": "Enumerate the intended compatibility exports, downstream consumers, and generated API ownership; replace with explicit lazy or static exports unless the facade contract is documented and drift-gated."
           },

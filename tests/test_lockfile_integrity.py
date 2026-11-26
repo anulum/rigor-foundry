@@ -14,7 +14,12 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
-from lockfile_repository_support import build_lockfile_repository
+from lockfile_repository_support import (
+    POETRY_LOCK,
+    POETRY_PYPROJECT,
+    build_lockfile_repository,
+    fixture_text,
+)
 from repository_audit_git_repository import GitRepository
 
 from rigor_foundry.cli import report_markdown
@@ -58,7 +63,7 @@ def test_a_real_scan_raises_one_candidate_per_recorded_finding_and_refusal(tmp_p
     ]
     counts = Counter(candidate.rule_id for candidate in lockfile)
     assert counts == {
-        "SC003-lockfile-refused": 7,
+        "SC003-lockfile-refused": 8,
         "SC004-lockfile-missing-digest": 4,
         "SC005-lockfile-weak-digest": 1,
         "SC006-lockfile-malformed-digest": 1,
@@ -112,7 +117,8 @@ def test_a_refused_file_is_anchored_by_blob_or_by_tree_when_it_has_no_text(tmp_p
     assert "reason=unreadable" in refused["bin/package-lock.json"].evidence
     assert "kind=unknown; reason=ambiguous-yarn-lock" in refused["tools/yarn.lock"].evidence
     assert "kind=go; reason=unparseable" in refused["go/go.sum"].evidence
-    assert "kind=poetry; reason=unsupported-file-kind" in refused["py/poetry.lock"].evidence
+    assert "kind=poetry; reason=missing-version" in refused["py/poetry.lock"].evidence
+    assert "kind=pipenv; reason=unsupported-file-kind" in refused["pip/Pipfile.lock"].evidence
     branch = refused["pnpm/pnpm-lock.feature!x.yaml"]
     assert "kind=pnpm; reason=unsupported-version" in branch.evidence
 
@@ -560,3 +566,46 @@ def test_the_go_mod_line_of_an_absent_requirement_reaches_text_json_and_sarif(
     ]
     assert result["properties"]["rigorFoundry/evidence"] == candidate.evidence
     assert result["locations"][0]["physicalLocation"]["region"]["startLine"] == 1
+
+
+def test_poetry_reads_the_tracked_pyproject_beside_its_lockfile(tmp_path: Path) -> None:
+    """The real 2.5.2 pair: every entry clean, and the content hash on the result."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("app/poetry.lock", fixture_text(POETRY_LOCK))
+    repository.write_text("app/pyproject.toml", fixture_text(POETRY_PYPROJECT))
+    repository.commit()
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    assert (result.kind, result.status, result.format_version) == ("poetry", "classified", "2.1")
+    assert all(not entry.findings for entry in result.entries)
+    assert result.manifest_hash is not None and len(result.manifest_hash) == 64
+    assert result.to_dict()["manifest_hash"] == result.manifest_hash
+
+
+@pytest.mark.parametrize("pyproject", ["absent", "untracked", "binary"])
+def test_a_pyproject_that_cannot_be_read_with_certainty_makes_origins_unknown(
+    tmp_path: Path, pyproject: str
+) -> None:
+    """Never a refusal, and never read as a declaration that allows everything.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    pyproject : str
+        How the pyproject.toml is missing: absent, present but untracked, or tracked as binary.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("poetry.lock", fixture_text(POETRY_LOCK))
+    if pyproject == "binary":
+        repository.write_bytes("pyproject.toml", b"\0")
+    repository.commit()
+    if pyproject == "untracked":
+        (repository.root / "pyproject.toml").write_text(
+            fixture_text(POETRY_PYPROJECT), encoding="utf-8"
+        )
+    result = assess_lockfiles(load_git_inventory(repository.root))[0]
+    findings = {entry.key: entry.findings for entry in result.entries}
+    assert result.status == "classified"
+    assert findings["six 1.16.0"] == ("origin-unknown",)
+    assert findings["idna 3.4"] == ("origin-unknown",)
+    assert findings["attrs 22.1.0"] == ()

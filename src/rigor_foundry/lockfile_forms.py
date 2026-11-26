@@ -94,7 +94,9 @@ def path_escapes(lock_dir: str, path: str) -> bool:
     return joined == ".." or joined.startswith("../")
 
 
-def local_entry(key: str, line: int, lock_dir: str, path: str) -> LockedEntry:
+def local_entry(
+    key: str, line: int, lock_dir: str, path: str, notes: tuple[tuple[str, str], ...] = ()
+) -> LockedEntry:
     """Classify a local path source, which is unpinned when it leaves the repository.
 
     Parameters
@@ -107,6 +109,8 @@ def local_entry(key: str, line: int, lock_dir: str, path: str) -> LockedEntry:
         The directory holding the lockfile.
     path : str
         The local path the entry names.
+    notes : tuple[tuple[str, str], ...]
+        Further evidence to record, ordered by name.
 
     Returns
     -------
@@ -114,8 +118,8 @@ def local_entry(key: str, line: int, lock_dir: str, path: str) -> LockedEntry:
         ``local``, or ``unpinned`` with ``path-escape``.
     """
     if path_escapes(lock_dir, path):
-        return LockedEntry(key, line, "unpinned", ("path-escape",), form="path")
-    return LockedEntry(key, line, "local")
+        return LockedEntry(key, line, "unpinned", ("path-escape",), form="path", notes=notes)
+    return LockedEntry(key, line, "local", notes=notes)
 
 
 def unknown_entry(key: str, line: int) -> LockedEntry:

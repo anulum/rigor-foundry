@@ -53,7 +53,7 @@ as well as any wired native adapter (for example a Trivy or Grype profile).
 Rule-pack `rigor-foundry/1.20.0` adds `SC003` to `SC010` and `SC012` over
 tracked lockfiles. They classify every locked entry by how its content is
 pinned and refuse unreadable lockfiles by name; rule packs `rigor-foundry/1.21.0`
-to `1.25.0` extend them to Yarn 1, Yarn 2+, pnpm, Cargo and Go lockfiles. See
+to `1.26.0` extend them to Yarn 1, Yarn 2+, pnpm, Cargo, Go and Poetry lockfiles. See
 [Lockfile integrity rules](lockfile-integrity-rules.md).
 
 ## Calibration

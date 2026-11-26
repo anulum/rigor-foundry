@@ -3,11 +3,11 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/02e03aea7d17e04ff5db9b0daa79ff446d8d3f82d9ddbbf62235c38b3ba59690"
+        "id": "rigor-foundry/2ab11a37d3a3a3cee67ab44c15257743cc950a47e26e50ae429d6db3e57ac8f5"
       },
       "properties": {
         "rigorFoundry/branch": "main",
-        "rigorFoundry/canonicalDocumentDigest": "568ce35d06b0fffcdbd56323de279e99d6c27be5c6067d106b72ad2d53934366",
+        "rigorFoundry/canonicalDocumentDigest": "e7becf49115bbab410e8e8dcdfe733d410bdab674d729a8c60a7d25974c486a9",
         "rigorFoundry/consumerProfile": "github-code-scanning",
         "rigorFoundry/gitObjectFormat": "sha1",
         "rigorFoundry/head": "bb4b2d5a33879f8059efdd3e83b5aaf906d0b44e",
@@ -20,9 +20,9 @@
           "unreviewed": 0
         },
         "rigorFoundry/policyDigest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
-        "rigorFoundry/reportDigest": "02e03aea7d17e04ff5db9b0daa79ff446d8d3f82d9ddbbf62235c38b3ba59690",
-        "rigorFoundry/rulePackDigest": "a5049ba84380f518c738922971e969282ebe9a486a3153f548b4df40bfdf73a7",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.25.0",
+        "rigorFoundry/reportDigest": "2ab11a37d3a3a3cee67ab44c15257743cc950a47e26e50ae429d6db3e57ac8f5",
+        "rigorFoundry/rulePackDigest": "6f223ba6b14ed8845ab4c3b897b124768516ebaca71b4d22a7812d407ed6d561",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.26.0",
         "rigorFoundry/trackedContentDigest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28"
       },
       "results": [],

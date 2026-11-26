@@ -230,6 +230,7 @@ def test_a_classified_and_a_refused_file_serialise_every_field() -> None:
         "checksum_behavior": None,
         "unused_patches": None,
         "dropped_lines": None,
+        "manifest_hash": None,
     }
 
 

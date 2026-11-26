@@ -8,11 +8,11 @@
 """Classify every tracked lockfile of a repository, and raise its findings as candidates.
 
 Each tracked file with a lockfile name yields one result: classified entry by entry, or
-refused with a named reason and no entries. npm lockfiles are classified; the other kinds
-are refused as ``unsupported-file-kind`` until their own rules exist, so an unread file
-never looks clean. Each finding of an entry the lockfile itself records becomes one
-supply-chain candidate at the entry's line; a bundled entry repeats its ancestor's
-findings in the report, but not as candidates. A refused file becomes one candidate.
+refused with a named reason and no entries. npm, Yarn 1, Yarn 2+, pnpm, Cargo, Go and Poetry
+lockfiles are classified; ``Pipfile.lock`` is refused as ``unsupported-file-kind`` until its own
+rules exist, so an unread file never looks clean. Each finding of an entry the lockfile itself
+records becomes one supply-chain candidate at the entry's line; a bundled entry repeats its
+ancestor's findings in the report, but not as candidates. A refused file becomes one candidate.
 """
 
 from __future__ import annotations
@@ -41,6 +41,8 @@ from .lockfile_npmrc import (
 )
 from .lockfile_pnpm import classify_pnpm_lockfile
 from .lockfile_pnpm_config import PnpmWorkspace, read_pnpm_workspace
+from .lockfile_poetry import classify_poetry_lockfile
+from .lockfile_poetry_sources import read_poetry_declaration
 from .lockfile_yarn1 import classify_yarn1_lockfile
 from .lockfile_yarn_berry import classify_yarn_berry_lockfile
 from .lockfile_yarnrc import (
@@ -77,6 +79,7 @@ _YARNRC: Final = ".yarnrc"
 _YARNRC_YML: Final = ".yarnrc.yml"
 _PNPM_WORKSPACE: Final = "pnpm-workspace.yaml"
 _GO_MOD: Final = "go.mod"
+_PYPROJECT: Final = "pyproject.toml"
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -429,6 +432,20 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                 None,
                 go.entries,
                 dropped_lines=go.dropped_lines,
+            )
+        elif kind == "poetry":
+            # An uncertain pyproject.toml has no text, so it reads as no declaration.
+            _, pyproject = _beside(inventory, item.path, _PYPROJECT)
+            declaration = read_poetry_declaration(pyproject)
+            poetry = classify_poetry_lockfile(text, lock_dir, declaration)
+            return LockfileResult(
+                item.path,
+                item.content_digest,
+                kind,
+                poetry.version,
+                None,
+                poetry.entries,
+                manifest_hash=poetry.content_hash,
             )
         elif kind == "yarn-berry":
             berry = berry_registry_declaration(inventory, item.path)
