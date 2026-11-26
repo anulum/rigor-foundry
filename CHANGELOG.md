@@ -62,6 +62,10 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 
+- Refresh the pinned Debian security snapshot to include the patched Zstandard
+  library (libzstd1 1.5.7+dfsg-1+deb13u1, CVE-2026-124851) while retaining the
+  digest-pinned container base.
+
 - Refresh the pinned Debian security snapshot to include the patched Kerberos
   libraries (krb5 1.21.3-5+deb13u2) while retaining the digest-pinned container base.
 
