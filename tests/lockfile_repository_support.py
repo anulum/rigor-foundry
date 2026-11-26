@@ -8,7 +8,7 @@
 """Build one real Git repository whose tracked lockfiles exercise every class and refusal.
 
 Every npm lockfile is the clean ``lockfileVersion`` 3 fixture that npm 10.9.2 generated, after
-the recorded edit named beside it here: the edits keep a few entries and change one field each.
+the recorded edit named beside it here, and ``yarn.lock`` is yarn 1.22.22's own output: the edits keep a few entries and change one field each.
 Commit dates and identity are fixed, so the commit, its tree and every digest are reproducible.
 Run this module to rewrite the golden report ``tests/fixtures/lockfiles/report-golden.json``.
 """
@@ -31,6 +31,7 @@ from repository_audit_git_repository import GitRepository
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "lockfiles"
 V1 = FIXTURES / "npm-6.14.18-v1" / "package-lock.json.gz"
 V3 = FIXTURES / "npm-10.9.2-v3" / "package-lock.json.gz"
+YARN1 = FIXTURES / "yarn-1.22.22-v1" / "yarn.lock.gz"
 GOLDEN = FIXTURES / "report-golden.json"
 COMMIT_DATE = "2026-11-25T00:00:00Z"
 SHA1 = "sha1-" + base64.b64encode(hashlib.sha1(b"x", usedforsecurity=False).digest()).decode()
@@ -44,7 +45,6 @@ KEPT = (
     "node_modules/local-lib",
     "node_modules/ms",
 )
-YARN_V1 = '# yarn lockfile v1\n\n\nleft-pad@^1.3.0:\n  version "1.3.0"\n'
 
 
 def fixture_text(path: Path) -> str:
@@ -125,7 +125,7 @@ def build_lockfile_repository(root: Path) -> GitRepository:
     repository.write_text("env/package-lock.json", _dump(_reduced_v3()))
     repository.write_text("env/.npmrc", "registry=${NPM_REGISTRY}\n")
     repository.write_text("legacy/npm-shrinkwrap.json", fixture_text(V1))
-    repository.write_text("yarn.lock", YARN_V1)
+    repository.write_text("yarn.lock", fixture_text(YARN1))
     repository.write_text("tools/yarn.lock", 'left-pad@^1.3.0:\n  version "1.3.0"\n')
     repository.write_text("empty/yarn.lock", "")
     repository.write_text("crates/Cargo.lock", "version = 4\n")

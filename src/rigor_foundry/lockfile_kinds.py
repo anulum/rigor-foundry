@@ -10,7 +10,7 @@
 Every kind except Yarn has a file name of its own. Yarn 1 and Yarn 2+ both write
 ``yarn.lock``: Yarn 1 opens it with the ``# yarn lockfile v1`` header comment, and Yarn 2+
 writes a top-level ``__metadata:`` block. A ``yarn.lock`` that shows neither form, or both,
-is refused rather than guessed.
+is refused rather than guessed, and one that opens with a byte-order mark is unparseable.
 """
 
 from __future__ import annotations
@@ -52,7 +52,9 @@ def is_lockfile_path(path: str) -> bool:
 
 
 def _yarn_kind(text: str) -> LockfileKind:
-    """Return Yarn's lockfile kind from its text, or refuse an ambiguous file."""
+    """Return Yarn's lockfile kind from its text, or refuse an ambiguous or unreadable file."""
+    if text.startswith("\ufeff"):
+        raise LockfileRefusal("unparseable")
     lines = text.splitlines()
     leading: list[str] = []
     for line in lines:

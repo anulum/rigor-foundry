@@ -23,8 +23,10 @@ from rigor_foundry.lockfile_integrity import (
     assess_lockfiles,
     npm_registry_declaration,
     scan_lockfile_integrity,
+    yarn1_registry_declaration,
 )
 from rigor_foundry.lockfile_npmrc import DEFAULT_NPM_REGISTRY, UNKNOWN_NPM_REGISTRY
+from rigor_foundry.lockfile_yarnrc import YarnRegistryDeclaration
 from rigor_foundry.rules import RULES_BY_ID
 from rigor_foundry.scanner import scan_repository
 
@@ -51,8 +53,8 @@ def test_a_real_scan_raises_one_candidate_per_recorded_finding_and_refusal(tmp_p
     ]
     counts = Counter(candidate.rule_id for candidate in lockfile)
     assert counts == {
-        "SC003-lockfile-refused": 6,
-        "SC004-lockfile-missing-digest": 1,
+        "SC003-lockfile-refused": 5,
+        "SC004-lockfile-missing-digest": 2,
         "SC005-lockfile-weak-digest": 1,
         "SC006-lockfile-malformed-digest": 1,
         "SC007-lockfile-floating-ref": 1,
@@ -82,6 +84,8 @@ def test_each_finding_candidate_points_at_its_entry_line(tmp_path: Path) -> None
         by_rule["SC007-lockfile-floating-ref"].anchor.line_start == lines["node_modules/is-number"]
     )
     assert "finding=missing-digest" in by_rule["SC004-lockfile-missing-digest"].evidence
+    assert by_rule["SC008-lockfile-origin-mismatch"].evidence.endswith("origin=evil.example")
+    assert by_rule["SC010-lockfile-path-escape"].evidence.endswith("origin=none")
     inherited = [entry for entry in web.entries if entry.inherited_from is not None]
     assert [entry.entry_class for entry in inherited] == ["unpinned"]
     assert all(c.anchor.line_start != inherited[0].line for c in candidates)
@@ -200,3 +204,140 @@ def test_a_repository_without_lockfiles_has_no_results(tmp_path: Path) -> None:
     inventory = load_git_inventory(repository.root)
     assert assess_lockfiles(inventory) == ()
     assert scan_lockfile_integrity(inventory) == ()
+
+
+@pytest.mark.parametrize(
+    ("files", "untracked", "expected"),
+    [
+        ({}, {}, "default"),
+        ({".yarnrc": 'registry "https://npm.internal.example/"\n'}, {}, "internal"),
+        ({"web/.yarnrc": 'registry "https://npm.internal.example/"\n'}, {}, "internal"),
+        ({".npmrc": "registry=https://npm.internal.example/\n"}, {}, "internal"),
+        ({".yarnrc.yml": 'npmRegistryServer: "https://npm.internal.example/"\n'}, {}, "default"),
+        ({}, {"web/.yarnrc": 'registry "https://npm.internal.example/"\n'}, "unknown"),
+        ({".yarnrc": 'registry "${REGISTRY}"\n'}, {}, "unknown"),
+    ],
+)
+def test_the_yarn1_declaration_reads_npmrc_and_yarnrc_but_not_yarnrc_yml(
+    tmp_path: Path, files: dict[str, str], untracked: dict[str, str], expected: str
+) -> None:
+    """Yarn 1 reads ``.npmrc`` and ``.yarnrc`` beside the lockfile, then at the root.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    files : dict[str, str]
+        Tracked configuration files.
+    untracked : dict[str, str]
+        Files present but not committed.
+    expected : str
+        ``default``, ``internal`` or ``unknown``.
+    """
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("web/yarn.lock", "# yarn lockfile v1\n")
+    for path, text in files.items():
+        repository.write_text(path, text)
+    repository.commit()
+    for path, text in untracked.items():
+        repository.write_text(path, text)
+    declaration = yarn1_registry_declaration(load_git_inventory(repository.root), "web/yarn.lock")
+    if expected == "unknown":
+        assert not declaration.known
+    else:
+        assert declaration.known
+        host = None if expected == "default" else "npm.internal.example"
+        assert declaration.declared_host("left-pad") == host
+
+
+def test_a_yarn1_lockfile_is_classified_in_a_real_scan(tmp_path: Path) -> None:
+    """The real Yarn 1 lockfile at the root is classified, and its archive raises one candidate."""
+    repository = build_lockfile_repository(tmp_path / "repository")
+    inventory = load_git_inventory(repository.root)
+    yarn = next(result for result in assess_lockfiles(inventory) if result.path == "yarn.lock")
+    assert (yarn.kind, yarn.format_version, yarn.status, len(yarn.entries)) == (
+        "yarn-v1",
+        "1",
+        "classified",
+        60,
+    )
+    candidates = [c for c in scan_lockfile_integrity(inventory) if c.anchor.path == "yarn.lock"]
+    assert [c.rule_id for c in candidates] == ["SC004-lockfile-missing-digest"]
+    assert candidates[0].evidence.endswith("origin=codeload.github.com")
+
+
+def _yarn_declaration(
+    tmp_path: Path, tracked: dict[str, str], untracked: dict[str, str]
+) -> YarnRegistryDeclaration:
+    """Build a repository with a lockfile at ``web/app/yarn.lock`` and read its Yarn 1 declaration."""
+    repository = GitRepository.create(tmp_path / "repository")
+    repository.write_text("web/app/yarn.lock", "# yarn lockfile v1\n")
+    for path, text in tracked.items():
+        repository.write_text(path, text)
+    repository.commit()
+    for path, text in untracked.items():
+        repository.write_text(path, text)
+    return yarn1_registry_declaration(load_git_inventory(repository.root), "web/app/yarn.lock")
+
+
+def test_a_scoped_only_yarnrc_beside_the_lockfile_keeps_the_roots_registry(tmp_path: Path) -> None:
+    """Yarn 1 merges per key, so a nearer scoped line does not hide the root's registry.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    """
+    declaration = _yarn_declaration(
+        tmp_path,
+        {
+            ".yarnrc": 'registry "https://npm.internal.example/"\n',
+            "web/app/.yarnrc": '"@acme:registry" "https://acme.example/"\n',
+        },
+        {},
+    )
+    assert declaration.declared_host("left-pad") == "npm.internal.example"
+    assert declaration.declared_host("@acme/tool") == "acme.example"
+    assert declaration.origin_finding("left-pad", "registry.yarnpkg.com") == "origin-mismatch"
+
+
+def test_an_intermediate_yarnrc_decides_and_the_nearest_key_wins(tmp_path: Path) -> None:
+    """A tracked ``.yarnrc`` between the root and the lockfile is read, and nearer keys win.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    """
+    intermediate = _yarn_declaration(
+        tmp_path / "one", {"web/.yarnrc": 'registry "https://npm.internal.example/"\n'}, {}
+    )
+    assert intermediate.declared_host("left-pad") == "npm.internal.example"
+    nearest = _yarn_declaration(
+        tmp_path / "two",
+        {
+            ".npmrc": "registry=https://root.example/\n",
+            "web/.npmrc": "registry=https://web.example/\n",
+            "web/app/.npmrc": "save-exact=true\n",
+        },
+        {},
+    )
+    assert nearest.declared_host("left-pad") == "web.example"
+
+
+@pytest.mark.parametrize("name", [".yarnrc", ".npmrc"])
+def test_an_untracked_intermediate_file_makes_the_origin_unknown(
+    tmp_path: Path, name: str
+) -> None:
+    """An untracked configuration file at any level between the root and the lockfile is uncertain.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Owned repository allocation.
+    name : str
+        The configuration file name.
+    """
+    declaration = _yarn_declaration(tmp_path, {}, {f"web/{name}": "registry=x\n"})
+    assert not declaration.known
+    assert declaration.origin_finding("left-pad", "registry.yarnpkg.com") == "origin-unknown"

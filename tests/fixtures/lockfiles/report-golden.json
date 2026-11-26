@@ -30,6 +30,7 @@
     {
       "entries": [
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -42,6 +43,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -58,6 +60,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -74,6 +77,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -90,6 +94,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "commit-pinned",
           "commit_hash_algorithm": "sha1",
           "digest_algorithms": [
@@ -104,6 +109,7 @@
           "origin": "github.com"
         },
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -116,6 +122,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -142,6 +149,7 @@
     {
       "entries": [
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -156,6 +164,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -170,6 +179,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -184,6 +194,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -198,6 +209,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -212,6 +224,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -226,6 +239,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -240,6 +254,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -254,6 +269,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -268,6 +284,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -282,6 +299,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -296,6 +314,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -310,6 +329,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -324,6 +344,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -338,6 +359,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -352,6 +374,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -366,6 +389,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -380,6 +404,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -394,6 +419,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -408,6 +434,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -422,6 +449,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -436,6 +464,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -450,6 +479,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -464,6 +494,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -478,6 +509,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -492,6 +524,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -506,6 +539,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -520,6 +554,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -534,6 +569,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -548,6 +584,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -562,6 +599,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -576,6 +614,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -590,6 +629,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -604,6 +644,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -618,6 +659,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -632,6 +674,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -646,6 +689,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -660,6 +704,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -674,6 +719,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -688,6 +734,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -702,6 +749,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -716,6 +764,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -730,6 +779,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -744,6 +794,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -758,6 +809,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -772,6 +824,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -786,6 +839,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -800,6 +854,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -814,6 +869,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -828,6 +884,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -842,6 +899,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -856,6 +914,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -870,6 +929,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "commit-pinned",
           "commit_hash_algorithm": "sha1",
           "digest_algorithms": [],
@@ -882,6 +942,7 @@
           "origin": "github.com"
         },
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -894,6 +955,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -927,6 +989,7 @@
     {
       "entries": [
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -939,6 +1002,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -953,6 +1017,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -967,6 +1032,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -981,6 +1047,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "commit-pinned",
           "commit_hash_algorithm": "sha1",
           "digest_algorithms": [
@@ -995,6 +1062,7 @@
           "origin": "github.com"
         },
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -1007,6 +1075,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "artifact-pinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -1040,6 +1109,7 @@
     {
       "entries": [
         {
+          "archive_commit": null,
           "class": "local",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -1052,6 +1122,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -1068,6 +1139,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -1084,6 +1156,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -1101,6 +1174,7 @@
           "origin": "evil.example"
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [
@@ -1117,6 +1191,7 @@
           "origin": "github.com"
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -1131,6 +1206,7 @@
           "origin": null
         },
         {
+          "archive_commit": null,
           "class": "unpinned",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -1145,6 +1221,7 @@
           "origin": "registry.npmjs.org"
         },
         {
+          "archive_commit": null,
           "class": "unclassified",
           "commit_hash_algorithm": null,
           "digest_algorithms": [],
@@ -1167,38 +1244,989 @@
       "status": "classified"
     },
     {
-      "entries": [],
-      "file_sha256": "af7b4cebf54b70fd69dfd49d9e1870a7d5b504e40c1448740c795e24a70cb26c",
-      "format_version": null,
+      "entries": [
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ansi-regex@^2.0.0",
+          "line": 5,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "bundle-dependencies@1.0.2",
+          "line": 10,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "camelcase@^3.0.0",
+          "line": 17,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "cliui@^3.2.0",
+          "line": 22,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "code-point-at@^1.0.0",
+          "line": 31,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "debug@4.3.4",
+          "line": 36,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "decamelize@^1.1.1",
+          "line": 43,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "error-ex@^1.2.0",
+          "line": 48,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "es-errors@^1.3.0",
+          "line": 55,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "find-up@^1.0.0",
+          "line": 60,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "function-bind@^1.1.2",
+          "line": 68,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "get-caller-file@^1.0.1",
+          "line": 73,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "graceful-fs@^4.1.2",
+          "line": 78,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "hasown@^2.0.4",
+          "line": 83,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "hosted-git-info@^2.1.4",
+          "line": 90,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "invert-kv@^1.0.0",
+          "line": 95,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-arrayish@^0.2.1",
+          "line": 100,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-core-module@^2.18.0",
+          "line": 105,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-fullwidth-code-point@^1.0.0",
+          "line": 112,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": "98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "class": "unpinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [
+            "missing-digest"
+          ],
+          "form": "artifact",
+          "inherited_from": null,
+          "key": "is-number@github:jonschlinkert/is-number#98e8ff1da1a89f93d1397a24d7413ed15421c139",
+          "line": 119,
+          "origin": "codeload.github.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "is-utf8@^0.2.0",
+          "line": 123,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "lcid@^1.0.0",
+          "line": 128,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "linked-lib@link:./linked-lib",
+          "line": 135,
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "load-json-file@^1.0.0",
+          "line": 139,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "local",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "local-lib@file:./local-lib",
+          "line": 150,
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "lodash.assign@^4.0.3, lodash.assign@^4.0.6",
+          "line": 153,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "ms@2.1.2",
+          "line": 158,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "normalize-package-data@^2.3.2",
+          "line": 163,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "number-is-nan@^1.0.0",
+          "line": 173,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "os-locale@^1.4.0",
+          "line": 178,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "parse-json@^2.2.0",
+          "line": 185,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "path-exists@^2.0.0",
+          "line": 192,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "path-parse@^1.0.7",
+          "line": 199,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "path-type@^1.0.0",
+          "line": 204,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "pify@^2.0.0",
+          "line": 213,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "pinkie-promise@^2.0.0",
+          "line": 218,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "pinkie@^2.0.0",
+          "line": 225,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "read-pkg-up@^1.0.1",
+          "line": 230,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "read-pkg@^1.0.0",
+          "line": 238,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "require-directory@^2.1.1",
+          "line": 247,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "require-main-filename@^1.0.1",
+          "line": 252,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "resolve@^1.10.0",
+          "line": 257,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "semver@2 || 3 || 4 || 5",
+          "line": 267,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "set-blocking@^2.0.0",
+          "line": 272,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "spdx-correct@^3.0.0",
+          "line": 277,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "spdx-exceptions@^2.1.0",
+          "line": 285,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "spdx-expression-parse@^3.0.0",
+          "line": 290,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "spdx-license-ids@^3.0.0",
+          "line": 298,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "string-width@^1.0.1",
+          "line": 303,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "strip-ansi@^3.0.0, strip-ansi@^3.0.1",
+          "line": 312,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "strip-bom@^2.0.0",
+          "line": 319,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "supports-preserve-symlinks-flag@^1.0.0",
+          "line": 326,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "validate-npm-package-license@^3.0.1",
+          "line": 331,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "commit-pinned",
+          "commit_hash_algorithm": "sha1",
+          "digest_algorithms": [],
+          "digest_scope": null,
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "vcs-lib@git+file:///tmp/rigor-yarn1-fixture/vcs-lib.git#ee7225ad8820e4fbfcc0a6909a85af289e3f70e7",
+          "line": 339,
+          "origin": null
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "which-module@^1.0.0",
+          "line": 343,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "window-size@^0.2.0",
+          "line": 348,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "wrap-ansi@^2.0.0",
+          "line": 353,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "y18n@^3.2.1",
+          "line": 361,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "yargs-parser@^2.4.1",
+          "line": 366,
+          "origin": "registry.yarnpkg.com"
+        },
+        {
+          "archive_commit": null,
+          "class": "artifact-pinned",
+          "commit_hash_algorithm": null,
+          "digest_algorithms": [
+            "sha512",
+            "sha1"
+          ],
+          "digest_scope": "artifact",
+          "findings": [],
+          "form": null,
+          "inherited_from": null,
+          "key": "yargs@^4.1.0",
+          "line": 374,
+          "origin": "registry.yarnpkg.com"
+        }
+      ],
+      "file_sha256": "d057798439c4283f235169d5bbf0830bc64fce647d5ea9142cca4579e57f8581",
+      "format_version": "1",
       "kind": "yarn-v1",
       "path": "yarn.lock",
-      "refusal_reason": "unsupported-file-kind",
-      "status": "refused"
+      "refusal_reason": null,
+      "status": "classified"
     }
   ],
-  "head": "93540825821b13d79406f4bb5af69625942d348a",
-  "head_tree": "f72cb65053b97da3a5eed3690cceb95e22d9dd1f",
-  "report_digest": "2e54a1515110ac5dd9b1bb82734e23ff82faf1f2b9eb59349b7a29d159d32c24",
-  "rule_pack_digest": "c7d604fdcd9108af899ce50056e12ff421e0b803b9ecfee3af63adbf474da42c",
-  "rule_pack_version": "rigor-foundry/1.20.0",
+  "head": "4cf84a72eef47d011b41fc16de6d84b37b3d287a",
+  "head_tree": "7724e2dd3d3ab940c41a2ec80536066dc54b2b12",
+  "report_digest": "11254ebb5c895928ecb2168791c18b650c3936032e6da0444a474643a93e260b",
+  "rule_pack_digest": "9db62e2fe8ddabf7d083e1955d4829336e4446707607433ecdd05139e6ea2f44",
+  "rule_pack_version": "rigor-foundry/1.21.0",
   "schema": "rigor.lockfile-integrity-report.v1",
   "summary": {
     "classes": {
-      "artifact-pinned": 61,
-      "commit-pinned": 3,
+      "artifact-pinned": 117,
+      "commit-pinned": 4,
       "graph-only": 0,
-      "local": 6,
+      "local": 8,
       "unclassified": 1,
-      "unpinned": 6
+      "unpinned": 7
     },
-    "classified_files": 4,
-    "entries": 77,
+    "classified_files": 5,
+    "entries": 137,
     "files": 10,
     "findings": {
       "floating-ref": 1,
       "malformed-digest": 2,
       "manifest-drift": 0,
-      "missing-digest": 1,
+      "missing-digest": 2,
       "origin-mismatch": 1,
       "origin-unknown": 4,
       "path-escape": 1,
@@ -1211,11 +2239,11 @@
       "missing-version": 0,
       "unparseable": 0,
       "unreadable": 1,
-      "unsupported-file-kind": 2,
+      "unsupported-file-kind": 1,
       "unsupported-lock-version": 0,
       "unsupported-version": 1
     },
-    "refused_files": 6
+    "refused_files": 5
   },
-  "tracked_content_digest": "7ddac43e908de284dd41c05019a004a63953c4843c36ec917b24979d065027a5"
+  "tracked_content_digest": "81e145093097685c50ad7e8484a517559d6b208be6b7e01f8cc9fbe79dbd34d0"
 }

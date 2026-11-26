@@ -116,6 +116,50 @@ def _value(raw: str) -> str:
     return value
 
 
+def npmrc_registry_hosts(text: str) -> dict[str, str] | None:
+    """Return the registry hosts one tracked ``.npmrc`` declares, or ``None`` when uncertain.
+
+    Parameters
+    ----------
+    text : str
+        The file text.
+
+    Returns
+    -------
+    dict[str, str] | None
+        The host of each declared registry, keyed ``""`` for the default registry and
+        ``@scope`` for a scope; empty when nothing is declared. ``None`` when any relevant line
+        cannot be read with certainty.
+    """
+    settings: dict[str, str] = {}
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line[0] in ";#":
+            continue
+        if line.startswith("["):
+            return None
+        key, separator, raw_value = line.partition("=")
+        key = key.strip()
+        relevant = key in (_REGISTRY_KEY, _REPLACE_HOST_KEY) or (
+            key.startswith("@") and key.endswith(_SCOPED_SUFFIX)
+        )
+        if not separator or not relevant:
+            continue
+        value = _value(raw_value)
+        if "${" in value or settings.get(key, value) != value:
+            return None
+        settings[key] = value
+    if settings.pop(_REPLACE_HOST_KEY, _REPLACE_HOST_DEFAULT) != _REPLACE_HOST_DEFAULT:
+        return None
+    hosts: dict[str, str] = {}
+    for key, value in settings.items():
+        host = url_host(value)
+        if host is None:
+            return None
+        hosts["" if key == _REGISTRY_KEY else key.removesuffix(_SCOPED_SUFFIX)] = host
+    return hosts
+
+
 def read_npmrc(text: str) -> NpmRegistryDeclaration:
     """Read the registry declaration of one tracked ``.npmrc``.
 
@@ -127,37 +171,13 @@ def read_npmrc(text: str) -> NpmRegistryDeclaration:
     Returns
     -------
     NpmRegistryDeclaration
-        The declared registries, or ``UNKNOWN_NPM_REGISTRY`` when any relevant line cannot
-        be read with certainty.
+        The declared registries, with npm's default registry when none is declared, or
+        ``UNKNOWN_NPM_REGISTRY`` when any relevant line cannot be read with certainty.
     """
-    settings: dict[str, str] = {}
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line or line[0] in ";#":
-            continue
-        if line.startswith("["):
-            return UNKNOWN_NPM_REGISTRY
-        key, separator, raw_value = line.partition("=")
-        key = key.strip()
-        relevant = key in (_REGISTRY_KEY, _REPLACE_HOST_KEY) or (
-            key.startswith("@") and key.endswith(_SCOPED_SUFFIX)
-        )
-        if not separator or not relevant:
-            continue
-        value = _value(raw_value)
-        if "${" in value or settings.get(key, value) != value:
-            return UNKNOWN_NPM_REGISTRY
-        settings[key] = value
-    if settings.pop(_REPLACE_HOST_KEY, _REPLACE_HOST_DEFAULT) != _REPLACE_HOST_DEFAULT:
+    hosts = npmrc_registry_hosts(text)
+    if hosts is None:
         return UNKNOWN_NPM_REGISTRY
-    hosts: dict[str, str] = {}
-    for key, value in settings.items():
-        host = url_host(value)
-        if host is None:
-            return UNKNOWN_NPM_REGISTRY
-        hosts[key] = host
-    registry_host = hosts.pop(_REGISTRY_KEY, DEFAULT_NPM_REGISTRY.registry_host)
-    scoped = {key.removesuffix(_SCOPED_SUFFIX): host for key, host in hosts.items()}
+    registry_host = hosts.pop("", DEFAULT_NPM_REGISTRY.registry_host)
     return NpmRegistryDeclaration(
-        known=True, registry_host=registry_host, scoped_hosts=MappingProxyType(scoped)
+        known=True, registry_host=registry_host, scoped_hosts=MappingProxyType(hosts)
     )

@@ -20,7 +20,7 @@ from __future__ import annotations
 import hashlib
 import os
 import posixpath
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from types import MappingProxyType
 from typing import Final
 
@@ -33,7 +33,14 @@ from .lockfile_npmrc import (
     DEFAULT_NPM_REGISTRY,
     UNKNOWN_NPM_REGISTRY,
     NpmRegistryDeclaration,
+    npmrc_registry_hosts,
     read_npmrc,
+)
+from .lockfile_yarn1 import classify_yarn1_lockfile
+from .lockfile_yarnrc import (
+    YarnRegistryDeclaration,
+    yarn_registry_declaration,
+    yarnrc_registry_hosts,
 )
 from .models import Candidate, Confidence
 from .rule_guidance import RuleGuidance
@@ -53,6 +60,7 @@ FINDING_RULE_IDS: Final[Mapping[EntryFinding, str]] = MappingProxyType(
 )
 _MEDIUM_CONFIDENCE: Final[frozenset[EntryFinding]] = frozenset({"origin-unknown", "unknown-form"})
 _NPMRC: Final = ".npmrc"
+_YARNRC: Final = ".yarnrc"
 
 # Fixed rule guidance, the single source for the candidates below and the rule catalogue.
 RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
@@ -160,6 +168,24 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _config_text(inventory: GitInventory, lock_path: str, name: str) -> tuple[bool, str | None]:
+    """Find one configuration file beside the lockfile, then at the root.
+
+    Returns whether it was read with certainty, and its text; ``(True, None)`` when there is
+    none at either place. A file that is present but untracked, or tracked but not text, is
+    uncertain.
+    """
+    tracked = {item.path: item for item in inventory.files}
+    for place in dict.fromkeys((posixpath.dirname(lock_path), "")):
+        path = posixpath.join(place, name)
+        item = tracked.get(path)
+        if item is not None:
+            return item.text is not None, item.text
+        if os.path.lexists(inventory.root / path):
+            return False, None
+    return True, None
+
+
 def npm_registry_declaration(inventory: GitInventory, lock_path: str) -> NpmRegistryDeclaration:
     """Return the registry the repository declares for one npm lockfile.
 
@@ -179,16 +205,66 @@ def npm_registry_declaration(inventory: GitInventory, lock_path: str) -> NpmRegi
     NpmRegistryDeclaration
         The declaration.
     """
+    certain, text = _config_text(inventory, lock_path, _NPMRC)
+    if not certain:
+        return UNKNOWN_NPM_REGISTRY
+    return DEFAULT_NPM_REGISTRY if text is None else read_npmrc(text)
+
+
+def _merged_hosts(
+    inventory: GitInventory,
+    lock_path: str,
+    name: str,
+    reader: Callable[[str], dict[str, str] | None],
+) -> dict[str, str] | None:
+    """Merge one configuration file's registry hosts from the root down to the lockfile.
+
+    Every tracked file of that name on the path from the repository root to the lockfile's
+    directory is read, and the nearer file wins per key, as Yarn 1 merges them. An untracked or
+    unreadable file at any level, or an uncertain line in any of them, gives ``None``.
+    """
     tracked = {item.path: item for item in inventory.files}
     directory = posixpath.dirname(lock_path)
-    for place in dict.fromkeys((directory, "")):
-        path = posixpath.join(place, _NPMRC)
+    parts = directory.split("/") if directory else []
+    merged: dict[str, str] = {}
+    for depth in range(len(parts) + 1):
+        path = posixpath.join(*parts[:depth], name) if depth else name
         item = tracked.get(path)
-        if item is not None:
-            return UNKNOWN_NPM_REGISTRY if item.text is None else read_npmrc(item.text)
-        if os.path.lexists(inventory.root / path):
-            return UNKNOWN_NPM_REGISTRY
-    return DEFAULT_NPM_REGISTRY
+        if item is None:
+            if os.path.lexists(inventory.root / path):
+                return None
+            continue
+        hosts = None if item.text is None else reader(item.text)
+        if hosts is None:
+            return None
+        merged.update(hosts)
+    return merged
+
+
+def yarn1_registry_declaration(inventory: GitInventory, lock_path: str) -> YarnRegistryDeclaration:
+    """Return the registry the repository declares for one Yarn 1 lockfile.
+
+    Yarn 1 merges every ``.npmrc``, and every ``.yarnrc``, from the root down to the directory it
+    runs in, the nearer file winning per key. So both names are read at every level from the
+    repository root to the lockfile's directory and merged that way, with the same certainty
+    rules as for npm at each level. ``.yarnrc.yml`` is Yarn 2+ and is not read.
+
+    Parameters
+    ----------
+    inventory : GitInventory
+        The tracked repository content.
+    lock_path : str
+        The lockfile's repository-relative POSIX path.
+
+    Returns
+    -------
+    YarnRegistryDeclaration
+        The declaration.
+    """
+    return yarn_registry_declaration(
+        _merged_hosts(inventory, lock_path, _NPMRC, npmrc_registry_hosts),
+        _merged_hosts(inventory, lock_path, _YARNRC, yarnrc_registry_hosts),
+    )
 
 
 def _refused(
@@ -210,11 +286,16 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
         kind = lockfile_kind(item.path, text)
     except LockfileRefusal as refusal:
         return _refused(item, None, refusal)
-    if kind != "npm":
-        return _refused(item, kind, LockfileRefusal("unsupported-file-kind"))
-    registry = npm_registry_declaration(inventory, item.path)
+    lock_dir = posixpath.dirname(item.path)
     try:
-        version, entries = classify_npm_lockfile(text, posixpath.dirname(item.path), registry)
+        if kind == "npm":
+            npm = npm_registry_declaration(inventory, item.path)
+            version, entries = classify_npm_lockfile(text, lock_dir, npm)
+        elif kind == "yarn-v1":
+            yarn = yarn1_registry_declaration(inventory, item.path)
+            version, entries = classify_yarn1_lockfile(text, lock_dir, yarn)
+        else:
+            raise LockfileRefusal("unsupported-file-kind")
     except LockfileRefusal as refusal:
         return _refused(item, kind, refusal)
     return LockfileResult(item.path, item.content_digest, kind, version, None, entries)
@@ -301,7 +382,7 @@ def lockfile_candidates(
             for finding in entry.findings:
                 evidence = (
                     f"file_sha256={result.file_sha256}; key_sha256={_sha256(entry.key)}; "
-                    f"class={entry.entry_class}; finding={finding}"
+                    f"class={entry.entry_class}; finding={finding}; origin={entry.origin or 'none'}"
                 )
                 confidence: Confidence = "medium" if finding in _MEDIUM_CONFIDENCE else "high"
                 candidates.append(

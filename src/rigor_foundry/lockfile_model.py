@@ -135,6 +135,9 @@ class LockedEntry:
         The host or source the entry resolves from, when it has one.
     inherited_from : str | None
         The key of the bundling ancestor whose artifact carries this entry.
+    archive_commit : str | None
+        The full commit a hosted archive URL names, recorded as evidence. The archive's bytes
+        are not verified against it, so it never makes the entry ``commit-pinned``.
     """
 
     key: str
@@ -147,6 +150,7 @@ class LockedEntry:
     commit_hash_algorithm: CommitHashAlgorithm | None = None
     origin: str | None = None
     inherited_from: str | None = None
+    archive_commit: str | None = None
 
     def __post_init__(self) -> None:
         """Refuse an entry that breaks a rule of integrity semantics v1."""
@@ -175,8 +179,14 @@ class LockedEntry:
             "exactly the unclassified entries carry unknown-form",
         )
         _require(
-            (self.entry_class == "commit-pinned") == (self.commit_hash_algorithm is not None),
-            "exactly the commit-pinned entries record their commit hash algorithm",
+            (self.entry_class == "commit-pinned" or self.archive_commit is not None)
+            == (self.commit_hash_algorithm is not None),
+            "exactly the commit-pinned and archive entries record their commit hash algorithm",
+        )
+        _require(
+            self.archive_commit is None
+            or (self.entry_class == "artifact-pinned" or self.form == "artifact"),
+            "only an artifact records the commit its archive names",
         )
         _require(
             self.entry_class != "artifact-pinned"
@@ -201,6 +211,7 @@ class LockedEntry:
             "commit_hash_algorithm": self.commit_hash_algorithm,
             "origin": self.origin,
             "inherited_from": self.inherited_from,
+            "archive_commit": self.archive_commit,
         }
 
 

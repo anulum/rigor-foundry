@@ -82,6 +82,16 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Lockfile integrity rules read Yarn 1 lockfiles (rule pack
+  `rigor-foundry/1.21.0`) with a strict reader of Yarn 1's own syntax. A Git
+  clone at a full commit is commit-pinned. A GitHub archive is a plain tarball
+  that neither Git nor Yarn verifies, so without a digest it is reported as
+  missing one, and the commit it names is recorded as `archive_commit`. Origins
+  are compared with the registry a tracked `.npmrc` or `.yarnrc` declares, in
+  Yarn's own order. Lockfile candidates now carry the entry's origin host in
+  their evidence, and a byte-order mark in `yarn.lock` is refused as
+  unparseable.
+
 - Lockfile integrity rules (rule pack `rigor-foundry/1.20.0`) classify every
   entry of every tracked npm lockfile (`lockfileVersion` 1, 2 and 3) by how its
   content is pinned: by an artifact digest, a full commit, or a path inside the

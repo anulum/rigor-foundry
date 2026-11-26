@@ -90,7 +90,6 @@ def test_a_yarn_lock_with_a_metadata_block_is_yarn_berry() -> None:
         ('left-pad@^1.3.0:\n  version "1.3.0"\n', "no header and no metadata block"),
         (YARN_V1 + "\n__metadata:\n  version: 8\n", "both forms at once"),
         ('left-pad@^1.3.0:\n  version "1.3.0"\n# yarn lockfile v1\n', "a header after content"),
-        ("\ufeff" + YARN_V1, "a byte-order mark before the header"),
         ("# yarn lockfile v1 \n", "a header with trailing text"),
         ('"__metadata":\n  version: 8\n', "a quoted metadata key Yarn does not write"),
         ("  __metadata:\n    version: 8\n", "an indented metadata key"),
@@ -109,3 +108,10 @@ def test_a_yarn_lock_with_neither_or_both_forms_is_refused(text: str, reason: st
     with pytest.raises(LockfileRefusal) as refused:
         lockfile_kind("yarn.lock", text)
     assert refused.value.reason == "ambiguous-yarn-lock", reason
+
+
+def test_a_yarn_lock_with_a_byte_order_mark_is_unparseable() -> None:
+    """A byte-order mark is no Yarn form at all, so the file is unparseable, not ambiguous."""
+    with pytest.raises(LockfileRefusal) as refused:
+        lockfile_kind("yarn.lock", "\ufeff" + YARN_V1)
+    assert refused.value.reason == "unparseable"

@@ -78,6 +78,16 @@ def test_the_class_and_reason_vocabularies_are_the_amended_v1_lists() -> None:
         {"findings": ("origin-mismatch",)},
         {"findings": ("origin-unknown",)},
         {"digest_scope": "parent-artifact", "inherited_from": "node_modules/parent"},
+        {"archive_commit": "c" * 40, "commit_hash_algorithm": "sha1"},
+        {
+            "entry_class": "unpinned",
+            "form": "artifact",
+            "findings": ("missing-digest",),
+            "digest_algorithms": (),
+            "digest_scope": None,
+            "archive_commit": "c" * 64,
+            "commit_hash_algorithm": "sha256",
+        },
     ],
 )
 def test_entries_that_keep_every_rule_are_built(changes: dict[str, Any]) -> None:
@@ -103,6 +113,7 @@ def test_entries_that_keep_every_rule_are_built(changes: dict[str, Any]) -> None
         "commit_hash_algorithm",
         "origin",
         "inherited_from",
+        "archive_commit",
     }
 
 
@@ -147,6 +158,17 @@ def test_entries_that_keep_every_rule_are_built(changes: dict[str, Any]) -> None
         ),
         ({"entry_class": "commit-pinned"}, "commit hash algorithm"),
         ({"commit_hash_algorithm": "sha1"}, "commit hash algorithm"),
+        ({"archive_commit": "c" * 40}, "commit hash algorithm"),
+        (
+            {
+                "entry_class": "unpinned",
+                "form": "vcs",
+                "findings": ("floating-ref",),
+                "archive_commit": "c" * 40,
+                "commit_hash_algorithm": "sha1",
+            },
+            "only an artifact records the commit",
+        ),
         ({"digest_algorithms": ()}, "records its digests and their scope"),
         ({"digest_scope": None}, "records its digests and their scope"),
         ({"digest_scope": "parent-artifact"}, "name that parent"),

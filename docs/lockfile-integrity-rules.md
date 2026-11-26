@@ -15,12 +15,12 @@ each finding is an anchored **needs-evidence candidate**, never a verdict. A
 lockfile that cannot be read is refused by name and never looks clean. The
 rules implement *lockfile integrity semantics v1*.
 
-This release reads npm lockfiles (`package-lock.json` and
-`npm-shrinkwrap.json`, `lockfileVersion` 1, 2 and 3). Every other lockfile the
-rules recognise is refused as `unsupported-file-kind` until its own rules
-exist: `yarn.lock` (Yarn 1 or Yarn 2+), `pnpm-lock.yaml`, `Cargo.lock`,
-`go.sum`, `poetry.lock` and `Pipfile.lock`. All the rules are in maturity
-probation.
+Rule pack `rigor-foundry/1.20.0` reads npm lockfiles (`package-lock.json` and
+`npm-shrinkwrap.json`, `lockfileVersion` 1, 2 and 3), and `rigor-foundry/1.21.0`
+adds Yarn 1 (`yarn.lock` with the `# yarn lockfile v1` header). Every other
+lockfile the rules recognise is refused as `unsupported-file-kind` until its own
+rules exist: a Yarn 2+ `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`,
+`poetry.lock` and `Pipfile.lock`. All the rules are in maturity probation.
 
 ## One class per entry
 
@@ -85,6 +85,36 @@ and every token is validated:
   key in `inherited_from`. It is listed in the report, but its findings are not
   raised again as candidates.
 
+## Yarn 1 lockfiles
+
+- **Syntax.** The reader accepts exactly what Yarn 1 writes: header comments that
+  include `# yarn lockfile v1`; key lines at column 0 that list one or more
+  specifiers separated by `, `; fields indented two spaces; and the members of a
+  `dependencies:` block indented four. Quoted keys and values use JSON string
+  escapes; a bare one holds no space, quote or colon. A file whose line endings
+  are all CRLF reads as LF. Anything else is `unparseable`, including mixed line
+  endings, a byte-order mark, a tab, another indentation or a comment after the
+  first entry. A field repeated in one entry, or a specifier named by two entries
+  (compared unquoted), is `conflicting-entries`; one version resolved under two
+  specifiers is normal.
+- **Keys.** An entry's key lists its specifiers, unquoted, separated by `, `.
+- **Local sources.** A `file:` or `link:` specifier, or a `file:` URL, is `local`
+  inside the repository and gives `path-escape` outside it.
+- **Git clones.** A `resolved` `git+…` or `git://` URL with `#<commit>` is cloned
+  through Git, so a full commit makes it `commit-pinned`; anything shorter gives
+  `floating-ref`.
+- **Hosted archives.** Yarn 1 writes a GitHub dependency as a
+  `https://codeload.github.com/<owner>/<repo>/tar.gz/<ref>` archive. Neither Git
+  nor Yarn checks those bytes, so a full commit in the path does not pin it.
+  Without an `integrity` digest it is `unpinned` with `missing-digest`, and the
+  commit is recorded as `archive_commit` with its `commit_hash_algorithm`. A
+  reference that is not a full commit also gives `floating-ref`. The archive host
+  is recorded, not compared, like every VCS host.
+- **Registry artifacts.** Any other URL is a registry artifact with an exact
+  `version`, pinned by an accepted `integrity` digest. The SHA-1 hex after the
+  URL's `#` is a weak digest of its own: alone it gives `weak-digest`, and beside
+  an accepted `integrity` it is clean.
+
 ## The declared registry
 
 Origins are compared only with what the repository itself declares; user-level
@@ -99,6 +129,18 @@ and global npm configuration are not repository content.
   `registry.npmjs.org` is npm's placeholder for the configured registry, so it
   matches. Other hosts are compared literally, by host and explicit port; a
   registry's path is not compared.
+- For Yarn 1, every tracked `.npmrc` and every tracked `.yarnrc` on the path
+  from the repository root down to the lockfile's directory is read and merged
+  per key, the nearer file winning, as Yarn 1 merges them; an untracked or
+  unreadable file at any of those levels makes the origin unknown. Per package,
+  Yarn's own order applies: the
+  `.npmrc` registry of the package's scope, the `.yarnrc` one, then the unscoped
+  `.npmrc` and `.yarnrc` registries. Yarn 1 fetches lockfile URLs as written, so
+  there is no placeholder: with nothing declared, `registry.yarnpkg.com` and
+  `registry.npmjs.org` are both the default; with a registry declared, any other
+  host is `origin-mismatch`. `.yarnrc.yml` is Yarn 2+ configuration and is not
+  read. A `.yarnrc` registry line with `${…}`, a `--registry` flag, a changed
+  repeat, a non-HTTP(S) value or a line that does not tokenise is uncertain.
 - Every artifact's origin is `origin-unknown`, never a pass, when the
   declaration cannot be read with certainty:
   - an `.npmrc` that is present but untracked, or tracked but not text;
@@ -117,9 +159,9 @@ A refused file names its reason and has no entry results.
 | `unparseable` | not one strict JSON object, a non-finite number, an entry or level that is not an object, or nesting past the parser's recursion limit |
 | `missing-version` | no `lockfileVersion` |
 | `unsupported-version` | a `lockfileVersion` other than 1, 2 or 3 |
-| `conflicting-entries` | a key repeated in one object, or a version 2 legacy tree that disagrees with `packages` |
+| `conflicting-entries` | a key repeated in one object, a version 2 legacy tree that disagrees with `packages`, or a Yarn 1 field or specifier repeated |
 | `unreadable` | over the 8 MiB inventory limit, binary, or not UTF-8 |
-| `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block |
+| `ambiguous-yarn-lock` | a `yarn.lock` with neither, or both, the `# yarn lockfile v1` header and a top-level `__metadata:` block; a byte-order mark is `unparseable` |
 | `unsupported-file-kind` | a recognised lockfile whose rules are not in this rule pack |
 | `unsupported-lock-version` | reserved for Poetry lock formats below 2.0 |
 
@@ -139,8 +181,8 @@ A refused file names its reason and has no entry results.
 
 `SC011-lockfile-manifest-drift` enters the rule pack with the first lockfile
 kind that records a manifest hash. A finding candidate is anchored at its
-entry's line and carries content digests (the file's SHA-256 and the entry
-key's SHA-256), never copied repository text. A refused file without text is
+entry's line and carries the file's SHA-256, the entry key's SHA-256, the class,
+the finding and the entry's origin host, so a reviewer sees an unexpected host. A refused file without text is
 anchored at the repository tree.
 
 ## The report
@@ -158,7 +200,7 @@ record:
   `file_sha256`, `kind`, `format_version`, `status` and `refusal_reason`;
 - each file lists its entries in line, then key, order, with `key`, `line`,
   `class`, `form`, `findings`, `digest_algorithms`, `digest_scope`,
-  `commit_hash_algorithm`, `origin` and `inherited_from`;
+  `commit_hash_algorithm`, `origin`, `inherited_from` and `archive_commit`;
 - `report_digest` is the SHA-256 of the canonical JSON of the report without
   that field. The report holds no floating-point number and only fixed ASCII
   member names, so the canonical JSON is the RFC 8785 serialisation.
@@ -172,6 +214,6 @@ instead of `npm ci`, disabled checksums or registries) belong to a separate
 companion rule. Calibration across adopter repositories is the maturity step
 that can take a rule out of probation.
 
-The clean npm test fixtures were generated by npm 6.14.18, 8.19.4 and 10.9.2
-on Node.js 18.19.1 (`tests/fixtures/lockfiles/`), and every failing case is a
-recorded edit of one of them.
+The clean test fixtures were generated by npm 6.14.18, 8.19.4 and 10.9.2 and by
+Yarn 1.22.22, on Node.js 18.19.1 (`tests/fixtures/lockfiles/`), and every failing
+case is a recorded edit of one of them.

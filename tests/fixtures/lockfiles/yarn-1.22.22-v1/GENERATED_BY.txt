@@ -1,0 +1,6 @@
+yarn 1.22.22
+node v18.19.1
+sha256 d057798439c4283f235169d5bbf0830bc64fce647d5ea9142cca4579e57f8581
+stored gzip-compressed (level 9, mtime 0) as yarn.lock.gz and package.json.gz,
+so the repository's dependency-lock audit and dependency graph never read test data as an installed lock;
+the sha256 above is of the decompressed yarn.lock bytes yarn wrote
