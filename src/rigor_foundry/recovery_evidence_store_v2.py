@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import ctypes
-import fcntl
 import os
 import re
 import secrets
@@ -22,6 +21,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from ._permit_ledger_storage_io_v2 import _identity, _owner_only, _read_exact, _write_all
+from ._posix_lock_v2 import posix_lock_call
 from .model_primitives import require_digest
 from .recovery_evidence_schema_v2 import validate_recovery_evidence_bytes_v2
 from .stable_reads import open_directory_no_follow
@@ -100,7 +100,8 @@ class RecoveryEvidenceStoreV2:
             entry = os.fstat(parent)
             if not _owner_only(entry, directory=True) or stat.S_IMODE(entry.st_mode) != 0o700:
                 raise PermissionError("recovery evidence directory is not owner-only")
-            fcntl.flock(parent, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)
+            flock, shared_lock, exclusive_lock = posix_lock_call()
+            flock(parent, exclusive_lock if exclusive else shared_lock)
             yield parent
             reopened = open_directory_no_follow(self.directory)
             try:

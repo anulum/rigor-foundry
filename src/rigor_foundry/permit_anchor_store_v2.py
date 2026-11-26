@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import os
 import stat
 from collections.abc import Iterator
@@ -19,6 +18,7 @@ from pathlib import Path
 
 from ._permit_ledger_records_v2 import _INITIAL_HEAD
 from ._permit_ledger_storage_io_v2 import _identity, _owner_only, _read_exact, _write_all
+from ._posix_lock_v2 import posix_lock_call
 from .effect_journal_records_v2 import JOURNAL_GENESIS_V2
 from .effect_journal_v2 import (
     EffectJournalFileIdentityV2,
@@ -147,7 +147,8 @@ class PermitLedgerAnchorStoreV2:
         try:
             flags = os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
             descriptor = os.open(self.path.name, flags, dir_fd=parent)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            flock, _, exclusive_lock = posix_lock_call()
+            flock(descriptor, exclusive_lock)
             before = os.fstat(descriptor)
             path_before = os.stat(self.path.name, dir_fd=parent, follow_symlinks=False)
             if (

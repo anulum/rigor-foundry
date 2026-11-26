@@ -110,6 +110,8 @@ the SHA-256 of its exact object bytes before filtering domains or file identitie
 A caller cannot introduce a digest alias by supplying an in-memory object map.
 
 This storage implementation uses POSIX locks and Linux no-replace publication.
-It has no Rust, Go, TypeScript or Windows runtime counterpart. Existing adapter
+It has no Rust, Go, TypeScript or Windows runtime counterpart. Its modules import
+on every platform; where POSIX file locks are missing, taking a lock is refused
+by name before any lock is attempted. Existing adapter
 benchmarks measure another surface and make no performance claim about these
 storage operations.

@@ -15,6 +15,12 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- The v2 effect journal, permit anchor store, permit consumption ledger and
+  recovery evidence store no longer import `fcntl` when they are imported. On a
+  platform without POSIX file locks, such as Windows, importing them raised
+  `ModuleNotFoundError`; now they import, and taking one of their locks is
+  refused by name before any lock is attempted.
+
 - Retained policy and context sources now bind their parent directory's
   complete entry list, names and inode numbers, as well as its metadata. On hosts
   with coarse directory timestamps, such as Linux kernels without multigrain

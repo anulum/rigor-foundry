@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import os
 import stat
 import struct
@@ -20,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 from ._effect_journal_storage_io_v2 import _identity, _owner_only, _read_exact, _write_all
+from ._posix_lock_v2 import posix_lock_call
 from .effect_intent_token_v2 import (
     EffectIntentBindingV2,
     EffectIntentTokenV2,
@@ -532,7 +532,8 @@ class EffectJournalStoreV2:
         try:
             flags = os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
             descriptor = os.open(self.path.name, flags, dir_fd=parent)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            flock, _, exclusive_lock = posix_lock_call()
+            flock(descriptor, exclusive_lock)
             before = os.fstat(descriptor)
             path_before = os.stat(self.path.name, dir_fd=parent, follow_symlinks=False)
             if (
@@ -609,7 +610,8 @@ class EffectJournalStoreV2:
         try:
             flags = os.O_RDWR | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
             descriptor = os.open(self.path.name, flags, dir_fd=parent)
-            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            flock, _, exclusive_lock = posix_lock_call()
+            flock(descriptor, exclusive_lock)
             before = os.fstat(descriptor)
             path_before = os.stat(self.path.name, dir_fd=parent, follow_symlinks=False)
             if (
