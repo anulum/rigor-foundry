@@ -30,6 +30,12 @@ from .lockfile_cargo import classify_cargo_lockfile
 from .lockfile_go import classify_go_lockfile
 from .lockfile_gomod import parse_go_mod
 from .lockfile_kinds import PNPM_LOCK, is_lockfile_path, lockfile_kind
+from .lockfile_manifest import (
+    ManifestCheck,
+    TrackedManifest,
+    pipenv_manifest_check,
+    poetry_manifest_check,
+)
 from .lockfile_model import EntryFinding, LockfileKind, LockfileRefusal, LockfileResult
 from .lockfile_npm import classify_npm_lockfile
 from .lockfile_npmrc import (
@@ -62,6 +68,7 @@ from .models import Candidate, Confidence
 from .rule_guidance import RuleGuidance
 
 REFUSED_RULE_ID: Final = "SC003-lockfile-refused"
+DRIFT_RULE_ID: Final = "SC011-lockfile-manifest-drift"
 FINDING_RULE_IDS: Final[Mapping[EntryFinding, str]] = MappingProxyType(
     {
         "missing-digest": "SC004-lockfile-missing-digest",
@@ -81,6 +88,7 @@ _YARNRC_YML: Final = ".yarnrc.yml"
 _PNPM_WORKSPACE: Final = "pnpm-workspace.yaml"
 _GO_MOD: Final = "go.mod"
 _PYPROJECT: Final = "pyproject.toml"
+_PIPFILE: Final = "Pipfile"
 # The last kind the dispatch reaches; adding a kind to ``LockfileKind`` breaks its type check.
 _LastKind = Literal["pipenv"]
 
@@ -169,6 +177,18 @@ RULE_GUIDANCE: Final[Mapping[str, RuleGuidance]] = MappingProxyType(
             verification=(
                 "Move the dependency inside the repository, or replace it with a pinned "
                 "registry or VCS source."
+            ),
+        ),
+        DRIFT_RULE_ID: RuleGuidance(
+            rationale=(
+                "The lockfile records a hash of the manifest it was made from, and that hash "
+                "matches no form the tool that wrote it, or the current release, computes from "
+                "the tracked manifest, so the locked set may not be what the manifest declares."
+            ),
+            verification=(
+                "Regenerate the lockfile from the tracked manifest with the project's tool, or "
+                "restore the manifest the lockfile was made from, and confirm that the tool's own "
+                "freshness check passes."
             ),
         ),
         "SC012-lockfile-unknown-form": RuleGuidance(
@@ -346,6 +366,17 @@ def _beside(inventory: GitInventory, lock_path: str, name: str) -> tuple[bool, s
     return not os.path.lexists(inventory.root / path), None
 
 
+def _tracked_manifest(inventory: GitInventory, lock_path: str, name: str) -> TrackedManifest:
+    """Find the manifest beside a lockfile, with its tracked text and digest when certain."""
+    path = posixpath.join(posixpath.dirname(lock_path), name)
+    for item in inventory.files:
+        if item.path == path:
+            if item.text is None:
+                return TrackedManifest(path, False, None, None)
+            return TrackedManifest(path, True, item.text, item.content_digest)
+    return TrackedManifest(path, not os.path.lexists(inventory.root / path), None, None)
+
+
 def pnpm_configuration(
     inventory: GitInventory, lock_path: str
 ) -> tuple[Mapping[str, str] | None, PnpmWorkspace | None]:
@@ -438,8 +469,8 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
             )
         elif kind == "poetry":
             # An uncertain pyproject.toml has no text, so it reads as no declaration.
-            _, pyproject = _beside(inventory, item.path, _PYPROJECT)
-            declaration = read_poetry_declaration(pyproject)
+            pyproject = _tracked_manifest(inventory, item.path, _PYPROJECT)
+            declaration = read_poetry_declaration(pyproject.text)
             poetry = classify_poetry_lockfile(text, lock_dir, declaration)
             return LockfileResult(
                 item.path,
@@ -449,6 +480,7 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                 None,
                 poetry.entries,
                 manifest_hash=poetry.content_hash,
+                manifest_check=poetry_manifest_check(text, poetry.content_hash, pyproject),
             )
         elif kind == "yarn-berry":
             berry = berry_registry_declaration(inventory, item.path)
@@ -461,6 +493,7 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
         else:
             last: _LastKind = kind
             pipenv = classify_pipenv_lockfile(text, lock_dir)
+            pipfile = _tracked_manifest(inventory, item.path, _PIPFILE)
             return LockfileResult(
                 item.path,
                 item.content_digest,
@@ -469,6 +502,7 @@ def _assess(inventory: GitInventory, item: TrackedFile) -> LockfileResult:
                 None,
                 pipenv.entries,
                 manifest_hash=pipenv.meta_hash,
+                manifest_check=pipenv_manifest_check(text, pipenv.meta_hash, pipfile),
             )
     except LockfileRefusal as refusal:
         return _refused(item, kind, refusal)
@@ -531,8 +565,8 @@ def lockfile_candidates(
     Returns
     -------
     tuple[Candidate, ...]
-        One candidate per refused file, and one per finding of each entry the lockfile
-        records itself, in result and entry order.
+        One candidate per refused file, one per finding of each entry the lockfile records
+        itself, and one per lockfile whose manifest hash has drifted, in result and entry order.
     """
     items = {item.path: item for item in inventory.files}
     candidates: list[Candidate] = []
@@ -571,7 +605,22 @@ def lockfile_candidates(
                         confidence,
                     )
                 )
+        check = result.manifest_check
+        if check is not None and check.state == "drift":
+            candidates.append(_drift_candidate(item, result.file_sha256, check))
     return tuple(candidates)
+
+
+def _drift_candidate(item: TrackedFile, file_sha256: str, check: ManifestCheck) -> Candidate:
+    """Return the SC011 candidate of one lockfile whose manifest hash has drifted."""
+    writer = check.writer or ("none" if check.accepted == ("plette", "canonical") else "unknown")
+    evidence = (
+        f"file_sha256={file_sha256}; manifest={check.manifest_path}; "
+        f"manifest_sha256={check.manifest_sha256 or 'none'}; recorded={check.recorded or 'none'}; "
+        f"writer={writer}; accepted={','.join(check.accepted)}"
+    )
+    anchor = TrackedBlobAnchor.build(item, line_start=check.hash_line)
+    return _candidate(DRIFT_RULE_ID, anchor, "lockfile", evidence, "high")
 
 
 def scan_lockfile_integrity(inventory: GitInventory) -> tuple[Candidate, ...]:

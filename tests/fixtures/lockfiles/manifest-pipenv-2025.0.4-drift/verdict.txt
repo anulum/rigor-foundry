@@ -1,0 +1,3 @@
+pipenv 2025.0.4 verify
+exit status: 1
+Pipfile.lock is out-of-date. Run $ pipenv lock to update.

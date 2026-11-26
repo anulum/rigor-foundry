@@ -82,6 +82,25 @@ based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `SC011-lockfile-manifest-drift` (rule pack `rigor-foundry/1.28.0`) compares
+  the manifest hash that a Poetry or Pipenv lockfile records with the tracked
+  `pyproject.toml` or `Pipfile` beside it. Each tool's own hash is mirrored as
+  its releases compute it.
+  - **Poetry** is judged by the forms of the writer that line 1 names, ordered
+    as PEP 440 orders versions, together with Poetry 2.5.2's fallback for older
+    writers.
+  - **Pipenv** accepts either of its two current forms, because the lockfile
+    names no writer and each current release calls the other's fresh lock
+    stale.
+  - **Not drift:** a missing, untracked, non-text or unparseable manifest, and a
+    Poetry writer newer than 2.5.2 whose hash does not match. Each is recorded
+    as the file's `manifest_check` state, and none raises SC011.
+  - **Drift:** a lockfile without its hash.
+  - **The report** gains `manifest_check` on every file and `manifest_states` in
+    its summary.
+  - **The fixtures** are 34 real cases from three Poetry and three Pipenv
+    releases, each with the tool's own verdict.
+
 - Lockfile integrity rules read Pipenv lockfiles (rule pack
   `rigor-foundry/1.27.0`), `pipfile-spec` 6 as Pipenv 2020.11 to 2026.12 wrote
   them into the test fixtures, every category included, each entry keyed by

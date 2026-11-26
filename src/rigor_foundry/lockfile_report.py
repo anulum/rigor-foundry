@@ -22,6 +22,7 @@ from typing import Final
 from .audit_primitives import canonical_digest
 from .git_inventory import GitInventory
 from .lockfile_integrity import assess_lockfiles
+from .lockfile_manifest import MANIFEST_STATES
 from .lockfile_model import ENTRY_CLASSES, ENTRY_FINDINGS, REFUSAL_REASONS, LockfileResult
 from .rules import RULE_PACK_VERSION, rule_pack_digest
 
@@ -72,10 +73,13 @@ class LockfileIntegrityReport:
         Returns
         -------
         dict[str, object]
-            Every class, finding and refusal reason with its count, zeros included. Entry
-            counts include bundled entries, which repeat their ancestor's findings.
+            Every class, finding, refusal reason and manifest state with its count, zeros
+            included. Entry counts include bundled entries, which repeat their ancestor's
+            findings; ``manifest-drift`` counts files, since drift belongs to a whole lockfile.
         """
         entries = [entry for result in self.files for entry in result.entries]
+        checks = [result.manifest_check for result in self.files if result.manifest_check]
+        drifted = sum(check.state == "drift" for check in checks)
         return {
             "files": len(self.files),
             "classified_files": sum(result.status == "classified" for result in self.files),
@@ -85,7 +89,12 @@ class LockfileIntegrityReport:
                 name: sum(entry.entry_class == name for entry in entries) for name in ENTRY_CLASSES
             },
             "findings": {
-                name: sum(name in entry.findings for entry in entries) for name in ENTRY_FINDINGS
+                name: sum(name in entry.findings for entry in entries)
+                + (drifted if name == "manifest-drift" else 0)
+                for name in ENTRY_FINDINGS
+            },
+            "manifest_states": {
+                name: sum(check.state == name for check in checks) for name in MANIFEST_STATES
             },
             "refusals": {
                 name: sum(result.refusal_reason == name for result in self.files)

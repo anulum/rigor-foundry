@@ -43,12 +43,14 @@ from rigor_foundry.scanner import scan_repository
 
 
 def test_every_rule_id_is_registered_with_guidance_in_the_lockfile_pack() -> None:
-    """Each finding a parser can emit maps to a registered 1.20.0 rule with guidance."""
+    """Each entry finding maps to a 1.20.0 rule, and file-level drift to SC011 from 1.28.0."""
     rule_ids = {*FINDING_RULE_IDS.values(), "SC003-lockfile-refused"}
-    assert set(RULE_GUIDANCE) == rule_ids
+    assert set(RULE_GUIDANCE) == {*rule_ids, "SC011-lockfile-manifest-drift"}
     for rule_id in rule_ids:
         rule = RULES_BY_ID[rule_id]
         assert (rule.category, rule.introduced) == ("supply-chain", "rigor-foundry/1.20.0")
+    drift = RULES_BY_ID["SC011-lockfile-manifest-drift"]
+    assert (drift.category, drift.introduced) == ("supply-chain", "rigor-foundry/1.28.0")
     assert "manifest-drift" not in FINDING_RULE_IDS
 
 

@@ -17,9 +17,12 @@ breaks them.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Final, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 from .lockfile_digests import DIGEST_BYTES, DigestAlgorithm
+
+if TYPE_CHECKING:
+    from .lockfile_manifest import ManifestCheck
 
 LockfileKind = Literal["npm", "yarn-v1", "yarn-berry", "pnpm", "cargo", "go", "poetry", "pipenv"]
 EntryClass = Literal[
@@ -258,6 +261,9 @@ class LockfileResult:
         The hash the lockfile records of the manifest it was made from, such as Poetry's
         ``content-hash``: a drift signal, never an artifact digest; ``None`` for kinds without
         one and refused files.
+    manifest_check : ManifestCheck | None
+        The comparison of that hash with the tracked manifest beside the lockfile, for Poetry
+        and Pipenv; ``None`` for other kinds and refused files.
     """
 
     path: str
@@ -270,6 +276,7 @@ class LockfileResult:
     unused_patches: int | None = None
     dropped_lines: int | None = None
     manifest_hash: str | None = None
+    manifest_check: ManifestCheck | None = None
 
     def __post_init__(self) -> None:
         """Refuse a result that breaks the file-level rules."""
@@ -293,6 +300,10 @@ class LockfileResult:
         _require(
             self.refusal_reason is None or not self.entries,
             "a refused file has no entry results",
+        )
+        _require(
+            self.refusal_reason is None or self.manifest_check is None,
+            "a refused file has no manifest check",
         )
         _require(
             self.kind is not None or self.refusal_reason is not None,
@@ -326,4 +337,7 @@ class LockfileResult:
             "unused_patches": self.unused_patches,
             "dropped_lines": self.dropped_lines,
             "manifest_hash": self.manifest_hash,
+            "manifest_check": None
+            if self.manifest_check is None
+            else self.manifest_check.to_dict(),
         }

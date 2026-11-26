@@ -1,0 +1,3 @@
+poetry 2.5.2 check --lock
+exit status: 1
+Warning: [tool.poetry.authors] is deprecated. Use [project.authors] instead.

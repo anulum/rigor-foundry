@@ -16,7 +16,7 @@ from .audit_primitives import canonical_digest
 from .model_primitives import require_semantic_version
 
 RULE_PACK_SCHEMA_VERSION = "1.0"
-RULE_PACK_VERSION = "rigor-foundry/1.27.0"
+RULE_PACK_VERSION = "rigor-foundry/1.28.0"
 INITIAL_RULE_PACK_VERSION = "rigor-foundry/1.0.0"
 APPLICATION_SECURITY_RULE_PACK_VERSION = "rigor-foundry/1.2.0"
 JAVASCRIPT_RULE_PACK_VERSION = "rigor-foundry/1.3.0"
@@ -37,6 +37,7 @@ CRA_RULE_PACK_VERSION = "rigor-foundry/1.17.0"
 JUPYTER_RULE_PACK_VERSION = "rigor-foundry/1.18.0"
 GITHUB_ACTIONS_RULE_PACK_VERSION = "rigor-foundry/1.19.0"
 LOCKFILE_RULE_PACK_VERSION = "rigor-foundry/1.20.0"
+MANIFEST_DRIFT_RULE_PACK_VERSION = "rigor-foundry/1.28.0"
 
 _RULE_ID = re.compile(
     r"(?:TA|AR|GF|GV|AS|RL|SC|DK|DP|DC|SN|OP|PR|AA|CR|GA)[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\Z"
@@ -508,6 +509,12 @@ RULES: tuple[RuleDefinition, ...] = (
         "supply-chain",
         "Locked local source resolves outside the repository root.",
         LOCKFILE_RULE_PACK_VERSION,
+    ),
+    RuleDefinition(
+        "SC011-lockfile-manifest-drift",
+        "supply-chain",
+        "Lockfile records a manifest hash that does not match its tracked manifest.",
+        MANIFEST_DRIFT_RULE_PACK_VERSION,
     ),
     RuleDefinition(
         "SC012-lockfile-unknown-form",

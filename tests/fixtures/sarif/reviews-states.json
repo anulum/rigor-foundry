@@ -17,7 +17,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": "P0",
@@ -40,7 +40,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": "P1",
@@ -63,7 +63,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": "P2",
@@ -86,7 +86,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": "P3",
@@ -109,7 +109,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": "P4",
@@ -130,7 +130,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": null,
@@ -151,7 +151,7 @@
       "reopen_triggers": [
         "anchored bytes change"
       ],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "2026-11-24T00:00:00Z",
       "reviewer": "RIGOR-FOUNDRY/fixture-reviewer",
       "severity": null,
@@ -168,7 +168,7 @@
       "owner": "",
       "rationale": "",
       "reopen_triggers": [],
-      "report_digest": "4039b46da9e10f62bffe68f953b8a498b3153a40f815acc1bef30237d7fae6ec",
+      "report_digest": "9b75ef8428b359ced35d7bc096c0f965707779e2c853fdfa26257a72e12cc444",
       "reviewed_at": "",
       "reviewer": "",
       "severity": null,

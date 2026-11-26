@@ -3,7 +3,7 @@
   "runs": [
     {
       "automationDetails": {
-        "id": "rigor-foundry/1622913ef0cf733ac21fe3d648c1578c86fbe09b7f95b658ba611ad3ac01749f"
+        "id": "rigor-foundry/f5e4289f4373a739b6398891c6a78ba481f0792997d758bcfb0162238cd00585"
       },
       "properties": {
         "rigorFoundry/branch": "main",
@@ -12,9 +12,9 @@
         "rigorFoundry/headTree": "5c95b612dd40be4f2d7703c9c28fd369917849f7",
         "rigorFoundry/ignoredInventoryDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "rigorFoundry/policyDigest": "da95ae16342324aa2ce0ba1654087b9dd42d7a6484cd06cc6c8cb4cd118f4117",
-        "rigorFoundry/reportDigest": "1622913ef0cf733ac21fe3d648c1578c86fbe09b7f95b658ba611ad3ac01749f",
-        "rigorFoundry/rulePackDigest": "084d6173052e7e274d16238fc8331efed683e3f34b4564e757be63bbe8a96ac1",
-        "rigorFoundry/rulePackVersion": "rigor-foundry/1.27.0",
+        "rigorFoundry/reportDigest": "f5e4289f4373a739b6398891c6a78ba481f0792997d758bcfb0162238cd00585",
+        "rigorFoundry/rulePackDigest": "bf3de13e3fe7a12e3989f2db6b7b61ed05e708cafd44ed329d5d9643d23670f5",
+        "rigorFoundry/rulePackVersion": "rigor-foundry/1.28.0",
         "rigorFoundry/trackedContentDigest": "c70921556482698f42f06f93a0a66ab7d8bdab747d8961c8939c0a05c77b7e28"
       },
       "results": [],
@@ -3336,6 +3336,44 @@
               ],
               "shortDescription": {
                 "text": "Locked local source resolves outside the repository root."
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The lockfile records a hash of the manifest it was made from, and that hash matches no form the tool that wrote it, or the current release, computes from the tracked manifest, so the locked set may not be what the manifest declares."
+              },
+              "help": {
+                "markdown": "Lockfile records a manifest hash that does not match its tracked manifest.\n\n**Why it matters.** The lockfile records a hash of the manifest it was made from, and that hash matches no form the tool that wrote it, or the current release, computes from the tracked manifest, so the locked set may not be what the manifest declares.\n\n**How to verify.** Regenerate the lockfile from the tracked manifest with the project's tool, or restore the manifest the lockfile was made from, and confirm that the tool's own freshness check passes.\n\nA RigorFoundry result is an audit candidate for evidence review, never a defect verdict; only a validated review record decides it.",
+                "text": "Lockfile records a manifest hash that does not match its tracked manifest.\n\nWhy it matters: The lockfile records a hash of the manifest it was made from, and that hash matches no form the tool that wrote it, or the current release, computes from the tracked manifest, so the locked set may not be what the manifest declares.\nHow to verify: Regenerate the lockfile from the tracked manifest with the project's tool, or restore the manifest the lockfile was made from, and confirm that the tool's own freshness check passes."
+              },
+              "helpUri": "https://github.com/anulum/RIGOR-FOUNDRY/blob/main/docs/rule-catalogue.md#sc011-lockfile-manifest-drift",
+              "id": "SC011-lockfile-manifest-drift",
+              "name": "SC011-lockfile-manifest-drift",
+              "properties": {
+                "category": "supply-chain",
+                "introduced": "rigor-foundry/1.28.0",
+                "tags": [
+                  "rigor-foundry",
+                  "supply-chain"
+                ]
+              },
+              "relationships": [
+                {
+                  "kinds": [
+                    "subset"
+                  ],
+                  "target": {
+                    "id": "supply-chain",
+                    "index": 6,
+                    "toolComponent": {
+                      "index": 0,
+                      "name": "RigorFoundry rule categories"
+                    }
+                  }
+                }
+              ],
+              "shortDescription": {
+                "text": "Lockfile records a manifest hash that does not match its tracked manifest."
               }
             },
             {
